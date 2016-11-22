@@ -21,6 +21,7 @@ using System.Runtime.InteropServices;
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 [assembly: Guid("5077ebf6-d10e-4088-a740-065244b531fd")]
+[assembly: InternalsVisibleTo("NTumbleBit.Tests")]
 
 // Version information for an assembly consists of the following four values:
 //

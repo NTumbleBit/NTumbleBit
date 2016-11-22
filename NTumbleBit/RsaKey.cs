@@ -1,6 +1,7 @@
 ﻿using NTumbleBit.BouncyCastle.Asn1;
 using NTumbleBit.BouncyCastle.Asn1.Pkcs;
 using NTumbleBit.BouncyCastle.Asn1.X509;
+using NTumbleBit.BouncyCastle.Crypto.Engines;
 using NTumbleBit.BouncyCastle.Crypto.Generators;
 using NTumbleBit.BouncyCastle.Crypto.Parameters;
 using NTumbleBit.BouncyCastle.Math;
@@ -13,15 +14,15 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit
 {
-	public class RsaKey
+	public class RsaKey : IRsaKeyPrivate, IRsaKey
 	{
 		static BigInteger RSA_F4 = BigInteger.ValueOf(65537);
-		readonly RsaPrivateCrtKeyParameters _Key;
+		internal readonly RsaPrivateCrtKeyParameters _Key;
 
 		public RsaKey()
 		{
 			var gen = new RsaKeyPairGenerator();
-			gen.Init(new RsaKeyGenerationParameters(RSA_F4, NBitcoinSecureRandom.Instance, 2048, 112));
+			gen.Init(new RsaKeyGenerationParameters(RSA_F4, NBitcoinSecureRandom.Instance, KeySize, 2)); // See A.15.2 IEEE P1363 v2 D1 for certainty parameter
 			var pair = gen.GenerateKeyPair();
 			_Key = (RsaPrivateCrtKeyParameters)pair.Private;
 			_PubKey = new RsaPubKey((RsaKeyParameters)pair.Public);
@@ -42,6 +43,39 @@ namespace NTumbleBit
 			{
 				throw new FormatException("Invalid RSA Key");
 			}
+		}
+
+		public byte[] Sign(byte[] data)
+		{
+			if(data == null)
+				throw new ArgumentNullException("data");
+			if(data.Length != KeySize / 8)
+				throw new ArgumentException("data should have a size of " + KeySize + " bits");
+
+			var engine = new RsaCoreEngine();
+			engine.Init(true, _Key);
+			return engine.ConvertOutput(engine.ProcessBlock(engine.ConvertInput(data, 0, data.Length)));
+		}
+
+		public byte[] SolvePuzzle(Puzzle puzzle)
+		{
+			if(puzzle == null)
+				throw new ArgumentNullException("puzzle");
+
+			return Decrypt(puzzle.ToBytes(true));
+		}
+
+		public byte[] Decrypt(byte[] encrypted)
+		{
+			if(encrypted == null)
+				throw new ArgumentNullException("encrypted");
+			if(encrypted.Length != RsaKey.KeySize / 8)
+				throw new ArgumentException("The data to decrypted should be equal to size " + RsaKey.KeySize + " bits");
+			RsaCoreEngine engine = new RsaCoreEngine();
+			engine.Init(false, this._Key);
+			var databn = engine.ConvertInput(encrypted, 0, encrypted.Length);
+			var resultbn = engine.ProcessBlock(databn);
+			return engine.ConvertOutput(resultbn);
 		}
 
 		internal static DerSequence GetRSASequence(byte[] bytes)
@@ -68,6 +102,14 @@ namespace NTumbleBit
 			}
 		}
 
+		RsaKeyParameters IRsaKeyPrivate.Key
+		{
+			get
+			{
+				return _Key;
+			}
+		}
+
 		public byte[] ToBytes()
 		{
 			RsaPrivateKeyStructure keyStruct = new RsaPrivateKeyStructure(
@@ -87,5 +129,6 @@ namespace NTumbleBit
 
 		internal static AlgorithmIdentifier algID = new AlgorithmIdentifier(
 					new DerObjectIdentifier("1.2.840.113549.1.1.1"), DerNull.Instance);
+		public static readonly int KeySize = 2048;
 	}
 }

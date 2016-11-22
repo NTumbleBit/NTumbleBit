@@ -15,7 +15,7 @@ namespace NTumbleBit.BouncyCastle.Crypto.Parameters
 			BigInteger blindingFactor)
 		{
 			if(publicKey.IsPrivate)
-				throw new ArgumentException("RSA parameters should be for a public key");
+				publicKey = new RsaKeyParameters(false, publicKey.Modulus, ((RsaPrivateCrtKeyParameters)publicKey).PublicExponent);
 
 			this.publicKey = publicKey;
 			this.blindingFactor = blindingFactor;
