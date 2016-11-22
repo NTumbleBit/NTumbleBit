@@ -276,7 +276,7 @@ namespace NTumbleBit.BouncyCastle.Asn1
 				case Asn1Tags.Enumerated:
 					throw new IOException("invalid ECDSA sig");
 				case Asn1Tags.ObjectIdentifier:
-					throw new IOException("invalid ECDSA sig");
+					return DerObjectIdentifier.FromOctetString(GetBuffer(defIn, tmpBuffers));
 			}
 
 			byte[] bytes = defIn.ToArray();
@@ -285,6 +285,10 @@ namespace NTumbleBit.BouncyCastle.Asn1
 			{
 				case Asn1Tags.Integer:
 					return new DerInteger(bytes);
+				case Asn1Tags.OctetString:
+					return new DerOctetString(bytes);
+				case Asn1Tags.Null:
+					return DerNull.Instance;   // actual content is ignored (enforce 0 length?)
 				default:
 					throw new IOException("unknown tag " + tagNo + " encountered");
 			}

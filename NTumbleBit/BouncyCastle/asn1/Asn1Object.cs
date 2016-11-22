@@ -52,6 +52,17 @@ namespace NTumbleBit.BouncyCastle.Asn1
 
 		internal abstract void Encode(DerOutputStream derOut);
 
+		public byte[] GetEncoded()
+		{
+			MemoryStream bOut = new MemoryStream();
+			Asn1OutputStream aOut = new Asn1OutputStream(bOut);
+
+			aOut.WriteObject(this);
+
+			return bOut.ToArray();
+
+		}
+
 		protected abstract bool Asn1Equals(Asn1Object asn1Object);
 		protected abstract int Asn1GetHashCode();
 

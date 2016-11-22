@@ -247,9 +247,72 @@ namespace NTumbleBit.BouncyCastle.Asn1
 
 		private static readonly DerObjectIdentifier[] cache = new DerObjectIdentifier[1024];
 
+		internal byte[] GetBody()
+		{
+			lock(this)
+			{
+				if(body == null)
+				{
+					MemoryStream bOut = new MemoryStream();
+					DoOutput(bOut);
+					body = bOut.ToArray();
+				}
+			}
+
+			return body;
+		}
+
+		private void DoOutput(MemoryStream bOut)
+		{
+			OidTokenizer tok = new OidTokenizer(identifier);
+
+			string token = tok.NextToken();
+			int first = int.Parse(token) * 40;
+
+			token = tok.NextToken();
+			if(token.Length <= 18)
+			{
+				WriteField(bOut, first + Int64.Parse(token));
+			}
+			else
+			{
+				WriteField(bOut, new BigInteger(token).Add(BigInteger.ValueOf(first)));
+			}
+
+			while(tok.HasMoreTokens)
+			{
+				token = tok.NextToken();
+				if(token.Length <= 18)
+				{
+					WriteField(bOut, Int64.Parse(token));
+				}
+				else
+				{
+					WriteField(bOut, new BigInteger(token));
+				}
+			}
+		}
+
 		internal override void Encode(DerOutputStream derOut)
 		{
-			throw new NotImplementedException();
+			derOut.WriteEncoded(Asn1Tags.ObjectIdentifier, GetBody());
+		}
+
+		internal static Asn1Object FromOctetString(byte[] enc)
+		{
+			int hashCode = Arrays.GetHashCode(enc);
+			int first = hashCode & 1023;
+
+			lock(cache)
+			{
+				DerObjectIdentifier entry = cache[first];
+				if(entry != null && Arrays.AreEqual(enc, entry.GetBody()))
+				{
+					return entry;
+				}
+
+				return cache[first] = new DerObjectIdentifier(enc);
+			}
 		}
 	}
 }

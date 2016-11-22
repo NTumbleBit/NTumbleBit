@@ -6,10 +6,11 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit
 {
-    public class Class1
-    {
-		public Class1()
+	public class PuzzleSolverClient : PuzzleSolver
+	{
+		public PuzzleSolverClient() : base(15, 285)
 		{
+
 		}
-    }
+	}
 }
