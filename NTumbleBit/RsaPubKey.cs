@@ -70,7 +70,7 @@ namespace NTumbleBit
 		public Puzzle GeneratePuzzle(ref byte[] solution)
 		{
 			solution = solution ?? Utils.GenerateEncryptableData(_Key);
-			return new Puzzle(this.Encrypt(solution));
+			return new Puzzle(Encrypt(solution));
 		}
 
 		public byte[] Encrypt(byte[] data)
@@ -80,7 +80,7 @@ namespace NTumbleBit
 			if(data.Length != RsaKey.KeySize / 8)
 				throw new ArgumentException("The data to be encrypted should be equal to size " + RsaKey.KeySize + " bits");
 			RsaCoreEngine engine = new RsaCoreEngine();
-			engine.Init(true, this._Key);
+			engine.Init(true, _Key);
 			var databn = engine.ConvertInput(data, 0, data.Length);
 			var resultbn = engine.ProcessBlock(databn);
 			return engine.ConvertOutput(resultbn);
