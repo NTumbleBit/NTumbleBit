@@ -1,5 +1,3 @@
-using NTumbleBit.BouncyCastle.Asn1.X9;
-
 namespace NTumbleBit.BouncyCastle.Asn1.Sec
 {
 	internal abstract class SecObjectIdentifiers
@@ -42,8 +40,5 @@ namespace NTumbleBit.BouncyCastle.Asn1.Sec
 		public static readonly DerObjectIdentifier SecT409r1 = new DerObjectIdentifier(EllipticCurve + ".37");
 		public static readonly DerObjectIdentifier SecT571k1 = new DerObjectIdentifier(EllipticCurve + ".38");
 		public static readonly DerObjectIdentifier SecT571r1 = new DerObjectIdentifier(EllipticCurve + ".39");
-
-		public static readonly DerObjectIdentifier SecP192r1 = X9ObjectIdentifiers.Prime192v1;
-		public static readonly DerObjectIdentifier SecP256r1 = X9ObjectIdentifiers.Prime256v1;
 	}
 }

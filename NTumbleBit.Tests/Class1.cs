@@ -57,14 +57,14 @@ namespace NTumbleBit.Tests
 
 		}
 
-		//[Fact]
-		//public void CanRSASign()
-		//{
-		//	RsaKey key = TestKeys.Default;
-		//	var data = RandomUtils.GetBytes(RsaKey.KeySize);
-		//	var sig = key.Sign(data);
-		//	Assert.True(key.PubKey.Verify(data, sig));
-		//}
+		[Fact]
+		public void CanRSASign()
+		{
+			RsaKey key = TestKeys.Default;
+			var data = RandomUtils.GetBytes(RsaKey.KeySize);
+			var sig = key.Sign(data);
+			Assert.True(key.PubKey.Verify(data, sig));
+		}
 
 
 		[Fact]
