@@ -74,7 +74,7 @@ namespace NTumbleBit
 			engine.Init(false, _Key);
 			return new BigInteger(1, data).Equals(engine.ProcessBlock(engine.ConvertInput(signature, 0, signature.Length)));
 		}
-		
+
 
 		public Puzzle GeneratePuzzle(ref byte[] solution)
 		{
@@ -93,6 +93,40 @@ namespace NTumbleBit
 			var databn = engine.ConvertInput(data, 0, data.Length);
 			var resultbn = engine.ProcessBlock(databn);
 			return engine.ConvertOutput(resultbn);
+		}
+
+		public byte[] Blind(byte[] data, ref Blind blind)
+		{
+			if(data == null)
+				throw new ArgumentNullException("data");
+			blind = blind ?? new Blind(this);
+			return Blind(blind._A, data, blind);
+		}
+
+		public byte[] RevertBlind(byte[] data, Blind blind)
+		{
+			if(data == null)
+				throw new ArgumentNullException("data");
+			if(blind == null)
+				throw new ArgumentNullException("blind");
+
+			return Blind(blind._RI, data, blind);
+		}
+
+		public byte[] Unblind(byte[] data, Blind blind)
+		{
+			if(data == null)
+				throw new ArgumentNullException("data");
+			if(blind == null)
+				throw new ArgumentNullException("blind");
+			return Blind(blind._AI, data, blind);
+		}
+
+		internal byte[] Blind(BigInteger multiplier, byte[] data, Blind blind)
+		{
+			blind = blind ?? new Blind(this);
+			var msg = new BigInteger(1, data);
+			return msg.Multiply(multiplier).Mod(_Key.Modulus).ToByteArrayUnsigned();
 		}
 	}
 }

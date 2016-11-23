@@ -126,6 +126,15 @@ namespace NTumbleBit
 			return privInfo.ToAsn1Object().GetEncoded();
 		}
 
+		public byte[] Blind(byte[] data, ref Blind blindFactor)
+		{
+			return PubKey.Blind(data, ref blindFactor);
+		}
+
+		public byte[] Unblind(byte[] data, Blind blindFactor)
+		{
+			return PubKey.Unblind(data, blindFactor);
+		}
 
 		internal static AlgorithmIdentifier algID = new AlgorithmIdentifier(
 					new DerObjectIdentifier("1.2.840.113549.1.1.1"), DerNull.Instance);

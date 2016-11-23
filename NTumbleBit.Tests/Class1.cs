@@ -68,24 +68,27 @@ namespace NTumbleBit.Tests
 
 
 		[Fact]
-		public void CanBlindPuzzle()
+		public void CanBlind()
 		{
-			//new RsaKey();
-			//RsaKey key = TestKeys.Default;
-			//RsaKey key2 = TestKeys.Default2;
-			//byte[] solution = null;
-			//var puzzle = key.PubKey.GeneratePuzzle(ref solution);
 
-			//byte[] blindFactor = null;
-			//var puzzle2 = puzzle.Blind(key2, ref blindFactor);
-			//Assert.False(puzzle2.ToBytes().SequenceEqual(puzzle.ToBytes()));
+			RsaKey key = TestKeys.Default;
 
-			//byte[] solution2 = puzzle2.Solve(key);
+			byte[] msg = Utils.GenerateEncryptableData(key._Key);
 
-			//var sol = new Puzzle(solution2);
-			//sol.Unblind(key)
-			//var blindedSolution = key.SolvePuzzle(puzzle2);
+			Blind blind = null;
+			var blindedMsg = key.Blind(msg, ref blind);
+			var blindedMsg2 = key.Blind(msg, ref blind);
+			Assert.True(blindedMsg.SequenceEqual(blindedMsg2));
 
+			var sig = key.Sign(blindedMsg);
+			var sig2 = key.Sign(blindedMsg2);
+
+			var unblindedSig = key.Unblind(sig, blind);
+			var unblindedSig2 = key.Unblind(sig2, blind);
+			Assert.True(key.PubKey.Verify(msg, unblindedSig));
+
+			var unblindMsg = key.PubKey.RevertBlind(blindedMsg, blind);
+			Assert.True(msg.SequenceEqual(unblindMsg));
 		}
 	}
 }

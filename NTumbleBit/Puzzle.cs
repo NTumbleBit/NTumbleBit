@@ -20,22 +20,22 @@ namespace NTumbleBit
 			this.z = z.ToArray();
 		}
 
-		public Puzzle Blind(IRsaKey rsaKey, ref byte[] blindFactor)
+		public Puzzle Blind(IRsaKey rsaKey, ref Blind blind)
 		{
 			if(rsaKey == null)
 				throw new ArgumentNullException("rsaKey");
-			return Blind(((IRsaKeyPrivate)rsaKey).Key, true, ref blindFactor);
+			return new Puzzle(rsaKey.Blind(z, ref blind));
 		}
 
 		
 		
-		public Puzzle Unblind(IRsaKey rsaKey, byte[] blindFactor)
+		public Puzzle Unblind(IRsaKey rsaKey, Blind blind)
 		{
 			if(rsaKey == null)
 				throw new ArgumentNullException("rsaKey");
-			if(blindFactor == null)
-				throw new ArgumentNullException("blindFactor");
-			return Blind(((IRsaKeyPrivate)rsaKey).Key, false, ref blindFactor);
+			if(blind == null)
+				throw new ArgumentNullException("blind");
+			return new Puzzle(rsaKey.Unblind(z, blind));
 		}
 
 		public byte[] Solve(RsaKey key)
@@ -48,15 +48,6 @@ namespace NTumbleBit
 		public byte[] ToBytes(bool @unsafe = false)
 		{
 			return @unsafe ? z : z.ToArray();
-		}
-
-		private Puzzle Blind(RsaKeyParameters key, bool encryption, ref byte[] blindFactor)
-		{
-			blindFactor = blindFactor ?? Utils.GenerateEncryptableData(key);
-			var factor = Utils.FromBytes(blindFactor);
-			var engine = new RsaBlindingEngine();
-			engine.Init(encryption, new RsaBlindingParameters(key, factor));
-			return new Puzzle(engine.ProcessBlock(z, 0, z.Length));
 		}
 		
 	}

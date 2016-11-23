@@ -48,6 +48,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Blind.cs" />
     <Compile Include="IRsaKey.cs" />
     <Compile Include="NBitcoinSecureRandom.cs" />
     <Compile Include="Puzzle.cs" />
@@ -112,7 +113,6 @@
     <Compile Include="BouncyCastle\crypto\engines\AesEngine.cs" />
     <Compile Include="BouncyCastle\crypto\engines\AesFastEngine.cs" />
     <Compile Include="BouncyCastle\crypto\engines\ChaChaEngine.cs" />
-    <Compile Include="BouncyCastle\crypto\engines\RSABlindingEngine.cs" />
     <Compile Include="BouncyCastle\crypto\engines\RSACoreEngine.cs" />
     <Compile Include="BouncyCastle\crypto\engines\Salsa20Engine.cs" />
     <Compile Include="BouncyCastle\crypto\generators\RsaKeyPairGenerator.cs" />
@@ -137,7 +137,6 @@
     <Compile Include="BouncyCastle\crypto\parameters\ECPublicKeyParameters.cs" />
     <Compile Include="BouncyCastle\crypto\parameters\KeyParameter.cs" />
     <Compile Include="BouncyCastle\crypto\parameters\ParametersWithIV.cs" />
-    <Compile Include="BouncyCastle\crypto\parameters\RSABlindingParameters.cs" />
     <Compile Include="BouncyCastle\crypto\parameters\RsaKeyGenerationParameters.cs" />
     <Compile Include="BouncyCastle\crypto\parameters\RsaKeyParameters.cs" />
     <Compile Include="BouncyCastle\crypto\parameters\RsaPrivateCrtKeyParameters.cs" />

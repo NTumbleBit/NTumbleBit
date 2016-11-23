@@ -9,6 +9,8 @@ namespace NTumbleBit
 {
 	public interface IRsaKey
 	{
+		byte[] Blind(byte[] data, ref Blind blind);
+		byte[] Unblind(byte[] data, Blind blind);
 	}
 	interface IRsaKeyPrivate
 	{
