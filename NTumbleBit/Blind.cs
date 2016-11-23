@@ -10,11 +10,11 @@ namespace NTumbleBit
 {
 	public class Blind
 	{
-		public Blind(IRsaKey key) : this(((IRsaKeyPrivate)key).Key)
+		public Blind(RsaPubKey key) : this(key._Key)
 		{
 
 		}
-		public Blind(IRsaKey key, byte[] blind) : this(((IRsaKeyPrivate)key).Key, new BigInteger(1, blind))
+		public Blind(RsaPubKey key, byte[] blind) : this(key._Key, new BigInteger(1, blind))
 		{
 
 		}
@@ -47,6 +47,11 @@ namespace NTumbleBit
 		public byte[] ToBytes()
 		{
 			return _R.ToByteArrayUnsigned();
+		}
+
+		public BlindFactor ToBlindFactor()
+		{
+			return new BlindFactor(_R);
 		}
 	}
 }

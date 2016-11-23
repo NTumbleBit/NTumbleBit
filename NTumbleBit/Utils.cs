@@ -1,4 +1,5 @@
 ﻿using NBitcoin;
+using NTumbleBit.BouncyCastle.Crypto.Engines;
 using NTumbleBit.BouncyCastle.Crypto.Parameters;
 using NTumbleBit.BouncyCastle.Math;
 using System;
@@ -17,8 +18,33 @@ namespace NTumbleBit
 				throw new ArgumentNullException("num");
 			return num.ToByteArrayUnsigned();
 		}
+		public static byte[] ChachaEncrypt(byte[] data, ref byte[] key)
+		{
+			byte[] iv = null;
+			return ChachaEncrypt(data, ref key, ref iv);
+		}
+		public static byte[] ChachaEncrypt(byte[] data, ref byte[] key, ref byte[] iv)
+		{
+			ChaChaEngine engine = new ChaChaEngine();
+			key = key ?? RandomUtils.GetBytes(128 / 8);
+			iv = iv ?? RandomUtils.GetBytes(64 / 8);
+			engine.Init(true, new ParametersWithIV(new KeyParameter(key), iv));
+			byte[] result = new byte[iv.Length + data.Length];
+			Array.Copy(iv, result, iv.Length);
+			engine.ProcessBytes(data, 0, data.Length, result, iv.Length);
+			return result;
+		}
+		public static byte[] ChachaDecrypt(byte[] encrypted, byte[] key)
+		{
+			ChaChaEngine engine = new ChaChaEngine();
+			var iv = new byte[(64 / 8)];
+			Array.Copy(encrypted, iv, iv.Length);
+			engine.Init(false, new ParametersWithIV(new KeyParameter(key), iv));
+			byte[] result = new byte[encrypted.Length - iv.Length];
+			engine.ProcessBytes(encrypted, iv.Length, encrypted.Length - iv.Length, result, 0);
+			return result;
+		}
 
-		
 
 		public static BigInteger FromBytes(byte[] data)
 		{

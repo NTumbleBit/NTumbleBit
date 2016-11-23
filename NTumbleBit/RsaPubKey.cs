@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit
 {
-	public class RsaPubKey : IRsaKeyPrivate, IRsaKey
+	public class RsaPubKey
 	{
 		public RsaPubKey()
 		{
@@ -34,15 +34,6 @@ namespace NTumbleBit
 			catch(Exception)
 			{
 				throw new FormatException("Invalid RSA Key");
-			}
-		}
-
-
-		RsaKeyParameters IRsaKeyPrivate.Key
-		{
-			get
-			{
-				return _Key;
 			}
 		}
 

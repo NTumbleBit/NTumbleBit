@@ -49,9 +49,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Blind.cs" />
-    <Compile Include="IRsaKey.cs" />
+    <Compile Include="BlindFactor.cs" />
+    <Compile Include="ChachaKey.cs" />
     <Compile Include="NBitcoinSecureRandom.cs" />
     <Compile Include="Puzzle.cs" />
+    <Compile Include="PuzzleCommitment.cs" />
+    <Compile Include="PuzzleSet.cs" />
+    <Compile Include="PuzzleSolution.cs" />
     <Compile Include="PuzzleSolver.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="BouncyCastle\asn1\Asn1Encodable.cs" />
@@ -157,7 +161,9 @@
     <Compile Include="BouncyCastle\util\io\StreamOverflowException.cs" />
     <Compile Include="BouncyCastle\util\io\Streams.cs" />
     <Compile Include="BouncyCastle\util\Platform.cs" />
-    <Compile Include="PuzzleSolverClient.cs" />
+    <Compile Include="PuzzleSolverClientStateMachine.cs" />
+    <Compile Include="PuzzleSolverServer.cs" />
+    <Compile Include="PuzzleSolverServerStateMachine.cs" />
     <Compile Include="RsaKey.cs" />
     <Compile Include="RsaPubKey.cs" />
     <Compile Include="Utils.cs" />

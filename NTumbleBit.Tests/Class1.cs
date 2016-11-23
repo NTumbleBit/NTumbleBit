@@ -1,5 +1,6 @@
 ﻿using NBitcoin;
 using NBitcoin.DataEncoders;
+using NTumbleBit.BouncyCastle.Math;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -32,7 +33,19 @@ namespace NTumbleBit.Tests
 			byte[] solution = null;
 			var puzzle = key.PubKey.GeneratePuzzle(ref solution);
 			byte[] solution2 = puzzle.Solve(key);
+			Assert.True(puzzle.Verify(key.PubKey, solution));
 			Assert.True(solution.SequenceEqual(solution2));
+			solution[0] += 1;
+			Assert.False(puzzle.Verify(key.PubKey, solution));
+
+
+			puzzle = key.PubKey.GeneratePuzzle(ref solution);
+			Blind blind = null;
+			var blindedPuzzle = puzzle.Blind(key.PubKey, ref blind);
+			var blindedSolution = key.SolvePuzzle(blindedPuzzle);
+			var unblinded = key.PubKey.Unblind(blindedSolution, blind);
+
+			Assert.True(new BigInteger(1, unblinded).Equals(new BigInteger(1, solution)));
 		}
 
 
@@ -66,25 +79,56 @@ namespace NTumbleBit.Tests
 			Assert.True(key.PubKey.Verify(data, sig));
 		}
 
+		[Fact]
+		public void TestChacha()
+		{
+			byte[] msg = Encoding.UTF8.GetBytes("123123123123123123123123123123");
+			var key1 = Encoding.ASCII.GetBytes("xxxxxxxxxxxxxxxx");
+			var iv1 = Encoding.ASCII.GetBytes("aaaaaaaa");
+			var encrypted = Utils.ChachaEncrypt(msg, ref key1, ref iv1);
+			Assert.False(encrypted.SequenceEqual(msg));
+			var decrypted = Utils.ChachaDecrypt(encrypted, key1);
+			Assert.True(decrypted.SequenceEqual(msg));
+		}
+
+		[Fact]
+		public void TestPuzzleSolver()
+		{
+			RsaKey key = TestKeys.Default;
+			byte[] expectedSolution = null;
+			Puzzle puzzle = key.PubKey.GeneratePuzzle(ref expectedSolution);
+			
+			PuzzleSolverClientStateMachine client = new PuzzleSolverClientStateMachine(key.PubKey, puzzle);
+			PuzzleSolverServerStateMachine server = new PuzzleSolverServerStateMachine(key);
+
+			Puzzle[] puzzles = client.GeneratePuzzles();
+			PuzzleCommitment[] commitments = server.SolvePuzzles(puzzles);
+			PuzzleSolution[] fakeSolutions = client.GetFakePuzzleSolutions(commitments);
+			ChachaKey[] fakePuzzleKeys = server.GetFakePuzzleKeys(fakeSolutions);
+			BlindFactor[] blindFactors = client.GetBlindFactors(fakePuzzleKeys);
+			ChachaKey[] realPuzzleKeys = server.GetRealPuzzleKeys(blindFactors);
+			var solution = client.GetSolution(realPuzzleKeys);
+
+			Assert.True(solution.SequenceEqual(expectedSolution));
+		}
 
 		[Fact]
 		public void CanBlind()
 		{
-
 			RsaKey key = TestKeys.Default;
 
 			byte[] msg = Utils.GenerateEncryptableData(key._Key);
 
 			Blind blind = null;
-			var blindedMsg = key.Blind(msg, ref blind);
-			var blindedMsg2 = key.Blind(msg, ref blind);
+			var blindedMsg = key.PubKey.Blind(msg, ref blind);
+			var blindedMsg2 = key.PubKey.Blind(msg, ref blind);
 			Assert.True(blindedMsg.SequenceEqual(blindedMsg2));
 
 			var sig = key.Sign(blindedMsg);
 			var sig2 = key.Sign(blindedMsg2);
 
-			var unblindedSig = key.Unblind(sig, blind);
-			var unblindedSig2 = key.Unblind(sig2, blind);
+			var unblindedSig = key.PubKey.Unblind(sig, blind);
+			var unblindedSig2 = key.PubKey.Unblind(sig2, blind);
 			Assert.True(key.PubKey.Verify(msg, unblindedSig));
 
 			var unblindMsg = key.PubKey.RevertBlind(blindedMsg, blind);

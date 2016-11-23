@@ -1,6 +1,7 @@
 ﻿using NTumbleBit.BouncyCastle.Asn1;
 using NTumbleBit.BouncyCastle.Asn1.Pkcs;
 using NTumbleBit.BouncyCastle.Asn1.X509;
+using NTumbleBit.BouncyCastle.Crypto;
 using NTumbleBit.BouncyCastle.Crypto.Engines;
 using NTumbleBit.BouncyCastle.Crypto.Generators;
 using NTumbleBit.BouncyCastle.Crypto.Parameters;
@@ -14,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit
 {
-	public class RsaKey : IRsaKeyPrivate, IRsaKey
+	public class RsaKey
 	{
 		static BigInteger RSA_F4 = BigInteger.ValueOf(65537);
 		internal readonly RsaPrivateCrtKeyParameters _Key;
@@ -69,13 +70,19 @@ namespace NTumbleBit
 		{
 			if(encrypted == null)
 				throw new ArgumentNullException("encrypted");
-			if(encrypted.Length != RsaKey.KeySize / 8)
-				throw new ArgumentException("The data to decrypted should be equal to size " + RsaKey.KeySize + " bits");
-			RsaCoreEngine engine = new RsaCoreEngine();
-			engine.Init(false, this._Key);
-			var databn = engine.ConvertInput(encrypted, 0, encrypted.Length);
-			var resultbn = engine.ProcessBlock(databn);
-			return engine.ConvertOutput(resultbn);
+			try
+			{
+
+				RsaCoreEngine engine = new RsaCoreEngine();
+				engine.Init(false, this._Key);
+				var databn = engine.ConvertInput(encrypted, 0, encrypted.Length);
+				var resultbn = engine.ProcessBlock(databn);
+				return engine.ConvertOutput(resultbn);
+			}
+			catch(DataLengthException)
+			{
+				throw new ArgumentException("encrypted data size incorrect");
+			}
 		}
 
 		internal static DerSequence GetRSASequence(byte[] bytes)
@@ -102,14 +109,6 @@ namespace NTumbleBit
 			}
 		}
 
-		RsaKeyParameters IRsaKeyPrivate.Key
-		{
-			get
-			{
-				return _Key;
-			}
-		}
-
 		public byte[] ToBytes()
 		{
 			RsaPrivateKeyStructure keyStruct = new RsaPrivateKeyStructure(
@@ -124,16 +123,6 @@ namespace NTumbleBit
 
 			var privInfo = new PrivateKeyInfo(algID, keyStruct.ToAsn1Object());
 			return privInfo.ToAsn1Object().GetEncoded();
-		}
-
-		public byte[] Blind(byte[] data, ref Blind blindFactor)
-		{
-			return PubKey.Blind(data, ref blindFactor);
-		}
-
-		public byte[] Unblind(byte[] data, Blind blindFactor)
-		{
-			return PubKey.Unblind(data, blindFactor);
 		}
 
 		internal static AlgorithmIdentifier algID = new AlgorithmIdentifier(
