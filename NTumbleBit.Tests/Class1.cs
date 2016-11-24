@@ -26,7 +26,6 @@ namespace NTumbleBit.Tests
 			Assert.True(key.PubKey.ToBytes().SequenceEqual(key2.PubKey.ToBytes()));
 			Assert.True(new RsaPubKey(key.PubKey.ToBytes()).ToBytes().SequenceEqual(key2.PubKey.ToBytes()));
 			Assert.Throws<FormatException>(() => new RsaKey(new byte[1]));
-			Assert.Throws<FormatException>(() => new RsaKey(new byte[1]));
 		}
 
 		[Fact]
