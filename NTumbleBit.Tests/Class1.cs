@@ -33,13 +33,13 @@ namespace NTumbleBit.Tests
 			PuzzleSolution solution = null;
 			var puzzle = key.PubKey.GeneratePuzzle(ref solution);
 			PuzzleSolution solution2 = puzzle.Solve(key);
-			Assert.True(puzzle.Verify(key.PubKey, solution));
+			Assert.True(puzzle.Verify(solution));
 			Assert.True(solution == solution2);
 
 
 			puzzle = key.PubKey.GeneratePuzzle(ref solution);
 			BlindFactor blind = null;
-			Puzzle blindedPuzzle = puzzle.Blind(key.PubKey, ref blind);
+			Puzzle blindedPuzzle = puzzle.Blind(ref blind);
 			PuzzleSolution blindedSolution = key.SolvePuzzle(blindedPuzzle);
 			var unblinded = blindedSolution.Unblind(key.PubKey, blind);
 
@@ -96,10 +96,10 @@ namespace NTumbleBit.Tests
 			PuzzleSolution expectedSolution = null;
 			Puzzle puzzle = key.PubKey.GeneratePuzzle(ref expectedSolution);
 			
-			PuzzleSolverClientSession client = new PuzzleSolverClientSession(key.PubKey, puzzle);
+			PuzzleSolverClientSession client = new PuzzleSolverClientSession(puzzle);
 			PuzzleSolverServerSession server = new PuzzleSolverServerSession(key);
 
-			Puzzle[] puzzles = client.GeneratePuzzles();
+			PuzzleValue[] puzzles = client.GeneratePuzzles();
 			PuzzleCommitment[] commitments = server.SolvePuzzles(puzzles);
 			FakePuzzlesRevelation revelation = client.GetFakePuzzlesRevelation(commitments);
 			ChachaKey[] fakePuzzleKeys = server.GetFakePuzzleKeys(revelation);
@@ -119,14 +119,14 @@ namespace NTumbleBit.Tests
 			BlindFactor blind = null;
 
 			Puzzle puzzle = key.PubKey.GeneratePuzzle(ref solution);
-			Puzzle blindedPuzzle = puzzle.Blind(key.PubKey, ref blind);
+			Puzzle blindedPuzzle = puzzle.Blind(ref blind);
 			Assert.True(puzzle != blindedPuzzle);
-			Assert.True(puzzle == blindedPuzzle.Unblind(key.PubKey, blind));
+			Assert.True(puzzle == blindedPuzzle.Unblind(blind));
 
 
 			PuzzleSolution blindedSolution = blindedPuzzle.Solve(key);
-			Assert.False(puzzle.Verify(key.PubKey, blindedSolution));
-			Assert.True(puzzle.Verify(key.PubKey, blindedSolution.Unblind(key.PubKey, blind)));
+			Assert.False(puzzle.Verify(blindedSolution));
+			Assert.True(puzzle.Verify(blindedSolution.Unblind(key.PubKey, blind)));
 		}
 	}
 }

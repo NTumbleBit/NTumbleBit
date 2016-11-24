@@ -70,7 +70,7 @@ namespace NTumbleBit
 		public Puzzle GeneratePuzzle(ref PuzzleSolution solution)
 		{
 			solution = solution ?? new PuzzleSolution(Utils.GenerateEncryptableData(_Key));
-			return new Puzzle(this.Encrypt(solution._Value));
+			return new Puzzle(this, new PuzzleValue(this.Encrypt(solution._Value)));
 		}
 
 		internal BigInteger Encrypt(BigInteger data)
@@ -121,6 +121,33 @@ namespace NTumbleBit
 		internal BigInteger Blind(BigInteger multiplier, BigInteger msg)
 		{
 			return msg.Multiply(multiplier).Mod(_Key.Modulus);
+		}
+
+
+		public override bool Equals(object obj)
+		{
+			RsaPubKey item = obj as RsaPubKey;
+			if(item == null)
+				return false;
+			return _Key.Equals(item._Key);
+		}
+		public static bool operator ==(RsaPubKey a, RsaPubKey b)
+		{
+			if(System.Object.ReferenceEquals(a, b))
+				return true;
+			if(((object)a == null) || ((object)b == null))
+				return false;
+			return a._Key == b._Key;
+		}
+
+		public static bool operator !=(RsaPubKey a, RsaPubKey b)
+		{
+			return !(a == b);
+		}
+
+		public override int GetHashCode()
+		{
+			return _Key.GetHashCode();
 		}
 	}
 }

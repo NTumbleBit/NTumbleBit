@@ -70,7 +70,7 @@ namespace NTumbleBit
 			}
 		}
 
-		public PuzzleCommitment[] SolvePuzzles(Puzzle[] puzzles)
+		public PuzzleCommitment[] SolvePuzzles(PuzzleValue[] puzzles)
 		{
 			if(puzzles == null)
 				throw new ArgumentNullException("puzzles");
@@ -86,7 +86,7 @@ namespace NTumbleBit
 				var encryptedSolution = Utils.ChachaEncrypt(solution.ToBytes(), ref key);
 				uint160 keyHash = new uint160(Hashes.RIPEMD160(key, key.Length));
 				commitments.Add(new PuzzleCommitment(keyHash, encryptedSolution));
-				solvedPuzzles.Add(new SolvedPuzzle(puzzle, new ChachaKey(key), solution));
+				solvedPuzzles.Add(new SolvedPuzzle(new Puzzle(ServerKey.PubKey, puzzle), new ChachaKey(key), solution));
 			}
 			_SolvedPuzzles = solvedPuzzles.ToArray();
 			_State = PuzzleSolverServerStates.WaitingFakePuzzleSolutions;
@@ -150,7 +150,7 @@ namespace NTumbleBit
 			for(int i = 0; i < RealPuzzleCount; i++)
 			{
 				var solvedPuzzle = _SolvedRealPuzzles[i];
-				var unblinded = solvedPuzzle.Puzzle.Unblind(ServerKey.PubKey, blindFactors[i]);
+				var unblinded = solvedPuzzle.Puzzle.Unblind(blindFactors[i]);
 				if(unblindedPuzzle == null)
 					unblindedPuzzle = unblinded;
 				else if(unblinded != unblindedPuzzle)

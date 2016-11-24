@@ -74,11 +74,11 @@ namespace NTumbleBit
 			get; set;
 		}
 
-		public IEnumerable<Puzzle> Puzzles
+		public IEnumerable<PuzzleValue> PuzzleValues
 		{
 			get
 			{
-				return PuzzleElements.Select(p => p.Puzzle);
+				return PuzzleElements.Select(p => p.Puzzle.PuzzleValue);
 			}
 		}
 	}

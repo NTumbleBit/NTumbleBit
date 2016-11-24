@@ -1,8 +1,4 @@
-﻿using NBitcoin.DataEncoders;
-using NTumbleBit.BouncyCastle.Crypto.Engines;
-using NTumbleBit.BouncyCastle.Crypto.Parameters;
-using NTumbleBit.BouncyCastle.Math;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,67 +8,69 @@ namespace NTumbleBit
 {
 	public class Puzzle
 	{
-		internal readonly BigInteger _Value;
-
-		public Puzzle(byte[] z)
+		public Puzzle(RsaPubKey rsaPubKey, PuzzleValue puzzleValue)
 		{
-			if(z == null)
-				throw new ArgumentNullException("z");
-			_Value = new BigInteger(1, z);
-		}
-		public Puzzle(BigInteger z)
-		{
-			if(z == null)
-				throw new ArgumentNullException("z");
-			_Value = z;
+			if(rsaPubKey == null)
+				throw new ArgumentNullException("rsaPubKey");
+			if(puzzleValue == null)
+				throw new ArgumentNullException("puzzleValue");
+			_RsaPubKey = rsaPubKey;
+			_PuzzleValue = puzzleValue;
 		}
 
-
-		public Puzzle Blind(RsaPubKey rsaKey, ref BlindFactor blind)
+		public Puzzle Blind(ref BlindFactor blind)
 		{
-			if(rsaKey == null)
-				throw new ArgumentNullException("rsaKey");
-			return new Puzzle(rsaKey.Blind(_Value, ref blind));
+			return new Puzzle(_RsaPubKey, new PuzzleValue(_RsaPubKey.Blind(PuzzleValue._Value, ref blind)));
 		}
 
-		
-		
-		public Puzzle Unblind(RsaPubKey rsaKey, BlindFactor blind)
+		public Puzzle Unblind(BlindFactor blind)
 		{
-			if(rsaKey == null)
-				throw new ArgumentNullException("rsaKey");
 			if(blind == null)
 				throw new ArgumentNullException("blind");
-			return new Puzzle(rsaKey.RevertBlind(_Value, blind));
+			return new Puzzle(_RsaPubKey, new PuzzleValue(RsaPubKey.RevertBlind(PuzzleValue._Value, blind)));
 		}
 
 		public PuzzleSolution Solve(RsaKey key)
 		{
 			if(key == null)
 				throw new ArgumentNullException("key");
-			return key.SolvePuzzle(this);
+			return PuzzleValue.Solve(key);
 		}
 
-		public bool Verify(RsaPubKey key, PuzzleSolution solution)
+		public bool Verify(PuzzleSolution solution)
 		{
-			if(key == null)
-				throw new ArgumentNullException("key");
 			if(solution == null)
 				throw new ArgumentNullException("solution");
-			return key.Encrypt(solution._Value).Equals(_Value);
+			return _RsaPubKey.Encrypt(solution._Value).Equals(PuzzleValue._Value);
 		}
 
-		public byte[] ToBytes()
+
+		private readonly RsaPubKey _RsaPubKey;
+		public RsaPubKey RsaPubKey
 		{
-			return _Value.ToByteArrayUnsigned();
+			get
+			{
+				return _RsaPubKey;
+			}
 		}
+
+
+		private readonly PuzzleValue _PuzzleValue;
+		public PuzzleValue PuzzleValue
+		{
+			get
+			{
+				return _PuzzleValue;
+			}
+		}
+
 
 		public override bool Equals(object obj)
 		{
 			Puzzle item = obj as Puzzle;
 			if(item == null)
 				return false;
-			return _Value.Equals(item._Value);
+			return PuzzleValue.Equals(item.PuzzleValue) && RsaPubKey.Equals(item.RsaPubKey);
 		}
 		public static bool operator ==(Puzzle a, Puzzle b)
 		{
@@ -80,7 +78,7 @@ namespace NTumbleBit
 				return true;
 			if(((object)a == null) || ((object)b == null))
 				return false;
-			return a._Value.Equals(b._Value);
+			return a.PuzzleValue == b.PuzzleValue && a.RsaPubKey == b.RsaPubKey;
 		}
 
 		public static bool operator !=(Puzzle a, Puzzle b)
@@ -90,12 +88,12 @@ namespace NTumbleBit
 
 		public override int GetHashCode()
 		{
-			return _Value.GetHashCode();
+			return PuzzleValue.GetHashCode() ^ RsaPubKey.GetHashCode();
 		}
 
 		public override string ToString()
 		{
-			return Encoders.Hex.EncodeData(ToBytes());
+			return PuzzleValue.ToString();
 		}
 	}
 }

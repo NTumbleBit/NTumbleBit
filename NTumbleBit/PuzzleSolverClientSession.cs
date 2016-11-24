@@ -28,23 +28,25 @@ namespace NTumbleBit
 
 	public class PuzzleSolverClientSession : PuzzleSolver
 	{
-		public PuzzleSolverClientSession(RsaPubKey serverKey, Puzzle puzzle) : base(15, 285)
+		public PuzzleSolverClientSession(RsaPubKey serverKey, PuzzleValue puzzle) : base(15, 285)
 		{
 			if(puzzle == null)
 				throw new ArgumentNullException("puzzle");
-			if(serverKey == null)
-				throw new ArgumentNullException("serverKey");
-			_ServerKey = serverKey;
+			_Puzzle = new Puzzle(serverKey, puzzle);
+		}
+
+		public PuzzleSolverClientSession(Puzzle puzzle) : base(15, 285)
+		{
+			if(puzzle == null)
+				throw new ArgumentNullException("puzzle");
 			_Puzzle = puzzle;
 		}
 
-
-		private readonly RsaPubKey _ServerKey;
 		public RsaPubKey ServerKey
 		{
 			get
 			{
-				return _ServerKey;
+				return _Puzzle.RsaPubKey;
 			}
 		}
 
@@ -68,14 +70,14 @@ namespace NTumbleBit
 			}
 		}
 
-		public Puzzle[] GeneratePuzzles()
+		public PuzzleValue[] GeneratePuzzles()
 		{
 			AssertState(PuzzleSolverClientStates.Initialized);
 			List<PuzzleSetElement> puzzles = new List<PuzzleSetElement>();
 			for(int i = 0; i < RealPuzzleCount; i++)
 			{
 				BlindFactor blind = null;
-				Puzzle puzzle = Puzzle.Blind(ServerKey, ref blind);
+				Puzzle puzzle = Puzzle.Blind(ref blind);
 				puzzles.Add(new RealPuzzle(puzzle, blind));
 			}
 
@@ -90,7 +92,7 @@ namespace NTumbleBit
 			NBitcoin.Utils.Shuffle(puzzlesArray, RandomUtils.GetInt32());
 			PuzzleSet = new PuzzleSet(puzzlesArray);
 			_State = PuzzleSolverClientStates.WaitingCommitments;
-			return PuzzleSet.Puzzles.ToArray();
+			return PuzzleSet.PuzzleValues.ToArray();
 		}
 
 
@@ -177,7 +179,7 @@ namespace NTumbleBit
 					if(hash == commitment.KeyHash)
 					{
 						var decryptedSolution = new PuzzleSolution(Utils.ChachaDecrypt(commitment.EncryptedSolution, key));
-						if(puzzle.Puzzle.Verify(ServerKey, decryptedSolution))
+						if(puzzle.Puzzle.Verify(decryptedSolution))
 						{
 							solution = decryptedSolution;
 							solvedPuzzle = puzzle;

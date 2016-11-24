@@ -62,6 +62,13 @@ namespace NTumbleBit
 		{
 			if(puzzle == null)
 				throw new ArgumentNullException("puzzle");
+			return SolvePuzzle(puzzle.PuzzleValue);
+		}
+
+		public PuzzleSolution SolvePuzzle(PuzzleValue puzzle)
+		{
+			if(puzzle == null)
+				throw new ArgumentNullException("puzzle");
 
 			return new PuzzleSolution(Decrypt(puzzle._Value));
 		}

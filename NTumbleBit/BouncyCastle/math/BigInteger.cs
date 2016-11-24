@@ -9,7 +9,7 @@ using NTumbleBit.BouncyCastle.Utilities;
 
 namespace NTumbleBit.BouncyCastle.Math
 {
-	public class BigInteger
+	internal class BigInteger
 	{
 		// The first few odd primes
 		/*
