@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit.PuzzleSolver
 {
-	public class FakePuzzlesRevelation
+	public class ClientRevelation
 	{
-		public FakePuzzlesRevelation(int[] indexes, PuzzleSolution[] solutions)
+		public ClientRevelation(int[] indexes, PuzzleSolution[] solutions)
 		{
 			Indexes = indexes;
 			Solutions = solutions;

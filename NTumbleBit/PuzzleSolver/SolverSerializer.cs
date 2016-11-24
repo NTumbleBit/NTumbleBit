@@ -10,9 +10,9 @@ using NBitcoin;
 
 namespace NTumbleBit.PuzzleSolver
 {
-	public class PuzzleSolverSerializer
+	public class SolverSerializer
 	{
-		public PuzzleSolverSerializer(PuzzleSolverParameters parameters, Stream inner)
+		public SolverSerializer(SolverParameters parameters, Stream inner)
 		{
 			if(parameters == null)
 				throw new ArgumentNullException("parameters");
@@ -31,8 +31,8 @@ namespace NTumbleBit.PuzzleSolver
 		}
 
 
-		private readonly PuzzleSolverParameters _Parameters;
-		public PuzzleSolverParameters Parameters
+		private readonly SolverParameters _Parameters;
+		public SolverParameters Parameters
 		{
 			get
 			{
@@ -79,7 +79,7 @@ namespace NTumbleBit.PuzzleSolver
 			return result;
 		}
 
-		public void WritePuzzleCommitments(PuzzleCommitment[] commitments)
+		public void WritePuzzleCommitments(ServerCommitment[] commitments)
 		{
 			if(commitments.Length != TotalCount)
 				throw new ArgumentException("Commitment count invalid");
@@ -90,14 +90,14 @@ namespace NTumbleBit.PuzzleSolver
 			}
 		}
 
-		public PuzzleCommitment[] ReadPuzzleCommitments()
+		public ServerCommitment[] ReadPuzzleCommitments()
 		{
-			var commitments = new PuzzleCommitment[TotalCount];
+			var commitments = new ServerCommitment[TotalCount];
 			for(int i = 0; i < TotalCount; i++)
 			{
 				var encrypted = ReadBytes();
 				var keyHash = new uint160(ReadBytes(20), littleEndian);
-				commitments[i] = new PuzzleCommitment(keyHash, encrypted);
+				commitments[i] = new ServerCommitment(keyHash, encrypted);
 			}
 			return commitments;
 		}
@@ -170,7 +170,7 @@ namespace NTumbleBit.PuzzleSolver
 			bytes = padded;
 		}
 
-		public void WritePuzzleRevelation(FakePuzzlesRevelation revelation)
+		public void WritePuzzleRevelation(ClientRevelation revelation)
 		{
 			if(revelation.Indexes.Length != Parameters.FakePuzzleCount || revelation.Solutions.Length != Parameters.FakePuzzleCount)
 				throw new ArgumentException("Revelation invalid");
@@ -185,7 +185,7 @@ namespace NTumbleBit.PuzzleSolver
 			}
 		}
 
-		public FakePuzzlesRevelation ReadPuzzleRevelation()
+		public ClientRevelation ReadPuzzleRevelation()
 		{
 			int[] indexes = new int[Parameters.FakePuzzleCount];
 			for(int i = 0; i < Parameters.FakePuzzleCount; i++)
@@ -197,10 +197,10 @@ namespace NTumbleBit.PuzzleSolver
 			{
 				solutions[i] = new PuzzleSolution(ReadBigInteger(GetKeySize()));
 			}
-			return new FakePuzzlesRevelation(indexes, solutions);
+			return new ClientRevelation(indexes, solutions);
 		}
 
-		public void WritePuzzleSolutionKeys(PuzzleSolutionKey[] keys, bool real)
+		public void WritePuzzleSolutionKeys(SolutionKey[] keys, bool real)
 		{
 			if(keys.Length != PuzzleSolutionKeysLength(real))
 				throw new ArgumentException("keys count incorrect");
@@ -210,12 +210,12 @@ namespace NTumbleBit.PuzzleSolver
 			}
 		}
 
-		public PuzzleSolutionKey[] ReadPuzzleSolutionKeys(bool real)
+		public SolutionKey[] ReadPuzzleSolutionKeys(bool real)
 		{
-			PuzzleSolutionKey[] keys = new PuzzleSolutionKey[PuzzleSolutionKeysLength(real)];
+			SolutionKey[] keys = new SolutionKey[PuzzleSolutionKeysLength(real)];
 			for(int i = 0; i < keys.Length; i++)
 			{
-				keys[i] = new PuzzleSolutionKey(ReadBytes(Utils.ChachaKeySize));
+				keys[i] = new SolutionKey(ReadBytes(Utils.ChachaKeySize));
 			}
 			return keys;
 		}

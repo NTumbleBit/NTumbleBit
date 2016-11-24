@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit.PuzzleSolver
 {
-	public class PuzzleSolutionKey
+	public class SolutionKey
 	{
-		public PuzzleSolutionKey(byte[] key)
+		public SolutionKey(byte[] key)
 		{
 			if(key == null)
 				throw new ArgumentNullException("key");

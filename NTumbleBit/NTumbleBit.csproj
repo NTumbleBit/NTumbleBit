@@ -50,16 +50,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BlindFactor.cs" />
-    <Compile Include="PuzzleSolver\PuzzleSolutionKey.cs" />
-    <Compile Include="PuzzleSolver\FakePuzzlesRevelation.cs" />
+    <Compile Include="PuzzleSolver\SolutionKey.cs" />
+    <Compile Include="PuzzleSolver\ClientRevelation.cs" />
     <Compile Include="NBitcoinSecureRandom.cs" />
     <Compile Include="Puzzle.cs" />
-    <Compile Include="PuzzleSolver\PuzzleSolverParameters.cs" />
+    <Compile Include="PuzzleSolver\SolverParameters.cs" />
     <Compile Include="PuzzleValue.cs" />
-    <Compile Include="PuzzleSolver\PuzzleCommitment.cs" />
+    <Compile Include="PuzzleSolver\ServerCommitment.cs" />
     <Compile Include="PuzzleSolver\PuzzleSet.cs" />
     <Compile Include="PuzzleSolution.cs" />
-    <Compile Include="PuzzleSolver\PuzzleSolver.cs" />
+    <Compile Include="PuzzleSolver\Solver.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="BouncyCastle\asn1\Asn1Encodable.cs" />
     <Compile Include="BouncyCastle\asn1\Asn1EncodableVector.cs" />
@@ -164,12 +164,11 @@
     <Compile Include="BouncyCastle\util\io\StreamOverflowException.cs" />
     <Compile Include="BouncyCastle\util\io\Streams.cs" />
     <Compile Include="BouncyCastle\util\Platform.cs" />
-    <Compile Include="PuzzleSolver\PuzzleSolverClientSession.cs" />
-    <Compile Include="PuzzleSolver\PuzzleSolverServer.cs" />
-    <Compile Include="PuzzleSolver\PuzzleSolverServerStateSession.cs" />
+    <Compile Include="PuzzleSolver\SolverClientSession.cs" />
+    <Compile Include="PuzzleSolver\SolverServerSession.cs" />
     <Compile Include="RsaKey.cs" />
     <Compile Include="RsaPubKey.cs" />
-    <Compile Include="PuzzleSolver\PuzzleSolverSerializer.cs" />
+    <Compile Include="PuzzleSolver\SolverSerializer.cs" />
     <Compile Include="Utils.cs" />
   </ItemGroup>
   <ItemGroup />

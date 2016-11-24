@@ -7,16 +7,16 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit.PuzzleSolver
 {
-	public class PuzzleSolverParameters
+	public class SolverParameters
 	{
-		public PuzzleSolverParameters()
+		public SolverParameters()
 		{
 
 		}
 
-		public static PuzzleSolverParameters CreateDefault(RsaPubKey serverKey)
+		public static SolverParameters CreateDefault(RsaPubKey serverKey)
 		{
-			return new PuzzleSolverParameters()
+			return new SolverParameters()
 			{
 				ServerKey = serverKey,
 				FakePuzzleCount = 285,
@@ -37,11 +37,11 @@ namespace NTumbleBit.PuzzleSolver
 			get; set;
 		}
 
-		public PuzzleSolverSerializer CreateSerializer(Stream stream)
+		public SolverSerializer CreateSerializer(Stream stream)
 		{
 			if(stream == null)
 				throw new ArgumentNullException("stream");
-			return new PuzzleSolverSerializer(this, stream);
+			return new SolverSerializer(this, stream);
 		}
 	}
 }

@@ -9,18 +9,18 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit.PuzzleSolver
 {
-	public enum PuzzleSolverServerStates
+	public enum SolverServerStates
 	{
 		WaitingPuzzles,
 		WaitingFakePuzzleSolutions,
 		WaitingBlindFactor,
 		Completed
 	}
-	public class PuzzleSolverServerSession : PuzzleSolver
+	public class SolverServerSession : Solver
 	{
 		class SolvedPuzzle
 		{
-			public SolvedPuzzle(Puzzle puzzle, PuzzleSolutionKey key, PuzzleSolution solution)
+			public SolvedPuzzle(Puzzle puzzle, SolutionKey key, PuzzleSolution solution)
 			{
 				Puzzle = puzzle;
 				_Key = key;
@@ -31,8 +31,8 @@ namespace NTumbleBit.PuzzleSolver
 			{
 				get; set;
 			}
-			PuzzleSolutionKey _Key;
-			public PuzzleSolutionKey Reveal()
+			SolutionKey _Key;
+			public SolutionKey Reveal()
 			{
 				var key = _Key;
 				_Key = null;
@@ -43,15 +43,15 @@ namespace NTumbleBit.PuzzleSolver
 				get; set;
 			}
 		}
-		public PuzzleSolverServerSession(RsaKey serverKey) : this(serverKey, null)
+		public SolverServerSession(RsaKey serverKey) : this(serverKey, null)
 		{
 			if(serverKey == null)
 				throw new ArgumentNullException("serverKey");
 			_ServerKey = serverKey;
 		}
 
-		public PuzzleSolverServerSession(RsaKey serverKey, PuzzleSolverParameters parameters) : 
-			base(parameters ?? PuzzleSolverParameters.CreateDefault(serverKey.PubKey))
+		public SolverServerSession(RsaKey serverKey, SolverParameters parameters) : 
+			base(parameters ?? SolverParameters.CreateDefault(serverKey.PubKey))
 		{
 			if(serverKey == null)
 				throw new ArgumentNullException("serverKey");
@@ -62,8 +62,8 @@ namespace NTumbleBit.PuzzleSolver
 
 
 		private readonly RsaKey _ServerKey;
-		private PuzzleSolverServerStates _State = PuzzleSolverServerStates.WaitingPuzzles;
-		public PuzzleSolverServerStates State
+		private SolverServerStates _State = SolverServerStates.WaitingPuzzles;
+		public SolverServerStates State
 		{
 			get
 			{
@@ -80,14 +80,14 @@ namespace NTumbleBit.PuzzleSolver
 			}
 		}
 
-		public PuzzleCommitment[] SolvePuzzles(PuzzleValue[] puzzles)
+		public ServerCommitment[] SolvePuzzles(PuzzleValue[] puzzles)
 		{
 			if(puzzles == null)
 				throw new ArgumentNullException("puzzles");
 			if(puzzles.Length != TotalPuzzleCount)
 				throw new ArgumentException("Expecting " + TotalPuzzleCount + " puzzles");
-			AssertState(PuzzleSolverServerStates.WaitingPuzzles);
-			List<PuzzleCommitment> commitments = new List<PuzzleCommitment>();
+			AssertState(SolverServerStates.WaitingPuzzles);
+			List<ServerCommitment> commitments = new List<ServerCommitment>();
 			List<SolvedPuzzle> solvedPuzzles = new List<SolvedPuzzle>();
 			foreach(var puzzle in puzzles)
 			{
@@ -95,11 +95,11 @@ namespace NTumbleBit.PuzzleSolver
 				byte[] key = null;
 				var encryptedSolution = Utils.ChachaEncrypt(solution.ToBytes(), ref key);
 				uint160 keyHash = new uint160(Hashes.RIPEMD160(key, key.Length));
-				commitments.Add(new PuzzleCommitment(keyHash, encryptedSolution));
-				solvedPuzzles.Add(new SolvedPuzzle(new Puzzle(ServerKey.PubKey, puzzle), new PuzzleSolutionKey(key), solution));
+				commitments.Add(new ServerCommitment(keyHash, encryptedSolution));
+				solvedPuzzles.Add(new SolvedPuzzle(new Puzzle(ServerKey.PubKey, puzzle), new SolutionKey(key), solution));
 			}
 			_SolvedPuzzles = solvedPuzzles.ToArray();
-			_State = PuzzleSolverServerStates.WaitingFakePuzzleSolutions;
+			_State = SolverServerStates.WaitingFakePuzzleSolutions;
 			return commitments.ToArray();
 		}
 
@@ -109,13 +109,13 @@ namespace NTumbleBit.PuzzleSolver
 		private SolvedPuzzle[] _SolvedFakePuzzles;
 		private SolvedPuzzle[] _SolvedRealPuzzles;
 
-		public PuzzleSolutionKey[] GetFakePuzzleKeys(FakePuzzlesRevelation revelation)
+		public SolutionKey[] GetFakePuzzleKeys(ClientRevelation revelation)
 		{
 			if(revelation == null)
 				throw new ArgumentNullException("puzzleSolutions");
 			if(revelation.Indexes.Length != FakePuzzleCount || revelation.Solutions.Length != FakePuzzleCount)
 				throw new ArgumentException("Expecting " + FakePuzzleCount + " puzzle solutions");
-			AssertState(PuzzleSolverServerStates.WaitingFakePuzzleSolutions);
+			AssertState(SolverServerStates.WaitingFakePuzzleSolutions);
 
 
 
@@ -143,18 +143,18 @@ namespace NTumbleBit.PuzzleSolver
 
 			_SolvedFakePuzzles = fakePuzzles.ToArray();
 			_SolvedRealPuzzles = realPuzzles.ToArray();
-			_State = PuzzleSolverServerStates.WaitingBlindFactor;
+			_State = SolverServerStates.WaitingBlindFactor;
 			return _SolvedFakePuzzles.Select(f => f.Reveal()).ToArray();
 		}
 
-		public PuzzleSolutionKey[] GetRealPuzzleKeys(BlindFactor[] blindFactors)
+		public SolutionKey[] GetRealPuzzleKeys(BlindFactor[] blindFactors)
 		{
 			if(blindFactors == null)
 				throw new ArgumentNullException("blindFactors");
 			if(blindFactors.Length != RealPuzzleCount)
 				throw new ArgumentException("Expecting " + RealPuzzleCount + " blind factors");
-			AssertState(PuzzleSolverServerStates.WaitingBlindFactor);
-			List<PuzzleSolutionKey> keys = new List<PuzzleSolutionKey>();
+			AssertState(SolverServerStates.WaitingBlindFactor);
+			List<SolutionKey> keys = new List<SolutionKey>();
 			Puzzle unblindedPuzzle = null;
 			int y = 0;
 			for(int i = 0; i < RealPuzzleCount; i++)
@@ -167,12 +167,12 @@ namespace NTumbleBit.PuzzleSolver
 					throw new PuzzleException("Invalid blind factor");
 				y++;
 			}
-			_State = PuzzleSolverServerStates.Completed;
+			_State = SolverServerStates.Completed;
 			return _SolvedRealPuzzles.Select(s => s.Reveal()).ToArray();
 		}
 
 
-		private void AssertState(PuzzleSolverServerStates state)
+		private void AssertState(SolverServerStates state)
 		{
 			if(state != _State)
 				throw new InvalidOperationException("Invalid state, actual " + _State + " while expected is " + state);

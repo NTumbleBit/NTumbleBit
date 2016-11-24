@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit.PuzzleSolver
 {
-    public class PuzzleSolver
+    public class Solver
     {
-		public PuzzleSolver(PuzzleSolverParameters parameters)
+		public Solver(SolverParameters parameters)
 		{
 			if(parameters == null)
 				throw new ArgumentNullException("parameters");
@@ -18,8 +18,8 @@ namespace NTumbleBit.PuzzleSolver
 		}
 
 
-		private readonly PuzzleSolverParameters _Parameters;
-		public PuzzleSolverParameters Parameters
+		private readonly SolverParameters _Parameters;
+		public SolverParameters Parameters
 		{
 			get
 			{

@@ -8,9 +8,9 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit.PuzzleSolver
 {
-	public class PuzzleCommitment
+	public class ServerCommitment
 	{
-		public PuzzleCommitment(uint160 keyHash, byte[] encryptedSolution)
+		public ServerCommitment(uint160 keyHash, byte[] encryptedSolution)
 		{
 			this.EncryptedSolution = encryptedSolution;
 			this.KeyHash = keyHash;
