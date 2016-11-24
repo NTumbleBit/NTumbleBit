@@ -133,18 +133,18 @@ namespace NTumbleBit.Tests
 			ctx.RedeemKey = serverKey.PubKey;
 			ctx.RefundKey = clientKey.PubKey;
 			ctx.Expiration = EscrowDate;
-			var escrow = client.CreateOfferScript(ctx);
-			Coin coin = new Coin(new OutPoint(), new TxOut(Money.Zero, escrow.Hash)).ToScriptCoin(escrow);
-			Transaction cashoutTx = new Transaction();
-			cashoutTx.Inputs.Add(new TxIn(coin.Outpoint));
-			var sig = serverKey.Sign(Script.SignatureHash(coin, cashoutTx), SigHash.All);
+			var offer = client.CreateOfferScript(ctx);
+			Coin coin = new Coin(new OutPoint(), new TxOut(Money.Zero, offer.Hash)).ToScriptCoin(offer);
+			Transaction fulfillTx = new Transaction();
+			fulfillTx.Inputs.Add(new TxIn(coin.Outpoint));
+			var sig = serverKey.Sign(Script.SignatureHash(coin, fulfillTx), SigHash.All);
 			server.CheckBlindedFactors(blindFactors);
-			cashoutTx.Inputs[0].ScriptSig = server.GetFulfillScript(ctx, sig);
+			fulfillTx.Inputs[0].ScriptSig = server.GetFulfillScript(ctx, sig);
 			ScriptError error;
-			Assert.True(Script.VerifyScript(coin.ScriptPubKey, cashoutTx, 0, Money.Zero, out error));
+			Assert.True(Script.VerifyScript(coin.ScriptPubKey, fulfillTx, 0, Money.Zero, out error));
 			////////////////////////////////////////////////
 			
-			var solution = client.GetSolution(cashoutTx);
+			var solution = client.GetSolution(fulfillTx);
 
 			Assert.True(solution == expectedSolution);
 		}
