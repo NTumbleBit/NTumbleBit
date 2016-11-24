@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit
 {
-	public class ChachaKey
+	public class PuzzleSolutionKey
 	{
-		public ChachaKey(byte[] key)
+		public PuzzleSolutionKey(byte[] key)
 		{
 			if(key == null)
 				throw new ArgumentNullException("key");

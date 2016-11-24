@@ -129,7 +129,7 @@ namespace NTumbleBit
 			return new FakePuzzlesRevelation(indexes.ToArray(), solutions.ToArray());
 		}
 
-		public BlindFactor[] GetBlindFactors(ChachaKey[] keys)
+		public BlindFactor[] GetBlindFactors(PuzzleSolutionKey[] keys)
 		{
 			if(keys == null)
 				throw new ArgumentNullException("keys");
@@ -165,7 +165,7 @@ namespace NTumbleBit
 				.ToArray();
 		}
 
-		public PuzzleSolution GetSolution(ChachaKey[] keys)
+		public PuzzleSolution GetSolution(PuzzleSolutionKey[] keys)
 		{
 			if(keys == null)
 				throw new ArgumentNullException("keys");

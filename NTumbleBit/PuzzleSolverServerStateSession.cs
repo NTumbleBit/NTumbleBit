@@ -20,7 +20,7 @@ namespace NTumbleBit
 	{
 		class SolvedPuzzle
 		{
-			public SolvedPuzzle(Puzzle puzzle, ChachaKey key, PuzzleSolution solution)
+			public SolvedPuzzle(Puzzle puzzle, PuzzleSolutionKey key, PuzzleSolution solution)
 			{
 				Puzzle = puzzle;
 				_Key = key;
@@ -31,8 +31,8 @@ namespace NTumbleBit
 			{
 				get; set;
 			}
-			ChachaKey _Key;
-			public ChachaKey Reveal()
+			PuzzleSolutionKey _Key;
+			public PuzzleSolutionKey Reveal()
 			{
 				var key = _Key;
 				_Key = null;
@@ -96,7 +96,7 @@ namespace NTumbleBit
 				var encryptedSolution = Utils.ChachaEncrypt(solution.ToBytes(), ref key);
 				uint160 keyHash = new uint160(Hashes.RIPEMD160(key, key.Length));
 				commitments.Add(new PuzzleCommitment(keyHash, encryptedSolution));
-				solvedPuzzles.Add(new SolvedPuzzle(new Puzzle(ServerKey.PubKey, puzzle), new ChachaKey(key), solution));
+				solvedPuzzles.Add(new SolvedPuzzle(new Puzzle(ServerKey.PubKey, puzzle), new PuzzleSolutionKey(key), solution));
 			}
 			_SolvedPuzzles = solvedPuzzles.ToArray();
 			_State = PuzzleSolverServerStates.WaitingFakePuzzleSolutions;
@@ -109,7 +109,7 @@ namespace NTumbleBit
 		private SolvedPuzzle[] _SolvedFakePuzzles;
 		private SolvedPuzzle[] _SolvedRealPuzzles;
 
-		public ChachaKey[] GetFakePuzzleKeys(FakePuzzlesRevelation revelation)
+		public PuzzleSolutionKey[] GetFakePuzzleKeys(FakePuzzlesRevelation revelation)
 		{
 			if(revelation == null)
 				throw new ArgumentNullException("puzzleSolutions");
@@ -147,14 +147,14 @@ namespace NTumbleBit
 			return _SolvedFakePuzzles.Select(f => f.Reveal()).ToArray();
 		}
 
-		public ChachaKey[] GetRealPuzzleKeys(BlindFactor[] blindFactors)
+		public PuzzleSolutionKey[] GetRealPuzzleKeys(BlindFactor[] blindFactors)
 		{
 			if(blindFactors == null)
 				throw new ArgumentNullException("blindFactors");
 			if(blindFactors.Length != RealPuzzleCount)
 				throw new ArgumentException("Expecting " + RealPuzzleCount + " blind factors");
 			AssertState(PuzzleSolverServerStates.WaitingBlindFactor);
-			List<ChachaKey> keys = new List<ChachaKey>();
+			List<PuzzleSolutionKey> keys = new List<PuzzleSolutionKey>();
 			Puzzle unblindedPuzzle = null;
 			int y = 0;
 			for(int i = 0; i < RealPuzzleCount; i++)
