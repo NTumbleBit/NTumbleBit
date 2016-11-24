@@ -81,7 +81,7 @@ namespace NTumbleBit.PuzzleSolver
 		public PuzzleValue[] GeneratePuzzles()
 		{
 			AssertState(SolverClientStates.Initialized);
-			List<PuzzleSetElement> puzzles = new List<PuzzleSetElement>();
+			var puzzles = new List<PuzzleSetElement>();
 			for(int i = 0; i < RealPuzzleCount; i++)
 			{
 				BlindFactor blind = null;
@@ -114,8 +114,8 @@ namespace NTumbleBit.PuzzleSolver
 			PuzzleCommiments = commitments;
 			_State = SolverClientStates.WaitingEncryptedFakePuzzleKeys;
 
-			List<PuzzleSolution> solutions = new List<PuzzleSolution>();
-			List<int> indexes = new List<int>();
+			var solutions = new List<PuzzleSolution>();
+			var indexes = new List<int>();
 
 			for(int i = 0; i < PuzzleSet.PuzzleElements.Length; i++)
 			{
