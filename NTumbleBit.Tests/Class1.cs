@@ -123,22 +123,23 @@ namespace NTumbleBit.Tests
 			PuzzleValue[] puzzles = client.GeneratePuzzles(puzzle.PuzzleValue);
 			ServerCommitment[] commitments = server.SolvePuzzles(puzzles);
 			ClientRevelation revelation = client.Reveal(commitments);
-			SolutionKey[] fakePuzzleKeys = server.GetSolutionKeys(revelation);
+			SolutionKey[] fakePuzzleKeys = server.CheckRevelation(revelation);
 			BlindFactor[] blindFactors = client.GetBlindFactors(fakePuzzleKeys);
 
 			//Verify if the scripts are correctly created
 			Key serverKey = new Key();
 			Key clientKey = new Key();
-			EscrowContext ctx = new EscrowContext();
+			PaymentCashoutContext ctx = new PaymentCashoutContext();
 			ctx.RedeemKey = serverKey.PubKey;
 			ctx.RefundKey = clientKey.PubKey;
 			ctx.Expiration = EscrowDate;
-			var escrow = client.CreateEscrowRedeemScript(ctx);
+			var escrow = client.CreateOfferScript(ctx);
 			Coin coin = new Coin(new OutPoint(), new TxOut(Money.Zero, escrow.Hash)).ToScriptCoin(escrow);
 			Transaction cashoutTx = new Transaction();
 			cashoutTx.Inputs.Add(new TxIn(coin.Outpoint));
 			var sig = serverKey.Sign(Script.SignatureHash(coin, cashoutTx), SigHash.All);
-			cashoutTx.Inputs[0].ScriptSig = server.GetSolutionKeys(blindFactors, ctx, sig);
+			server.CheckBlindedFactors(blindFactors);
+			cashoutTx.Inputs[0].ScriptSig = server.GetFulfillScript(ctx, sig);
 			ScriptError error;
 			Assert.True(Script.VerifyScript(coin.ScriptPubKey, cashoutTx, 0, Money.Zero, out error));
 			////////////////////////////////////////////////
@@ -186,7 +187,7 @@ namespace NTumbleBit.Tests
 			ms.Position = 0;
 			revelation = seria.ReadPuzzleRevelation();
 
-			SolutionKey[] fakePuzzleKeys = server.GetSolutionKeys(revelation);
+			SolutionKey[] fakePuzzleKeys = server.CheckRevelation(revelation);
 			ms = new MemoryStream();
 			seria = new SolverSerializer(client.Parameters, ms);
 			seria.WritePuzzleSolutionKeys(fakePuzzleKeys, false);
@@ -201,7 +202,8 @@ namespace NTumbleBit.Tests
 			ms.Position = 0;
 			blindFactors = seria.ReadBlindFactors();
 
-			SolutionKey[] realPuzzleKeys = server.GetSolutionKeys(blindFactors);
+			server.CheckBlindedFactors(blindFactors);
+			SolutionKey[] realPuzzleKeys = server.GetSolutionKeys();
 			ms = new MemoryStream();
 			seria = new SolverSerializer(client.Parameters, ms);
 			seria.WritePuzzleSolutionKeys(realPuzzleKeys, true);

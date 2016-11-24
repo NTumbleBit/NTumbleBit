@@ -170,7 +170,7 @@ namespace NTumbleBit.PuzzleSolver
 				.ToArray();
 		}
 
-		public Script CreateEscrowRedeemScript(EscrowContext escrowContext)
+		public Script CreateOfferScript(PaymentCashoutContext escrowContext)
 		{
 			if(escrowContext == null)
 				throw new ArgumentNullException("escrowContext");
@@ -185,7 +185,7 @@ namespace NTumbleBit.PuzzleSolver
 					hashes.Add(commitment.KeyHash);
 				}
 			}
-			return escrowContext.CreateEscrowScript(hashes.ToArray());
+			return escrowContext.CreateOfferScript(hashes.ToArray());
 		}
 
 		public PuzzleSolution GetSolution(Transaction cashout)

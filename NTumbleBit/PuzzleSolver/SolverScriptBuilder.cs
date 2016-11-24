@@ -9,7 +9,7 @@ namespace NTumbleBit.PuzzleSolver
 {
 	public static class SolverScriptBuilder
 	{
-		public static Script CreateEscrowScript(IEnumerable<uint160> hashes, PubKey redeemKey, Script refundScript)
+		public static Script CreateOfferScript(IEnumerable<uint160> hashes, PubKey redeemKey, Script refundScript)
 		{
 			if(hashes == null)
 				throw new ArgumentNullException("hashes");
@@ -55,7 +55,7 @@ namespace NTumbleBit.PuzzleSolver
 			return ops.Skip(1).Take(expectedSolutions).Select(o => new SolutionKey(o.PushData)).Reverse().ToArray();
 		}
 
-		public static Script GetCashoutScript(TransactionSignature signature, SolutionKey[] keys, Script escrowScript)
+		public static Script GetFulfillScript(TransactionSignature signature, SolutionKey[] keys, Script escrowScript)
 		{
 			if(signature == null)
 				throw new ArgumentNullException("signature");

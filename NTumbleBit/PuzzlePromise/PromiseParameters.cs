@@ -19,13 +19,10 @@ namespace NTumbleBit.PuzzlePromise
 			set;
 		}
 
-		public static PromiseParameters CreateDefault()
+		public PromiseParameters()
 		{
-			return new PromiseParameters()
-			{
-				FakeTransactionCount = 42,
-				RealTransactionCount = 42
-			};
+			FakeTransactionCount = 42;
+			RealTransactionCount = 42;
 		}
 	}
 }

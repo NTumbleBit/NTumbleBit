@@ -55,7 +55,7 @@
     <Compile Include="PuzzlePromise\PromiseClientSession.cs" />
     <Compile Include="PuzzlePromise\PromiseParameters.cs" />
     <Compile Include="PuzzlePromise\PromiseServerSession.cs" />
-    <Compile Include="PuzzleSolver\EscrowContext.cs" />
+    <Compile Include="PuzzleSolver\SolverBitcoinContext.cs" />
     <Compile Include="PuzzleSolver\SolutionKey.cs" />
     <Compile Include="PuzzleSolver\ClientRevelation.cs" />
     <Compile Include="NBitcoinSecureRandom.cs" />

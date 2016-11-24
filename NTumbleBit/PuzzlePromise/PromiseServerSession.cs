@@ -11,7 +11,7 @@ namespace NTumbleBit.PuzzlePromise
 	{
 		public PromiseServerSession(PromiseParameters parameters = null)
 		{
-			_Parameters = parameters ?? PromiseParameters.CreateDefault();
+			_Parameters = parameters ?? new PromiseParameters();
 		}
 
 		private readonly PromiseParameters _Parameters;

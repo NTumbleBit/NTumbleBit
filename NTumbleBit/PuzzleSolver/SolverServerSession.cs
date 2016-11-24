@@ -35,7 +35,6 @@ namespace NTumbleBit.PuzzleSolver
 			public SolutionKey Reveal()
 			{
 				var key = _Key;
-				_Key = null;
 				return key;
 			}
 			public PuzzleSolution Solution
@@ -116,7 +115,7 @@ namespace NTumbleBit.PuzzleSolver
 		private SolvedPuzzle[] _SolvedFakePuzzles;
 		private SolvedPuzzle[] _SolvedRealPuzzles;
 
-		public SolutionKey[] GetSolutionKeys(ClientRevelation revelation)
+		public SolutionKey[] CheckRevelation(ClientRevelation revelation)
 		{
 			if(revelation == null)
 				throw new ArgumentNullException("puzzleSolutions");
@@ -154,7 +153,7 @@ namespace NTumbleBit.PuzzleSolver
 			return _SolvedFakePuzzles.Select(f => f.Reveal()).ToArray();
 		}
 
-		public SolutionKey[] GetSolutionKeys(BlindFactor[] blindFactors)
+		public void CheckBlindedFactors(BlindFactor[] blindFactors)
 		{
 			if(blindFactors == null)
 				throw new ArgumentNullException("blindFactors");
@@ -175,16 +174,21 @@ namespace NTumbleBit.PuzzleSolver
 				y++;
 			}
 			_State = SolverServerStates.Completed;
+		}
+
+		public SolutionKey[] GetSolutionKeys()
+		{
+			AssertState(SolverServerStates.Completed);
 			return _SolvedRealPuzzles.Select(s => s.Reveal()).ToArray();
 		}
 
-		public Script GetSolutionKeys(BlindFactor[] blindFactors, EscrowContext escrowContext, TransactionSignature cashoutSignature)
+		public Script GetFulfillScript(PaymentCashoutContext escrowContext, TransactionSignature cashoutSignature)
 		{
 			if(escrowContext == null)
 				throw new ArgumentNullException("escrowContext");
 			if(cashoutSignature == null)
 				throw new ArgumentNullException("cashoutSignature");
-			return escrowContext.CreateEscrowCashout(escrowContext, cashoutSignature, GetSolutionKeys(blindFactors));
+			return escrowContext.CreateFulfillScript(escrowContext, cashoutSignature, GetSolutionKeys());
 		}
 
 		private void AssertState(SolverServerStates state)
