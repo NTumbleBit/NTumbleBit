@@ -12,61 +12,59 @@ namespace NTumbleBit
 {
 	public class Puzzle
 	{
-		private readonly byte[] z;
-		private readonly BigInteger _Value;
+		internal readonly BigInteger _Value;
 
 		public Puzzle(byte[] z)
 		{
 			if(z == null)
 				throw new ArgumentNullException("z");
-			this.z = z.ToArray();
 			_Value = new BigInteger(1, z);
+		}
+		public Puzzle(BigInteger z)
+		{
+			if(z == null)
+				throw new ArgumentNullException("z");
+			_Value = z;
 		}
 
 
-
-		public Puzzle Blind(RsaPubKey rsaKey, ref Blind blind)
+		public Puzzle Blind(RsaPubKey rsaKey, ref BlindFactor blind)
 		{
 			if(rsaKey == null)
 				throw new ArgumentNullException("rsaKey");
-			return new Puzzle(rsaKey.Blind(z, ref blind));
+			return new Puzzle(rsaKey.Blind(_Value, ref blind));
 		}
 
 		
 		
-		public Puzzle Unblind(RsaPubKey rsaKey, Blind blind)
+		public Puzzle Unblind(RsaPubKey rsaKey, BlindFactor blind)
 		{
 			if(rsaKey == null)
 				throw new ArgumentNullException("rsaKey");
 			if(blind == null)
 				throw new ArgumentNullException("blind");
-			return new Puzzle(rsaKey.Unblind(z, blind));
+			return new Puzzle(rsaKey.RevertBlind(_Value, new NTumbleBit.Blind(rsaKey, blind.ToBytes())));
 		}
 
-		public byte[] Solve(RsaKey key)
+		public PuzzleSolution Solve(RsaKey key)
 		{
 			if(key == null)
 				throw new ArgumentNullException("key");
 			return key.SolvePuzzle(this);
 		}
 
-		public bool Verify(RsaPubKey key, byte[] solution)
+		public bool Verify(RsaPubKey key, PuzzleSolution solution)
 		{
 			if(key == null)
 				throw new ArgumentNullException("key");
 			if(solution == null)
 				throw new ArgumentNullException("solution");
-			return new BigInteger(1, key.Encrypt(solution)).Equals(_Value);
+			return key.Encrypt(solution._Value).Equals(_Value);
 		}
 
-		public Puzzle RevertBlind(RsaPubKey key, BlindFactor blindFactor)
+		public byte[] ToBytes()
 		{
-			return new Puzzle(key.RevertBlind(z, new NTumbleBit.Blind(key, blindFactor.ToBytes())));
-		}
-
-		public byte[] ToBytes(bool @unsafe = false)
-		{
-			return @unsafe ? z : z.ToArray();
+			return _Value.ToByteArrayUnsigned();
 		}
 
 		public override bool Equals(object obj)
@@ -97,7 +95,7 @@ namespace NTumbleBit
 
 		public override string ToString()
 		{
-			return Encoders.Hex.EncodeData(z);
+			return Encoders.Hex.EncodeData(ToBytes());
 		}
 	}
 }

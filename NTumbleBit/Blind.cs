@@ -23,7 +23,7 @@ namespace NTumbleBit
 		{
 		}
 
-		Blind(RsaKeyParameters key, BigInteger r)
+		internal Blind(RsaKeyParameters key, BigInteger r)
 		{
 			if(r.CompareTo(key.Modulus) >= 0)
 			{

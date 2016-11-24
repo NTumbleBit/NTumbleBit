@@ -46,7 +46,7 @@ namespace NTumbleBit
 			}
 		}
 
-		public byte[] Sign(byte[] data)
+		internal byte[] Sign(byte[] data)
 		{
 			if(data == null)
 				throw new ArgumentNullException("data");
@@ -58,31 +58,24 @@ namespace NTumbleBit
 			return engine.ConvertOutput(engine.ProcessBlock(engine.ConvertInput(data, 0, data.Length)));
 		}
 
-		public byte[] SolvePuzzle(Puzzle puzzle)
+		public PuzzleSolution SolvePuzzle(Puzzle puzzle)
 		{
 			if(puzzle == null)
 				throw new ArgumentNullException("puzzle");
 
-			return Decrypt(puzzle.ToBytes(true));
+			return new PuzzleSolution(Decrypt(puzzle._Value));
 		}
 
-		public byte[] Decrypt(byte[] encrypted)
+		internal BigInteger Decrypt(BigInteger encrypted)
 		{
 			if(encrypted == null)
 				throw new ArgumentNullException("encrypted");
-			try
-			{
+			if(encrypted.CompareTo(_Key.Modulus) >= 0)
+				throw new DataLengthException("input too large for RSA cipher.");
 
-				RsaCoreEngine engine = new RsaCoreEngine();
-				engine.Init(false, this._Key);
-				var databn = engine.ConvertInput(encrypted, 0, encrypted.Length);
-				var resultbn = engine.ProcessBlock(databn);
-				return engine.ConvertOutput(resultbn);
-			}
-			catch(DataLengthException)
-			{
-				throw new ArgumentException("encrypted data size incorrect");
-			}
+			RsaCoreEngine engine = new RsaCoreEngine();
+			engine.Init(false, this._Key);
+			return engine.ProcessBlock(encrypted);
 		}
 
 		internal static DerSequence GetRSASequence(byte[] bytes)

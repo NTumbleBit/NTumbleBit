@@ -67,57 +67,61 @@ namespace NTumbleBit
 		}
 
 
-		public Puzzle GeneratePuzzle(ref byte[] solution)
+		public Puzzle GeneratePuzzle(ref PuzzleSolution solution)
 		{
-			solution = solution ?? Utils.GenerateEncryptableData(_Key);
-			return new Puzzle(this.Encrypt(solution));
+			solution = solution ?? new PuzzleSolution(Utils.GenerateEncryptableData(_Key));
+			return new Puzzle(this.Encrypt(solution._Value));
 		}
 
-		public byte[] Encrypt(byte[] data)
+		internal BigInteger Encrypt(BigInteger data)
 		{
 			if(data == null)
 				throw new ArgumentNullException("data");
-			if(data.Length != RsaKey.KeySize / 8)
-				throw new ArgumentException("The data to be encrypted should be equal to size " + RsaKey.KeySize + " bits");
+			if(data.CompareTo(_Key.Modulus) >= 0)
+				throw new ArgumentException("input too large for RSA cipher.");
 			RsaCoreEngine engine = new RsaCoreEngine();
 			engine.Init(true, this._Key);
-			var databn = engine.ConvertInput(data, 0, data.Length);
-			var resultbn = engine.ProcessBlock(databn);
-			return engine.ConvertOutput(resultbn);
+			return engine.ProcessBlock(data);
 		}
 
-		public byte[] Blind(byte[] data, ref Blind blind)
+		internal BigInteger Blind(BigInteger data, ref BlindFactor blindFactor)
 		{
 			if(data == null)
 				throw new ArgumentNullException("data");
-			blind = blind ?? new Blind(this);
-			return Blind(blind._A, data, blind);
+			Blind blind = CalculateBlind(ref blindFactor);
+			return Blind(blind._A, data);
 		}
 
-		public byte[] RevertBlind(byte[] data, Blind blind)
+		private Blind CalculateBlind(ref BlindFactor blindFactor)
 		{
-			if(data == null)
-				throw new ArgumentNullException("data");
-			if(blind == null)
-				throw new ArgumentNullException("blind");
-
-			return Blind(blind._RI, data, blind);
+			var blind = blindFactor == null ? new Blind(this) : new Blind(_Key, blindFactor._Value);
+			blindFactor = blindFactor ?? blind.ToBlindFactor();
+			return blind;
 		}
 
-		public byte[] Unblind(byte[] data, Blind blind)
+		internal BigInteger RevertBlind(BigInteger data, Blind blind)
 		{
 			if(data == null)
 				throw new ArgumentNullException("data");
 			if(blind == null)
 				throw new ArgumentNullException("blind");
-			return Blind(blind._AI, data, blind);
+
+			return Blind(blind._RI, data);
 		}
 
-		internal byte[] Blind(BigInteger multiplier, byte[] data, Blind blind)
+		internal BigInteger Unblind(BigInteger data, BlindFactor blindFactor)
 		{
-			blind = blind ?? new Blind(this);
-			var msg = new BigInteger(1, data);
-			return msg.Multiply(multiplier).Mod(_Key.Modulus).ToByteArrayUnsigned();
+			if(data == null)
+				throw new ArgumentNullException("data");
+			if(blindFactor == null)
+				throw new ArgumentNullException("blindFactor");
+			Blind blind = CalculateBlind(ref blindFactor);
+			return Blind(blind._AI, data);
+		}
+
+		internal BigInteger Blind(BigInteger multiplier, BigInteger msg)
+		{
+			return msg.Multiply(multiplier).Mod(_Key.Modulus);
 		}
 	}
 }

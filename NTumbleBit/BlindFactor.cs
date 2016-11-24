@@ -13,21 +13,21 @@ namespace NTumbleBit
 		{
 			if(v == null)
 				throw new ArgumentNullException("v");
-			_V = new BigInteger(1, v);
+			_Value = new BigInteger(1, v);
 		}
 
 		internal BlindFactor(BigInteger v)
 		{
 			if(v == null)
 				throw new ArgumentNullException("v");
-			_V = v;
+			_Value = v;
 		}
 
-		BigInteger _V;
+		internal BigInteger _Value;
 
 		public byte[] ToBytes()
 		{
-			return _V.ToByteArrayUnsigned();
+			return _Value.ToByteArrayUnsigned();
 		}
 	}
 }

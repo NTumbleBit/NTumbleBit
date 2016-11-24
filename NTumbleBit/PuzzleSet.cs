@@ -31,21 +31,16 @@ namespace NTumbleBit
 		{
 			get; set;
 		}
-
-		public Puzzle RevertBlind(RsaPubKey key)
-		{
-			return Puzzle.RevertBlind(key, BlindFactor);
-		}
-
+		
 		public override string ToString()
 		{
 			return "+Real " + Puzzle.ToString();
-		}		
+		}
 	}
 
 	class FakePuzzle : PuzzleSetElement
 	{
-		public FakePuzzle(Puzzle puzzle, byte[] solution)
+		public FakePuzzle(Puzzle puzzle, PuzzleSolution solution)
 		{
 			Puzzle = puzzle;
 			Solution = solution;
@@ -54,7 +49,7 @@ namespace NTumbleBit
 		{
 			get; set;
 		}
-		public byte[] Solution
+		public PuzzleSolution Solution
 		{
 			get;
 			private set;

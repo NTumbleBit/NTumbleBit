@@ -74,14 +74,14 @@ namespace NTumbleBit
 			List<PuzzleSetElement> puzzles = new List<PuzzleSetElement>();
 			for(int i = 0; i < RealPuzzleCount; i++)
 			{
-				Blind blind = null;
+				BlindFactor blind = null;
 				Puzzle puzzle = Puzzle.Blind(ServerKey, ref blind);
-				puzzles.Add(new RealPuzzle(puzzle, blind.ToBlindFactor()));
+				puzzles.Add(new RealPuzzle(puzzle, blind));
 			}
 
 			for(int i = 0; i < FakePuzzleCount; i++)
 			{
-				byte[] solution = null;
+				PuzzleSolution solution = null;
 				Puzzle puzzle = ServerKey.GeneratePuzzle(ref solution);
 				puzzles.Add(new FakePuzzle(puzzle, solution));
 			}
@@ -104,7 +104,7 @@ namespace NTumbleBit
 			PuzzleCommiments = commitments;
 			_State = PuzzleSolverClientStates.WaitingEncryptedFakePuzzleKeys;
 
-			List<byte[]> solutions = new List<byte[]>();
+			List<PuzzleSolution> solutions = new List<PuzzleSolution>();
 			List<int> indexes = new List<int>();
 
 			for(int i = 0; i < PuzzleSet.PuzzleElements.Length; i++)
@@ -141,8 +141,8 @@ namespace NTumbleBit
 					{
 						throw new PuzzleException("Commitment hash invalid");
 					}
-					var solution = Utils.ChachaDecrypt(commitment.EncryptedSolution, key);
-					if(!new BigInteger(1, solution).Equals(new BigInteger(1, puzzle.Solution)))
+					var solution = new PuzzleSolution(Utils.ChachaDecrypt(commitment.EncryptedSolution, key));
+					if(solution != puzzle.Solution)
 					{
 						throw new PuzzleException("Commitment encrypted solution invalid");
 					}
@@ -155,14 +155,14 @@ namespace NTumbleBit
 				.ToArray();
 		}
 
-		public byte[] GetSolution(ChachaKey[] keys)
+		public PuzzleSolution GetSolution(ChachaKey[] keys)
 		{
 			if(keys == null)
 				throw new ArgumentNullException("keys");
 			if(keys.Length != RealPuzzleCount)
 				throw new ArgumentException("Expecting " + RealPuzzleCount + " keys");
 			AssertState(PuzzleSolverClientStates.WaitingEncryptedRealPuzzleKeys);
-			byte[] solution = null;
+			PuzzleSolution solution = null;
 			RealPuzzle solvedPuzzle = null;
 			int y = 0;
 			for(int i = 0; i < PuzzleCommiments.Length; i++)
@@ -176,7 +176,7 @@ namespace NTumbleBit
 					var hash = new uint160(Hashes.RIPEMD160(key, key.Length));
 					if(hash == commitment.KeyHash)
 					{
-						var decryptedSolution = Utils.ChachaDecrypt(commitment.EncryptedSolution, key);
+						var decryptedSolution = new PuzzleSolution(Utils.ChachaDecrypt(commitment.EncryptedSolution, key));
 						if(puzzle.Puzzle.Verify(ServerKey, decryptedSolution))
 						{
 							solution = decryptedSolution;
@@ -189,7 +189,7 @@ namespace NTumbleBit
 			if(solution == null)
 				throw new PuzzleException("Impossible to find solution to the puzzle");
 
-			solution = ServerKey.Unblind(solution, new Blind(ServerKey, solvedPuzzle.BlindFactor.ToBytes()));
+			solution = solution.Unblind(ServerKey, solvedPuzzle.BlindFactor);
 			_State = PuzzleSolverClientStates.Completed;
 			return solution;
 		}

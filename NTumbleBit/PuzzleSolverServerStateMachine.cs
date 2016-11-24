@@ -20,7 +20,7 @@ namespace NTumbleBit
 	{
 		class SolvedPuzzle
 		{
-			public SolvedPuzzle(Puzzle puzzle, ChachaKey key, byte[] solution)
+			public SolvedPuzzle(Puzzle puzzle, ChachaKey key, PuzzleSolution solution)
 			{
 				Puzzle = puzzle;
 				_Key = key;
@@ -38,7 +38,7 @@ namespace NTumbleBit
 				_Key = null;
 				return key;
 			}
-			public byte[] Solution
+			public PuzzleSolution Solution
 			{
 				get; set;
 			}
@@ -83,7 +83,7 @@ namespace NTumbleBit
 			{
 				var solution = puzzle.Solve(ServerKey);
 				byte[] key = null;
-				var encryptedSolution = Utils.ChachaEncrypt(solution, ref key);
+				var encryptedSolution = Utils.ChachaEncrypt(solution.ToBytes(), ref key);
 				uint160 keyHash = new uint160(Hashes.RIPEMD160(key, key.Length));
 				commitments.Add(new PuzzleCommitment(keyHash, encryptedSolution));
 				solvedPuzzles.Add(new SolvedPuzzle(puzzle, new ChachaKey(key), solution));
@@ -114,7 +114,7 @@ namespace NTumbleBit
 			{
 				var index = revelation.Indexes[i];
 				var solvedPuzzle = _SolvedPuzzles[index];
-				if(!new BigInteger(1, solvedPuzzle.Solution).Equals(new BigInteger(1, revelation.Solutions[i])))
+				if(solvedPuzzle.Solution != revelation.Solutions[i])
 				{
 					throw new PuzzleException("Incorrect puzzle solution");
 				}
@@ -150,7 +150,7 @@ namespace NTumbleBit
 			for(int i = 0; i < RealPuzzleCount; i++)
 			{
 				var solvedPuzzle = _SolvedRealPuzzles[i];
-				var unblinded = solvedPuzzle.Puzzle.RevertBlind(ServerKey.PubKey, blindFactors[i]);
+				var unblinded = solvedPuzzle.Puzzle.Unblind(ServerKey.PubKey, blindFactors[i]);
 				if(unblindedPuzzle == null)
 					unblindedPuzzle = unblinded;
 				else

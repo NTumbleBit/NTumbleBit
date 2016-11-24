@@ -8,7 +8,7 @@ namespace NTumbleBit
 {
 	public class FakePuzzlesRevelation
 	{
-		public FakePuzzlesRevelation(int[] indexes, byte[][] solutions)
+		public FakePuzzlesRevelation(int[] indexes, PuzzleSolution[] solutions)
 		{
 			Indexes = indexes;
 			Solutions = solutions;
@@ -18,7 +18,7 @@ namespace NTumbleBit
 			get; set;
 		}
 
-		public byte[][] Solutions
+		public PuzzleSolution[] Solutions
 		{
 			get; set;
 		}

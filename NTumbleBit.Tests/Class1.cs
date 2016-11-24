@@ -30,22 +30,20 @@ namespace NTumbleBit.Tests
 		public void CanSolvePuzzle()
 		{
 			RsaKey key = TestKeys.Default;
-			byte[] solution = null;
+			PuzzleSolution solution = null;
 			var puzzle = key.PubKey.GeneratePuzzle(ref solution);
-			byte[] solution2 = puzzle.Solve(key);
+			PuzzleSolution solution2 = puzzle.Solve(key);
 			Assert.True(puzzle.Verify(key.PubKey, solution));
-			Assert.True(solution.SequenceEqual(solution2));
-			solution[0] += 1;
-			Assert.False(puzzle.Verify(key.PubKey, solution));
+			Assert.True(solution == solution2);
 
 
 			puzzle = key.PubKey.GeneratePuzzle(ref solution);
-			Blind blind = null;
-			var blindedPuzzle = puzzle.Blind(key.PubKey, ref blind);
-			var blindedSolution = key.SolvePuzzle(blindedPuzzle);
-			var unblinded = key.PubKey.Unblind(blindedSolution, blind);
+			BlindFactor blind = null;
+			Puzzle blindedPuzzle = puzzle.Blind(key.PubKey, ref blind);
+			PuzzleSolution blindedSolution = key.SolvePuzzle(blindedPuzzle);
+			var unblinded = blindedSolution.Unblind(key.PubKey, blind);
 
-			Assert.True(new BigInteger(1, unblinded).Equals(new BigInteger(1, solution)));
+			Assert.True(unblinded == solution);
 		}
 
 
@@ -95,7 +93,7 @@ namespace NTumbleBit.Tests
 		public void TestPuzzleSolver()
 		{
 			RsaKey key = TestKeys.Default;
-			byte[] expectedSolution = null;
+			PuzzleSolution expectedSolution = null;
 			Puzzle puzzle = key.PubKey.GeneratePuzzle(ref expectedSolution);
 			
 			PuzzleSolverClientStateMachine client = new PuzzleSolverClientStateMachine(key.PubKey, puzzle);
@@ -109,7 +107,7 @@ namespace NTumbleBit.Tests
 			ChachaKey[] realPuzzleKeys = server.GetRealPuzzleKeys(blindFactors);
 			var solution = client.GetSolution(realPuzzleKeys);
 
-			Assert.True(solution.SequenceEqual(expectedSolution));
+			Assert.True(solution == expectedSolution);
 		}
 
 		[Fact]
@@ -117,22 +115,18 @@ namespace NTumbleBit.Tests
 		{
 			RsaKey key = TestKeys.Default;
 
-			byte[] msg = Utils.GenerateEncryptableData(key._Key);
+			PuzzleSolution solution = null;
+			BlindFactor blind = null;
 
-			Blind blind = null;
-			var blindedMsg = key.PubKey.Blind(msg, ref blind);
-			var blindedMsg2 = key.PubKey.Blind(msg, ref blind);
-			Assert.True(blindedMsg.SequenceEqual(blindedMsg2));
+			Puzzle puzzle = key.PubKey.GeneratePuzzle(ref solution);
+			Puzzle blindedPuzzle = puzzle.Blind(key.PubKey, ref blind);
+			Assert.True(puzzle != blindedPuzzle);
+			Assert.True(puzzle == blindedPuzzle.Unblind(key.PubKey, blind));
 
-			var sig = key.Sign(blindedMsg);
-			var sig2 = key.Sign(blindedMsg2);
 
-			var unblindedSig = key.PubKey.Unblind(sig, blind);
-			var unblindedSig2 = key.PubKey.Unblind(sig2, blind);
-			Assert.True(key.PubKey.Verify(msg, unblindedSig));
-
-			var unblindMsg = key.PubKey.RevertBlind(blindedMsg, blind);
-			Assert.True(msg.SequenceEqual(unblindMsg));
+			PuzzleSolution blindedSolution = blindedPuzzle.Solve(key);
+			Assert.False(puzzle.Verify(key.PubKey, blindedSolution));
+			Assert.True(puzzle.Verify(key.PubKey, blindedSolution.Unblind(key.PubKey, blind)));
 		}
 	}
 }
