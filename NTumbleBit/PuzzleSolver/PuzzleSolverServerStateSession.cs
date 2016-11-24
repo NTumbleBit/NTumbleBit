@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NTumbleBit
+namespace NTumbleBit.PuzzleSolver
 {
 	public enum PuzzleSolverServerStates
 	{

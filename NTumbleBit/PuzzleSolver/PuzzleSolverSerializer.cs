@@ -8,7 +8,7 @@ using NTumbleBit.BouncyCastle.Math;
 using NBitcoin.Protocol;
 using NBitcoin;
 
-namespace NTumbleBit
+namespace NTumbleBit.PuzzleSolver
 {
 	public class PuzzleSolverSerializer
 	{

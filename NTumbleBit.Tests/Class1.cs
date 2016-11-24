@@ -2,6 +2,7 @@
 using NBitcoin.DataEncoders;
 using NTumbleBit.BouncyCastle.Crypto.Parameters;
 using NTumbleBit.BouncyCastle.Math;
+using NTumbleBit.PuzzleSolver;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
