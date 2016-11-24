@@ -43,7 +43,7 @@ namespace NTumbleBit
 				throw new ArgumentNullException("rsaKey");
 			if(blind == null)
 				throw new ArgumentNullException("blind");
-			return new Puzzle(rsaKey.RevertBlind(_Value, new NTumbleBit.Blind(rsaKey, blind.ToBytes())));
+			return new Puzzle(rsaKey.RevertBlind(_Value, blind));
 		}
 
 		public PuzzleSolution Solve(RsaKey key)

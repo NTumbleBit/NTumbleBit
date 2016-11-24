@@ -48,7 +48,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Blind.cs" />
     <Compile Include="BlindFactor.cs" />
     <Compile Include="ChachaKey.cs" />
     <Compile Include="FakePuzzlesRevelation.cs" />

@@ -88,25 +88,24 @@ namespace NTumbleBit
 		{
 			if(data == null)
 				throw new ArgumentNullException("data");
-			Blind blind = CalculateBlind(ref blindFactor);
-			return Blind(blind._A, data);
+			EnsureInitializeBlindFactor(ref blindFactor);
+			return Blind(blindFactor._Value.ModPow(_Key.Exponent, _Key.Modulus), data);
 		}
 
-		private Blind CalculateBlind(ref BlindFactor blindFactor)
+		private void EnsureInitializeBlindFactor(ref BlindFactor blindFactor)
 		{
-			var blind = blindFactor == null ? new Blind(this) : new Blind(_Key, blindFactor._Value);
-			blindFactor = blindFactor ?? blind.ToBlindFactor();
-			return blind;
+			blindFactor = blindFactor ?? new BlindFactor(Utils.GenerateEncryptableInteger(_Key));
 		}
 
-		internal BigInteger RevertBlind(BigInteger data, Blind blind)
+		internal BigInteger RevertBlind(BigInteger data, BlindFactor blindFactor)
 		{
 			if(data == null)
 				throw new ArgumentNullException("data");
-			if(blind == null)
-				throw new ArgumentNullException("blind");
-
-			return Blind(blind._RI, data);
+			if(blindFactor == null)
+				throw new ArgumentNullException("blindFactor");
+			EnsureInitializeBlindFactor(ref blindFactor);
+			var ai = blindFactor._Value.ModInverse(_Key.Modulus);
+			return Blind(ai.ModPow(_Key.Exponent, _Key.Modulus), data);
 		}
 
 		internal BigInteger Unblind(BigInteger data, BlindFactor blindFactor)
@@ -115,8 +114,8 @@ namespace NTumbleBit
 				throw new ArgumentNullException("data");
 			if(blindFactor == null)
 				throw new ArgumentNullException("blindFactor");
-			Blind blind = CalculateBlind(ref blindFactor);
-			return Blind(blind._AI, data);
+			EnsureInitializeBlindFactor(ref blindFactor);
+			return Blind(blindFactor._Value.ModInverse(_Key.Modulus), data);
 		}
 
 		internal BigInteger Blind(BigInteger multiplier, BigInteger msg)
