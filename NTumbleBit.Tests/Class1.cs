@@ -96,8 +96,8 @@ namespace NTumbleBit.Tests
 			PuzzleSolution expectedSolution = null;
 			Puzzle puzzle = key.PubKey.GeneratePuzzle(ref expectedSolution);
 			
-			PuzzleSolverClientStateMachine client = new PuzzleSolverClientStateMachine(key.PubKey, puzzle);
-			PuzzleSolverServerStateMachine server = new PuzzleSolverServerStateMachine(key);
+			PuzzleSolverClientSession client = new PuzzleSolverClientSession(key.PubKey, puzzle);
+			PuzzleSolverServerSession server = new PuzzleSolverServerSession(key);
 
 			Puzzle[] puzzles = client.GeneratePuzzles();
 			PuzzleCommitment[] commitments = server.SolvePuzzles(puzzles);

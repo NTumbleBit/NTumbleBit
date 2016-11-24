@@ -161,9 +161,9 @@
     <Compile Include="BouncyCastle\util\io\StreamOverflowException.cs" />
     <Compile Include="BouncyCastle\util\io\Streams.cs" />
     <Compile Include="BouncyCastle\util\Platform.cs" />
-    <Compile Include="PuzzleSolverClientStateMachine.cs" />
+    <Compile Include="PuzzleSolverClientSession.cs" />
     <Compile Include="PuzzleSolverServer.cs" />
-    <Compile Include="PuzzleSolverServerStateMachine.cs" />
+    <Compile Include="PuzzleSolverServerStateSession.cs" />
     <Compile Include="RsaKey.cs" />
     <Compile Include="RsaPubKey.cs" />
     <Compile Include="Utils.cs" />

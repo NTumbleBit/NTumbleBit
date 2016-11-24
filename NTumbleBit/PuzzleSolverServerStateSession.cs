@@ -16,7 +16,7 @@ namespace NTumbleBit
 		WaitingBlindFactor,
 		Completed
 	}
-	public class PuzzleSolverServerStateMachine : PuzzleSolver
+	public class PuzzleSolverServerSession : PuzzleSolver
 	{
 		class SolvedPuzzle
 		{
@@ -43,7 +43,7 @@ namespace NTumbleBit
 				get; set;
 			}
 		}
-		public PuzzleSolverServerStateMachine(RsaKey serverKey) : base(15, 285)
+		public PuzzleSolverServerSession(RsaKey serverKey) : base(15, 285)
 		{
 			if(serverKey == null)
 				throw new ArgumentNullException("serverKey");

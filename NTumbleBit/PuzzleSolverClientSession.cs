@@ -26,9 +26,9 @@ namespace NTumbleBit
 		}
 	}
 
-	public class PuzzleSolverClientStateMachine : PuzzleSolver
+	public class PuzzleSolverClientSession : PuzzleSolver
 	{
-		public PuzzleSolverClientStateMachine(RsaPubKey serverKey, Puzzle puzzle) : base(15, 285)
+		public PuzzleSolverClientSession(RsaPubKey serverKey, Puzzle puzzle) : base(15, 285)
 		{
 			if(puzzle == null)
 				throw new ArgumentNullException("puzzle");
