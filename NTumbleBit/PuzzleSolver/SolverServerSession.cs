@@ -49,7 +49,7 @@ namespace NTumbleBit.PuzzleSolver
 
 		public SolverServerSession(RsaKey serverKey, SolverParameters parameters)
 		{
-			parameters = parameters ?? SolverParameters.CreateDefault(serverKey.PubKey);
+			parameters = parameters ?? new SolverParameters(serverKey.PubKey);
 			if(serverKey == null)
 				throw new ArgumentNullException("serverKey");
 			if(serverKey.PubKey != parameters.ServerKey)
@@ -100,9 +100,10 @@ namespace NTumbleBit.PuzzleSolver
 				var solution = puzzle.Solve(ServerKey);
 				byte[] key = null;
 				var encryptedSolution = Utils.ChachaEncrypt(solution.ToBytes(), ref key);
-				uint160 keyHash = new uint160(Hashes.RIPEMD160(key, key.Length));
+				var solutionKey = new SolutionKey(key);
+				uint160 keyHash = solutionKey.GetHash();
 				commitments.Add(new ServerCommitment(keyHash, encryptedSolution));
-				solvedPuzzles.Add(new SolvedPuzzle(new Puzzle(ServerKey.PubKey, puzzle), new SolutionKey(key), solution));
+				solvedPuzzles.Add(new SolvedPuzzle(new Puzzle(ServerKey.PubKey, puzzle), solutionKey, solution));
 			}
 			_SolvedPuzzles = solvedPuzzles.ToArray();
 			_State = SolverServerStates.WaitingFakePuzzleSolutions;
@@ -177,6 +178,14 @@ namespace NTumbleBit.PuzzleSolver
 			return _SolvedRealPuzzles.Select(s => s.Reveal()).ToArray();
 		}
 
+		public Script GetSolutionKeys(BlindFactor[] blindFactors, EscrowContext escrowContext, TransactionSignature cashoutSignature)
+		{
+			if(escrowContext == null)
+				throw new ArgumentNullException("escrowContext");
+			if(cashoutSignature == null)
+				throw new ArgumentNullException("cashoutSignature");
+			return escrowContext.CreateEscrowCashout(escrowContext, cashoutSignature, GetSolutionKeys(blindFactors));
+		}
 
 		private void AssertState(SolverServerStates state)
 		{

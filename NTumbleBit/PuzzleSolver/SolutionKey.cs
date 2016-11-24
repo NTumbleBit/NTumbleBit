@@ -1,4 +1,6 @@
-﻿using System;
+﻿using NBitcoin;
+using NBitcoin.Crypto;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -22,6 +24,11 @@ namespace NTumbleBit.PuzzleSolver
 		public byte[] ToBytes(bool @unsafe)
 		{
 			return @unsafe ? _Bytes : _Bytes.ToArray();
+		}
+
+		public uint160 GetHash()
+		{
+			return new uint160(Hashes.RIPEMD160(_Bytes, _Bytes.Length));
 		}
 	}
 }

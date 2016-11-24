@@ -41,6 +41,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Numerics" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -54,11 +55,13 @@
     <Compile Include="PuzzlePromise\PromiseClientSession.cs" />
     <Compile Include="PuzzlePromise\PromiseParameters.cs" />
     <Compile Include="PuzzlePromise\PromiseServerSession.cs" />
+    <Compile Include="PuzzleSolver\EscrowContext.cs" />
     <Compile Include="PuzzleSolver\SolutionKey.cs" />
     <Compile Include="PuzzleSolver\ClientRevelation.cs" />
     <Compile Include="NBitcoinSecureRandom.cs" />
     <Compile Include="Puzzle.cs" />
     <Compile Include="PuzzleSolver\SolverParameters.cs" />
+    <Compile Include="PuzzleSolver\SolverScriptBuilder.cs" />
     <Compile Include="PuzzleValue.cs" />
     <Compile Include="PuzzleSolver\ServerCommitment.cs" />
     <Compile Include="PuzzleSolver\PuzzleSet.cs" />

@@ -11,18 +11,17 @@ namespace NTumbleBit.PuzzleSolver
 	{
 		public SolverParameters()
 		{
-
+			FakePuzzleCount = 285;
+			RealPuzzleCount = 15;
 		}
 
-		public static SolverParameters CreateDefault(RsaPubKey serverKey)
+		public SolverParameters(RsaPubKey serverKey) : this()
 		{
-			return new SolverParameters()
-			{
-				ServerKey = serverKey,
-				FakePuzzleCount = 285,
-				RealPuzzleCount = 15
-			};
+			if(serverKey == null)
+				throw new ArgumentNullException("serverKey");
+			ServerKey = serverKey;
 		}
+
 
 		public RsaPubKey ServerKey
 		{

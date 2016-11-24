@@ -110,17 +110,41 @@ namespace NTumbleBit.Tests
 			RsaKey key = TestKeys.Default;
 			PuzzleSolution expectedSolution = null;
 			Puzzle puzzle = key.PubKey.GeneratePuzzle(ref expectedSolution);
-			
-			SolverClientSession client = new SolverClientSession(key.PubKey);
-			SolverServerSession server = new SolverServerSession(key);
 
-			PuzzleValue[] puzzles = client.GeneratePuzzles(new PuzzlePaymentRequest(puzzle, Amount, EscrowDate));
+			var parameters = new SolverParameters()
+			{
+				FakePuzzleCount = 50,
+				RealPuzzleCount = 10,
+				ServerKey = key.PubKey
+			};
+
+			SolverClientSession client = new SolverClientSession(parameters);
+			SolverServerSession server = new SolverServerSession(key, parameters);
+
+			PuzzleValue[] puzzles = client.GeneratePuzzles(puzzle.PuzzleValue);
 			ServerCommitment[] commitments = server.SolvePuzzles(puzzles);
 			ClientRevelation revelation = client.Reveal(commitments);
 			SolutionKey[] fakePuzzleKeys = server.GetSolutionKeys(revelation);
 			BlindFactor[] blindFactors = client.GetBlindFactors(fakePuzzleKeys);
-			SolutionKey[] realPuzzleKeys = server.GetSolutionKeys(blindFactors);
-			var solution = client.GetSolution(realPuzzleKeys);
+
+			//Verify if the scripts are correctly created
+			Key serverKey = new Key();
+			Key clientKey = new Key();
+			EscrowContext ctx = new EscrowContext();
+			ctx.RedeemKey = serverKey.PubKey;
+			ctx.RefundKey = clientKey.PubKey;
+			ctx.Expiration = EscrowDate;
+			var escrow = client.CreateEscrowRedeemScript(ctx);
+			Coin coin = new Coin(new OutPoint(), new TxOut(Money.Zero, escrow.Hash)).ToScriptCoin(escrow);
+			Transaction cashoutTx = new Transaction();
+			cashoutTx.Inputs.Add(new TxIn(coin.Outpoint));
+			var sig = serverKey.Sign(Script.SignatureHash(coin, cashoutTx), SigHash.All);
+			cashoutTx.Inputs[0].ScriptSig = server.GetSolutionKeys(blindFactors, ctx, sig);
+			ScriptError error;
+			Assert.True(Script.VerifyScript(coin.ScriptPubKey, cashoutTx, 0, Money.Zero, out error));
+			////////////////////////////////////////////////
+			
+			var solution = client.GetSolution(cashoutTx);
 
 			Assert.True(solution == expectedSolution);
 		}
@@ -138,10 +162,10 @@ namespace NTumbleBit.Tests
 				RealPuzzleCount = 10,
 				ServerKey = key.PubKey
 			};
-			SolverClientSession client = new SolverClientSession(key.PubKey);
+			SolverClientSession client = new SolverClientSession(parameters);
 			SolverServerSession server = new SolverServerSession(key, parameters);
 
-			PuzzleValue[] puzzles = client.GeneratePuzzles(new PuzzlePaymentRequest(puzzle, Amount, EscrowDate));
+			PuzzleValue[] puzzles = client.GeneratePuzzles(puzzle.PuzzleValue);
 
 			var ms = new MemoryStream();
 			var seria = new SolverSerializer(client.Parameters, ms);

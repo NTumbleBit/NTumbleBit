@@ -11,7 +11,7 @@ namespace NTumbleBit.PuzzleSolver
 {
 	public enum SolverClientStates
 	{
-		WaitingPaymentRequest,
+		WaitingPuzzle,
 		WaitingCommitments,
 		WaitingEncryptedFakePuzzleKeys,
 		WaitingEncryptedRealPuzzleKeys,
@@ -32,7 +32,7 @@ namespace NTumbleBit.PuzzleSolver
 		{
 			if(serverKey == null)
 				throw new ArgumentNullException("serverKey");
-			_Parameters = SolverParameters.CreateDefault(serverKey);
+			_Parameters = new SolverParameters(serverKey);
 		}
 
 		public SolverClientSession(SolverParameters parameters)
@@ -70,7 +70,7 @@ namespace NTumbleBit.PuzzleSolver
 		}
 
 
-		private SolverClientStates _State = SolverClientStates.WaitingPaymentRequest;
+		private SolverClientStates _State = SolverClientStates.WaitingPuzzle;
 		public SolverClientStates State
 		{
 			get
@@ -79,26 +79,12 @@ namespace NTumbleBit.PuzzleSolver
 			}
 		}
 
-
-		private PuzzlePaymentRequest _PaymentRequest;
-		public PuzzlePaymentRequest PaymentRequest
+		public PuzzleValue[] GeneratePuzzles(PuzzleValue puzzleValue)
 		{
-			get
-			{
-				return _PaymentRequest;
-			}
-		}
-
-		public PuzzleValue[] GeneratePuzzles(PuzzlePaymentRequest paymentRequest)
-		{
-			if(paymentRequest == null)
-				throw new ArgumentNullException("paymentRequest");
-			AssertState(SolverClientStates.WaitingPaymentRequest);
-
-			if(paymentRequest.RsaPubKeyHash != Parameters.ServerKey.GetHash())
-				throw new PuzzleException("Invalid RsaPubKeyHash");
-
-			var paymentPuzzle = new Puzzle(Parameters.ServerKey, paymentRequest.PuzzleValue);
+			if(puzzleValue == null)
+				throw new ArgumentNullException("puzzleValue");
+			AssertState(SolverClientStates.WaitingPuzzle);			
+			var paymentPuzzle = new Puzzle(Parameters.ServerKey, puzzleValue);
 			List<PuzzleSetElement> puzzles = new List<PuzzleSetElement>();
 			for(int i = 0; i < Parameters.RealPuzzleCount; i++)
 			{
@@ -118,7 +104,6 @@ namespace NTumbleBit.PuzzleSolver
 			NBitcoin.Utils.Shuffle(puzzlesArray, RandomUtils.GetInt32());
 			PuzzleSet = new PuzzleSet(puzzlesArray);
 			_State = SolverClientStates.WaitingCommitments;
-			_PaymentRequest = paymentRequest;
 			_Puzzle = paymentPuzzle;
 			return PuzzleSet.PuzzleValues.ToArray();
 		}
@@ -183,6 +168,55 @@ namespace NTumbleBit.PuzzleSolver
 			return PuzzleSet.PuzzleElements.OfType<RealPuzzle>()
 				.Select(p => p.BlindFactor)
 				.ToArray();
+		}
+
+		public Script CreateEscrowRedeemScript(EscrowContext escrowContext)
+		{
+			if(escrowContext == null)
+				throw new ArgumentNullException("escrowContext");
+			AssertState(SolverClientStates.WaitingEncryptedRealPuzzleKeys);
+			List<uint160> hashes = new List<uint160>();
+			for(int i = 0; i < PuzzleCommiments.Length; i++)
+			{
+				var puzzle = PuzzleSet.PuzzleElements[i] as RealPuzzle;
+				if(puzzle != null)
+				{
+					var commitment = PuzzleCommiments[i];
+					hashes.Add(commitment.KeyHash);
+				}
+			}
+			return escrowContext.CreateEscrowScript(hashes.ToArray());
+		}
+
+		public PuzzleSolution GetSolution(Transaction cashout)
+		{
+			if(cashout == null)
+				throw new ArgumentNullException("cashout");
+			AssertState(SolverClientStates.WaitingEncryptedRealPuzzleKeys);
+			foreach(var input in cashout.Inputs)
+			{
+				var solutions = SolverScriptBuilder.ExtractSolutions(input.ScriptSig, Parameters.RealPuzzleCount);
+				try
+				{
+					return GetSolution(solutions);
+				}
+				catch(PuzzleException)
+				{
+	
+				}
+			}
+			throw new PuzzleException("Impossible to find solution to the puzzle");
+		}
+
+		public PuzzleSolution GetSolution(Script scriptSig)
+		{
+			if(scriptSig == null)
+				throw new ArgumentNullException("scriptSig");
+			AssertState(SolverClientStates.WaitingEncryptedRealPuzzleKeys);
+			var solutions = SolverScriptBuilder.ExtractSolutions(scriptSig, Parameters.RealPuzzleCount);
+			if(solutions == null)
+				throw new PuzzleException("Impossible to find solution to the puzzle");
+			return GetSolution(solutions);
 		}
 
 		public PuzzleSolution GetSolution(SolutionKey[] keys)
