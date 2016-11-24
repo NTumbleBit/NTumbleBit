@@ -69,7 +69,7 @@ namespace NTumbleBit
 
 		public Puzzle GeneratePuzzle(ref PuzzleSolution solution)
 		{
-			solution = solution ?? new PuzzleSolution(Utils.GenerateEncryptableData(_Key));
+			solution = solution ?? new PuzzleSolution(Utils.GenerateEncryptableInteger(_Key));
 			return new Puzzle(this, new PuzzleValue(this.Encrypt(solution._Value)));
 		}
 

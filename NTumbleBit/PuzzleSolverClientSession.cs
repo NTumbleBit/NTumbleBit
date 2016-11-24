@@ -28,14 +28,22 @@ namespace NTumbleBit
 
 	public class PuzzleSolverClientSession : PuzzleSolver
 	{
-		public PuzzleSolverClientSession(RsaPubKey serverKey, PuzzleValue puzzle) : base(15, 285)
+		public PuzzleSolverClientSession(RsaPubKey serverKey, PuzzleValue puzzle)
+			: base(PuzzleSolverParameters.CreateDefault(serverKey))
 		{
 			if(puzzle == null)
 				throw new ArgumentNullException("puzzle");
 			_Puzzle = new Puzzle(serverKey, puzzle);
 		}
 
-		public PuzzleSolverClientSession(Puzzle puzzle) : base(15, 285)
+		public PuzzleSolverClientSession(PuzzleSolverParameters parameters, PuzzleValue puzzle) : base(parameters)
+		{
+			if(puzzle == null)
+				throw new ArgumentNullException("puzzle");
+			_Puzzle = new Puzzle(parameters.ServerKey, puzzle);
+		}
+
+		public PuzzleSolverClientSession(Puzzle puzzle) : base(PuzzleSolverParameters.CreateDefault(puzzle.RsaPubKey))
 		{
 			if(puzzle == null)
 				throw new ArgumentNullException("puzzle");

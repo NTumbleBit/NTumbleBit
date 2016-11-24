@@ -53,6 +53,7 @@
     <Compile Include="FakePuzzlesRevelation.cs" />
     <Compile Include="NBitcoinSecureRandom.cs" />
     <Compile Include="Puzzle.cs" />
+    <Compile Include="PuzzleSolverParameters.cs" />
     <Compile Include="PuzzleValue.cs" />
     <Compile Include="PuzzleCommitment.cs" />
     <Compile Include="PuzzleSet.cs" />
@@ -167,6 +168,7 @@
     <Compile Include="PuzzleSolverServerStateSession.cs" />
     <Compile Include="RsaKey.cs" />
     <Compile Include="RsaPubKey.cs" />
+    <Compile Include="Serializer.cs" />
     <Compile Include="Utils.cs" />
   </ItemGroup>
   <ItemGroup />

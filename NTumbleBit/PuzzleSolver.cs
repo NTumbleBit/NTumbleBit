@@ -8,22 +8,30 @@ namespace NTumbleBit
 {
     public class PuzzleSolver
     {
-		private readonly int _RealPuzzleCount;
-		private readonly int _FakePuzzleCount;
-
-		public PuzzleSolver(int realPuzzleCount, int fakePuzzleCount)
+		public PuzzleSolver(PuzzleSolverParameters parameters)
 		{
-			if(realPuzzleCount <= 0 || fakePuzzleCount <= 0)
+			if(parameters == null)
+				throw new ArgumentNullException("parameters");
+			if(parameters.RealPuzzleCount <= 0 || parameters.FakePuzzleCount <= 0)
 				throw new ArgumentOutOfRangeException();
-			this._RealPuzzleCount = realPuzzleCount;
-			this._FakePuzzleCount = fakePuzzleCount;
+			_Parameters = parameters;
+		}
+
+
+		private readonly PuzzleSolverParameters _Parameters;
+		public PuzzleSolverParameters Parameters
+		{
+			get
+			{
+				return _Parameters;
+			}
 		}
 
 		public int RealPuzzleCount
 		{
 			get
 			{
-				return _RealPuzzleCount;
+				return Parameters.RealPuzzleCount;
 			}
 		}
 
@@ -31,7 +39,7 @@ namespace NTumbleBit
 		{
 			get
 			{
-				return _FakePuzzleCount;
+				return Parameters.FakePuzzleCount;
 			}
 		}
 
@@ -39,7 +47,7 @@ namespace NTumbleBit
 		{
 			get
 			{
-				return _FakePuzzleCount + _RealPuzzleCount;
+				return FakePuzzleCount + RealPuzzleCount;
 			}
 		}
 	}

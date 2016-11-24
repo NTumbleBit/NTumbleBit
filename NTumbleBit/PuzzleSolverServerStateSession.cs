@@ -43,10 +43,20 @@ namespace NTumbleBit
 				get; set;
 			}
 		}
-		public PuzzleSolverServerSession(RsaKey serverKey) : base(15, 285)
+		public PuzzleSolverServerSession(RsaKey serverKey) : this(serverKey, null)
 		{
 			if(serverKey == null)
 				throw new ArgumentNullException("serverKey");
+			_ServerKey = serverKey;
+		}
+
+		public PuzzleSolverServerSession(RsaKey serverKey, PuzzleSolverParameters parameters) : 
+			base(parameters ?? PuzzleSolverParameters.CreateDefault(serverKey.PubKey))
+		{
+			if(serverKey == null)
+				throw new ArgumentNullException("serverKey");
+			if(serverKey.PubKey != Parameters.ServerKey)
+				throw new ArgumentNullException("Private key not matching expected public key");
 			_ServerKey = serverKey;
 		}
 

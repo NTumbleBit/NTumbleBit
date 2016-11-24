@@ -39,18 +39,6 @@ namespace NTumbleBit
 			return result;
 		}
 
-		public static byte[] GenerateEncryptableData(RsaKeyParameters key)
-		{
-			while(true)
-			{
-				var bytes = RandomUtils.GetBytes(RsaKey.KeySize / 8);
-				BigInteger input = new BigInteger(1, bytes);
-				if(input.CompareTo(key.Modulus) >= 0)
-					continue;
-				return bytes;
-			}
-		}
-
 		internal static BigInteger GenerateEncryptableInteger(RsaKeyParameters key)
 		{
 			while(true)

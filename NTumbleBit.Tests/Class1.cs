@@ -1,5 +1,6 @@
 ﻿using NBitcoin;
 using NBitcoin.DataEncoders;
+using NTumbleBit.BouncyCastle.Crypto.Parameters;
 using NTumbleBit.BouncyCastle.Math;
 using System;
 using System.Collections.Generic;
@@ -60,12 +61,24 @@ namespace NTumbleBit.Tests
 
 			for(int i = 0; i < 100; i++)
 			{
-				data = Utils.GenerateEncryptableData(key._Key);
+				data = GenerateEncryptableData(key._Key);
 				signature = key.Sign(data);
 				Assert.True(key.PubKey.Verify(data, signature));
 			}
 
 
+		}
+
+		static byte[] GenerateEncryptableData(RsaKeyParameters key)
+		{
+			while(true)
+			{
+				var bytes = RandomUtils.GetBytes(RsaKey.KeySize / 8);
+				BigInteger input = new BigInteger(1, bytes);
+				if(input.CompareTo(key.Modulus) >= 0)
+					continue;
+				return bytes;
+			}
 		}
 
 		[Fact]
