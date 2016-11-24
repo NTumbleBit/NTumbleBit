@@ -4,6 +4,7 @@ using System.Text;
 using NTumbleBit.BouncyCastle.Crypto.Parameters;
 using NTumbleBit.BouncyCastle.Crypto.Utilities;
 using NTumbleBit.BouncyCastle.Utilities;
+using NBitcoin.DataEncoders;
 
 namespace NTumbleBit.BouncyCastle.Crypto.Engines
 {
@@ -17,7 +18,7 @@ namespace NTumbleBit.BouncyCastle.Crypto.Engines
 		/** Constants */
 		private const int StateSize = 16; // 16, 32 bit ints = 64 bytes
 
-		private readonly static uint[] TAU_SIGMA = Pack.LE_To_UInt32(Encoding.ASCII.GetBytes("expand 16-byte k" + "expand 32-byte k"), 0, 8);
+		private readonly static uint[] TAU_SIGMA = Pack.LE_To_UInt32(Encoders.ASCII.DecodeData("expand 16-byte k" + "expand 32-byte k"), 0, 8);
 
 		internal void PackTauOrSigma(int keyLength, uint[] state, int stateOffset)
 		{
