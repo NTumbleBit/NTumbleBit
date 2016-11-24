@@ -16,7 +16,7 @@ namespace NTumbleBit.PuzzleSolver
 		WaitingBlindFactor,
 		Completed
 	}
-	public class SolverServerSession : Solver
+	public class SolverServerSession
 	{
 		class SolvedPuzzle
 		{
@@ -45,21 +45,27 @@ namespace NTumbleBit.PuzzleSolver
 		}
 		public SolverServerSession(RsaKey serverKey) : this(serverKey, null)
 		{
-			if(serverKey == null)
-				throw new ArgumentNullException("serverKey");
-			_ServerKey = serverKey;
 		}
 
-		public SolverServerSession(RsaKey serverKey, SolverParameters parameters) : 
-			base(parameters ?? SolverParameters.CreateDefault(serverKey.PubKey))
+		public SolverServerSession(RsaKey serverKey, SolverParameters parameters)
 		{
+			parameters = parameters ?? SolverParameters.CreateDefault(serverKey.PubKey);
 			if(serverKey == null)
 				throw new ArgumentNullException("serverKey");
-			if(serverKey.PubKey != Parameters.ServerKey)
+			if(serverKey.PubKey != parameters.ServerKey)
 				throw new ArgumentNullException("Private key not matching expected public key");
 			_ServerKey = serverKey;
+			_Parameters = parameters;
 		}
 
+		private readonly SolverParameters _Parameters;
+		public SolverParameters Parameters
+		{
+			get
+			{
+				return _Parameters;
+			}
+		}
 
 		private readonly RsaKey _ServerKey;
 		private SolverServerStates _State = SolverServerStates.WaitingPuzzles;
@@ -84,8 +90,8 @@ namespace NTumbleBit.PuzzleSolver
 		{
 			if(puzzles == null)
 				throw new ArgumentNullException("puzzles");
-			if(puzzles.Length != TotalPuzzleCount)
-				throw new ArgumentException("Expecting " + TotalPuzzleCount + " puzzles");
+			if(puzzles.Length != Parameters.GetTotalCount())
+				throw new ArgumentException("Expecting " + Parameters.GetTotalCount() + " puzzles");
 			AssertState(SolverServerStates.WaitingPuzzles);
 			List<ServerCommitment> commitments = new List<ServerCommitment>();
 			List<SolvedPuzzle> solvedPuzzles = new List<SolvedPuzzle>();
@@ -113,14 +119,14 @@ namespace NTumbleBit.PuzzleSolver
 		{
 			if(revelation == null)
 				throw new ArgumentNullException("puzzleSolutions");
-			if(revelation.Indexes.Length != FakePuzzleCount || revelation.Solutions.Length != FakePuzzleCount)
-				throw new ArgumentException("Expecting " + FakePuzzleCount + " puzzle solutions");
+			if(revelation.Indexes.Length != Parameters.FakePuzzleCount || revelation.Solutions.Length != Parameters.FakePuzzleCount)
+				throw new ArgumentException("Expecting " + Parameters.FakePuzzleCount + " puzzle solutions");
 			AssertState(SolverServerStates.WaitingFakePuzzleSolutions);
 
 
 
 			List<SolvedPuzzle> fakePuzzles = new List<SolvedPuzzle>();
-			for(int i = 0; i < FakePuzzleCount; i++)
+			for(int i = 0; i < Parameters.FakePuzzleCount; i++)
 			{
 				var index = revelation.Indexes[i];
 				var solvedPuzzle = _SolvedPuzzles[index];
@@ -132,7 +138,7 @@ namespace NTumbleBit.PuzzleSolver
 			}
 
 			List<SolvedPuzzle> realPuzzles = new List<SolvedPuzzle>();
-			for(int i = 0; i < TotalPuzzleCount; i++)
+			for(int i = 0; i < Parameters.GetTotalCount(); i++)
 			{
 				if(Array.IndexOf(revelation.Indexes, i) == -1)
 				{
@@ -151,13 +157,13 @@ namespace NTumbleBit.PuzzleSolver
 		{
 			if(blindFactors == null)
 				throw new ArgumentNullException("blindFactors");
-			if(blindFactors.Length != RealPuzzleCount)
-				throw new ArgumentException("Expecting " + RealPuzzleCount + " blind factors");
+			if(blindFactors.Length != Parameters.RealPuzzleCount)
+				throw new ArgumentException("Expecting " + Parameters.RealPuzzleCount + " blind factors");
 			AssertState(SolverServerStates.WaitingBlindFactor);
 			List<SolutionKey> keys = new List<SolutionKey>();
 			Puzzle unblindedPuzzle = null;
 			int y = 0;
-			for(int i = 0; i < RealPuzzleCount; i++)
+			for(int i = 0; i < Parameters.RealPuzzleCount; i++)
 			{
 				var solvedPuzzle = _SolvedRealPuzzles[i];
 				var unblinded = solvedPuzzle.Puzzle.Unblind(blindFactors[i]);

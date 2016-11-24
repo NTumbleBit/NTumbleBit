@@ -111,10 +111,10 @@ namespace NTumbleBit.Tests
 			PuzzleSolution expectedSolution = null;
 			Puzzle puzzle = key.PubKey.GeneratePuzzle(ref expectedSolution);
 			
-			SolverClientSession client = new SolverClientSession(puzzle);
+			SolverClientSession client = new SolverClientSession(key.PubKey);
 			SolverServerSession server = new SolverServerSession(key);
 
-			PuzzleValue[] puzzles = client.GeneratePuzzles();
+			PuzzleValue[] puzzles = client.GeneratePuzzles(new PuzzlePaymentRequest(puzzle, Amount, EscrowDate));
 			ServerCommitment[] commitments = server.SolvePuzzles(puzzles);
 			ClientRevelation revelation = client.Reveal(commitments);
 			SolutionKey[] fakePuzzleKeys = server.GetSolutionKeys(revelation);
@@ -138,10 +138,10 @@ namespace NTumbleBit.Tests
 				RealPuzzleCount = 10,
 				ServerKey = key.PubKey
 			};
-			SolverClientSession client = new SolverClientSession(puzzle.PuzzleValue, parameters);
+			SolverClientSession client = new SolverClientSession(key.PubKey);
 			SolverServerSession server = new SolverServerSession(key, parameters);
 
-			PuzzleValue[] puzzles = client.GeneratePuzzles();
+			PuzzleValue[] puzzles = client.GeneratePuzzles(new PuzzlePaymentRequest(puzzle, Amount, EscrowDate));
 
 			var ms = new MemoryStream();
 			var seria = new SolverSerializer(client.Parameters, ms);
@@ -189,6 +189,10 @@ namespace NTumbleBit.Tests
 			Assert.True(solution == expectedSolution);
 		}
 
+
+		LockTime EscrowDate = new LockTime(new DateTimeOffset(1988, 07, 18, 0, 0, 0, TimeSpan.Zero));
+		Money Amount = Money.Coins(1.0m);
+	
 		[Fact]
 		public void CanBlind()
 		{

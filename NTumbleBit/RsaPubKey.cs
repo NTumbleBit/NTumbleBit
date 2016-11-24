@@ -1,4 +1,5 @@
 ﻿using NBitcoin;
+using NBitcoin.Crypto;
 using NTumbleBit.BouncyCastle.Asn1;
 using NTumbleBit.BouncyCastle.Asn1.Pkcs;
 using NTumbleBit.BouncyCastle.Asn1.X509;
@@ -66,6 +67,10 @@ namespace NTumbleBit
 			return new BigInteger(1, data).Equals(engine.ProcessBlock(engine.ConvertInput(signature, 0, signature.Length)));
 		}
 
+		public uint256 GetHash()
+		{
+			return Hashes.Hash256(ToBytes());
+		}
 
 		public Puzzle GeneratePuzzle(ref PuzzleSolution solution)
 		{

@@ -11,7 +11,7 @@ namespace NTumbleBit.PuzzleSolver
 {
 	public enum SolverClientStates
 	{
-		Initialized,
+		WaitingPaymentRequest,
 		WaitingCommitments,
 		WaitingEncryptedFakePuzzleKeys,
 		WaitingEncryptedRealPuzzleKeys,
@@ -26,40 +26,41 @@ namespace NTumbleBit.PuzzleSolver
 		}
 	}
 
-	public class SolverClientSession : Solver
+	public class SolverClientSession
 	{
-		public SolverClientSession(RsaPubKey serverKey, PuzzleValue puzzle)
-			: base(SolverParameters.CreateDefault(serverKey))
+		public SolverClientSession(RsaPubKey serverKey)
 		{
-			if(puzzle == null)
-				throw new ArgumentNullException("puzzle");
-			_Puzzle = new Puzzle(serverKey, puzzle);
+			if(serverKey == null)
+				throw new ArgumentNullException("serverKey");
+			_Parameters = SolverParameters.CreateDefault(serverKey);
 		}
 
-		public SolverClientSession(PuzzleValue puzzle, SolverParameters parameters) : base(parameters)
+		public SolverClientSession(SolverParameters parameters)
 		{
-			if(puzzle == null)
-				throw new ArgumentNullException("puzzle");
-			_Puzzle = new Puzzle(parameters.ServerKey, puzzle);
+			if(parameters == null)
+				throw new ArgumentNullException("parameters");
+			_Parameters = parameters;
 		}
 
-		public SolverClientSession(Puzzle puzzle) : base(SolverParameters.CreateDefault(puzzle.RsaPubKey))
+		private readonly SolverParameters _Parameters;
+		public SolverParameters Parameters
 		{
-			if(puzzle == null)
-				throw new ArgumentNullException("puzzle");
-			_Puzzle = puzzle;
+			get
+			{
+				return _Parameters;
+			}
 		}
 
 		public RsaPubKey ServerKey
 		{
 			get
 			{
-				return _Puzzle.RsaPubKey;
+				return _Parameters.ServerKey;
 			}
 		}
 
 
-		private readonly Puzzle _Puzzle;
+		private Puzzle _Puzzle;
 		public Puzzle Puzzle
 		{
 			get
@@ -69,7 +70,7 @@ namespace NTumbleBit.PuzzleSolver
 		}
 
 
-		private SolverClientStates _State = SolverClientStates.Initialized;
+		private SolverClientStates _State = SolverClientStates.WaitingPaymentRequest;
 		public SolverClientStates State
 		{
 			get
@@ -78,18 +79,35 @@ namespace NTumbleBit.PuzzleSolver
 			}
 		}
 
-		public PuzzleValue[] GeneratePuzzles()
+
+		private PuzzlePaymentRequest _PaymentRequest;
+		public PuzzlePaymentRequest PaymentRequest
 		{
-			AssertState(SolverClientStates.Initialized);
+			get
+			{
+				return _PaymentRequest;
+			}
+		}
+
+		public PuzzleValue[] GeneratePuzzles(PuzzlePaymentRequest paymentRequest)
+		{
+			if(paymentRequest == null)
+				throw new ArgumentNullException("paymentRequest");
+			AssertState(SolverClientStates.WaitingPaymentRequest);
+
+			if(paymentRequest.RsaPubKeyHash != Parameters.ServerKey.GetHash())
+				throw new PuzzleException("Invalid RsaPubKeyHash");
+
+			var paymentPuzzle = new Puzzle(Parameters.ServerKey, paymentRequest.PuzzleValue);
 			List<PuzzleSetElement> puzzles = new List<PuzzleSetElement>();
-			for(int i = 0; i < RealPuzzleCount; i++)
+			for(int i = 0; i < Parameters.RealPuzzleCount; i++)
 			{
 				BlindFactor blind = null;
-				Puzzle puzzle = Puzzle.Blind(ref blind);
+				Puzzle puzzle = paymentPuzzle.Blind(ref blind);
 				puzzles.Add(new RealPuzzle(puzzle, blind));
 			}
 
-			for(int i = 0; i < FakePuzzleCount; i++)
+			for(int i = 0; i < Parameters.FakePuzzleCount; i++)
 			{
 				PuzzleSolution solution = null;
 				Puzzle puzzle = ServerKey.GeneratePuzzle(ref solution);
@@ -100,6 +118,8 @@ namespace NTumbleBit.PuzzleSolver
 			NBitcoin.Utils.Shuffle(puzzlesArray, RandomUtils.GetInt32());
 			PuzzleSet = new PuzzleSet(puzzlesArray);
 			_State = SolverClientStates.WaitingCommitments;
+			_PaymentRequest = paymentRequest;
+			_Puzzle = paymentPuzzle;
 			return PuzzleSet.PuzzleValues.ToArray();
 		}
 
@@ -108,8 +128,8 @@ namespace NTumbleBit.PuzzleSolver
 		{
 			if(commitments == null)
 				throw new ArgumentNullException("commitments");
-			if(commitments.Length != TotalPuzzleCount)
-				throw new ArgumentException("Expecting " + TotalPuzzleCount + " commitments");
+			if(commitments.Length != Parameters.GetTotalCount())
+				throw new ArgumentException("Expecting " + Parameters.GetTotalCount() + " commitments");
 			AssertState(SolverClientStates.WaitingCommitments);
 			PuzzleCommiments = commitments;
 			_State = SolverClientStates.WaitingEncryptedFakePuzzleKeys;
@@ -133,8 +153,8 @@ namespace NTumbleBit.PuzzleSolver
 		{
 			if(keys == null)
 				throw new ArgumentNullException("keys");
-			if(keys.Length != FakePuzzleCount)
-				throw new ArgumentException("Expecting " + FakePuzzleCount + " keys");
+			if(keys.Length != Parameters.FakePuzzleCount)
+				throw new ArgumentException("Expecting " + Parameters.FakePuzzleCount + " keys");
 			AssertState(SolverClientStates.WaitingEncryptedFakePuzzleKeys);
 
 			int y = 0;
@@ -169,8 +189,8 @@ namespace NTumbleBit.PuzzleSolver
 		{
 			if(keys == null)
 				throw new ArgumentNullException("keys");
-			if(keys.Length != RealPuzzleCount)
-				throw new ArgumentException("Expecting " + RealPuzzleCount + " keys");
+			if(keys.Length != Parameters.RealPuzzleCount)
+				throw new ArgumentException("Expecting " + Parameters.RealPuzzleCount + " keys");
 			AssertState(SolverClientStates.WaitingEncryptedRealPuzzleKeys);
 			PuzzleSolution solution = null;
 			RealPuzzle solvedPuzzle = null;

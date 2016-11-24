@@ -37,6 +37,11 @@ namespace NTumbleBit.PuzzleSolver
 			get; set;
 		}
 
+		public int GetTotalCount()
+		{
+			return RealPuzzleCount + FakePuzzleCount;
+		}
+
 		public SolverSerializer CreateSerializer(Stream stream)
 		{
 			if(stream == null)
