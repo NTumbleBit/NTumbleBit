@@ -110,8 +110,8 @@ namespace NTumbleBit.Tests
 			PuzzleSolution expectedSolution = null;
 			Puzzle puzzle = key.PubKey.GeneratePuzzle(ref expectedSolution);
 			
-			SolverClientSession client = new SolverClientSession(puzzle);
-			SolverServerSession server = new SolverServerSession(key);
+			var client = new SolverClientSession(puzzle);
+			var server = new SolverServerSession(key);
 
 			PuzzleValue[] puzzles = client.GeneratePuzzles();
 			ServerCommitment[] commitments = server.SolvePuzzles(puzzles);
@@ -137,8 +137,8 @@ namespace NTumbleBit.Tests
 				RealPuzzleCount = 10,
 				ServerKey = key.PubKey
 			};
-			SolverClientSession client = new SolverClientSession(puzzle.PuzzleValue, parameters);
-			SolverServerSession server = new SolverServerSession(key, parameters);
+			var client = new SolverClientSession(puzzle.PuzzleValue, parameters);
+			var server = new SolverServerSession(key, parameters);
 
 			PuzzleValue[] puzzles = client.GeneratePuzzles();
 
