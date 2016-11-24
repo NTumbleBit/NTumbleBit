@@ -18,6 +18,31 @@ namespace NTumbleBit
 	}
 	public class PuzzleSolverServerStateMachine : PuzzleSolver
 	{
+		class SolvedPuzzle
+		{
+			public SolvedPuzzle(Puzzle puzzle, ChachaKey key, byte[] solution)
+			{
+				Puzzle = puzzle;
+				_Key = key;
+				Solution = solution;
+			}
+
+			public Puzzle Puzzle
+			{
+				get; set;
+			}
+			ChachaKey _Key;
+			public ChachaKey Reveal()
+			{
+				var key = _Key;
+				_Key = null;
+				return key;
+			}
+			public byte[] Solution
+			{
+				get; set;
+			}
+		}
 		public PuzzleSolverServerStateMachine(RsaKey serverKey) : base(15, 285)
 		{
 			if(serverKey == null)
@@ -52,9 +77,8 @@ namespace NTumbleBit
 			if(puzzles.Length != TotalPuzzleCount)
 				throw new ArgumentException("Expecting " + TotalPuzzleCount + " puzzles");
 			AssertState(PuzzleSolverServerStates.WaitingPuzzles);
-			_Puzzles = puzzles.ToArray();
 			List<PuzzleCommitment> commitments = new List<PuzzleCommitment>();
-			List<ChachaKey> keys = new List<ChachaKey>();
+			List<SolvedPuzzle> solvedPuzzles = new List<SolvedPuzzle>();
 			foreach(var puzzle in puzzles)
 			{
 				var solution = puzzle.Solve(ServerKey);
@@ -62,63 +86,55 @@ namespace NTumbleBit
 				var encryptedSolution = Utils.ChachaEncrypt(solution, ref key);
 				uint160 keyHash = new uint160(Hashes.RIPEMD160(key, key.Length));
 				commitments.Add(new PuzzleCommitment(keyHash, encryptedSolution));
-				keys.Add(new ChachaKey(key));
+				solvedPuzzles.Add(new SolvedPuzzle(puzzle, new ChachaKey(key), solution));
 			}
-			_Keys = keys.ToArray();
+			_SolvedPuzzles = solvedPuzzles.ToArray();
 			_State = PuzzleSolverServerStates.WaitingFakePuzzleSolutions;
 			return commitments.ToArray();
 		}
 
 
-		private Puzzle[] _Puzzles;
-		public Puzzle[] Puzzles
-		{
-			get
-			{
-				return _Puzzles;
-			}
-		}
-		ChachaKey[] _Keys;
-		public ChachaKey[] Keys
-		{
-			get
-			{
-				return _Keys;
-			}
-		}
 
+		private SolvedPuzzle[] _SolvedPuzzles;
+		private SolvedPuzzle[] _SolvedFakePuzzles;
+		private SolvedPuzzle[] _SolvedRealPuzzles;
 
-
-		private int[] _FakeIndexes;
-		public int[] FakeIndexes
+		public ChachaKey[] GetFakePuzzleKeys(FakePuzzlesRevelation revelation)
 		{
-			get
-			{
-				return _FakeIndexes;
-			}
-		}
-
-		public ChachaKey[] GetFakePuzzleKeys(PuzzleSolution[] puzzleSolutions)
-		{
-			if(puzzleSolutions == null)
+			if(revelation == null)
 				throw new ArgumentNullException("puzzleSolutions");
-			if(puzzleSolutions.Length != FakePuzzleCount)
+			if(revelation.Indexes.Length != FakePuzzleCount || revelation.Solutions.Length != FakePuzzleCount)
 				throw new ArgumentException("Expecting " + FakePuzzleCount + " puzzle solutions");
 			AssertState(PuzzleSolverServerStates.WaitingFakePuzzleSolutions);
-			List<ChachaKey> keys = new List<ChachaKey>();
-			foreach(var solution in puzzleSolutions)
+
+
+
+			List<SolvedPuzzle> fakePuzzles = new List<SolvedPuzzle>();
+			for(int i = 0; i < FakePuzzleCount; i++)
 			{
-				var puzzle = Puzzles[solution.Index];
-				var actualSolution = puzzle.Solve(ServerKey);
-				if(!new BigInteger(1, actualSolution).Equals(new BigInteger(1, solution.Solution)))
+				var index = revelation.Indexes[i];
+				var solvedPuzzle = _SolvedPuzzles[index];
+				if(!new BigInteger(1, solvedPuzzle.Solution).Equals(new BigInteger(1, revelation.Solutions[i])))
 				{
 					throw new PuzzleException("Incorrect puzzle solution");
 				}
-				keys.Add(Keys[solution.Index]);
+				fakePuzzles.Add(solvedPuzzle);
 			}
-			_FakeIndexes = puzzleSolutions.Select(s => s.Index).ToArray();
+
+			List<SolvedPuzzle> realPuzzles = new List<SolvedPuzzle>();
+			for(int i = 0; i < TotalPuzzleCount; i++)
+			{
+				if(Array.IndexOf(revelation.Indexes, i) == -1)
+				{
+					realPuzzles.Add(_SolvedPuzzles[i]);
+				}
+			}
+			_SolvedPuzzles = null;
+
+			_SolvedFakePuzzles = fakePuzzles.ToArray();
+			_SolvedRealPuzzles = realPuzzles.ToArray();
 			_State = PuzzleSolverServerStates.WaitingBlindFactor;
-			return keys.ToArray();
+			return _SolvedFakePuzzles.Select(f => f.Reveal()).ToArray();
 		}
 
 		public ChachaKey[] GetRealPuzzleKeys(BlindFactor[] blindFactors)
@@ -128,17 +144,13 @@ namespace NTumbleBit
 			if(blindFactors.Length != RealPuzzleCount)
 				throw new ArgumentException("Expecting " + RealPuzzleCount + " blind factors");
 			AssertState(PuzzleSolverServerStates.WaitingBlindFactor);
-
 			List<ChachaKey> keys = new List<ChachaKey>();
 			Puzzle unblindedPuzzle = null;
 			int y = 0;
-			for(int i = 0; i < Puzzles.Length; i++)
+			for(int i = 0; i < RealPuzzleCount; i++)
 			{
-				if(FakeIndexes.Contains(i))
-					continue;
-				var puzzle = Puzzles[i];
-				keys.Add(Keys[i]);
-				var unblinded = puzzle.RevertBlind(ServerKey.PubKey, blindFactors[y]);
+				var solvedPuzzle = _SolvedRealPuzzles[i];
+				var unblinded = solvedPuzzle.Puzzle.RevertBlind(ServerKey.PubKey, blindFactors[i]);
 				if(unblindedPuzzle == null)
 					unblindedPuzzle = unblinded;
 				else
@@ -151,7 +163,7 @@ namespace NTumbleBit
 				y++;
 			}
 			_State = PuzzleSolverServerStates.Completed;
-			return keys.ToArray();
+			return _SolvedRealPuzzles.Select(s => s.Reveal()).ToArray();
 		}
 
 

@@ -51,6 +51,7 @@
     <Compile Include="Blind.cs" />
     <Compile Include="BlindFactor.cs" />
     <Compile Include="ChachaKey.cs" />
+    <Compile Include="FakePuzzlesRevelation.cs" />
     <Compile Include="NBitcoinSecureRandom.cs" />
     <Compile Include="Puzzle.cs" />
     <Compile Include="PuzzleCommitment.cs" />

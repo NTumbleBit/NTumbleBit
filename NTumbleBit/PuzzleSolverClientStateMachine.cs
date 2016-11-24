@@ -94,7 +94,7 @@ namespace NTumbleBit
 		}
 
 
-		public PuzzleSolution[] GetFakePuzzleSolutions(PuzzleCommitment[] commitments)
+		public FakePuzzlesRevelation GetFakePuzzlesRevelation(PuzzleCommitment[] commitments)
 		{
 			if(commitments == null)
 				throw new ArgumentNullException("commitments");
@@ -103,9 +103,20 @@ namespace NTumbleBit
 			AssertState(PuzzleSolverClientStates.WaitingCommitments);
 			PuzzleCommiments = commitments;
 			_State = PuzzleSolverClientStates.WaitingEncryptedFakePuzzleKeys;
-			return PuzzleSet.PuzzleElements.OfType<FakePuzzle>()
-				.Select(f => new PuzzleSolution(Array.IndexOf(PuzzleSet.PuzzleElements, f), f.Solution))
-				.ToArray();
+
+			List<byte[]> solutions = new List<byte[]>();
+			List<int> indexes = new List<int>();
+
+			for(int i = 0; i < PuzzleSet.PuzzleElements.Length; i++)
+			{
+				var element = PuzzleSet.PuzzleElements[i] as FakePuzzle;
+				if(element != null)
+				{
+					solutions.Add(element.Solution);
+					indexes.Add(i);
+				}
+			}
+			return new FakePuzzlesRevelation(indexes.ToArray(), solutions.ToArray());
 		}
 
 		public BlindFactor[] GetBlindFactors(ChachaKey[] keys)

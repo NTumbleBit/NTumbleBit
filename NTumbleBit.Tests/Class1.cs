@@ -103,8 +103,8 @@ namespace NTumbleBit.Tests
 
 			Puzzle[] puzzles = client.GeneratePuzzles();
 			PuzzleCommitment[] commitments = server.SolvePuzzles(puzzles);
-			PuzzleSolution[] fakeSolutions = client.GetFakePuzzleSolutions(commitments);
-			ChachaKey[] fakePuzzleKeys = server.GetFakePuzzleKeys(fakeSolutions);
+			FakePuzzlesRevelation revelation = client.GetFakePuzzlesRevelation(commitments);
+			ChachaKey[] fakePuzzleKeys = server.GetFakePuzzleKeys(revelation);
 			BlindFactor[] blindFactors = client.GetBlindFactors(fakePuzzleKeys);
 			ChachaKey[] realPuzzleKeys = server.GetRealPuzzleKeys(blindFactors);
 			var solution = client.GetSolution(realPuzzleKeys);

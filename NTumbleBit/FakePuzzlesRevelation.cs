@@ -1,0 +1,26 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace NTumbleBit
+{
+	public class FakePuzzlesRevelation
+	{
+		public FakePuzzlesRevelation(int[] indexes, byte[][] solutions)
+		{
+			Indexes = indexes;
+			Solutions = solutions;
+		}
+		public int[] Indexes
+		{
+			get; set;
+		}
+
+		public byte[][] Solutions
+		{
+			get; set;
+		}
+	}
+}
