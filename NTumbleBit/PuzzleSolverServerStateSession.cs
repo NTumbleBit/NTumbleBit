@@ -153,13 +153,8 @@ namespace NTumbleBit
 				var unblinded = solvedPuzzle.Puzzle.Unblind(ServerKey.PubKey, blindFactors[i]);
 				if(unblindedPuzzle == null)
 					unblindedPuzzle = unblinded;
-				else
-				{
-					if(unblinded != unblindedPuzzle)
-					{
-						throw new PuzzleException("Invalid blind factor");
-					}
-				}
+				else if(unblinded != unblindedPuzzle)
+					throw new PuzzleException("Invalid blind factor");
 				y++;
 			}
 			_State = PuzzleSolverServerStates.Completed;
