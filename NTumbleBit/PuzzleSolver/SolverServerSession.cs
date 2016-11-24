@@ -109,7 +109,7 @@ namespace NTumbleBit.PuzzleSolver
 		private SolvedPuzzle[] _SolvedFakePuzzles;
 		private SolvedPuzzle[] _SolvedRealPuzzles;
 
-		public SolutionKey[] GetFakePuzzleKeys(ClientRevelation revelation)
+		public SolutionKey[] GetSolutionKeys(ClientRevelation revelation)
 		{
 			if(revelation == null)
 				throw new ArgumentNullException("puzzleSolutions");
@@ -147,7 +147,7 @@ namespace NTumbleBit.PuzzleSolver
 			return _SolvedFakePuzzles.Select(f => f.Reveal()).ToArray();
 		}
 
-		public SolutionKey[] GetRealPuzzleKeys(BlindFactor[] blindFactors)
+		public SolutionKey[] GetSolutionKeys(BlindFactor[] blindFactors)
 		{
 			if(blindFactors == null)
 				throw new ArgumentNullException("blindFactors");

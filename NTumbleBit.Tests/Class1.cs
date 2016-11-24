@@ -116,10 +116,10 @@ namespace NTumbleBit.Tests
 
 			PuzzleValue[] puzzles = client.GeneratePuzzles();
 			ServerCommitment[] commitments = server.SolvePuzzles(puzzles);
-			ClientRevelation revelation = client.GetFakePuzzlesRevelation(commitments);
-			SolutionKey[] fakePuzzleKeys = server.GetFakePuzzleKeys(revelation);
+			ClientRevelation revelation = client.Reveal(commitments);
+			SolutionKey[] fakePuzzleKeys = server.GetSolutionKeys(revelation);
 			BlindFactor[] blindFactors = client.GetBlindFactors(fakePuzzleKeys);
-			SolutionKey[] realPuzzleKeys = server.GetRealPuzzleKeys(blindFactors);
+			SolutionKey[] realPuzzleKeys = server.GetSolutionKeys(blindFactors);
 			var solution = client.GetSolution(realPuzzleKeys);
 
 			Assert.True(solution == expectedSolution);
@@ -156,14 +156,14 @@ namespace NTumbleBit.Tests
 			ms.Position = 0;
 			commitments = seria.ReadPuzzleCommitments();
 
-			var revelation = client.GetFakePuzzlesRevelation(commitments);
+			var revelation = client.Reveal(commitments);
 			ms = new MemoryStream();
 			seria = new SolverSerializer(client.Parameters, ms);
 			seria.WritePuzzleRevelation(revelation);
 			ms.Position = 0;
 			revelation = seria.ReadPuzzleRevelation();
 
-			SolutionKey[] fakePuzzleKeys = server.GetFakePuzzleKeys(revelation);
+			SolutionKey[] fakePuzzleKeys = server.GetSolutionKeys(revelation);
 			ms = new MemoryStream();
 			seria = new SolverSerializer(client.Parameters, ms);
 			seria.WritePuzzleSolutionKeys(fakePuzzleKeys, false);
@@ -178,7 +178,7 @@ namespace NTumbleBit.Tests
 			ms.Position = 0;
 			blindFactors = seria.ReadBlindFactors();
 
-			SolutionKey[] realPuzzleKeys = server.GetRealPuzzleKeys(blindFactors);
+			SolutionKey[] realPuzzleKeys = server.GetSolutionKeys(blindFactors);
 			ms = new MemoryStream();
 			seria = new SolverSerializer(client.Parameters, ms);
 			seria.WritePuzzleSolutionKeys(realPuzzleKeys, true);

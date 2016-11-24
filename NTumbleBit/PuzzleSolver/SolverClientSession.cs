@@ -104,7 +104,7 @@ namespace NTumbleBit.PuzzleSolver
 		}
 
 
-		public ClientRevelation GetFakePuzzlesRevelation(ServerCommitment[] commitments)
+		public ClientRevelation Reveal(ServerCommitment[] commitments)
 		{
 			if(commitments == null)
 				throw new ArgumentNullException("commitments");
