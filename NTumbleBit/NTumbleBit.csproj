@@ -168,7 +168,7 @@
     <Compile Include="PuzzleSolverServerStateSession.cs" />
     <Compile Include="RsaKey.cs" />
     <Compile Include="RsaPubKey.cs" />
-    <Compile Include="Serializer.cs" />
+    <Compile Include="PuzzleSolverSerializer.cs" />
     <Compile Include="Utils.cs" />
   </ItemGroup>
   <ItemGroup />

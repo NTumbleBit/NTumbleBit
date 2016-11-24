@@ -36,7 +36,7 @@ namespace NTumbleBit
 			_Puzzle = new Puzzle(serverKey, puzzle);
 		}
 
-		public PuzzleSolverClientSession(PuzzleSolverParameters parameters, PuzzleValue puzzle) : base(parameters)
+		public PuzzleSolverClientSession(PuzzleValue puzzle, PuzzleSolverParameters parameters) : base(parameters)
 		{
 			if(puzzle == null)
 				throw new ArgumentNullException("puzzle");

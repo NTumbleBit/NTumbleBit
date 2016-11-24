@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -34,6 +35,13 @@ namespace NTumbleBit
 		public int RealPuzzleCount
 		{
 			get; set;
+		}
+
+		public PuzzleSolverSerializer CreateSerializer(Stream stream)
+		{
+			if(stream == null)
+				throw new ArgumentNullException("stream");
+			return new PuzzleSolverSerializer(this, stream);
 		}
 	}
 }

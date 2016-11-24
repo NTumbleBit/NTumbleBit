@@ -5,6 +5,7 @@ using NTumbleBit.BouncyCastle.Math;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -120,6 +121,70 @@ namespace NTumbleBit.Tests
 			PuzzleSolutionKey[] realPuzzleKeys = server.GetRealPuzzleKeys(blindFactors);
 			var solution = client.GetSolution(realPuzzleKeys);
 
+			Assert.True(solution == expectedSolution);
+		}
+
+		[Fact]
+		public void CanSerialize()
+		{
+			RsaKey key = TestKeys.Default;
+			PuzzleSolution expectedSolution = null;
+			Puzzle puzzle = key.PubKey.GeneratePuzzle(ref expectedSolution);
+
+			var parameters = new PuzzleSolverParameters()
+			{
+				FakePuzzleCount = 50,
+				RealPuzzleCount = 10,
+				ServerKey = key.PubKey
+			};
+			PuzzleSolverClientSession client = new PuzzleSolverClientSession(puzzle.PuzzleValue, parameters);
+			PuzzleSolverServerSession server = new PuzzleSolverServerSession(key, parameters);
+
+			PuzzleValue[] puzzles = client.GeneratePuzzles();
+
+			var ms = new MemoryStream();
+			var seria = new PuzzleSolverSerializer(client.Parameters, ms);
+			seria.WritePuzzles(puzzles);
+			ms.Position = 0;
+			puzzles = seria.ReadPuzzles();
+
+			var commitments = server.SolvePuzzles(puzzles);
+			ms = new MemoryStream();
+			seria = new PuzzleSolverSerializer(client.Parameters, ms);
+			seria.WritePuzzleCommitments(commitments);
+			ms.Position = 0;
+			commitments = seria.ReadPuzzleCommitments();
+
+			var revelation = client.GetFakePuzzlesRevelation(commitments);
+			ms = new MemoryStream();
+			seria = new PuzzleSolverSerializer(client.Parameters, ms);
+			seria.WritePuzzleRevelation(revelation);
+			ms.Position = 0;
+			revelation = seria.ReadPuzzleRevelation();
+
+			PuzzleSolutionKey[] fakePuzzleKeys = server.GetFakePuzzleKeys(revelation);
+			ms = new MemoryStream();
+			seria = new PuzzleSolverSerializer(client.Parameters, ms);
+			seria.WritePuzzleSolutionKeys(fakePuzzleKeys, false);
+			ms.Position = 0;
+			fakePuzzleKeys = seria.ReadPuzzleSolutionKeys(false);
+
+
+			BlindFactor[] blindFactors = client.GetBlindFactors(fakePuzzleKeys);
+			ms = new MemoryStream();
+			seria = new PuzzleSolverSerializer(client.Parameters, ms);
+			seria.WriteBlindFactors(blindFactors);
+			ms.Position = 0;
+			blindFactors = seria.ReadBlindFactors();
+
+			PuzzleSolutionKey[] realPuzzleKeys = server.GetRealPuzzleKeys(blindFactors);
+			ms = new MemoryStream();
+			seria = new PuzzleSolverSerializer(client.Parameters, ms);
+			seria.WritePuzzleSolutionKeys(realPuzzleKeys, true);
+			ms.Position = 0;
+			realPuzzleKeys = seria.ReadPuzzleSolutionKeys(true);
+
+			var solution = client.GetSolution(realPuzzleKeys);
 			Assert.True(solution == expectedSolution);
 		}
 
