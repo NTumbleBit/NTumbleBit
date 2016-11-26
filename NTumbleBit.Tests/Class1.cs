@@ -86,7 +86,7 @@ namespace NTumbleBit.Tests
 		public void CanRSASign()
 		{
 			RsaKey key = TestKeys.Default;
-			var data = RandomUtils.GetBytes(RsaKey.KeySize / 8);
+			var data = GenerateEncryptableData(key._Key);
 			var sig = key.Sign(data);
 			Assert.True(key.PubKey.Verify(data, sig));
 		}

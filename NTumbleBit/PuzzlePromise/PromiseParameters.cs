@@ -24,5 +24,17 @@ namespace NTumbleBit.PuzzlePromise
 			FakeTransactionCount = 42;
 			RealTransactionCount = 42;
 		}
+
+		public PromiseParameters(RsaKey serverKey):this()
+		{
+			if(serverKey == null)
+				throw new ArgumentNullException("serverKey");
+			ServerKey = serverKey;
+		}
+
+		public RsaKey ServerKey
+		{
+			get; set;
+		}
 	}
 }
