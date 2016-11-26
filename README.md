@@ -29,7 +29,7 @@ The promise protocol is still a work in progress.
 
 NTumbleBit depends on NBitcoin and BouncyCastle. BouncyCastle is compiled inside NTumbleBit.
 
-# For building on Visual Studio
+# Building on Visual Studio
 
 I did not managed to make Visual Studio works nicely out of the box with the `project.json` file. So for building with Visual Studio you need the following one-time hack:
 
