@@ -29,7 +29,7 @@ The promise protocol is still a work in progress.
 
 NTumbleBit depends on NBitcoin and BouncyCastle. BouncyCastle is compiled inside NTumbleBit.
 
-# Building on Visual Studio
+# Notes on Visual Studio
 
 I did not managed to make Visual Studio works nicely out of the box with the `project.json` file. So for building with Visual Studio you need the following one-time hack:
 
@@ -41,9 +41,11 @@ del NTumbleBit.Tests/project.json
 ```
 Open `NTumbleBit.sln` with visual studio.
 Build the solution.
+Verify that the Test Explorer detect the XUnit tests correctly. (Tests/Windows/Test Explorer)
 ```
 git reset --hard HEAD
 ```
+Hoping Microsoft or an awesome contributor resolves this mess in the future.
 # What is next
 
 1. Puzzle Promise Protocol Implementation
