@@ -6,6 +6,13 @@
         "NETStandard.Library": "1.6.0"        
     },
     "frameworks": {
+        "net452": {
+            "frameworkAssemblies": {
+                "System.Numerics": {
+                    "version" :  "4.0.0.0"
+                }
+            }
+        },
         "netstandard1.3": {
         },
         "netstandard1.1": {
