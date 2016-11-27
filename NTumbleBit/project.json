@@ -1,31 +1,14 @@
 {
-    "version": "1.0.0-*",
-    "name": "NTumbleBit",
-    "dependencies": {
-        "NBitcoin": "3.0.0.76",
-        "NETStandard.Library": "1.6.0"        
-    },
-    "frameworks": {
-        "netstandard1.3": {
-        },
-        "netstandard1.1": {
-            "buildOptions": {
-                "define": [ "PORTABLE" ]
-            }
-        }
-    },
-    "buildOptions": {
-        "outputName": "NTumbleBit",
-        "debugType": "portable",
-        "define": [
-            "TRACE",
-            "NETCORE",
-            "NOTRACESOURCE"
-        ],
-        "compile": {
-            "include": [
-                "**/*.cs"
-            ]
-        }
+  "version": "1.0.0-*",
+
+  "dependencies": {
+    "NBitcoin": "3.0.0.76"
+  },
+
+  "frameworks": {
+    "netstandard1.3": {
+      "dependencies": {
+      }
     }
+  }
 }
