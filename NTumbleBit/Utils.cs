@@ -17,6 +17,19 @@ namespace NTumbleBit
 			byte[] iv = null;
 			return ChachaEncrypt(data, ref key, ref iv);
 		}
+
+		public static byte[] Combine(params byte[][] arrays)
+		{
+			var len = arrays.Select(a => a.Length).Sum();
+			int offset = 0;
+			var combined = new byte[len];
+			foreach(var array in arrays)
+			{
+				Array.Copy(array, 0, combined, offset, array.Length);
+				offset += array.Length;
+			}
+			return combined;
+		}
 		public static byte[] ChachaEncrypt(byte[] data, ref byte[] key, ref byte[] iv)
 		{
 			ChaChaEngine engine = new ChaChaEngine();

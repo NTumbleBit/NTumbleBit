@@ -23,16 +23,14 @@ namespace NTumbleBit.PuzzlePromise
 			}
 		}
 
-		public void CreateEscrowTransaction(ICoin[] unspentCoins, PubKey destination, Money amount, LockTime expiration)
+		public void SignAndEncrypt(uint256[] hashes)
 		{
-			if(unspentCoins == null)
-				throw new ArgumentNullException("unspentCoins");
-			if(destination == null)
-				throw new ArgumentNullException("destination");
-			if(amount == null)
-				throw new ArgumentNullException("amount");
-			if(expiration == null)
-				throw new ArgumentNullException("expiration");
+			if(hashes == null)
+				throw new ArgumentNullException("hashes");
+			if(hashes.Length != Parameters.GetTotalTransactionsCount())
+				throw new ArgumentException("Incorrect number of hashes, expected " + hashes.Length);
+
+
 
 			//TransactionBuilder builder = new TransactionBuilder();
 			//builder.AddCoins(unspentCoins);
