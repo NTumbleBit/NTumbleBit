@@ -35,7 +35,7 @@ We recommend that you use [Visual Studio Code](https://code.visualstudio.com/), 
 
 # Developing on Windows
 
-We recommend that you use [Visual Studio 2015 Update 3] ([available for free](https://www.visualstudio.com/vs/community/)) for building and running the tests.
+We recommend that you use [Visual Studio 2015 Update 3 (free)](https://www.visualstudio.com/vs/community/) for building and running the tests.
 You can of course use Visual use command line or [Visual Studio Code](https://code.visualstudio.com/) as well.
 
 # What is next
