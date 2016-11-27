@@ -166,40 +166,17 @@ namespace NTumbleBit.BouncyCastle.Utilities
 
 		internal static string ToLowerInvariant(string s)
 		{
-#if PORTABLE || NETCORE
-            return s.ToLowerInvariant();
-#else
-			return s.ToLower(CultureInfo.InvariantCulture);
-#endif
+			return s.ToLowerInvariant();
 		}
-
 		internal static string ToUpperInvariant(string s)
 		{
-#if PORTABLE || NETCORE
-            return s.ToUpperInvariant();
-#else
-			return s.ToUpper(CultureInfo.InvariantCulture);
-#endif
+			return s.ToUpperInvariant();
 		}
-
 		internal static readonly string NewLine = GetNewLine();
-
-#if PORTABLE || NETCORE
-        internal static void Dispose(IDisposable d)
+		internal static void Dispose(IDisposable d)
         {
             d.Dispose();
         }
-#else
-		internal static void Dispose(Stream s)
-		{
-			s.Close();
-		}
-		internal static void Dispose(TextWriter t)
-		{
-			t.Close();
-		}
-#endif
-
 		internal static int IndexOf(string source, string value)
 		{
 			return InvariantCompareInfo.IndexOf(source, value, CompareOptions.Ordinal);

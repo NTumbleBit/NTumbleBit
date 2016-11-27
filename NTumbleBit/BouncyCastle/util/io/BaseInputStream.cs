@@ -28,8 +28,6 @@ namespace NTumbleBit.BouncyCastle.Utilities.IO
 				return false;
 			}
 		}
-
-#if PORTABLE || NETCORE
         protected override void Dispose(bool disposing)
         {
             if (disposing)
@@ -38,14 +36,6 @@ namespace NTumbleBit.BouncyCastle.Utilities.IO
             }
             base.Dispose(disposing);
         }
-#else
-		public override void Close()
-		{
-			closed = true;
-			base.Close();
-		}
-#endif
-
 		public sealed override void Flush()
 		{
 		}
