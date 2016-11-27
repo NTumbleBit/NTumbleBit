@@ -58,9 +58,9 @@ namespace NTumbleBit.Tests
 
 			var signature = key.Sign(data);
 			Assert.True(key.PubKey.Verify(data, signature));
-			
 
-			for(int i = 0; i < 100; i++)
+
+			for (int i = 0; i < 100; i++)
 			{
 				data = GenerateEncryptableData(key._Key);
 				signature = key.Sign(data);
@@ -72,11 +72,11 @@ namespace NTumbleBit.Tests
 
 		static byte[] GenerateEncryptableData(RsaKeyParameters key)
 		{
-			while(true)
+			while (true)
 			{
 				var bytes = RandomUtils.GetBytes(RsaKey.KeySize / 8);
 				BigInteger input = new BigInteger(1, bytes);
-				if(input.CompareTo(key.Modulus) >= 0)
+				if (input.CompareTo(key.Modulus) >= 0)
 					continue;
 				return bytes;
 			}
@@ -143,7 +143,7 @@ namespace NTumbleBit.Tests
 			ScriptError error;
 			Assert.True(Script.VerifyScript(coin.ScriptPubKey, fulfillTx, 0, Money.Zero, out error));
 			////////////////////////////////////////////////
-			
+
 			var solution = client.GetSolution(fulfillTx);
 
 			Assert.True(solution == expectedSolution);
@@ -217,7 +217,7 @@ namespace NTumbleBit.Tests
 
 		LockTime EscrowDate = new LockTime(new DateTimeOffset(1988, 07, 18, 0, 0, 0, TimeSpan.Zero));
 		Money Amount = Money.Coins(1.0m);
-	
+
 		[Fact]
 		public void CanBlind()
 		{
