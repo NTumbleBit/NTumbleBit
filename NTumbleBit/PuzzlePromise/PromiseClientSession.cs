@@ -1,4 +1,5 @@
 ﻿using NBitcoin;
+using NTumbleBit.BouncyCastle.Math;
 using NBitcoin.Crypto;
 using NTumbleBit.PuzzleSolver;
 using System;
@@ -19,17 +20,14 @@ namespace NTumbleBit.PuzzlePromise
 
 	public class PromiseClientSession
 	{
-		class HashBase
+		abstract class HashBase
 		{
 			public ServerCommitment Commitment
 			{
 				get;
 				internal set;
 			}
-			public uint256 Hash
-			{
-				get; set;
-			}
+			public abstract uint256 GetHash();
 			public int Index
 			{
 				get; set;
@@ -37,17 +35,54 @@ namespace NTumbleBit.PuzzlePromise
 		}
 		class RealHash : HashBase
 		{
+			private Transaction cashoutTransaction;
+			private ICoin escrowCoin;
+
+			public RealHash(ICoin escrowCoin, Transaction cashoutTransaction)
+			{
+				this.escrowCoin = escrowCoin;
+				this.cashoutTransaction = cashoutTransaction;
+			}
+
 			public LockTime LockTime
 			{
 				get; set;
+			}
+
+			public override uint256 GetHash()
+			{
+				Transaction clone = GetTransaction();
+				return clone.GetSignatureHash(escrowCoin);
+			}
+
+			public Transaction GetTransaction()
+			{
+				var clone = cashoutTransaction.Clone();
+				clone.LockTime = LockTime;
+				return clone;
 			}
 		}
 
 		class FakeHash : HashBase
 		{
+			public FakeHash(PromiseParameters parameters)
+			{
+				if(parameters == null)
+					throw new ArgumentNullException("parameters");
+				Parameters = parameters;
+			}
 			public uint256 Salt
 			{
 				get; set;
+			}
+			public PromiseParameters Parameters
+			{
+				get;
+				private set;
+			}
+			public override uint256 GetHash()
+			{
+				return Parameters.CreateFakeHash(Salt);
 			}
 		}
 
@@ -69,6 +104,7 @@ namespace NTumbleBit.PuzzlePromise
 		private HashBase[] _Hashes;
 		private uint256 _IndexSalt;
 		private PubKey[] _ExpectedSigners;
+		private ICoin _EscrowCoin;
 
 		public SignaturesRequest CreateSignatureRequest(ICoin escrowCoin, Transaction cashoutTransaction)
 		{
@@ -77,17 +113,17 @@ namespace NTumbleBit.PuzzlePromise
 			if(cashoutTransaction == null)
 				throw new ArgumentNullException("cashoutTransaction");
 
-			_ExpectedSigners = escrowCoin.GetScriptCode().GetDestinationPublicKeys();
-
+			var multiSig = PayToMultiSigTemplate.Instance.ExtractScriptPubKeyParameters(escrowCoin.GetScriptCode());
+			if(multiSig == null || multiSig.SignatureCount != 2 || multiSig.InvalidPubKeys.Length != 0 || multiSig.PubKeys.Length != 2)
+				throw new ArgumentException("Invalid escrow 2-2 multisig");
 			AssertState(PromiseClientStates.WaitingSignatureRequest);
 			cashoutTransaction = cashoutTransaction.Clone();
 			List<HashBase> hashes = new List<HashBase>();
 			LockTime lockTime = new LockTime(0);
 			for(int i = 0; i < Parameters.RealTransactionCount; i++)
 			{
-				RealHash h = new RealHash();
+				RealHash h = new RealHash(escrowCoin, cashoutTransaction);
 				cashoutTransaction.LockTime = lockTime;
-				h.Hash = cashoutTransaction.GetSignatureHash(escrowCoin);
 				h.LockTime = lockTime;
 				lockTime++;
 				hashes.Add(h);
@@ -95,9 +131,8 @@ namespace NTumbleBit.PuzzlePromise
 
 			for(int i = 0; i < Parameters.FakeTransactionCount; i++)
 			{
-				FakeHash h = new FakeHash();
+				FakeHash h = new FakeHash(Parameters);
 				h.Salt = new uint256(RandomUtils.GetBytes(32));
-				h.Hash = Parameters.CreateFakeHash(h.Salt);
 				hashes.Add(h);
 			}
 
@@ -110,10 +145,12 @@ namespace NTumbleBit.PuzzlePromise
 			uint256 indexSalt = null;
 			var request = new SignaturesRequest()
 			{
-				Hashes = _Hashes.Select(h => h.Hash).ToArray(),
+				Hashes = _Hashes.Select(h => h.GetHash()).ToArray(),
 				FakeIndexesHash = PromiseUtils.HashIndexes(ref indexSalt, _Hashes.OfType<FakeHash>().Select(h => h.Index))
 			};
 			_IndexSalt = indexSalt;
+			_ExpectedSigners = multiSig.PubKeys;
+			_EscrowCoin = escrowCoin;
 			_State = PromiseClientStates.WaitingCommitments;
 			return request;
 		}
@@ -165,9 +202,9 @@ namespace NTumbleBit.PuzzlePromise
 				if(!new Puzzle(Parameters.ServerKey, fakeHash.Commitment.Puzzle).Verify(solution))
 					throw new PuzzleException("Invalid puzzle solution");
 
-				var key = new SignatureKey(solution._Value);
-				var signature = new ECDSASignature(key.XOR(fakeHash.Commitment.Promise));
-				if(!_ExpectedSigners.Any(e => e.Verify(fakeHash.Hash, signature)))
+				PubKey signer;
+				ECDSASignature sig;
+				if(!IsValidSignature(solution, fakeHash, out signer, out sig))
 					throw new PuzzleException("Invalid ECDSA signature");
 			}
 
@@ -183,8 +220,67 @@ namespace NTumbleBit.PuzzlePromise
 					throw new PuzzleException("Invalid quotient");
 			}
 
+			_Quotients = proof.Quotients;
 			_State = PromiseClientStates.Completed;
 			return _Hashes.OfType<RealHash>().First().Commitment.Puzzle;
+		}
+
+		private bool IsValidSignature(PuzzleSolution solution, HashBase hash, out PubKey signer, out ECDSASignature signature)
+		{
+			signer = null;
+			signature = null;
+			try
+			{
+				var key = new SignatureKey(solution._Value);
+				signature = new ECDSASignature(key.XOR(hash.Commitment.Promise));
+				foreach(var sig in _ExpectedSigners)
+				{
+					if(sig.Verify(hash.GetHash(), signature))
+					{
+						signer = sig;
+						return true;
+					}
+				}
+				return false;
+			}
+			catch
+			{
+			}
+			return false;
+		}
+
+		Quotient[] _Quotients;
+
+		internal IEnumerable<Transaction> GetSignedTransactions(PuzzleSolution solution)
+		{
+			BigInteger cumul = solution._Value;
+			var hashes = _Hashes.OfType<RealHash>().ToArray();
+			for(int i = 0; i < Parameters.RealTransactionCount; i++)
+			{
+				var hash = hashes[i];
+				var quotient = i == 0 ? BigInteger.One : _Quotients[i - 1]._Value;
+				cumul = cumul.Multiply(quotient).Mod(Parameters.ServerKey._Key.Modulus);
+				solution = new PuzzleSolution(cumul);
+				ECDSASignature signature;
+				PubKey signer;
+				if(!IsValidSignature(solution, hash, out signer, out signature))
+					continue;
+				
+				var transaction = hash.GetTransaction();
+				TransactionBuilder txBuilder = new TransactionBuilder();
+				txBuilder.AddCoins(_EscrowCoin);
+				txBuilder.AddKnownSignature(signer, signature);
+				txBuilder.SignTransactionInPlace(transaction);
+				yield return transaction;
+			}
+		}
+
+		public Transaction GetSignedTransaction(PuzzleSolution solution)
+		{
+			var tx = GetSignedTransactions(solution).FirstOrDefault();
+			if(tx == null)
+				throw new PuzzleException("Wrong solution for the puzzle");
+			return tx;
 		}
 
 		private PromiseClientStates _State;

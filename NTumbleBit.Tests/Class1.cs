@@ -1,5 +1,6 @@
 ﻿using NBitcoin;
 using NBitcoin.DataEncoders;
+using NBitcoin.Policy;
 using NTumbleBit.BouncyCastle.Crypto.Parameters;
 using NTumbleBit.BouncyCastle.Math;
 using NTumbleBit.PuzzlePromise;
@@ -109,7 +110,9 @@ namespace NTumbleBit.Tests
 		public void TestPuzzlePromise()
 		{
 			RsaKey key = TestKeys.Default;
-			Key ecdsaKey = new Key();
+
+			Key serverKey = new Key();
+			Key clientKey = new Key();
 
 			var parameters = new PromiseParameters(key.PubKey)
 			{
@@ -120,27 +123,44 @@ namespace NTumbleBit.Tests
 			var client = new PromiseClientSession(parameters);
 			var server = new PromiseServerSession(key, parameters);
 
-			var coin = CreateEscrowCoin(ecdsaKey.PubKey);
+			var coin = CreateEscrowCoin(serverKey.PubKey, clientKey.PubKey);
 
 			Transaction cashout = new Transaction();
 			cashout.AddInput(new TxIn(coin.Outpoint, Script.Empty));
+			cashout.AddOutput(new TxOut(Money.Coins(1.5m), clientKey.PubKey.Hash));
 
 			SignaturesRequest request = client.CreateSignatureRequest(coin, cashout);
-			PuzzlePromise.ServerCommitment[] commitments = server.SignHashes(request, ecdsaKey);
+			PuzzlePromise.ServerCommitment[] commitments = server.SignHashes(request, serverKey);
 			PuzzlePromise.ClientRevelation revelation = client.Reveal(commitments);
 			ServerCommitmentsProof proof = server.CheckRevelation(revelation);
 			var puzzleToSolve = client.CheckCommitmentProof(proof);
 			Assert.NotNull(puzzleToSolve);
+			var solution = key.SolvePuzzle(puzzleToSolve);
+			var transactions = client.GetSignedTransactions(solution).ToArray();
+			Assert.True(transactions.Length == parameters.RealTransactionCount);
+			
+			foreach(var tx in transactions)
+			{
+				TransactionBuilder builder = new TransactionBuilder();
+				builder.AddCoins(coin);
+				builder.AddKeys(clientKey);
+				builder.StandardTransactionPolicy = new StandardTransactionPolicy()
+				{
+					CheckFee = false
+				};
+				Assert.False(builder.Verify(tx));
+				builder.SignTransactionInPlace(tx);
+				Assert.True(builder.Verify(tx));
+			}
 		}
 
-		private ICoin CreateEscrowCoin(PubKey pubKey)
+		private ICoin CreateEscrowCoin(PubKey pubKey, PubKey pubKey2)
 		{
-			var key2 = new Key();
-			var redeem = PayToMultiSigTemplate.Instance.GenerateScriptPubKey(2, key2.PubKey, pubKey);
+			var redeem = PayToMultiSigTemplate.Instance.GenerateScriptPubKey(2, pubKey, pubKey2);
 			var scriptCoin = new Coin(new OutPoint(new uint256(RandomUtils.GetBytes(32)), 0), 
 				new TxOut()
 				{
-					Value = Money.Zero,
+					Value = Money.Coins(1.5m),
 					ScriptPubKey = redeem.Hash.ScriptPubKey
 				}).ToScriptCoin(redeem);
 			return scriptCoin;
