@@ -13,8 +13,8 @@ namespace NTumbleBit.PuzzleSolver
 	{
 		WaitingPuzzle,
 		WaitingCommitments,
-		WaitingEncryptedFakePuzzleKeys,
-		WaitingEncryptedRealPuzzleKeys,
+		WaitingFakeCommitmentsProof,
+		WaitingPuzzleSolutions,
 		Completed
 	}
 
@@ -116,8 +116,6 @@ namespace NTumbleBit.PuzzleSolver
 			if(commitments.Length != Parameters.GetTotalCount())
 				throw new ArgumentException("Expecting " + Parameters.GetTotalCount() + " commitments");
 			AssertState(SolverClientStates.WaitingCommitments);
-			PuzzleCommiments = commitments;
-			_State = SolverClientStates.WaitingEncryptedFakePuzzleKeys;
 
 			List<PuzzleSolution> solutions = new List<PuzzleSolution>();
 			List<int> indexes = new List<int>();
@@ -131,6 +129,9 @@ namespace NTumbleBit.PuzzleSolver
 					indexes.Add(i);
 				}
 			}
+
+			PuzzleCommiments = commitments;
+			_State = SolverClientStates.WaitingFakeCommitmentsProof;
 			return new ClientRevelation(indexes.ToArray(), solutions.ToArray());
 		}
 
@@ -140,7 +141,7 @@ namespace NTumbleBit.PuzzleSolver
 				throw new ArgumentNullException("keys");
 			if(keys.Length != Parameters.FakePuzzleCount)
 				throw new ArgumentException("Expecting " + Parameters.FakePuzzleCount + " keys");
-			AssertState(SolverClientStates.WaitingEncryptedFakePuzzleKeys);
+			AssertState(SolverClientStates.WaitingFakeCommitmentsProof);
 
 			int y = 0;
 			for(int i = 0; i < PuzzleCommiments.Length; i++)
@@ -164,7 +165,7 @@ namespace NTumbleBit.PuzzleSolver
 				}
 			}
 
-			_State = SolverClientStates.WaitingEncryptedRealPuzzleKeys;
+			_State = SolverClientStates.WaitingPuzzleSolutions;
 			return PuzzleSet.PuzzleElements.OfType<RealPuzzle>()
 				.Select(p => p.BlindFactor)
 				.ToArray();
@@ -174,7 +175,7 @@ namespace NTumbleBit.PuzzleSolver
 		{
 			if(escrowContext == null)
 				throw new ArgumentNullException("escrowContext");
-			AssertState(SolverClientStates.WaitingEncryptedRealPuzzleKeys);
+			AssertState(SolverClientStates.WaitingPuzzleSolutions);
 			List<uint160> hashes = new List<uint160>();
 			for(int i = 0; i < PuzzleCommiments.Length; i++)
 			{
@@ -192,7 +193,7 @@ namespace NTumbleBit.PuzzleSolver
 		{
 			if(cashout == null)
 				throw new ArgumentNullException("cashout");
-			AssertState(SolverClientStates.WaitingEncryptedRealPuzzleKeys);
+			AssertState(SolverClientStates.WaitingPuzzleSolutions);
 			foreach(var input in cashout.Inputs)
 			{
 				var solutions = SolverScriptBuilder.ExtractSolutions(input.ScriptSig, Parameters.RealPuzzleCount);
@@ -212,7 +213,7 @@ namespace NTumbleBit.PuzzleSolver
 		{
 			if(scriptSig == null)
 				throw new ArgumentNullException("scriptSig");
-			AssertState(SolverClientStates.WaitingEncryptedRealPuzzleKeys);
+			AssertState(SolverClientStates.WaitingPuzzleSolutions);
 			var solutions = SolverScriptBuilder.ExtractSolutions(scriptSig, Parameters.RealPuzzleCount);
 			if(solutions == null)
 				throw new PuzzleException("Impossible to find solution to the puzzle");
@@ -225,7 +226,7 @@ namespace NTumbleBit.PuzzleSolver
 				throw new ArgumentNullException("keys");
 			if(keys.Length != Parameters.RealPuzzleCount)
 				throw new ArgumentException("Expecting " + Parameters.RealPuzzleCount + " keys");
-			AssertState(SolverClientStates.WaitingEncryptedRealPuzzleKeys);
+			AssertState(SolverClientStates.WaitingPuzzleSolutions);
 			PuzzleSolution solution = null;
 			RealPuzzle solvedPuzzle = null;
 			int y = 0;

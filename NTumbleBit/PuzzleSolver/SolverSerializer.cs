@@ -154,21 +154,10 @@ namespace NTumbleBit.PuzzleSolver
 		private void WriteBigInteger(BigInteger value, int size)
 		{
 			var bytes = value.ToByteArrayUnsigned();
-			Pad(ref bytes, size);
+			Utils.Pad(ref bytes, size);
 			WriteBytes(bytes, true);
 		}
-
-		private void Pad(ref byte[] bytes, int keySize)
-		{
-			int paddSize = keySize - bytes.Length;
-			if(bytes.Length == keySize)
-				return;
-			if(paddSize < 0)
-				throw new InvalidOperationException("Bug in NTumbleBit, copy the stacktrace and send us");
-			var padded = new byte[paddSize + bytes.Length];
-			Array.Copy(bytes, 0, padded, paddSize, bytes.Length);
-			bytes = padded;
-		}
+		
 
 		public void WritePuzzleRevelation(ClientRevelation revelation)
 		{

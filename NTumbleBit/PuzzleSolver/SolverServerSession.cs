@@ -12,7 +12,7 @@ namespace NTumbleBit.PuzzleSolver
 	public enum SolverServerStates
 	{
 		WaitingPuzzles,
-		WaitingFakePuzzleSolutions,
+		WaitingRevelation,
 		WaitingBlindFactor,
 		Completed
 	}
@@ -105,7 +105,7 @@ namespace NTumbleBit.PuzzleSolver
 				solvedPuzzles.Add(new SolvedPuzzle(new Puzzle(ServerKey.PubKey, puzzle), solutionKey, solution));
 			}
 			_SolvedPuzzles = solvedPuzzles.ToArray();
-			_State = SolverServerStates.WaitingFakePuzzleSolutions;
+			_State = SolverServerStates.WaitingRevelation;
 			return commitments.ToArray();
 		}
 
@@ -121,7 +121,7 @@ namespace NTumbleBit.PuzzleSolver
 				throw new ArgumentNullException("puzzleSolutions");
 			if(revelation.Indexes.Length != Parameters.FakePuzzleCount || revelation.Solutions.Length != Parameters.FakePuzzleCount)
 				throw new ArgumentException("Expecting " + Parameters.FakePuzzleCount + " puzzle solutions");
-			AssertState(SolverServerStates.WaitingFakePuzzleSolutions);
+			AssertState(SolverServerStates.WaitingRevelation);
 
 
 

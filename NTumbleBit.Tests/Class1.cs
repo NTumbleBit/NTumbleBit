@@ -2,6 +2,7 @@
 using NBitcoin.DataEncoders;
 using NTumbleBit.BouncyCastle.Crypto.Parameters;
 using NTumbleBit.BouncyCastle.Math;
+using NTumbleBit.PuzzlePromise;
 using NTumbleBit.PuzzleSolver;
 using System;
 using System.Collections.Generic;
@@ -60,7 +61,7 @@ namespace NTumbleBit.Tests
 			Assert.True(key.PubKey.Verify(data, signature));
 
 
-			for (int i = 0; i < 100; i++)
+			for(int i = 0; i < 100; i++)
 			{
 				data = GenerateEncryptableData(key._Key);
 				signature = key.Sign(data);
@@ -72,11 +73,11 @@ namespace NTumbleBit.Tests
 
 		static byte[] GenerateEncryptableData(RsaKeyParameters key)
 		{
-			while (true)
+			while(true)
 			{
 				var bytes = RandomUtils.GetBytes(RsaKey.KeySize / 8);
 				BigInteger input = new BigInteger(1, bytes);
-				if (input.CompareTo(key.Modulus) >= 0)
+				if(input.CompareTo(key.Modulus) >= 0)
 					continue;
 				return bytes;
 			}
@@ -103,6 +104,48 @@ namespace NTumbleBit.Tests
 			Assert.True(decrypted.SequenceEqual(msg));
 		}
 
+
+		[Fact]
+		public void TestPuzzlePromise()
+		{
+			RsaKey key = TestKeys.Default;
+			Key ecdsaKey = new Key();
+
+			var parameters = new PromiseParameters(key.PubKey)
+			{
+				FakeTransactionCount = 5,
+				RealTransactionCount = 5
+			};
+
+			var client = new PromiseClientSession(parameters);
+			var server = new PromiseServerSession(key, parameters);
+
+			var coin = CreateEscrowCoin(ecdsaKey.PubKey);
+
+			Transaction cashout = new Transaction();
+			cashout.AddInput(new TxIn(coin.Outpoint, Script.Empty));
+
+			SignaturesRequest request = client.CreateSignatureRequest(coin, cashout);
+			PuzzlePromise.ServerCommitment[] commitments = server.SignHashes(request, ecdsaKey);
+			PuzzlePromise.ClientRevelation revelation = client.Reveal(commitments);
+			ServerCommitmentsProof proof = server.CheckRevelation(revelation);
+			var puzzleToSolve = client.CheckCommitmentProof(proof);
+			Assert.NotNull(puzzleToSolve);
+		}
+
+		private ICoin CreateEscrowCoin(PubKey pubKey)
+		{
+			var key2 = new Key();
+			var redeem = PayToMultiSigTemplate.Instance.GenerateScriptPubKey(2, key2.PubKey, pubKey);
+			var scriptCoin = new Coin(new OutPoint(new uint256(RandomUtils.GetBytes(32)), 0), 
+				new TxOut()
+				{
+					Value = Money.Zero,
+					ScriptPubKey = redeem.Hash.ScriptPubKey
+				}).ToScriptCoin(redeem);
+			return scriptCoin;
+		}
+
 		[Fact]
 		public void TestPuzzleSolver()
 		{
@@ -110,19 +153,18 @@ namespace NTumbleBit.Tests
 			PuzzleSolution expectedSolution = null;
 			Puzzle puzzle = key.PubKey.GeneratePuzzle(ref expectedSolution);
 
-			var parameters = new SolverParameters()
+			var parameters = new SolverParameters(key.PubKey)
 			{
 				FakePuzzleCount = 50,
-				RealPuzzleCount = 10,
-				ServerKey = key.PubKey
+				RealPuzzleCount = 10
 			};
 
 			SolverClientSession client = new SolverClientSession(parameters);
 			SolverServerSession server = new SolverServerSession(key, parameters);
 
 			PuzzleValue[] puzzles = client.GeneratePuzzles(puzzle.PuzzleValue);
-			ServerCommitment[] commitments = server.SolvePuzzles(puzzles);
-			ClientRevelation revelation = client.Reveal(commitments);
+			PuzzleSolver.ServerCommitment[] commitments = server.SolvePuzzles(puzzles);
+			PuzzleSolver.ClientRevelation revelation = client.Reveal(commitments);
 			SolutionKey[] fakePuzzleKeys = server.CheckRevelation(revelation);
 			BlindFactor[] blindFactors = client.GetBlindFactors(fakePuzzleKeys);
 

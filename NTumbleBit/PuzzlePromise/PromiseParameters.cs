@@ -33,7 +33,7 @@ namespace NTumbleBit.PuzzlePromise
 			FakeFormat = Hashes.Hash256(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16 });
 		}
 
-		public PromiseParameters(RsaKey serverKey) : this()
+		public PromiseParameters(RsaPubKey serverKey) : this()
 		{
 			if(serverKey == null)
 				throw new ArgumentNullException("serverKey");
@@ -45,9 +45,14 @@ namespace NTumbleBit.PuzzlePromise
 			return FakeTransactionCount + RealTransactionCount;
 		}
 
-		public RsaKey ServerKey
+		public RsaPubKey ServerKey
 		{
 			get; set;
+		}
+
+		public uint256 CreateFakeHash(uint256 salt)
+		{
+			return Hashes.Hash256(Utils.Combine(salt.ToBytes(), FakeFormat.ToBytes()));
 		}
 	}
 }

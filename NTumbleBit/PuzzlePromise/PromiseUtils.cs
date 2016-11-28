@@ -1,4 +1,5 @@
-﻿using NTumbleBit.BouncyCastle.Crypto.Digests;
+﻿using NBitcoin;
+using NTumbleBit.BouncyCastle.Crypto.Digests;
 using NTumbleBit.BouncyCastle.Crypto.Parameters;
 using System;
 using System.Collections.Generic;
@@ -10,11 +11,7 @@ namespace NTumbleBit.PuzzlePromise
 {
 	static class PromiseUtils
 	{
-		public static byte[] IndexesToBytes(IEnumerable<int> indexes)
-		{
-			return Utils.Combine(indexes.Select(i=> NBitcoin.Utils.ToBytes((uint)i, true)).ToArray());
-		}
-		
+
 		public static byte[] SHA512(byte[] data, int offset, int count)
 		{
 			Sha256Digest sha512 = new Sha256Digest();
@@ -24,7 +21,14 @@ namespace NTumbleBit.PuzzlePromise
 			return rv;
 		}
 
-		public static byte[] HMACSHA256(byte[] key, byte[] data)
+		public static uint256 HashIndexes(ref uint256 salt, IEnumerable<int> indexes)
+		{
+			salt = salt ?? new uint256(RandomUtils.GetBytes(32));
+			var bytes = Utils.Combine(indexes.Select(i => NBitcoin.Utils.ToBytes((uint)i, true)).ToArray());
+			return new uint256(HMACSHA256(salt.ToBytes(), bytes));
+		}
+
+		static byte[] HMACSHA256(byte[] key, byte[] data)
 		{
 			var mac = new NTumbleBit.BouncyCastle.Crypto.Macs.HMac(new Sha256Digest());
 			mac.Init(new KeyParameter(key));

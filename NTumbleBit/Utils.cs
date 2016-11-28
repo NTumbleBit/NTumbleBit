@@ -54,6 +54,18 @@ namespace NTumbleBit
 			return result;
 		}
 
+		internal static void Pad(ref byte[] bytes, int keySize)
+		{
+			int paddSize = keySize - bytes.Length;
+			if(bytes.Length == keySize)
+				return;
+			if(paddSize < 0)
+				throw new InvalidOperationException("Bug in NTumbleBit, copy the stacktrace and send us");
+			var padded = new byte[paddSize + bytes.Length];
+			Array.Copy(bytes, 0, padded, paddSize, bytes.Length);
+			bytes = padded;
+		}
+
 		internal static BigInteger GenerateEncryptableInteger(RsaKeyParameters key)
 		{
 			while(true)
