@@ -172,16 +172,16 @@ namespace NTumbleBit.PuzzlePromise
 			}
 
 
-			//var realHashes = _Hashes.OfType<RealHash>().ToArray();
-			//for(int i = 1; i < Parameters.RealTransactionCount; i++)
-			//{
-			//	var q = proof.Quotients[i - 1]._Value;
-			//	var p1 = realHashes[i - 1].Commitment.Puzzle._Value;
-			//	var p2 = realHashes[i].Commitment.Puzzle._Value;
-			//	var p22 = p1.Multiply(Parameters.ServerKey.Encrypt(q));
-			//	if(!p2.Equals(p22))
-			//		throw new PuzzleException("Invalid quotient");
-			//}
+			var realHashes = _Hashes.OfType<RealHash>().ToArray();
+			for(int i = 1; i < Parameters.RealTransactionCount; i++)
+			{
+				var q = proof.Quotients[i - 1]._Value;
+				var p1 = realHashes[i - 1].Commitment.Puzzle._Value;
+				var p2 = realHashes[i].Commitment.Puzzle._Value;
+				var p22 = p1.Multiply(Parameters.ServerKey.Encrypt(q)).Mod(Parameters.ServerKey._Key.Modulus);
+				if(!p2.Equals(p22))
+					throw new PuzzleException("Invalid quotient");
+			}
 
 			_State = PromiseClientStates.Completed;
 			return _Hashes.OfType<RealHash>().First().Commitment.Puzzle;

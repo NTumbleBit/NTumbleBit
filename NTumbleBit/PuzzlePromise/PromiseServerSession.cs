@@ -143,7 +143,7 @@ namespace NTumbleBit.PuzzlePromise
 			{
 				var a = _EncryptedSignatures[i].PuzzleSolution._Value;
 				var b = _EncryptedSignatures[i + 1].PuzzleSolution._Value;
-				quotients[i] = new Quotient(b.Divide(a));
+				quotients[i] = new Quotient(b.Multiply(a.ModInverse(Parameters.ServerKey._Key.Modulus)).Mod(Parameters.ServerKey._Key.Modulus));
 			}
 			_State = PromiseServerStates.Completed;
 			return new ServerCommitmentsProof(solutions.ToArray(), quotients);
