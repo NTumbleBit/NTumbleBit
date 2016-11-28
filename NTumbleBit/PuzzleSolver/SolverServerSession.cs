@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace NTumbleBit.PuzzleSolver
 {
@@ -23,7 +24,7 @@ namespace NTumbleBit.PuzzleSolver
 			public SolvedPuzzle(Puzzle puzzle, SolutionKey key, PuzzleSolution solution)
 			{
 				Puzzle = puzzle;
-				_Key = key;
+				SolutionKey = key;
 				Solution = solution;
 			}
 
@@ -31,11 +32,9 @@ namespace NTumbleBit.PuzzleSolver
 			{
 				get; set;
 			}
-			SolutionKey _Key;
-			public SolutionKey Reveal()
+			public SolutionKey SolutionKey
 			{
-				var key = _Key;
-				return key;
+				get; set;
 			}
 			public PuzzleSolution Solution
 			{
@@ -58,6 +57,66 @@ namespace NTumbleBit.PuzzleSolver
 		}
 
 		private readonly SolverParameters _Parameters;
+		private readonly RsaKey _ServerKey;
+		private SolverServerStates _State = SolverServerStates.WaitingPuzzles;
+		private SolvedPuzzle[] _SolvedPuzzles = new SolvedPuzzle[0];
+
+		public static SolverServerSession ReadFrom(byte[] bytes, RsaKey privateKey)
+		{
+			if(bytes == null)
+				throw new ArgumentNullException("bytes");
+			var ms = new MemoryStream(bytes);
+			return ReadFrom(ms, privateKey);
+		}
+		public static SolverServerSession ReadFrom(Stream stream, RsaKey privateKey)
+		{
+			if(stream == null)
+				throw new ArgumentNullException("stream");
+			var seria = new SolverSerializer(new SolverParameters(), stream);
+			var parameters = seria.ReadParameters();
+			seria = new SolverSerializer(parameters, stream);
+			var key = seria.ReadBytes(-1, 10 * 1024);
+			if(key.Length == 0 && privateKey == null)
+				throw new ArgumentException("You should provide a private key");
+			privateKey = privateKey ?? new RsaKey(key);
+			parameters.ServerKey = privateKey.PubKey;
+			SolverServerSession session = new SolverServerSession(privateKey, parameters);
+			session._State = (SolverServerStates)seria.ReadUInt();
+			var solvedPuzzleCount = (int)seria.ReadUInt();
+			session._SolvedPuzzles = new SolvedPuzzle[solvedPuzzleCount];
+			for(int i = 0; i < solvedPuzzleCount; i++)
+			{
+				var v = seria.ReadPuzzle();
+				var solutionKey = new SolutionKey(seria.ReadBytes(SolutionKey.KeySize));
+				var solution = new PuzzleSolution(seria.ReadBigInteger(seria.GetKeySize()));
+				session._SolvedPuzzles[i] = new SolvedPuzzle(new Puzzle(parameters.ServerKey, v), solutionKey, solution);
+			}
+			return session;
+		}
+		public void WriteTo(Stream stream, bool includePrivateKey)
+		{
+			if(stream == null)
+				throw new ArgumentNullException("stream");
+			var seria = new SolverSerializer(Parameters, stream);
+			seria.WriteParameters();
+			seria.WriteBytes(includePrivateKey ? ServerKey.ToBytes(): new byte[0], false);
+			seria.WriteUInt((uint)_State);
+			seria.WriteUInt(_SolvedPuzzles.Length);
+			foreach(var solvedPuzzle in _SolvedPuzzles)
+			{
+				seria.WritePuzzle(solvedPuzzle.Puzzle.PuzzleValue);
+				seria.WriteBytes(solvedPuzzle.SolutionKey.ToBytes(true), true);
+				seria.WriteBigInteger(solvedPuzzle.Solution._Value, seria.GetKeySize());
+			}
+		}
+		public byte[] ToBytes(bool includePrivateKey)
+		{
+			MemoryStream ms = new MemoryStream();
+			WriteTo(ms, includePrivateKey);
+			ms.Position = 0;
+			return ms.ToArrayEfficient();
+		}
+
 		public SolverParameters Parameters
 		{
 			get
@@ -65,9 +124,7 @@ namespace NTumbleBit.PuzzleSolver
 				return _Parameters;
 			}
 		}
-
-		private readonly RsaKey _ServerKey;
-		private SolverServerStates _State = SolverServerStates.WaitingPuzzles;
+		
 		public SolverServerStates State
 		{
 			get
@@ -83,7 +140,7 @@ namespace NTumbleBit.PuzzleSolver
 			{
 				return _ServerKey;
 			}
-		}
+		}	
 
 		public ServerCommitment[] SolvePuzzles(PuzzleValue[] puzzles)
 		{
@@ -108,12 +165,6 @@ namespace NTumbleBit.PuzzleSolver
 			_State = SolverServerStates.WaitingRevelation;
 			return commitments.ToArray();
 		}
-
-
-
-		private SolvedPuzzle[] _SolvedPuzzles;
-		private SolvedPuzzle[] _SolvedFakePuzzles;
-		private SolvedPuzzle[] _SolvedRealPuzzles;
 
 		public SolutionKey[] CheckRevelation(ClientRevelation revelation)
 		{
@@ -144,13 +195,10 @@ namespace NTumbleBit.PuzzleSolver
 				{
 					realPuzzles.Add(_SolvedPuzzles[i]);
 				}
-			}
-			_SolvedPuzzles = null;
-
-			_SolvedFakePuzzles = fakePuzzles.ToArray();
-			_SolvedRealPuzzles = realPuzzles.ToArray();
+			}						
+			_SolvedPuzzles = realPuzzles.ToArray();
 			_State = SolverServerStates.WaitingBlindFactor;
-			return _SolvedFakePuzzles.Select(f => f.Reveal()).ToArray();
+			return fakePuzzles.Select(f => f.SolutionKey).ToArray();
 		}
 
 		public void CheckBlindedFactors(BlindFactor[] blindFactors)
@@ -165,7 +213,7 @@ namespace NTumbleBit.PuzzleSolver
 			int y = 0;
 			for(int i = 0; i < Parameters.RealPuzzleCount; i++)
 			{
-				var solvedPuzzle = _SolvedRealPuzzles[i];
+				var solvedPuzzle = _SolvedPuzzles[i];
 				var unblinded = solvedPuzzle.Puzzle.Unblind(blindFactors[i]);
 				if(unblindedPuzzle == null)
 					unblindedPuzzle = unblinded;
@@ -179,7 +227,7 @@ namespace NTumbleBit.PuzzleSolver
 		public SolutionKey[] GetSolutionKeys()
 		{
 			AssertState(SolverServerStates.Completed);
-			return _SolvedRealPuzzles.Select(s => s.Reveal()).ToArray();
+			return _SolvedPuzzles.Select(s => s.SolutionKey).ToArray();
 		}
 
 		public Script GetFulfillScript(PaymentCashoutContext escrowContext, TransactionSignature cashoutSignature)
@@ -195,6 +243,6 @@ namespace NTumbleBit.PuzzleSolver
 		{
 			if(state != _State)
 				throw new InvalidOperationException("Invalid state, actual " + _State + " while expected is " + state);
-		}
+		}		
 	}
 }

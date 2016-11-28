@@ -10,24 +10,15 @@ using NBitcoin;
 
 namespace NTumbleBit.PuzzleSolver
 {
-	public class SolverSerializer
+	public class SolverSerializer : SerializerBase
 	{
-		public SolverSerializer(SolverParameters parameters, Stream inner)
+		public SolverSerializer(SolverParameters parameters, Stream inner) : base(inner, parameters?.ServerKey?._Key)
 		{
 			if(parameters == null)
 				throw new ArgumentNullException("parameters");
 			if(inner == null)
 				throw new ArgumentNullException("inner");
 			_Parameters = parameters;
-			_Inner = inner;
-		}
-
-		public int GetKeySize()
-		{
-			var keySize = _Parameters.ServerKey._Key.Modulus.ToByteArrayUnsigned().Length;
-			while(keySize % 32 != 0)
-				keySize++;
-			return keySize;
 		}
 
 
@@ -40,14 +31,6 @@ namespace NTumbleBit.PuzzleSolver
 			}
 		}
 
-		private readonly Stream _Inner;
-		public Stream Inner
-		{
-			get
-			{
-				return _Inner;
-			}
-		}
 
 		int TotalCount
 		{
@@ -65,8 +48,13 @@ namespace NTumbleBit.PuzzleSolver
 				throw new ArgumentException("puzzle count incorrect");
 			foreach(var puzzle in puzzles)
 			{
-				WriteBigInteger(puzzle._Value, GetKeySize());
+				WritePuzzle(puzzle);
 			}
+		}
+
+		public void WritePuzzle(PuzzleValue puzzle)
+		{
+			WriteBigInteger(puzzle._Value, GetKeySize());
 		}
 
 		public PuzzleValue[] ReadPuzzles()
@@ -74,9 +62,14 @@ namespace NTumbleBit.PuzzleSolver
 			PuzzleValue[] result = new PuzzleValue[TotalCount];
 			for(int i = 0; i < result.Length; i++)
 			{
-				result[i] = new PuzzleValue(ReadBigInteger(GetKeySize()));
+				result[i] = ReadPuzzle();
 			}
 			return result;
+		}
+
+		public PuzzleValue ReadPuzzle()
+		{
+			return new PuzzleValue(ReadBigInteger(GetKeySize()));
 		}
 
 		public void WritePuzzleCommitments(ServerCommitment[] commitments)
@@ -85,9 +78,14 @@ namespace NTumbleBit.PuzzleSolver
 				throw new ArgumentException("Commitment count invalid");
 			foreach(var commitment in commitments)
 			{
-				WriteBytes(commitment.EncryptedSolution, false);
-				WriteBytes(commitment.KeyHash.ToBytes(littleEndian), true);
+				WriteCommitment(commitment);
 			}
+		}
+
+		public void WriteCommitment(ServerCommitment commitment)
+		{
+			WriteBytes(commitment.EncryptedSolution, false);
+			WriteBytes(commitment.KeyHash.ToBytes(littleEndian), true);
 		}
 
 		public ServerCommitment[] ReadPuzzleCommitments()
@@ -95,83 +93,38 @@ namespace NTumbleBit.PuzzleSolver
 			var commitments = new ServerCommitment[TotalCount];
 			for(int i = 0; i < TotalCount; i++)
 			{
-				var encrypted = ReadBytes();
-				var keyHash = new uint160(ReadBytes(20), littleEndian);
-				commitments[i] = new ServerCommitment(keyHash, encrypted);
+				ServerCommitment commitment = ReadCommitment();
+				commitments[i] = commitment;
 			}
 			return commitments;
 		}
 
-		bool littleEndian = true;
-
-		private void WriteBytes(byte[] bytes, bool fixSize)
+		public ServerCommitment ReadCommitment()
 		{
-			if(fixSize)
-				Inner.Write(bytes, 0, bytes.Length);
-			else
-			{
-				WriteUInt(bytes.Length);
-				Inner.Write(bytes, 0, bytes.Length);
-			}
+			var encrypted = ReadBytes();
+			var keyHash = new uint160(ReadBytes(20), littleEndian);
+			var commitment = new ServerCommitment(keyHash, encrypted);
+			return commitment;
 		}
-
-		private void WriteUInt(long length)
-		{
-			var size = NBitcoin.Utils.ToBytes((uint)length, littleEndian);
-			Inner.Write(size, 0, size.Length);
-		}
-
-		public byte[] ReadBytes(long size = -1)
-		{
-			if(size == -1)
-			{
-				size = ReadUInt();
-			}
-
-			if(size > 1024 || size < 0)
-				throw new FormatException("Byte array too big to deserialize");
-			byte[] result = new byte[size];
-			Inner.Read(result, 0, result.Length);
-			return result;
-		}
-
-		private long ReadUInt()
-		{
-			long size;
-			var sizeBytes = new byte[4];
-			Inner.Read(sizeBytes, 0, sizeBytes.Length);
-			size = NBitcoin.Utils.ToUInt32(sizeBytes, littleEndian);
-			return size;
-		}
-
-		private BigInteger ReadBigInteger(int size)
-		{
-			var result = new byte[size];
-			Inner.Read(result, 0, size);
-			return new BigInteger(1, result);
-		}
-
-		private void WriteBigInteger(BigInteger value, int size)
-		{
-			var bytes = value.ToByteArrayUnsigned();
-			Utils.Pad(ref bytes, size);
-			WriteBytes(bytes, true);
-		}
-		
 
 		public void WritePuzzleRevelation(ClientRevelation revelation)
 		{
 			if(revelation.Indexes.Length != Parameters.FakePuzzleCount || revelation.Solutions.Length != Parameters.FakePuzzleCount)
 				throw new ArgumentException("Revelation invalid");
-			
+
 			foreach(var index in revelation.Indexes)
 			{
 				WriteUInt(index);
 			}
 			foreach(var index in revelation.Solutions)
 			{
-				WriteBigInteger(index._Value, GetKeySize());
+				WriteSolution(index);
 			}
+		}
+
+		public void WriteSolution(PuzzleSolution index)
+		{
+			WriteBigInteger(index._Value, GetKeySize());
 		}
 
 		public ClientRevelation ReadPuzzleRevelation()
@@ -184,9 +137,14 @@ namespace NTumbleBit.PuzzleSolver
 			PuzzleSolution[] solutions = new PuzzleSolution[Parameters.FakePuzzleCount];
 			for(int i = 0; i < Parameters.FakePuzzleCount; i++)
 			{
-				solutions[i] = new PuzzleSolution(ReadBigInteger(GetKeySize()));
+				solutions[i] = ReadPuzzleSolution();
 			}
 			return new ClientRevelation(indexes, solutions);
+		}
+
+		public PuzzleSolution ReadPuzzleSolution()
+		{
+			return new PuzzleSolution(ReadBigInteger(GetKeySize()));
 		}
 
 		public void WritePuzzleSolutionKeys(SolutionKey[] keys, bool real)
@@ -220,8 +178,13 @@ namespace NTumbleBit.PuzzleSolver
 				throw new ArgumentException("Blind factor count incorrect");
 			foreach(var b in blindFactors)
 			{
-				WriteBigInteger(b._Value, GetKeySize());
+				WriteBlindFactor(b);
 			}
+		}
+
+		public void WriteBlindFactor(BlindFactor b)
+		{
+			WriteBigInteger(b._Value, GetKeySize());
 		}
 
 		public BlindFactor[] ReadBlindFactors()
@@ -229,9 +192,32 @@ namespace NTumbleBit.PuzzleSolver
 			BlindFactor[] blinds = new BlindFactor[Parameters.RealPuzzleCount];
 			for(int i = 0; i < blinds.Length; i++)
 			{
-				blinds[i] = new BlindFactor(ReadBigInteger(GetKeySize()));
+				blinds[i] = ReadBlindFactor();
 			}
 			return blinds;
+		}
+
+		public BlindFactor ReadBlindFactor()
+		{
+			return new BlindFactor(ReadBigInteger(GetKeySize()));
+		}
+
+		public void WriteParameters()
+		{
+			WriteUInt(Parameters.FakePuzzleCount);
+			WriteUInt(Parameters.RealPuzzleCount);
+			WriteBytes(Parameters.ServerKey.ToBytes(), false);
+		}
+
+		public SolverParameters ReadParameters()
+		{
+			int fakePuzzleCount, realPuzzleCount;
+			fakePuzzleCount = (int)ReadUInt();
+			realPuzzleCount = (int)ReadUInt();
+
+			var bytes = ReadBytes(-1, 10 * 1024);
+			var key = new RsaPubKey(bytes);
+			return new SolverParameters(key) { FakePuzzleCount = fakePuzzleCount, RealPuzzleCount = realPuzzleCount };
 		}
 	}
 }

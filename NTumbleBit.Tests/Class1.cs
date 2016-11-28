@@ -136,9 +136,57 @@ namespace NTumbleBit.Tests
 			var puzzleToSolve = client.CheckCommitmentProof(proof);
 			Assert.NotNull(puzzleToSolve);
 			var solution = key.SolvePuzzle(puzzleToSolve);
-			var transactions = client.GetSignedTransactions(solution).ToArray();
+			var transactions = client.GetSignedTransactions(solution, coin).ToArray();
 			Assert.True(transactions.Length == parameters.RealTransactionCount);
 			
+			foreach(var tx in transactions)
+			{
+				TransactionBuilder builder = new TransactionBuilder();
+				builder.AddCoins(coin);
+				builder.AddKeys(clientKey);
+				builder.StandardTransactionPolicy = new StandardTransactionPolicy()
+				{
+					CheckFee = false
+				};
+				Assert.False(builder.Verify(tx));
+				builder.SignTransactionInPlace(tx);
+				Assert.True(builder.Verify(tx));
+			}
+		}
+
+		[Fact]
+		public void CanPromiseSerialize()
+		{
+			RsaKey key = TestKeys.Default;
+
+			Key serverKey = new Key();
+			Key clientKey = new Key();
+
+			var parameters = new PromiseParameters(key.PubKey)
+			{
+				FakeTransactionCount = 5,
+				RealTransactionCount = 5
+			};
+
+			var client = new PromiseClientSession(parameters);
+			var server = new PromiseServerSession(key, parameters);
+
+			var coin = CreateEscrowCoin(serverKey.PubKey, clientKey.PubKey);
+
+			Transaction cashout = new Transaction();
+			cashout.AddInput(new TxIn(coin.Outpoint, Script.Empty));
+			cashout.AddOutput(new TxOut(Money.Coins(1.5m), clientKey.PubKey.Hash));
+
+			SignaturesRequest request = client.CreateSignatureRequest(coin, cashout);
+			PuzzlePromise.ServerCommitment[] commitments = server.SignHashes(request, serverKey);
+			PuzzlePromise.ClientRevelation revelation = client.Reveal(commitments);
+			ServerCommitmentsProof proof = server.CheckRevelation(revelation);
+			var puzzleToSolve = client.CheckCommitmentProof(proof);
+			Assert.NotNull(puzzleToSolve);
+			var solution = key.SolvePuzzle(puzzleToSolve);
+			var transactions = client.GetSignedTransactions(solution, coin).ToArray();
+			Assert.True(transactions.Length == parameters.RealTransactionCount);
+
 			foreach(var tx in transactions)
 			{
 				TransactionBuilder builder = new TransactionBuilder();
@@ -210,9 +258,9 @@ namespace NTumbleBit.Tests
 
 			Assert.True(solution == expectedSolution);
 		}
-
+		
 		[Fact]
-		public void CanSerialize()
+		public void CanSolverSerialize()
 		{
 			RsaKey key = TestKeys.Default;
 			PuzzleSolution expectedSolution = null;
@@ -228,7 +276,7 @@ namespace NTumbleBit.Tests
 			SolverServerSession server = new SolverServerSession(key, parameters);
 
 			PuzzleValue[] puzzles = client.GeneratePuzzles(puzzle.PuzzleValue);
-
+			RoundTrip(ref client);
 			var ms = new MemoryStream();
 			var seria = new SolverSerializer(client.Parameters, ms);
 			seria.WritePuzzles(puzzles);
@@ -236,6 +284,7 @@ namespace NTumbleBit.Tests
 			puzzles = seria.ReadPuzzles();
 
 			var commitments = server.SolvePuzzles(puzzles);
+			RoundTrip(ref server);
 			ms = new MemoryStream();
 			seria = new SolverSerializer(client.Parameters, ms);
 			seria.WritePuzzleCommitments(commitments);
@@ -243,6 +292,7 @@ namespace NTumbleBit.Tests
 			commitments = seria.ReadPuzzleCommitments();
 
 			var revelation = client.Reveal(commitments);
+			RoundTrip(ref client);
 			ms = new MemoryStream();
 			seria = new SolverSerializer(client.Parameters, ms);
 			seria.WritePuzzleRevelation(revelation);
@@ -250,6 +300,7 @@ namespace NTumbleBit.Tests
 			revelation = seria.ReadPuzzleRevelation();
 
 			SolutionKey[] fakePuzzleKeys = server.CheckRevelation(revelation);
+			RoundTrip(ref server);
 			ms = new MemoryStream();
 			seria = new SolverSerializer(client.Parameters, ms);
 			seria.WritePuzzleSolutionKeys(fakePuzzleKeys, false);
@@ -258,6 +309,7 @@ namespace NTumbleBit.Tests
 
 
 			BlindFactor[] blindFactors = client.GetBlindFactors(fakePuzzleKeys);
+			RoundTrip(ref client);
 			ms = new MemoryStream();
 			seria = new SolverSerializer(client.Parameters, ms);
 			seria.WriteBlindFactors(blindFactors);
@@ -265,6 +317,7 @@ namespace NTumbleBit.Tests
 			blindFactors = seria.ReadBlindFactors();
 
 			server.CheckBlindedFactors(blindFactors);
+			RoundTrip(ref server);
 			SolutionKey[] realPuzzleKeys = server.GetSolutionKeys();
 			ms = new MemoryStream();
 			seria = new SolverSerializer(client.Parameters, ms);
@@ -273,9 +326,25 @@ namespace NTumbleBit.Tests
 			realPuzzleKeys = seria.ReadPuzzleSolutionKeys(true);
 
 			var solution = client.GetSolution(realPuzzleKeys);
-			Assert.True(solution == expectedSolution);
+			RoundTrip(ref client);
+			Assert.True(solution == expectedSolution);			
 		}
 
+		private void RoundTrip(ref SolverServerSession server)
+		{
+			var ms = new MemoryStream();
+			server.WriteTo(ms, true);
+			ms.Position = 0;
+			server = SolverServerSession.ReadFrom(ms, null);
+		}
+
+		private void RoundTrip(ref SolverClientSession client)
+		{
+			var ms = new MemoryStream();
+			client.WriteTo(ms);
+			ms.Position = 0;
+			client = SolverClientSession.ReadFrom(ms);
+		}
 
 		LockTime EscrowDate = new LockTime(new DateTimeOffset(1988, 07, 18, 0, 0, 0, TimeSpan.Zero));
 		Money Amount = Money.Coins(1.0m);

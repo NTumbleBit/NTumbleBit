@@ -3,6 +3,7 @@ using NBitcoin.BouncyCastle.Math;
 using NBitcoin.Crypto;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -43,6 +44,104 @@ namespace NTumbleBit.PuzzleSolver
 		}
 
 		private readonly SolverParameters _Parameters;
+		private Puzzle _Puzzle;
+		private SolverClientStates _State = SolverClientStates.WaitingPuzzle;
+		private PuzzleSetElement[] _PuzzleElements = new PuzzleSetElement[0];
+
+
+		public static SolverClientSession ReadFrom(byte[] bytes)
+		{
+			if(bytes == null)
+				throw new ArgumentNullException("bytes");
+			var ms = new MemoryStream(bytes);
+			return ReadFrom(ms);
+		}
+		public static SolverClientSession ReadFrom(Stream stream)
+		{
+			if(stream == null)
+				throw new ArgumentNullException("stream");
+			var seria = new SolverSerializer(new SolverParameters(), stream);
+			var parameters = seria.ReadParameters();
+			seria = new SolverSerializer(parameters, stream);
+			var client = new SolverClientSession(parameters);
+			client._Puzzle = new Puzzle(parameters.ServerKey, seria.ReadPuzzle());
+			client._State = (SolverClientStates)seria.ReadUInt();
+			int length = (int)seria.ReadUInt();
+			client._PuzzleElements = new PuzzleSetElement[length];
+			for(int i = 0; i < length; i++)
+			{
+				var isFake = seria.Inner.ReadByte() == 0;
+				var index = (int)seria.ReadUInt();
+				var puzzle = new Puzzle(parameters.ServerKey, seria.ReadPuzzle());
+				ServerCommitment commitment = null;
+				if(seria.Inner.ReadByte() != 0)
+				{
+					commitment = seria.ReadCommitment();
+				}
+				if(isFake)
+				{
+					var solution = seria.ReadPuzzleSolution();
+					client._PuzzleElements[i] = new FakePuzzle(puzzle, solution);
+				}
+				else
+				{
+					var blindFactor = seria.ReadBlindFactor();
+					client._PuzzleElements[i] = new RealPuzzle(puzzle, blindFactor);
+				}
+				client._PuzzleElements[i].Index = index;
+				client._PuzzleElements[i].Commitment = commitment;
+				client._PuzzleElements[i].Puzzle = puzzle;
+			}
+			return client;
+		}
+
+		public void WriteTo(Stream stream)
+		{
+			if(stream == null)
+				throw new ArgumentNullException("stream");
+			var seria = new SolverSerializer(_Parameters, stream);
+			seria.WriteParameters();
+			seria.WritePuzzle(_Puzzle.PuzzleValue);
+			seria.WriteUInt((uint)_State);
+			seria.WriteUInt((uint)_PuzzleElements.Length);
+			foreach(var el in _PuzzleElements)
+			{
+				var fake = el as FakePuzzle;
+				seria.Inner.WriteByte((byte)(fake != null ? 0 : 1));
+				WritePuzzleBase(seria, el);
+				if(fake != null)
+				{
+					seria.WriteSolution(fake.Solution);
+				}
+
+				var real = el as RealPuzzle;
+				if(real != null)
+				{
+					seria.WriteBlindFactor(real.BlindFactor);
+				}
+			}
+		}
+		public byte[] ToBytes()
+		{
+			MemoryStream ms = new MemoryStream();
+			WriteTo(ms);
+			ms.Position = 0;
+			return ms.ToArrayEfficient();
+		}
+
+		private void WritePuzzleBase(SolverSerializer seria, PuzzleSetElement el)
+		{
+			seria.WriteUInt(el.Index);
+			seria.WritePuzzle(el.Puzzle.PuzzleValue);
+			if(el.Commitment == null)
+				seria.Inner.WriteByte(0);
+			else
+			{
+				seria.Inner.WriteByte(1);
+				seria.WriteCommitment(el.Commitment);
+			}
+		}
+
 		public SolverParameters Parameters
 		{
 			get
@@ -59,8 +158,6 @@ namespace NTumbleBit.PuzzleSolver
 			}
 		}
 
-
-		private Puzzle _Puzzle;
 		public Puzzle Puzzle
 		{
 			get
@@ -69,8 +166,6 @@ namespace NTumbleBit.PuzzleSolver
 			}
 		}
 
-
-		private SolverClientStates _State = SolverClientStates.WaitingPuzzle;
 		public SolverClientStates State
 		{
 			get
@@ -83,7 +178,7 @@ namespace NTumbleBit.PuzzleSolver
 		{
 			if(puzzleValue == null)
 				throw new ArgumentNullException("puzzleValue");
-			AssertState(SolverClientStates.WaitingPuzzle);			
+			AssertState(SolverClientStates.WaitingPuzzle);
 			var paymentPuzzle = new Puzzle(Parameters.ServerKey, puzzleValue);
 			List<PuzzleSetElement> puzzles = new List<PuzzleSetElement>();
 			for(int i = 0; i < Parameters.RealPuzzleCount; i++)
@@ -100,12 +195,15 @@ namespace NTumbleBit.PuzzleSolver
 				puzzles.Add(new FakePuzzle(puzzle, solution));
 			}
 
-			var puzzlesArray = puzzles.ToArray();
-			NBitcoin.Utils.Shuffle(puzzlesArray, RandomUtils.GetInt32());
-			PuzzleSet = new PuzzleSet(puzzlesArray);
+			_PuzzleElements = puzzles.ToArray();
+			NBitcoin.Utils.Shuffle(_PuzzleElements, RandomUtils.GetInt32());
+			for(int i = 0; i < _PuzzleElements.Length; i++)
+			{
+				_PuzzleElements[i].Index = i;
+			}
 			_State = SolverClientStates.WaitingCommitments;
 			_Puzzle = paymentPuzzle;
-			return PuzzleSet.PuzzleValues.ToArray();
+			return _PuzzleElements.Select(p => p.Puzzle.PuzzleValue).ToArray();
 		}
 
 
@@ -120,17 +218,15 @@ namespace NTumbleBit.PuzzleSolver
 			List<PuzzleSolution> solutions = new List<PuzzleSolution>();
 			List<int> indexes = new List<int>();
 
-			for(int i = 0; i < PuzzleSet.PuzzleElements.Length; i++)
+			foreach(var puzzle in _PuzzleElements.OfType<FakePuzzle>())
 			{
-				var element = PuzzleSet.PuzzleElements[i] as FakePuzzle;
-				if(element != null)
-				{
-					solutions.Add(element.Solution);
-					indexes.Add(i);
-				}
+				solutions.Add(puzzle.Solution);
+				indexes.Add(puzzle.Index);
 			}
-
-			PuzzleCommiments = commitments;
+			for(int i = 0; i < commitments.Length; i++)
+			{
+				_PuzzleElements[i].Commitment = commitments[i];
+			}
 			_State = SolverClientStates.WaitingFakeCommitmentsProof;
 			return new ClientRevelation(indexes.ToArray(), solutions.ToArray());
 		}
@@ -144,29 +240,23 @@ namespace NTumbleBit.PuzzleSolver
 			AssertState(SolverClientStates.WaitingFakeCommitmentsProof);
 
 			int y = 0;
-			for(int i = 0; i < PuzzleCommiments.Length; i++)
+			foreach(var puzzle in _PuzzleElements.OfType<FakePuzzle>())
 			{
-				var puzzle = PuzzleSet.PuzzleElements[i] as FakePuzzle;
-				if(puzzle != null)
+				var key = keys[y++].ToBytes(true);
+				var hash = new uint160(Hashes.RIPEMD160(key, key.Length));
+				if(hash != puzzle.Commitment.KeyHash)
 				{
-					var key = keys[y++].ToBytes(true);
-					var commitment = PuzzleCommiments[i];
-
-					var hash = new uint160(Hashes.RIPEMD160(key, key.Length));
-					if(hash != commitment.KeyHash)
-					{
-						throw new PuzzleException("Commitment hash invalid");
-					}
-					var solution = new PuzzleSolution(Utils.ChachaDecrypt(commitment.EncryptedSolution, key));
-					if(solution != puzzle.Solution)
-					{
-						throw new PuzzleException("Commitment encrypted solution invalid");
-					}
+					throw new PuzzleException("Commitment hash invalid");
+				}
+				var solution = new PuzzleSolution(Utils.ChachaDecrypt(puzzle.Commitment.EncryptedSolution, key));
+				if(solution != puzzle.Solution)
+				{
+					throw new PuzzleException("Commitment encrypted solution invalid");
 				}
 			}
 
 			_State = SolverClientStates.WaitingPuzzleSolutions;
-			return PuzzleSet.PuzzleElements.OfType<RealPuzzle>()
+			return _PuzzleElements.OfType<RealPuzzle>()
 				.Select(p => p.BlindFactor)
 				.ToArray();
 		}
@@ -177,14 +267,10 @@ namespace NTumbleBit.PuzzleSolver
 				throw new ArgumentNullException("escrowContext");
 			AssertState(SolverClientStates.WaitingPuzzleSolutions);
 			List<uint160> hashes = new List<uint160>();
-			for(int i = 0; i < PuzzleCommiments.Length; i++)
+			foreach(var puzzle in _PuzzleElements.OfType<RealPuzzle>())
 			{
-				var puzzle = PuzzleSet.PuzzleElements[i] as RealPuzzle;
-				if(puzzle != null)
-				{
-					var commitment = PuzzleCommiments[i];
-					hashes.Add(commitment.KeyHash);
-				}
+				var commitment = puzzle.Commitment;
+				hashes.Add(commitment.KeyHash);
 			}
 			return escrowContext.CreateOfferScript(hashes.ToArray());
 		}
@@ -203,7 +289,7 @@ namespace NTumbleBit.PuzzleSolver
 				}
 				catch(PuzzleException)
 				{
-	
+
 				}
 			}
 			throw new PuzzleException("Impossible to find solution to the puzzle");
@@ -230,24 +316,20 @@ namespace NTumbleBit.PuzzleSolver
 			PuzzleSolution solution = null;
 			RealPuzzle solvedPuzzle = null;
 			int y = 0;
-			for(int i = 0; i < PuzzleCommiments.Length; i++)
+			foreach(var puzzle in _PuzzleElements.OfType<RealPuzzle>())
 			{
-				var puzzle = PuzzleSet.PuzzleElements[i] as RealPuzzle;
-				if(puzzle != null)
-				{
-					var key = keys[y++].ToBytes(true);
-					var commitment = PuzzleCommiments[i];
+				var key = keys[y++].ToBytes(true);
+				var commitment = puzzle.Commitment;
 
-					var hash = new uint160(Hashes.RIPEMD160(key, key.Length));
-					if(hash == commitment.KeyHash)
+				var hash = new uint160(Hashes.RIPEMD160(key, key.Length));
+				if(hash == commitment.KeyHash)
+				{
+					var decryptedSolution = new PuzzleSolution(Utils.ChachaDecrypt(commitment.EncryptedSolution, key));
+					if(puzzle.Puzzle.Verify(decryptedSolution))
 					{
-						var decryptedSolution = new PuzzleSolution(Utils.ChachaDecrypt(commitment.EncryptedSolution, key));
-						if(puzzle.Puzzle.Verify(decryptedSolution))
-						{
-							solution = decryptedSolution;
-							solvedPuzzle = puzzle;
-							break;
-						}
+						solution = decryptedSolution;
+						solvedPuzzle = puzzle;
+						break;
 					}
 				}
 			}
@@ -259,22 +341,10 @@ namespace NTumbleBit.PuzzleSolver
 			return solution;
 		}
 
-		public ServerCommitment[] PuzzleCommiments
-		{
-			get;
-			private set;
-		}
-
 		private void AssertState(SolverClientStates state)
 		{
 			if(state != _State)
 				throw new InvalidOperationException("Invalid state, actual " + _State + " while expected is " + state);
-		}
-
-		PuzzleSet PuzzleSet
-		{
-			get;
-			set;
 		}
 	}
 }

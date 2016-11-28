@@ -104,7 +104,6 @@ namespace NTumbleBit.PuzzlePromise
 		private HashBase[] _Hashes;
 		private uint256 _IndexSalt;
 		private PubKey[] _ExpectedSigners;
-		private ICoin _EscrowCoin;
 
 		public SignaturesRequest CreateSignatureRequest(ICoin escrowCoin, Transaction cashoutTransaction)
 		{
@@ -150,7 +149,6 @@ namespace NTumbleBit.PuzzlePromise
 			};
 			_IndexSalt = indexSalt;
 			_ExpectedSigners = multiSig.PubKeys;
-			_EscrowCoin = escrowCoin;
 			_State = PromiseClientStates.WaitingCommitments;
 			return request;
 		}
@@ -251,8 +249,10 @@ namespace NTumbleBit.PuzzlePromise
 
 		Quotient[] _Quotients;
 
-		internal IEnumerable<Transaction> GetSignedTransactions(PuzzleSolution solution)
+		internal IEnumerable<Transaction> GetSignedTransactions(PuzzleSolution solution, ICoin escrowCoin)
 		{
+			if(escrowCoin == null)
+				throw new ArgumentNullException("escrowCoin");
 			BigInteger cumul = solution._Value;
 			var hashes = _Hashes.OfType<RealHash>().ToArray();
 			for(int i = 0; i < Parameters.RealTransactionCount; i++)
@@ -268,16 +268,16 @@ namespace NTumbleBit.PuzzlePromise
 				
 				var transaction = hash.GetTransaction();
 				TransactionBuilder txBuilder = new TransactionBuilder();
-				txBuilder.AddCoins(_EscrowCoin);
+				txBuilder.AddCoins(escrowCoin);
 				txBuilder.AddKnownSignature(signer, signature);
 				txBuilder.SignTransactionInPlace(transaction);
 				yield return transaction;
 			}
 		}
 
-		public Transaction GetSignedTransaction(PuzzleSolution solution)
+		public Transaction GetSignedTransaction(PuzzleSolution solution, ICoin escrowCoin)
 		{
-			var tx = GetSignedTransactions(solution).FirstOrDefault();
+			var tx = GetSignedTransactions(solution, escrowCoin).FirstOrDefault();
 			if(tx == null)
 				throw new PuzzleException("Wrong solution for the puzzle");
 			return tx;

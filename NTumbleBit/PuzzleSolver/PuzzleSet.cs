@@ -8,11 +8,24 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit.PuzzleSolver
 {
-	interface PuzzleSetElement
+	internal class PuzzleSetElement
 	{
-		Puzzle Puzzle
+		public Puzzle Puzzle
 		{
 			get;
+			set;
+		}
+
+		public int Index
+		{
+			get;
+			set;
+		}
+
+		public ServerCommitment Commitment
+		{
+			get;
+			set;
 		}
 	}
 	class RealPuzzle : PuzzleSetElement
@@ -23,15 +36,11 @@ namespace NTumbleBit.PuzzleSolver
 			BlindFactor = blindFactory;
 		}
 
-		public Puzzle Puzzle
-		{
-			get; set;
-		}
 		public BlindFactor BlindFactor
 		{
 			get; set;
 		}
-		
+
 		public override string ToString()
 		{
 			return "+Real " + Puzzle.ToString();
@@ -45,10 +54,7 @@ namespace NTumbleBit.PuzzleSolver
 			Puzzle = puzzle;
 			Solution = solution;
 		}
-		public Puzzle Puzzle
-		{
-			get; set;
-		}
+	
 		public PuzzleSolution Solution
 		{
 			get;
@@ -58,28 +64,6 @@ namespace NTumbleBit.PuzzleSolver
 		public override string ToString()
 		{
 			return "-Fake " + Puzzle.ToString();
-		}
-	}
-	class PuzzleSet
-	{
-		public PuzzleSet(PuzzleSetElement[] puzzles)
-		{
-			if(puzzles == null)
-				throw new ArgumentNullException("puzzles");
-			PuzzleElements = puzzles;
-		}
-
-		public PuzzleSetElement[] PuzzleElements
-		{
-			get; set;
-		}
-
-		public IEnumerable<PuzzleValue> PuzzleValues
-		{
-			get
-			{
-				return PuzzleElements.Select(p => p.Puzzle.PuzzleValue);
-			}
 		}
 	}
 }
