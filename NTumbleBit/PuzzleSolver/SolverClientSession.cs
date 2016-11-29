@@ -47,6 +47,7 @@ namespace NTumbleBit.PuzzleSolver
 		private Puzzle _Puzzle;
 		private SolverClientStates _State = SolverClientStates.WaitingPuzzle;
 		private PuzzleSetElement[] _PuzzleElements = new PuzzleSetElement[0];
+		private PuzzleSolution _PuzzleSolution;
 
 
 		public static SolverClientSession ReadFrom(byte[] bytes)
@@ -92,6 +93,8 @@ namespace NTumbleBit.PuzzleSolver
 				client._PuzzleElements[i].Commitment = commitment;
 				client._PuzzleElements[i].Puzzle = puzzle;
 			}
+			if(client._State == SolverClientStates.Completed)
+				client._PuzzleSolution = seria.ReadPuzzleSolution();
 			return client;
 		}
 
@@ -120,6 +123,8 @@ namespace NTumbleBit.PuzzleSolver
 					seria.WriteBlindFactor(real.BlindFactor);
 				}
 			}
+			if(_State == SolverClientStates.Completed)
+				seria.WritePuzzleSolution(_PuzzleSolution);
 		}
 		public byte[] ToBytes()
 		{
@@ -275,7 +280,7 @@ namespace NTumbleBit.PuzzleSolver
 			return escrowContext.CreateOfferScript(hashes.ToArray());
 		}
 
-		public PuzzleSolution GetSolution(Transaction cashout)
+		public void CheckSolutions(Transaction cashout)
 		{
 			if(cashout == null)
 				throw new ArgumentNullException("cashout");
@@ -285,7 +290,8 @@ namespace NTumbleBit.PuzzleSolver
 				var solutions = SolverScriptBuilder.ExtractSolutions(input.ScriptSig, Parameters.RealPuzzleCount);
 				try
 				{
-					return GetSolution(solutions);
+					CheckSolutions(solutions);
+					return;
 				}
 				catch(PuzzleException)
 				{
@@ -295,7 +301,7 @@ namespace NTumbleBit.PuzzleSolver
 			throw new PuzzleException("Impossible to find solution to the puzzle");
 		}
 
-		public PuzzleSolution GetSolution(Script scriptSig)
+		public void CheckSolutions(Script scriptSig)
 		{
 			if(scriptSig == null)
 				throw new ArgumentNullException("scriptSig");
@@ -303,10 +309,10 @@ namespace NTumbleBit.PuzzleSolver
 			var solutions = SolverScriptBuilder.ExtractSolutions(scriptSig, Parameters.RealPuzzleCount);
 			if(solutions == null)
 				throw new PuzzleException("Impossible to find solution to the puzzle");
-			return GetSolution(solutions);
+			CheckSolutions(solutions);
 		}
 
-		public PuzzleSolution GetSolution(SolutionKey[] keys)
+		public void CheckSolutions(SolutionKey[] keys)
 		{
 			if(keys == null)
 				throw new ArgumentNullException("keys");
@@ -336,9 +342,14 @@ namespace NTumbleBit.PuzzleSolver
 			if(solution == null)
 				throw new PuzzleException("Impossible to find solution to the puzzle");
 
-			solution = solution.Unblind(ServerKey, solvedPuzzle.BlindFactor);
+			_PuzzleSolution = solution.Unblind(ServerKey, solvedPuzzle.BlindFactor);
 			_State = SolverClientStates.Completed;
-			return solution;
+		}
+
+		public PuzzleSolution GetSolution()
+		{
+			AssertState(SolverClientStates.Completed);
+			return _PuzzleSolution;
 		}
 
 		private void AssertState(SolverClientStates state)

@@ -61,14 +61,14 @@ namespace NTumbleBit.PuzzleSolver
 		private SolverServerStates _State = SolverServerStates.WaitingPuzzles;
 		private SolvedPuzzle[] _SolvedPuzzles = new SolvedPuzzle[0];
 
-		public static SolverServerSession ReadFrom(byte[] bytes, RsaKey privateKey)
+		public static SolverServerSession ReadFrom(byte[] bytes, RsaKey privateKey = null)
 		{
 			if(bytes == null)
 				throw new ArgumentNullException("bytes");
 			var ms = new MemoryStream(bytes);
 			return ReadFrom(ms, privateKey);
 		}
-		public static SolverServerSession ReadFrom(Stream stream, RsaKey privateKey)
+		public static SolverServerSession ReadFrom(Stream stream, RsaKey privateKey = null)
 		{
 			if(stream == null)
 				throw new ArgumentNullException("stream");

@@ -206,17 +206,7 @@ namespace NTumbleBit.Tests
 				builder.SignTransactionInPlace(tx);
 				Assert.True(builder.Verify(tx));
 			}
-		}
-
-		private void RoundTrip(ref PromiseServerSession server)
-		{
-			server = PromiseServerSession.ReadFrom(server.ToBytes(true));
-		}
-
-		private void RoundTrip(ref PromiseClientSession client)
-		{
-			client = PromiseClientSession.ReadFrom(client.ToBytes());
-		}
+		}		
 
 		private ScriptCoin CreateEscrowCoin(PubKey pubKey, PubKey pubKey2)
 		{
@@ -229,54 +219,9 @@ namespace NTumbleBit.Tests
 				}).ToScriptCoin(redeem);
 			return scriptCoin;
 		}
-
-		[Fact]
-		public void TestPuzzleSolver()
-		{
-			RsaKey key = TestKeys.Default;
-			PuzzleSolution expectedSolution = null;
-			Puzzle puzzle = key.PubKey.GeneratePuzzle(ref expectedSolution);
-
-			var parameters = new SolverParameters(key.PubKey)
-			{
-				FakePuzzleCount = 50,
-				RealPuzzleCount = 10
-			};
-
-			SolverClientSession client = new SolverClientSession(parameters);
-			SolverServerSession server = new SolverServerSession(key, parameters);
-
-			PuzzleValue[] puzzles = client.GeneratePuzzles(puzzle.PuzzleValue);
-			PuzzleSolver.ServerCommitment[] commitments = server.SolvePuzzles(puzzles);
-			PuzzleSolver.ClientRevelation revelation = client.Reveal(commitments);
-			SolutionKey[] fakePuzzleKeys = server.CheckRevelation(revelation);
-			BlindFactor[] blindFactors = client.GetBlindFactors(fakePuzzleKeys);
-
-			//Verify if the scripts are correctly created
-			Key serverKey = new Key();
-			Key clientKey = new Key();
-			PaymentCashoutContext ctx = new PaymentCashoutContext();
-			ctx.RedeemKey = serverKey.PubKey;
-			ctx.RefundKey = clientKey.PubKey;
-			ctx.Expiration = EscrowDate;
-			var offer = client.CreateOfferScript(ctx);
-			Coin coin = new Coin(new OutPoint(), new TxOut(Money.Zero, offer.Hash)).ToScriptCoin(offer);
-			Transaction fulfillTx = new Transaction();
-			fulfillTx.Inputs.Add(new TxIn(coin.Outpoint));
-			var sig = serverKey.Sign(Script.SignatureHash(coin, fulfillTx), SigHash.All);
-			server.CheckBlindedFactors(blindFactors);
-			fulfillTx.Inputs[0].ScriptSig = server.GetFulfillScript(ctx, sig);
-			ScriptError error;
-			Assert.True(Script.VerifyScript(coin.ScriptPubKey, fulfillTx, 0, Money.Zero, out error));
-			////////////////////////////////////////////////
-
-			var solution = client.GetSolution(fulfillTx);
-
-			Assert.True(solution == expectedSolution);
-		}
 		
 		[Fact]
-		public void CanSolverSerialize()
+		public void TestPuzzleSolver()
 		{
 			RsaKey key = TestKeys.Default;
 			PuzzleSolution expectedSolution = null;
@@ -293,57 +238,117 @@ namespace NTumbleBit.Tests
 
 			PuzzleValue[] puzzles = client.GeneratePuzzles(puzzle.PuzzleValue);
 			RoundTrip(ref client);
-			var ms = new MemoryStream();
-			var seria = new SolverSerializer(client.Parameters, ms);
-			seria.WritePuzzles(puzzles);
-			ms.Position = 0;
-			puzzles = seria.ReadPuzzles();
+			RoundTrip(ref puzzles, client.Parameters);			
 
 			var commitments = server.SolvePuzzles(puzzles);
 			RoundTrip(ref server);
-			ms = new MemoryStream();
-			seria = new SolverSerializer(client.Parameters, ms);
-			seria.WritePuzzleCommitments(commitments);
-			ms.Position = 0;
-			commitments = seria.ReadPuzzleCommitments();
+			RoundTrip(ref commitments, client.Parameters);
 
 			var revelation = client.Reveal(commitments);
 			RoundTrip(ref client);
-			ms = new MemoryStream();
-			seria = new SolverSerializer(client.Parameters, ms);
-			seria.WritePuzzleRevelation(revelation);
-			ms.Position = 0;
-			revelation = seria.ReadPuzzleRevelation();
+			RoundTrip(ref revelation, client.Parameters);			
 
 			SolutionKey[] fakePuzzleKeys = server.CheckRevelation(revelation);
 			RoundTrip(ref server);
-			ms = new MemoryStream();
-			seria = new SolverSerializer(client.Parameters, ms);
-			seria.WritePuzzleSolutionKeys(fakePuzzleKeys, false);
-			ms.Position = 0;
-			fakePuzzleKeys = seria.ReadPuzzleSolutionKeys(false);
+			RoundTrip(ref fakePuzzleKeys, false, client.Parameters);
 
 
 			BlindFactor[] blindFactors = client.GetBlindFactors(fakePuzzleKeys);
 			RoundTrip(ref client);
-			ms = new MemoryStream();
-			seria = new SolverSerializer(client.Parameters, ms);
-			seria.WriteBlindFactors(blindFactors);
-			ms.Position = 0;
-			blindFactors = seria.ReadBlindFactors();
+			RoundTrip(ref blindFactors, client.Parameters);
 
 			server.CheckBlindedFactors(blindFactors);
 			RoundTrip(ref server);
 			SolutionKey[] realPuzzleKeys = server.GetSolutionKeys();
-			ms = new MemoryStream();
-			seria = new SolverSerializer(client.Parameters, ms);
-			seria.WritePuzzleSolutionKeys(realPuzzleKeys, true);
-			ms.Position = 0;
-			realPuzzleKeys = seria.ReadPuzzleSolutionKeys(true);
+			RoundTrip(ref realPuzzleKeys, true, client.Parameters);
 
-			var solution = client.GetSolution(realPuzzleKeys);
+			var serverClone = SolverServerSession.ReadFrom(server.ToBytes(true));
+			var clientClone = SolverClientSession.ReadFrom(client.ToBytes());
+			client.CheckSolutions(realPuzzleKeys);
 			RoundTrip(ref client);
-			Assert.True(solution == expectedSolution);			
+			var solution = client.GetSolution();
+			RoundTrip(ref client);
+			Assert.True(solution == expectedSolution);
+
+			client = clientClone;
+			server = serverClone;
+			//Verify if the scripts are correctly created
+			Key serverKey = new Key();
+			Key clientKey = new Key();
+			PaymentCashoutContext ctx = new PaymentCashoutContext();
+			ctx.RedeemKey = serverKey.PubKey;
+			ctx.RefundKey = clientKey.PubKey;
+			ctx.Expiration = EscrowDate;
+			var offer = client.CreateOfferScript(ctx);
+			Coin coin = new Coin(new OutPoint(), new TxOut(Money.Zero, offer.Hash)).ToScriptCoin(offer);
+			Transaction fulfillTx = new Transaction();
+			fulfillTx.Inputs.Add(new TxIn(coin.Outpoint));
+			var sig = serverKey.Sign(Script.SignatureHash(coin, fulfillTx), SigHash.All);
+			fulfillTx.Inputs[0].ScriptSig = server.GetFulfillScript(ctx, sig);
+			ScriptError error;
+			Assert.True(Script.VerifyScript(coin.ScriptPubKey, fulfillTx, 0, Money.Zero, out error));
+			////////////////////////////////////////////////
+
+			client.CheckSolutions(fulfillTx);
+			RoundTrip(ref client);
+			solution = client.GetSolution();
+			RoundTrip(ref client);
+			Assert.True(solution == expectedSolution);
+		}
+
+		private void RoundTrip(ref PuzzleValue[] puzzles, SolverParameters parameters)
+		{
+			var ms = new MemoryStream();
+			var seria = new SolverSerializer(parameters, ms);
+			seria.WritePuzzles(puzzles);
+			ms.Position = 0;
+			puzzles = seria.ReadPuzzles();
+		}
+
+		private void RoundTrip(ref PromiseServerSession server)
+		{
+			server = PromiseServerSession.ReadFrom(server.ToBytes(true));
+		}
+
+		private void RoundTrip(ref PromiseClientSession client)
+		{
+			client = PromiseClientSession.ReadFrom(client.ToBytes());
+		}
+
+		private void RoundTrip(ref BlindFactor[] blindFactors, SolverParameters parameters)
+		{
+			var ms = new MemoryStream();
+			var seria = new SolverSerializer(parameters, ms);
+			seria.WriteBlindFactors(blindFactors);
+			ms.Position = 0;
+			blindFactors = seria.ReadBlindFactors();
+		}
+
+		private void RoundTrip(ref SolutionKey[] fakePuzzleKeys, bool real, SolverParameters parameters)
+		{
+			var ms = new MemoryStream();
+			var seria = new SolverSerializer(parameters, ms);
+			seria.WritePuzzleSolutionKeys(fakePuzzleKeys, real);
+			ms.Position = 0;
+			fakePuzzleKeys = seria.ReadPuzzleSolutionKeys(real);
+		}
+
+		private void RoundTrip(ref PuzzleSolver.ClientRevelation revelation, SolverParameters parameters)
+		{
+			var ms = new MemoryStream();
+			var seria = new SolverSerializer(parameters, ms);
+			seria.WritePuzzleRevelation(revelation);
+			ms.Position = 0;
+			revelation = seria.ReadPuzzleRevelation();
+		}
+
+		private void RoundTrip(ref PuzzleSolver.ServerCommitment[] commitments, SolverParameters parameters)
+		{
+			var ms = new MemoryStream();
+			var seria = new SolverSerializer(parameters, ms);
+			seria.WritePuzzleCommitments(commitments);
+			ms.Position = 0;
+			commitments = seria.ReadPuzzleCommitments();
 		}
 
 		private void RoundTrip(ref SolverServerSession server)
