@@ -129,14 +129,14 @@ namespace NTumbleBit.Tests
 			cashout.AddInput(new TxIn(coin.Outpoint, Script.Empty));
 			cashout.AddOutput(new TxOut(Money.Coins(1.5m), clientKey.PubKey.Hash));
 
-			SignaturesRequest request = client.CreateSignatureRequest(new CashoutTransaction(coin, cashout));
+			SignaturesRequest request = client.CreateSignatureRequest(coin, cashout);
 			PuzzlePromise.ServerCommitment[] commitments = server.SignHashes(request, serverKey);
 			PuzzlePromise.ClientRevelation revelation = client.Reveal(commitments);
 			ServerCommitmentsProof proof = server.CheckRevelation(revelation);
 			var puzzleToSolve = client.CheckCommitmentProof(proof);
 			Assert.NotNull(puzzleToSolve);
 			var solution = key.SolvePuzzle(puzzleToSolve);
-			var transactions = client.GetSignedTransactions(solution, new CashoutTransaction(coin, cashout)).ToArray();
+			var transactions = client.GetSignedTransactions(solution).ToArray();
 			Assert.True(transactions.Length == parameters.RealTransactionCount);
 			
 			foreach(var tx in transactions)
@@ -177,7 +177,7 @@ namespace NTumbleBit.Tests
 			cashout.AddInput(new TxIn(coin.Outpoint, Script.Empty));
 			cashout.AddOutput(new TxOut(Money.Coins(1.5m), clientKey.PubKey.Hash));
 
-			SignaturesRequest request = client.CreateSignatureRequest(new CashoutTransaction(coin, cashout));
+			SignaturesRequest request = client.CreateSignatureRequest(coin, cashout);
 			RoundTrip(ref client);
 			PuzzlePromise.ServerCommitment[] commitments = server.SignHashes(request, serverKey);
 			RoundTrip(ref server);
@@ -189,7 +189,7 @@ namespace NTumbleBit.Tests
 			RoundTrip(ref client);
 			Assert.NotNull(puzzleToSolve);
 			var solution = key.SolvePuzzle(puzzleToSolve);
-			var transactions = client.GetSignedTransactions(solution, new CashoutTransaction(coin, cashout)).ToArray();
+			var transactions = client.GetSignedTransactions(solution).ToArray();
 			RoundTrip(ref client);
 			Assert.True(transactions.Length == parameters.RealTransactionCount);
 
@@ -218,7 +218,7 @@ namespace NTumbleBit.Tests
 			client = PromiseClientSession.ReadFrom(client.ToBytes());
 		}
 
-		private ICoin CreateEscrowCoin(PubKey pubKey, PubKey pubKey2)
+		private ScriptCoin CreateEscrowCoin(PubKey pubKey, PubKey pubKey2)
 		{
 			var redeem = PayToMultiSigTemplate.Instance.GenerateScriptPubKey(2, pubKey, pubKey2);
 			var scriptCoin = new Coin(new OutPoint(new uint256(RandomUtils.GetBytes(32)), 0), 

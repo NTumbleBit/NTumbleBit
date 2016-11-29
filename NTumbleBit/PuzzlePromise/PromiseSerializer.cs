@@ -147,5 +147,23 @@ namespace NTumbleBit.PuzzlePromise
 		{
 			WriteBytes(hash.ToBytes(littleEndian), littleEndian);
 		}
+
+		public ScriptCoin ReadScriptCoin()
+		{
+			var txId = ReadUInt256();
+			var index = ReadUInt();
+			var money = Money.Satoshis(ReadULong());
+			var scriptPubKey = new Script(ReadBytes());
+			var redeem = new Script(ReadBytes());
+			return new ScriptCoin(txId, (uint)index, money, scriptPubKey, redeem);
+		}
+		public void WriteScriptCoin(ScriptCoin coin)
+		{
+			WriteUInt256(coin.Outpoint.Hash);
+			WriteUInt(coin.Outpoint.N);
+			WriteULong((ulong)coin.Amount.Satoshi);
+			WriteBytes(coin.ScriptPubKey.ToBytes(), false);
+			WriteBytes(coin.Redeem.ToBytes(), false);
+		}
 	}
 }

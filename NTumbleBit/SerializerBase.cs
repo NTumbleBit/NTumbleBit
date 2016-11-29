@@ -53,6 +53,43 @@ namespace NTumbleBit
 			return new PuzzleValue(ReadBigInteger(GetKeySize()));
 		}
 
+		public ulong ReadULong()
+		{
+			var bytes = ReadBytes(8);
+			return ToUInt64(bytes, littleEndian);
+		}
+
+		public void WriteULong(ulong v)
+		{
+			var bytes = NBitcoin.Utils.ToBytes(v, littleEndian);
+			WriteBytes(bytes, true);
+		}
+
+		internal static ulong ToUInt64(byte[] value, bool littleEndian)
+		{
+			if(littleEndian)
+			{
+				return value[0]
+					   + ((ulong)value[1] << 8)
+					   + ((ulong)value[2] << 16)
+					   + ((ulong)value[3] << 24)
+					   + ((ulong)value[4] << 32)
+					   + ((ulong)value[5] << 40)
+					   + ((ulong)value[6] << 48)
+					   + ((ulong)value[7] << 56);
+			}
+			else
+			{
+				return value[7]
+					+ ((ulong)value[6] << 8)
+					+ ((ulong)value[5] << 16)
+					+ ((ulong)value[4] << 24)
+					+ ((ulong)value[3] << 32)
+					   + ((ulong)value[2] << 40)
+					   + ((ulong)value[1] << 48)
+					   + ((ulong)value[0] << 56);
+			}
+		}
 
 		public byte[] ReadBytes(long size = -1, long maxSize = 1024)
 		{

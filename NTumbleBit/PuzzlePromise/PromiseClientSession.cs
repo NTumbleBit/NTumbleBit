@@ -36,26 +36,26 @@ namespace NTumbleBit.PuzzlePromise
 		}
 		class RealHash : HashBase
 		{
-
-			public LockTime LockTime
+			public RealHash(Transaction tx, ScriptCoin coin)
 			{
-				get; set;
+				_BaseTransaction = tx;
+				_Escrow = coin;
 			}
-
-
-			public uint256 TransactionHash
+			private readonly ScriptCoin _Escrow;
+			private readonly Transaction _BaseTransaction;
+			public LockTime LockTime
 			{
 				get; set;
 			}
 
 			public override uint256 GetHash()
 			{
-				return TransactionHash;
+				return GetTransaction().GetSignatureHash(_Escrow);
 			}
 
-			public Transaction GetTransaction(Transaction cashout)
+			public Transaction GetTransaction()
 			{
-				var clone = cashout.Clone();
+				var clone = _BaseTransaction.Clone();
 				clone.LockTime = LockTime;
 				return clone;
 			}
@@ -117,33 +117,34 @@ namespace NTumbleBit.PuzzlePromise
 			}
 			seria.WriteUInt256(_IndexSalt);
 
-			seria.WriteUInt(_Hashes.Length);
-			foreach(var hash in _Hashes)
+			if(_Cashout != null)
 			{
-				seria.WriteUInt(hash.Index);
-				seria.Inner.WriteByte((byte)(hash.Commitment != null ? 1 : 0));
-				if(hash.Commitment != null)
-					seria.WriteCommitment(hash.Commitment);
-				var fake = hash as FakeHash;
-				if(fake != null)
+				seria.Inner.WriteByte(1);
+				seria.WriteBytes(_Cashout.ToBytes(), false);
+				seria.WriteScriptCoin(_EscrowedCoin);
+				seria.WriteUInt(_Hashes.Length);
+				foreach(var hash in _Hashes)
 				{
-					seria.Inner.WriteByte(0);
-					seria.WriteUInt256(fake.Salt);
-				}
-				var real = hash as RealHash;
-				if(real != null)
-				{
-					seria.Inner.WriteByte(1);
-					seria.WriteUInt((uint)real.LockTime);
-					seria.WriteUInt256(real.TransactionHash);
+					seria.WriteUInt(hash.Index);
+					seria.Inner.WriteByte((byte)(hash.Commitment != null ? 1 : 0));
+					if(hash.Commitment != null)
+						seria.WriteCommitment(hash.Commitment);
+					var fake = hash as FakeHash;
+					if(fake != null)
+					{
+						seria.Inner.WriteByte(0);
+						seria.WriteUInt256(fake.Salt);
+					}
+					var real = hash as RealHash;
+					if(real != null)
+					{
+						seria.Inner.WriteByte(1);
+						seria.WriteUInt((uint)real.LockTime);
+					}
 				}
 			}
-
-			seria.WriteUInt(_ExpectedSigners.Length);
-			for(int i = 0; i < _ExpectedSigners.Length; i++)
-			{
-				seria.WriteBytes(_ExpectedSigners[i].ToBytes(), false);
-			}
+			else
+				seria.Inner.WriteByte(0);
 		}
 
 		public static PromiseClientSession ReadFrom(byte[] bytes)
@@ -168,36 +169,35 @@ namespace NTumbleBit.PuzzlePromise
 			}
 			client._IndexSalt = seria.ReadUInt256();
 
-			client._Hashes = new HashBase[seria.ReadUInt()];
-			for(int i = 0; i < client._Hashes.Length; i++)
+			var hasTransaction = seria.Inner.ReadByte() != 0;
+			if(hasTransaction)
 			{
-				var index = seria.ReadUInt();
-				ServerCommitment commitment = null;
-				if(seria.Inner.ReadByte() == 1)
+				client._Cashout = new Transaction(seria.ReadBytes());
+				client._EscrowedCoin = seria.ReadScriptCoin();
+				client._Hashes = new HashBase[seria.ReadUInt()];
+				for(int i = 0; i < client._Hashes.Length; i++)
 				{
-					commitment = seria.ReadCommitment();
-				}
+					var index = seria.ReadUInt();
+					ServerCommitment commitment = null;
+					if(seria.Inner.ReadByte() == 1)
+					{
+						commitment = seria.ReadCommitment();
+					}
 
-				var isFake = seria.Inner.ReadByte() == 0;
-				if(isFake)
-				{
-					var salt = seria.ReadUInt256();
-					client._Hashes[i] = new FakeHash(parameters) { Salt = salt };
+					var isFake = seria.Inner.ReadByte() == 0;
+					if(isFake)
+					{
+						var salt = seria.ReadUInt256();
+						client._Hashes[i] = new FakeHash(parameters) { Salt = salt };
+					}
+					else
+					{
+						LockTime l = new LockTime((uint)seria.ReadUInt());
+						client._Hashes[i] = new RealHash(client._Cashout, client._EscrowedCoin) { LockTime = l };
+					}
+					client._Hashes[i].Commitment = commitment;
+					client._Hashes[i].Index = (int)index;
 				}
-				else
-				{
-					LockTime l = new LockTime((uint)seria.ReadUInt());
-					uint256 hash = seria.ReadUInt256();
-					client._Hashes[i] = new RealHash() { LockTime = l, TransactionHash = hash };
-				}
-				client._Hashes[i].Commitment = commitment;
-				client._Hashes[i].Index = (int)index;
-			}
-
-			client._ExpectedSigners = new PubKey[seria.ReadUInt()];
-			for(int i = 0; i < client._ExpectedSigners.Length; i++)
-			{
-				client._ExpectedSigners[i] = new PubKey(seria.ReadBytes());
 			}
 			return client;
 		}
@@ -207,22 +207,22 @@ namespace NTumbleBit.PuzzlePromise
 		Quotient[] _Quotients = new Quotient[0];
 		private uint256 _IndexSalt = uint256.Zero;
 		private HashBase[] _Hashes = new HashBase[0];
-		private PubKey[] _ExpectedSigners = new PubKey[0];
+		ScriptCoin _EscrowedCoin = null;
+		Transaction _Cashout = null;
 
-		public SignaturesRequest CreateSignatureRequest(CashoutTransaction cashout)
+		public SignaturesRequest CreateSignatureRequest(ScriptCoin escrowedCoin, Transaction cashout)
 		{
+			if(escrowedCoin == null)
+				throw new ArgumentNullException("escrowedCoin");
 			if(cashout == null)
-				throw new ArgumentNullException("escrowCoin");
+				throw new ArgumentNullException("cashout");
 			AssertState(PromiseClientStates.WaitingSignatureRequest);
 			List<HashBase> hashes = new List<HashBase>();
 			LockTime lockTime = new LockTime(0);
 			for(int i = 0; i < Parameters.RealTransactionCount; i++)
 			{
-				RealHash h = new RealHash();
+				RealHash h = new RealHash(cashout, escrowedCoin);
 				h.LockTime = lockTime;
-				var cashoutTx = cashout.Transaction.Clone();
-				cashoutTx.LockTime = lockTime;
-				h.TransactionHash = cashoutTx.GetSignatureHash(cashout.EscrowedCoin);
 				lockTime++;
 				hashes.Add(h);
 			}
@@ -247,9 +247,18 @@ namespace NTumbleBit.PuzzlePromise
 				FakeIndexesHash = PromiseUtils.HashIndexes(ref indexSalt, _Hashes.OfType<FakeHash>().Select(h => h.Index))
 			};
 			_IndexSalt = indexSalt;
-			_ExpectedSigners = cashout.GetExpectedSigners();
+			_Cashout = cashout.Clone();
 			_State = PromiseClientStates.WaitingCommitments;
+			_EscrowedCoin = escrowedCoin;
 			return request;
+		}
+
+		PubKey[] GetExpectedSigners()
+		{
+			var multiSig = PayToMultiSigTemplate.Instance.ExtractScriptPubKeyParameters(_EscrowedCoin.GetScriptCode());
+			if(multiSig == null || multiSig.SignatureCount != 2 || multiSig.InvalidPubKeys.Length != 0 || multiSig.PubKeys.Length != 2)
+				throw new ArgumentException("Invalid escrow 2-2 multisig");
+			return multiSig.PubKeys;
 		}
 
 		public ClientRevelation Reveal(ServerCommitment[] commitments)
@@ -317,6 +326,7 @@ namespace NTumbleBit.PuzzlePromise
 					throw new PuzzleException("Invalid quotient");
 			}
 
+			_Hashes = _Hashes.OfType<RealHash>().ToArray(); // we do not need the fake one anymore
 			_Quotients = proof.Quotients;
 			_State = PromiseClientStates.Completed;
 			return _Hashes.OfType<RealHash>().First().Commitment.Puzzle;
@@ -330,7 +340,7 @@ namespace NTumbleBit.PuzzlePromise
 			{
 				var key = new SignatureKey(solution._Value);
 				signature = new ECDSASignature(key.XOR(hash.Commitment.Promise));
-				foreach(var sig in _ExpectedSigners)
+				foreach(var sig in GetExpectedSigners())
 				{
 					if(sig.Verify(hash.GetHash(), signature))
 					{
@@ -347,10 +357,10 @@ namespace NTumbleBit.PuzzlePromise
 		}
 
 
-		internal IEnumerable<Transaction> GetSignedTransactions(PuzzleSolution solution, CashoutTransaction cashout)
+		internal IEnumerable<Transaction> GetSignedTransactions(PuzzleSolution solution)
 		{
-			if(cashout == null)
-				throw new ArgumentNullException("cashout");
+			if(solution == null)
+				throw new ArgumentNullException("solution");
 			BigInteger cumul = solution._Value;
 			var hashes = _Hashes.OfType<RealHash>().ToArray();
 			for(int i = 0; i < Parameters.RealTransactionCount; i++)
@@ -364,18 +374,18 @@ namespace NTumbleBit.PuzzlePromise
 				if(!IsValidSignature(solution, hash, out signer, out signature))
 					continue;
 
-				var transaction = hash.GetTransaction(cashout.Transaction);
+				var transaction = hash.GetTransaction();
 				TransactionBuilder txBuilder = new TransactionBuilder();
-				txBuilder.AddCoins(cashout.EscrowedCoin);
+				txBuilder.AddCoins(_EscrowedCoin);
 				txBuilder.AddKnownSignature(signer, signature);
 				txBuilder.SignTransactionInPlace(transaction);
 				yield return transaction;
 			}
 		}
 
-		public Transaction GetSignedTransaction(PuzzleSolution solution, CashoutTransaction cashout)
+		public Transaction GetSignedTransaction(PuzzleSolution solution)
 		{
-			var tx = GetSignedTransactions(solution, cashout).FirstOrDefault();
+			var tx = GetSignedTransactions(solution).FirstOrDefault();
 			if(tx == null)
 				throw new PuzzleException("Wrong solution for the puzzle");
 			return tx;
