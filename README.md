@@ -33,9 +33,9 @@ NTumbleBit depends on NBitcoin and BouncyCastle. BouncyCastle is compiled inside
 
 ### What is next
 
-1. Puzzle Promise Protocol Implementation
-2. Nuget Package
-3. TumbleBit Server hostable by ASP.NET Core
+1. Nuget Package
+2. Tumbler Mode Server hostable by ASP.NET Core
+3. Payment Hub Mode hostable by ASP.NET Core
 
 ## Developing on Linux or Mac
 
@@ -47,4 +47,4 @@ We recommend that you use [Visual Studio 2015 Update 3 (free)](https://www.visua
 You can of course use Visual use command line or [Visual Studio Code](https://code.visualstudio.com/) as well.
 
 ##Acknowledgements
-Special thanks to Ethan Heilman and Leen Al Shenibr for their work, their research and proof of work made this project possible.
+Special thanks to Ethan Heilman and Leen AlShenibr for their work, their research and proof of work made this project possible.
