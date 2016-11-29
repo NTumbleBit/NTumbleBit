@@ -50,12 +50,7 @@ namespace NTumbleBit.PuzzleSolver
 			{
 				WritePuzzle(puzzle);
 			}
-		}
-
-		public void WritePuzzle(PuzzleValue puzzle)
-		{
-			WriteBigInteger(puzzle._Value, GetKeySize());
-		}
+		}	
 
 		public PuzzleValue[] ReadPuzzles()
 		{
@@ -65,11 +60,6 @@ namespace NTumbleBit.PuzzleSolver
 				result[i] = ReadPuzzle();
 			}
 			return result;
-		}
-
-		public PuzzleValue ReadPuzzle()
-		{
-			return new PuzzleValue(ReadBigInteger(GetKeySize()));
 		}
 
 		public void WritePuzzleCommitments(ServerCommitment[] commitments)

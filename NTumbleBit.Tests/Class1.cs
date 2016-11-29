@@ -129,14 +129,14 @@ namespace NTumbleBit.Tests
 			cashout.AddInput(new TxIn(coin.Outpoint, Script.Empty));
 			cashout.AddOutput(new TxOut(Money.Coins(1.5m), clientKey.PubKey.Hash));
 
-			SignaturesRequest request = client.CreateSignatureRequest(coin, cashout);
+			SignaturesRequest request = client.CreateSignatureRequest(new CashoutTransaction(coin, cashout));
 			PuzzlePromise.ServerCommitment[] commitments = server.SignHashes(request, serverKey);
 			PuzzlePromise.ClientRevelation revelation = client.Reveal(commitments);
 			ServerCommitmentsProof proof = server.CheckRevelation(revelation);
 			var puzzleToSolve = client.CheckCommitmentProof(proof);
 			Assert.NotNull(puzzleToSolve);
 			var solution = key.SolvePuzzle(puzzleToSolve);
-			var transactions = client.GetSignedTransactions(solution, coin).ToArray();
+			var transactions = client.GetSignedTransactions(solution, new CashoutTransaction(coin, cashout)).ToArray();
 			Assert.True(transactions.Length == parameters.RealTransactionCount);
 			
 			foreach(var tx in transactions)
@@ -177,14 +177,20 @@ namespace NTumbleBit.Tests
 			cashout.AddInput(new TxIn(coin.Outpoint, Script.Empty));
 			cashout.AddOutput(new TxOut(Money.Coins(1.5m), clientKey.PubKey.Hash));
 
-			SignaturesRequest request = client.CreateSignatureRequest(coin, cashout);
+			SignaturesRequest request = client.CreateSignatureRequest(new CashoutTransaction(coin, cashout));
+			RoundTrip(ref client);
 			PuzzlePromise.ServerCommitment[] commitments = server.SignHashes(request, serverKey);
+			RoundTrip(ref server);
 			PuzzlePromise.ClientRevelation revelation = client.Reveal(commitments);
+			RoundTrip(ref client);
 			ServerCommitmentsProof proof = server.CheckRevelation(revelation);
+			RoundTrip(ref server);
 			var puzzleToSolve = client.CheckCommitmentProof(proof);
+			RoundTrip(ref client);
 			Assert.NotNull(puzzleToSolve);
 			var solution = key.SolvePuzzle(puzzleToSolve);
-			var transactions = client.GetSignedTransactions(solution, coin).ToArray();
+			var transactions = client.GetSignedTransactions(solution, new CashoutTransaction(coin, cashout)).ToArray();
+			RoundTrip(ref client);
 			Assert.True(transactions.Length == parameters.RealTransactionCount);
 
 			foreach(var tx in transactions)
@@ -200,6 +206,16 @@ namespace NTumbleBit.Tests
 				builder.SignTransactionInPlace(tx);
 				Assert.True(builder.Verify(tx));
 			}
+		}
+
+		private void RoundTrip(ref PromiseServerSession server)
+		{
+			
+		}
+
+		private void RoundTrip(ref PromiseClientSession client)
+		{
+			client = PromiseClientSession.ReadFrom(client.ToBytes());
 		}
 
 		private ICoin CreateEscrowCoin(PubKey pubKey, PubKey pubKey2)

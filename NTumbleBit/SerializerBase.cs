@@ -42,6 +42,18 @@ namespace NTumbleBit
 			Inner.Write(size, 0, size.Length);
 		}
 
+		public void WritePuzzle(PuzzleValue puzzle)
+		{
+			WriteBigInteger(puzzle._Value, GetKeySize());
+		}
+
+
+		public PuzzleValue ReadPuzzle()
+		{
+			return new PuzzleValue(ReadBigInteger(GetKeySize()));
+		}
+
+
 		public byte[] ReadBytes(long size = -1, long maxSize = 1024)
 		{
 			if(size == -1)

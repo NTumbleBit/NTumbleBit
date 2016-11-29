@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace NTumbleBit.PuzzlePromise
 {
@@ -35,29 +36,26 @@ namespace NTumbleBit.PuzzlePromise
 		}
 		class RealHash : HashBase
 		{
-			private Transaction cashoutTransaction;
-			private ICoin escrowCoin;
-
-			public RealHash(ICoin escrowCoin, Transaction cashoutTransaction)
-			{
-				this.escrowCoin = escrowCoin;
-				this.cashoutTransaction = cashoutTransaction;
-			}
 
 			public LockTime LockTime
 			{
 				get; set;
 			}
 
-			public override uint256 GetHash()
+
+			public uint256 TransactionHash
 			{
-				Transaction clone = GetTransaction();
-				return clone.GetSignatureHash(escrowCoin);
+				get; set;
 			}
 
-			public Transaction GetTransaction()
+			public override uint256 GetHash()
 			{
-				var clone = cashoutTransaction.Clone();
+				return TransactionHash;
+			}
+
+			public Transaction GetTransaction(Transaction cashout)
+			{
+				var clone = cashout.Clone();
 				clone.LockTime = LockTime;
 				return clone;
 			}
@@ -91,8 +89,6 @@ namespace NTumbleBit.PuzzlePromise
 			_Parameters = parameters ?? new PromiseParameters();
 		}
 
-
-		private readonly PromiseParameters _Parameters;
 		public PromiseParameters Parameters
 		{
 			get
@@ -101,29 +97,132 @@ namespace NTumbleBit.PuzzlePromise
 			}
 		}
 
-		private HashBase[] _Hashes;
-		private uint256 _IndexSalt;
-		private PubKey[] _ExpectedSigners;
-
-		public SignaturesRequest CreateSignatureRequest(ICoin escrowCoin, Transaction cashoutTransaction)
+		public byte[] ToBytes()
 		{
-			if(escrowCoin == null)
-				throw new ArgumentNullException("escrowCoin");
-			if(cashoutTransaction == null)
-				throw new ArgumentNullException("cashoutTransaction");
+			MemoryStream ms = new MemoryStream();
+			WriteTo(ms);
+			ms.Position = 0;
+			return ms.ToArrayEfficient();
+		}
+		public void WriteTo(Stream stream)
+		{
+			if(stream == null)
+				throw new ArgumentNullException("stream");
+			var seria = new PromiseSerializer(Parameters, stream);
+			seria.WriteParameters();
+			seria.WriteUInt((uint)_State);
+			if(_State == PromiseClientStates.Completed)
+			{
+				seria.WriteQuotients(_Quotients);
+			}
+			seria.WriteUInt256(_IndexSalt);
 
-			var multiSig = PayToMultiSigTemplate.Instance.ExtractScriptPubKeyParameters(escrowCoin.GetScriptCode());
-			if(multiSig == null || multiSig.SignatureCount != 2 || multiSig.InvalidPubKeys.Length != 0 || multiSig.PubKeys.Length != 2)
-				throw new ArgumentException("Invalid escrow 2-2 multisig");
+			seria.WriteUInt(_Hashes.Length);
+			foreach(var hash in _Hashes)
+			{
+				seria.WriteUInt(hash.Index);
+				seria.Inner.WriteByte((byte)(hash.Commitment != null ? 1 : 0));
+				if(hash.Commitment != null)
+					seria.WriteCommitment(hash.Commitment);
+				var fake = hash as FakeHash;
+				if(fake != null)
+				{
+					seria.Inner.WriteByte(0);
+					seria.WriteUInt256(fake.Salt);
+				}
+				var real = hash as RealHash;
+				if(real != null)
+				{
+					seria.Inner.WriteByte(1);
+					seria.WriteUInt((uint)real.LockTime);
+					seria.WriteUInt256(real.TransactionHash);
+				}
+			}
+
+			seria.WriteUInt(_ExpectedSigners.Length);
+			for(int i = 0; i < _ExpectedSigners.Length; i++)
+			{
+				seria.WriteBytes(_ExpectedSigners[i].ToBytes(), false);
+			}
+		}
+
+		public static PromiseClientSession ReadFrom(byte[] bytes)
+		{
+			if(bytes == null)
+				throw new ArgumentNullException("bytes");
+			var ms = new MemoryStream(bytes);
+			return ReadFrom(ms);
+		}
+		public static PromiseClientSession ReadFrom(Stream stream)
+		{
+			if(stream == null)
+				throw new ArgumentNullException("stream");
+			var seria = new PromiseSerializer(new PromiseParameters(), stream);
+			var parameters = seria.ReadParameters();
+			seria = new PromiseSerializer(parameters, stream);
+			var client = new PromiseClientSession(parameters);
+			client._State = (PromiseClientStates)seria.ReadUInt();
+			if(client._State == PromiseClientStates.Completed)
+			{
+				client._Quotients = seria.ReadQuotients();
+			}
+			client._IndexSalt = seria.ReadUInt256();
+
+			client._Hashes = new HashBase[seria.ReadUInt()];
+			for(int i = 0; i < client._Hashes.Length; i++)
+			{
+				var index = seria.ReadUInt();
+				ServerCommitment commitment = null;
+				if(seria.Inner.ReadByte() == 1)
+				{
+					commitment = seria.ReadCommitment();
+				}
+
+				var isFake = seria.Inner.ReadByte() == 0;
+				if(isFake)
+				{
+					var salt = seria.ReadUInt256();
+					client._Hashes[i] = new FakeHash(parameters) { Salt = salt };
+				}
+				else
+				{
+					LockTime l = new LockTime((uint)seria.ReadUInt());
+					uint256 hash = seria.ReadUInt256();
+					client._Hashes[i] = new RealHash() { LockTime = l, TransactionHash = hash };
+				}
+				client._Hashes[i].Commitment = commitment;
+				client._Hashes[i].Index = (int)index;
+			}
+
+			client._ExpectedSigners = new PubKey[seria.ReadUInt()];
+			for(int i = 0; i < client._ExpectedSigners.Length; i++)
+			{
+				client._ExpectedSigners[i] = new PubKey(seria.ReadBytes());
+			}
+			return client;
+		}
+
+		private readonly PromiseParameters _Parameters;
+		private PromiseClientStates _State;
+		Quotient[] _Quotients = new Quotient[0];
+		private uint256 _IndexSalt = uint256.Zero;
+		private HashBase[] _Hashes = new HashBase[0];
+		private PubKey[] _ExpectedSigners = new PubKey[0];
+
+		public SignaturesRequest CreateSignatureRequest(CashoutTransaction cashout)
+		{
+			if(cashout == null)
+				throw new ArgumentNullException("escrowCoin");
 			AssertState(PromiseClientStates.WaitingSignatureRequest);
-			cashoutTransaction = cashoutTransaction.Clone();
 			List<HashBase> hashes = new List<HashBase>();
 			LockTime lockTime = new LockTime(0);
 			for(int i = 0; i < Parameters.RealTransactionCount; i++)
 			{
-				RealHash h = new RealHash(escrowCoin, cashoutTransaction);
-				cashoutTransaction.LockTime = lockTime;
+				RealHash h = new RealHash();
 				h.LockTime = lockTime;
+				var cashoutTx = cashout.Transaction.Clone();
+				cashoutTx.LockTime = lockTime;
+				h.TransactionHash = cashoutTx.GetSignatureHash(cashout.EscrowedCoin);
 				lockTime++;
 				hashes.Add(h);
 			}
@@ -148,7 +247,7 @@ namespace NTumbleBit.PuzzlePromise
 				FakeIndexesHash = PromiseUtils.HashIndexes(ref indexSalt, _Hashes.OfType<FakeHash>().Select(h => h.Index))
 			};
 			_IndexSalt = indexSalt;
-			_ExpectedSigners = multiSig.PubKeys;
+			_ExpectedSigners = cashout.GetExpectedSigners();
 			_State = PromiseClientStates.WaitingCommitments;
 			return request;
 		}
@@ -247,12 +346,11 @@ namespace NTumbleBit.PuzzlePromise
 			return false;
 		}
 
-		Quotient[] _Quotients;
 
-		internal IEnumerable<Transaction> GetSignedTransactions(PuzzleSolution solution, ICoin escrowCoin)
+		internal IEnumerable<Transaction> GetSignedTransactions(PuzzleSolution solution, CashoutTransaction cashout)
 		{
-			if(escrowCoin == null)
-				throw new ArgumentNullException("escrowCoin");
+			if(cashout == null)
+				throw new ArgumentNullException("cashout");
 			BigInteger cumul = solution._Value;
 			var hashes = _Hashes.OfType<RealHash>().ToArray();
 			for(int i = 0; i < Parameters.RealTransactionCount; i++)
@@ -265,25 +363,24 @@ namespace NTumbleBit.PuzzlePromise
 				PubKey signer;
 				if(!IsValidSignature(solution, hash, out signer, out signature))
 					continue;
-				
-				var transaction = hash.GetTransaction();
+
+				var transaction = hash.GetTransaction(cashout.Transaction);
 				TransactionBuilder txBuilder = new TransactionBuilder();
-				txBuilder.AddCoins(escrowCoin);
+				txBuilder.AddCoins(cashout.EscrowedCoin);
 				txBuilder.AddKnownSignature(signer, signature);
 				txBuilder.SignTransactionInPlace(transaction);
 				yield return transaction;
 			}
 		}
 
-		public Transaction GetSignedTransaction(PuzzleSolution solution, ICoin escrowCoin)
+		public Transaction GetSignedTransaction(PuzzleSolution solution, CashoutTransaction cashout)
 		{
-			var tx = GetSignedTransactions(solution, escrowCoin).FirstOrDefault();
+			var tx = GetSignedTransactions(solution, cashout).FirstOrDefault();
 			if(tx == null)
 				throw new PuzzleException("Wrong solution for the puzzle");
 			return tx;
 		}
 
-		private PromiseClientStates _State;
 		public PromiseClientStates State
 		{
 			get
