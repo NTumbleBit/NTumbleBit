@@ -118,6 +118,8 @@ namespace NTumbleBit
 		{
 			var result = new byte[size];
 			Inner.Read(result, 0, size);
+			if(littleEndian)
+				Array.Reverse(result);
 			return new BigInteger(1, result);
 		}
 
@@ -125,6 +127,8 @@ namespace NTumbleBit
 		{
 			var bytes = value.ToByteArrayUnsigned();
 			Utils.Pad(ref bytes, size);
+			if(littleEndian)
+				Array.Reverse(bytes);
 			WriteBytes(bytes, true);
 		}
 

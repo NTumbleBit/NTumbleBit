@@ -54,6 +54,11 @@ namespace NTumbleBit.PuzzlePromise
 
 
 		private Key _TransactionKey;
+		private readonly RsaKey _ServerKey;
+		EncryptedSignature[] _EncryptedSignatures;
+		private readonly PromiseParameters _Parameters;
+		private PromiseServerStates _State;
+
 		public Key TransactionKey
 		{
 			get
@@ -63,7 +68,6 @@ namespace NTumbleBit.PuzzlePromise
 		}
 
 
-		private readonly RsaKey _ServerKey;
 		public RsaKey ServerKey
 		{
 			get
@@ -74,17 +78,13 @@ namespace NTumbleBit.PuzzlePromise
 
 
 
-		private readonly PromiseParameters _Parameters;
 		public PromiseParameters Parameters
 		{
 			get
 			{
 				return _Parameters;
 			}
-		}
-
-
-		EncryptedSignature[] _EncryptedSignatures;
+		}		
 
 		public ServerCommitment[] SignHashes(SignaturesRequest sigRequest, Key transactionKey)
 		{
@@ -150,7 +150,6 @@ namespace NTumbleBit.PuzzlePromise
 		}
 
 
-		private PromiseServerStates _State;
 		public PromiseServerStates State
 		{
 			get
