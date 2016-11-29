@@ -89,6 +89,30 @@ namespace NTumbleBit.PuzzleSolver
 			return commitments;
 		}
 
+		public ClientRevelation ReadPuzzleRevelation()
+		{
+			int[] indexes = new int[Parameters.FakePuzzleCount];
+			for(int i = 0; i < Parameters.FakePuzzleCount; i++)
+			{
+				indexes[i] = (int)ReadUInt();
+			}
+			PuzzleSolution[] solutions = new PuzzleSolution[Parameters.FakePuzzleCount];
+			for(int i = 0; i < Parameters.FakePuzzleCount; i++)
+			{
+				solutions[i] = ReadPuzzleSolution();
+			}
+			return new ClientRevelation(indexes, solutions);
+		}
+		public void WritePuzzleSolutionKeys(SolutionKey[] keys, bool real)
+		{
+			if(keys.Length != PuzzleSolutionKeysLength(real))
+				throw new ArgumentException("keys count incorrect");
+			foreach(var key in keys)
+			{
+				WriteBytes(key.ToBytes(true), true);
+			}
+		}
+
 		public ServerCommitment ReadCommitment()
 		{
 			var encrypted = ReadBytes();
@@ -108,45 +132,10 @@ namespace NTumbleBit.PuzzleSolver
 			}
 			foreach(var index in revelation.Solutions)
 			{
-				WriteSolution(index);
+				WritePuzzleSolution(index);
 			}
 		}
-
-		public void WriteSolution(PuzzleSolution index)
-		{
-			WriteBigInteger(index._Value, GetKeySize());
-		}
-
-		public ClientRevelation ReadPuzzleRevelation()
-		{
-			int[] indexes = new int[Parameters.FakePuzzleCount];
-			for(int i = 0; i < Parameters.FakePuzzleCount; i++)
-			{
-				indexes[i] = (int)ReadUInt();
-			}
-			PuzzleSolution[] solutions = new PuzzleSolution[Parameters.FakePuzzleCount];
-			for(int i = 0; i < Parameters.FakePuzzleCount; i++)
-			{
-				solutions[i] = ReadPuzzleSolution();
-			}
-			return new ClientRevelation(indexes, solutions);
-		}
-
-		public PuzzleSolution ReadPuzzleSolution()
-		{
-			return new PuzzleSolution(ReadBigInteger(GetKeySize()));
-		}
-
-		public void WritePuzzleSolutionKeys(SolutionKey[] keys, bool real)
-		{
-			if(keys.Length != PuzzleSolutionKeysLength(real))
-				throw new ArgumentException("keys count incorrect");
-			foreach(var key in keys)
-			{
-				WriteBytes(key.ToBytes(true), true);
-			}
-		}
-
+		
 		public SolutionKey[] ReadPuzzleSolutionKeys(bool real)
 		{
 			SolutionKey[] keys = new SolutionKey[PuzzleSolutionKeysLength(real)];

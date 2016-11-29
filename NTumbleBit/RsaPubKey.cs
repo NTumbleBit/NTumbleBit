@@ -142,7 +142,7 @@ namespace NTumbleBit
 				return true;
 			if(((object)a == null) || ((object)b == null))
 				return false;
-			return a._Key == b._Key;
+			return a._Key.Equals(b._Key);
 		}
 
 		public static bool operator !=(RsaPubKey a, RsaPubKey b)

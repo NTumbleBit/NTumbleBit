@@ -210,7 +210,7 @@ namespace NTumbleBit.Tests
 
 		private void RoundTrip(ref PromiseServerSession server)
 		{
-			
+			server = PromiseServerSession.ReadFrom(server.ToBytes(true));
 		}
 
 		private void RoundTrip(ref PromiseClientSession client)

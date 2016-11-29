@@ -111,7 +111,7 @@ namespace NTumbleBit.PuzzleSolver
 				WritePuzzleBase(seria, el);
 				if(fake != null)
 				{
-					seria.WriteSolution(fake.Solution);
+					seria.WritePuzzleSolution(fake.Solution);
 				}
 
 				var real = el as RealPuzzle;

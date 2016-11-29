@@ -111,7 +111,7 @@ namespace NTumbleBit.PuzzlePromise
 			var seria = new PromiseSerializer(Parameters, stream);
 			seria.WriteParameters();
 			seria.WriteUInt((uint)_State);
-			if(_State == PromiseClientStates.Completed)
+			if(State == PromiseClientStates.Completed)
 			{
 				seria.WriteQuotients(_Quotients);
 			}
@@ -163,7 +163,7 @@ namespace NTumbleBit.PuzzlePromise
 			seria = new PromiseSerializer(parameters, stream);
 			var client = new PromiseClientSession(parameters);
 			client._State = (PromiseClientStates)seria.ReadUInt();
-			if(client._State == PromiseClientStates.Completed)
+			if(client.State == PromiseClientStates.Completed)
 			{
 				client._Quotients = seria.ReadQuotients();
 			}

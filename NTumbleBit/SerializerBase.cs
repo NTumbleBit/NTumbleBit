@@ -36,6 +36,17 @@ namespace NTumbleBit
 			}
 		}
 
+		public void WritePuzzleSolution(PuzzleSolution index)
+		{
+			WriteBigInteger(index._Value, GetKeySize());
+		}		
+
+		public PuzzleSolution ReadPuzzleSolution()
+		{
+			return new PuzzleSolution(ReadBigInteger(GetKeySize()));
+		}
+
+
 		public void WriteUInt(long length)
 		{
 			var size = NBitcoin.Utils.ToBytes((uint)length, littleEndian);

@@ -3,6 +3,7 @@ using NBitcoin.Crypto;
 using NTumbleBit.PuzzleSolver;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -52,10 +53,89 @@ namespace NTumbleBit.PuzzlePromise
 			_ServerKey = serverKey;
 		}
 
+		public static PromiseServerSession ReadFrom(byte[] bytes, RsaKey rsaKey = null, Key ecdsaKey = null)
+		{
+			if(bytes == null)
+				throw new ArgumentNullException("bytes");
+			var ms = new MemoryStream(bytes);
+			return ReadFrom(ms);
+		}
+		public static PromiseServerSession ReadFrom(Stream stream, RsaKey rsaKey = null, Key ecdsaKey = null)
+		{
+			if(stream == null)
+				throw new ArgumentNullException("stream");
+
+			var seria = new PromiseSerializer(new PromiseParameters(), stream);
+			if(seria.Inner.ReadByte() == 1)
+			{
+				rsaKey = new RsaKey(seria.ReadBytes(-1, 10 * 1024));
+				if(seria.Inner.ReadByte() == 1)
+					ecdsaKey = new Key(seria.ReadBytes());
+			}
+
+			var parameters = seria.ReadParameters();
+			seria = new PromiseSerializer(parameters, stream);
+			if(rsaKey == null)
+				throw new InvalidOperationException("RSA key not provided");
+			var server = new PromiseServerSession(rsaKey, parameters);
+			server._TransactionKey = ecdsaKey;
+
+			server._State = (PromiseServerStates)seria.ReadUInt();
+
+			var len = seria.ReadUInt();
+			EncryptedSignature[] encryptedSigs = new EncryptedSignature[len];
+			for(int i = 0; i < len; i++)
+			{
+				var ecdsa = new ECDSASignature(seria.ReadBytes());
+				var signedHash = new uint256(seria.ReadBytes(32));
+				var solution = seria.ReadPuzzleSolution();
+				encryptedSigs[i] = new EncryptedSignature(ecdsa, signedHash, solution);
+			}
+			server._EncryptedSignatures = encryptedSigs;
+			return server;
+		}
+
+		public byte[] ToBytes(bool includePrivateKeys)
+		{
+			MemoryStream ms = new MemoryStream();
+			WriteTo(ms, includePrivateKeys);
+			ms.Position = 0;
+			return ms.ToArrayEfficient();
+		}
+		public void WriteTo(Stream stream, bool includePrivateKeys)
+		{
+			if(stream == null)
+				throw new ArgumentNullException("stream");
+			var seria = new PromiseSerializer(Parameters, stream);
+			if(includePrivateKeys)
+			{
+				seria.Inner.WriteByte(1);
+				seria.WriteBytes(_ServerKey.ToBytes(), false);
+				if(_TransactionKey != null)
+				{
+					seria.Inner.WriteByte(1);
+					seria.WriteBytes(_TransactionKey.ToBytes(), false);
+				}
+				else
+					seria.Inner.WriteByte(0);
+			}
+			else
+				seria.Inner.WriteByte(0);
+
+			seria.WriteParameters();
+			seria.WriteUInt((uint)_State);
+			seria.WriteUInt(_EncryptedSignatures.Length);
+			foreach(var sig in _EncryptedSignatures)
+			{
+				seria.WriteBytes(sig.Signature.ToDER(), false);
+				seria.WriteBytes(sig.SignedHash.ToBytes(), true);
+				seria.WritePuzzleSolution(sig.PuzzleSolution);
+			}
+		}
 
 		private Key _TransactionKey;
 		private readonly RsaKey _ServerKey;
-		EncryptedSignature[] _EncryptedSignatures;
+		EncryptedSignature[] _EncryptedSignatures = new EncryptedSignature[0];
 		private readonly PromiseParameters _Parameters;
 		private PromiseServerStates _State;
 
@@ -162,7 +242,6 @@ namespace NTumbleBit.PuzzlePromise
 		{
 			if(state != _State)
 				throw new InvalidOperationException("Invalid state, actual " + _State + " while expected is " + state);
-		}
-
+		}		
 	}
 }
