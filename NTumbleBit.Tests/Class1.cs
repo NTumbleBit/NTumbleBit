@@ -104,8 +104,7 @@ namespace NTumbleBit.Tests
 			var decrypted = Utils.ChachaDecrypt(encrypted, key1);
 			Assert.True(decrypted.SequenceEqual(msg));
 		}
-
-
+	
 		[Fact]
 		public void TestPuzzlePromise()
 		{
@@ -130,15 +129,30 @@ namespace NTumbleBit.Tests
 			cashout.AddOutput(new TxOut(Money.Coins(1.5m), clientKey.PubKey.Hash));
 
 			SignaturesRequest request = client.CreateSignatureRequest(coin, cashout);
+			RoundTrip(ref client);
+			RoundTrip(ref request, client.Parameters);
+
 			PuzzlePromise.ServerCommitment[] commitments = server.SignHashes(request, serverKey);
+			RoundTrip(ref server);
+			RoundTrip(ref commitments, client.Parameters);
+
 			PuzzlePromise.ClientRevelation revelation = client.Reveal(commitments);
+			RoundTrip(ref client);
+			RoundTrip(ref revelation, client.Parameters);
+
 			ServerCommitmentsProof proof = server.CheckRevelation(revelation);
+			RoundTrip(ref server);
+			RoundTrip(ref proof, client.Parameters);
+
 			var puzzleToSolve = client.CheckCommitmentProof(proof);
+			RoundTrip(ref client);
 			Assert.NotNull(puzzleToSolve);
+
 			var solution = key.SolvePuzzle(puzzleToSolve);
 			var transactions = client.GetSignedTransactions(solution).ToArray();
+			RoundTrip(ref client);
 			Assert.True(transactions.Length == parameters.RealTransactionCount);
-			
+
 			foreach(var tx in transactions)
 			{
 				TransactionBuilder builder = new TransactionBuilder();
@@ -154,59 +168,41 @@ namespace NTumbleBit.Tests
 			}
 		}
 
-		[Fact]
-		public void CanPromiseSerialize()
+		private void RoundTrip(ref ServerCommitmentsProof proof, PromiseParameters parameters)
 		{
-			RsaKey key = TestKeys.Default;
+			var ms = new MemoryStream();
+			var seria = new PromiseSerializer(parameters, ms);
+			seria.WriteCommitmentsProof(proof);
+			ms.Position = 0;
+			proof = seria.ReadCommitmentsProof();
+		}
 
-			Key serverKey = new Key();
-			Key clientKey = new Key();
+		private void RoundTrip(ref PuzzlePromise.ClientRevelation revelation, PromiseParameters parameters)
+		{
+			var ms = new MemoryStream();
+			var seria = new PromiseSerializer(parameters, ms);
+			seria.WriteRevelation(revelation);
+			ms.Position = 0;
+			revelation = seria.ReadRevelation();
+		}
 
-			var parameters = new PromiseParameters(key.PubKey)
-			{
-				FakeTransactionCount = 5,
-				RealTransactionCount = 5
-			};
+		private void RoundTrip(ref PuzzlePromise.ServerCommitment[] commitments, PromiseParameters parameters)
+		{
+			var ms = new MemoryStream();
+			var seria = new PromiseSerializer(parameters, ms);
+			seria.WriteCommitments(commitments);
+			ms.Position = 0;
+			commitments = seria.ReadCommitments();
+		}
 
-			var client = new PromiseClientSession(parameters);
-			var server = new PromiseServerSession(key, parameters);
-
-			var coin = CreateEscrowCoin(serverKey.PubKey, clientKey.PubKey);
-
-			Transaction cashout = new Transaction();
-			cashout.AddInput(new TxIn(coin.Outpoint, Script.Empty));
-			cashout.AddOutput(new TxOut(Money.Coins(1.5m), clientKey.PubKey.Hash));
-
-			SignaturesRequest request = client.CreateSignatureRequest(coin, cashout);
-			RoundTrip(ref client);
-			PuzzlePromise.ServerCommitment[] commitments = server.SignHashes(request, serverKey);
-			RoundTrip(ref server);
-			PuzzlePromise.ClientRevelation revelation = client.Reveal(commitments);
-			RoundTrip(ref client);
-			ServerCommitmentsProof proof = server.CheckRevelation(revelation);
-			RoundTrip(ref server);
-			var puzzleToSolve = client.CheckCommitmentProof(proof);
-			RoundTrip(ref client);
-			Assert.NotNull(puzzleToSolve);
-			var solution = key.SolvePuzzle(puzzleToSolve);
-			var transactions = client.GetSignedTransactions(solution).ToArray();
-			RoundTrip(ref client);
-			Assert.True(transactions.Length == parameters.RealTransactionCount);
-
-			foreach(var tx in transactions)
-			{
-				TransactionBuilder builder = new TransactionBuilder();
-				builder.AddCoins(coin);
-				builder.AddKeys(clientKey);
-				builder.StandardTransactionPolicy = new StandardTransactionPolicy()
-				{
-					CheckFee = false
-				};
-				Assert.False(builder.Verify(tx));
-				builder.SignTransactionInPlace(tx);
-				Assert.True(builder.Verify(tx));
-			}
-		}		
+		private void RoundTrip(ref SignaturesRequest request, PromiseParameters parameters)
+		{
+			var ms = new MemoryStream();
+			var seria = new PromiseSerializer(parameters, ms);
+			seria.WriteSignaturesRequest(request);
+			ms.Position = 0;
+			request = seria.ReadSignaturesRequest();
+		}
 
 		private ScriptCoin CreateEscrowCoin(PubKey pubKey, PubKey pubKey2)
 		{

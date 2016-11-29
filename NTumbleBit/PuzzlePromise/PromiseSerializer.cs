@@ -165,5 +165,70 @@ namespace NTumbleBit.PuzzlePromise
 			WriteBytes(coin.ScriptPubKey.ToBytes(), false);
 			WriteBytes(coin.Redeem.ToBytes(), false);
 		}
+
+		public void WriteRevelation(ClientRevelation revelation)
+		{
+			if(revelation == null)
+				throw new ArgumentNullException("revelation");
+			if(revelation.FakeIndexes.Length != Parameters.FakeTransactionCount)
+				throw new ArgumentException("Incorrect index count");
+			if(revelation.Salts.Length != Parameters.FakeTransactionCount)
+				throw new ArgumentException("Incorrect salts count");
+			foreach(var index in revelation.FakeIndexes)
+				WriteUInt(index);
+			foreach(var salt in revelation.Salts)
+				WriteUInt256(salt);
+		}
+
+		public ClientRevelation ReadRevelation()
+		{
+			int[] fakeIndexes = new int[Parameters.FakeTransactionCount];
+			uint256[] salt = new uint256[Parameters.FakeTransactionCount];
+			for(int i = 0; i < fakeIndexes.Length; i++)
+			{
+				fakeIndexes[i] = (int)ReadUInt();
+			}
+			for(int i = 0; i < salt.Length; i++)
+			{
+				salt[i] = ReadUInt256();
+			}
+			return new ClientRevelation(fakeIndexes, salt);
+		}
+
+		public void WriteCommitmentsProof(ServerCommitmentsProof proof)
+		{
+			if(proof == null)
+				throw new ArgumentNullException("proof");
+			if(proof.FakeSolutions.Length != Parameters.FakeTransactionCount)
+				throw new ArgumentException("Incorrect FakeSolutions count");
+			if(proof.Quotients.Length != Parameters.RealTransactionCount - 1)
+				throw new ArgumentException("Incorrect Quotients count");
+
+			foreach(var solution in proof.FakeSolutions)
+			{
+				WritePuzzleSolution(solution);
+			}
+
+			foreach(var q in proof.Quotients)
+			{
+				WriteQuotient(q);
+			}
+		}
+
+		public ServerCommitmentsProof ReadCommitmentsProof()
+		{
+			PuzzleSolution[] solutions = new PuzzleSolution[Parameters.FakeTransactionCount];
+			for(int i = 0; i < Parameters.FakeTransactionCount; i++)
+			{
+				solutions[i] = ReadPuzzleSolution();
+			}
+
+			Quotient[] quotients = new Quotient[Parameters.RealTransactionCount - 1];
+			for(int i = 0; i < quotients.Length; i++)
+			{
+				quotients[i] = ReadQuotient();
+			}
+			return new ServerCommitmentsProof(solutions, quotients);
+		}
 	}
 }
