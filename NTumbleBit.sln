@@ -5,7 +5,7 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8E0926EA-6EC7-4757-9A9D-5A9E8558295B}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8DCE4E4C-5174-491F-88BD-B561A44DE3EB}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items (2)", "Solution Items (2)", "{8DCE4E4C-5174-491F-88BD-B561A44DE3EB}"
 	ProjectSection(SolutionItems) = preProject
 		global.json = global.json
 	EndProjectSection
@@ -16,6 +16,8 @@ Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "NTumbleBit.Tests", "NTumble
 	ProjectSection(ProjectDependencies) = postProject
 		{094AECD5-E0D8-43A9-A0BD-39B01F51A1F2} = {094AECD5-E0D8-43A9-A0BD-39B01F51A1F2}
 	EndProjectSection
+EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "NTumbleBit.TumblerServer", "NTumbleBit.TumblerServer\NTumbleBit.TumblerServer.xproj", "{2C72C806-2B0C-45FE-87D8-380A1D5028AC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -31,6 +33,10 @@ Global
 		{800A5906-C050-4E75-9D7C-0CB1C404A0F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{800A5906-C050-4E75-9D7C-0CB1C404A0F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{800A5906-C050-4E75-9D7C-0CB1C404A0F8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2C72C806-2B0C-45FE-87D8-380A1D5028AC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2C72C806-2B0C-45FE-87D8-380A1D5028AC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2C72C806-2B0C-45FE-87D8-380A1D5028AC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2C72C806-2B0C-45FE-87D8-380A1D5028AC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -38,5 +44,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{094AECD5-E0D8-43A9-A0BD-39B01F51A1F2} = {8E0926EA-6EC7-4757-9A9D-5A9E8558295B}
 		{800A5906-C050-4E75-9D7C-0CB1C404A0F8} = {8E0926EA-6EC7-4757-9A9D-5A9E8558295B}
+		{2C72C806-2B0C-45FE-87D8-380A1D5028AC} = {8E0926EA-6EC7-4757-9A9D-5A9E8558295B}
 	EndGlobalSection
 EndGlobal
