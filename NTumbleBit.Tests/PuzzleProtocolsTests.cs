@@ -16,7 +16,7 @@ using Xunit;
 
 namespace NTumbleBit.Tests
 {
-	public class Class1
+	public class PuzzleProtocolsTests
 	{
 
 		[Fact]

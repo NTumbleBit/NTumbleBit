@@ -240,5 +240,6 @@ ModelManifest.xml
 
 # FAKE - F# Make
 .fake/
-/NTumbleBit.TumblerServer/Tumbler.pem
-/NTumbleBit.TumblerServer/Seed.dat
+Tumbler.pem
+Seed.dat
+TestData/

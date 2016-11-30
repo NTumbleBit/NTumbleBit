@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using NTumbleBit.PuzzlePromise;
+using NTumbleBit.PuzzleSolver;
 
 // For more information on enabling Web API for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace NTumbleBit.TumblerServer.Controllers
 {
-	[Route("api")]
 	public class MainController : Controller
 	{
 		public MainController(TumblerConfiguration configuration)
@@ -28,35 +29,16 @@ namespace NTumbleBit.TumblerServer.Controllers
 			}
 		}
 		
-		[HttpPost]
-		public IEnumerable<string> Get()
+		[HttpGet("api/v1/tumbler/promise/parameters")]
+		public PromiseParameters GetPromiseParameters()
 		{
-			return new string[] { "value1", "value2" };
+			return new PromiseParameters(Tumbler.RsaKey.PubKey);
 		}
 
-		// GET api/values/5
-		[HttpGet("{id}")]
-		public string OpenChannel(int id)
+		[HttpGet("api/v1/tumbler/solver/parameters")]
+		public SolverParameters GetSolverParameters()
 		{
-			return "value";
-		}
-
-		// POST api/values
-		[HttpPost]
-		public void Post([FromBody]string value)
-		{
-		}
-
-		// PUT api/values/5
-		[HttpPut("{id}")]
-		public void Put(int id, [FromBody]string value)
-		{
-		}
-
-		// DELETE api/values/5
-		[HttpDelete("{id}")]
-		public void Delete(int id)
-		{
+			return new SolverParameters(Tumbler.RsaKey.PubKey);
 		}
 	}
 }

@@ -14,6 +14,8 @@ Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "NTumbleBit.Tests", "NTumble
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "NTumbleBit.TumblerServer", "NTumbleBit.TumblerServer\NTumbleBit.TumblerServer.xproj", "{2C72C806-2B0C-45FE-87D8-380A1D5028AC}"
 EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "NTumbleBit.Client", "NTumbleBit.Client\NTumbleBit.Client.xproj", "{AF7E0974-5948-4BF9-8C20-E74DB15C0FE6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -32,6 +34,10 @@ Global
 		{2C72C806-2B0C-45FE-87D8-380A1D5028AC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2C72C806-2B0C-45FE-87D8-380A1D5028AC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2C72C806-2B0C-45FE-87D8-380A1D5028AC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AF7E0974-5948-4BF9-8C20-E74DB15C0FE6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AF7E0974-5948-4BF9-8C20-E74DB15C0FE6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AF7E0974-5948-4BF9-8C20-E74DB15C0FE6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AF7E0974-5948-4BF9-8C20-E74DB15C0FE6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

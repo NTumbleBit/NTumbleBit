@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.IO;
 using NBitcoin;
 using System.Diagnostics;
+using Newtonsoft.Json;
 
 namespace NTumbleBit.TumblerServer
 {
@@ -63,10 +64,16 @@ namespace NTumbleBit.TumblerServer
 					Seed = key
 				};
 			});
+
+			services.AddMvcCore()
+				.AddJsonFormatters()
+				.AddFormatterMappings();
 		}
 
 		// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-		public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
+		public void Configure(IApplicationBuilder app, IHostingEnvironment env, 
+			ILoggerFactory loggerFactory, 
+			IServiceProvider serviceProvider)
 		{
 			var logging = new FilterLoggerSettings();
 			logging.Add("Microsoft.AspNetCore.Hosting.Internal.WebHost", LogLevel.Error);
@@ -81,6 +88,16 @@ namespace NTumbleBit.TumblerServer
 			}
 
 			app.UseMvc();
+
+			var config = serviceProvider.GetService<TumblerConfiguration>();
+			var options = GetMVCOptions(serviceProvider);
+			Serializer.RegisterFrontConverters(options.SerializerSettings, config.Network);
+
+		}
+
+		private static MvcJsonOptions GetMVCOptions(IServiceProvider serviceProvider)
+		{
+			return serviceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<MvcJsonOptions>>().Value;
 		}
 	}
 }

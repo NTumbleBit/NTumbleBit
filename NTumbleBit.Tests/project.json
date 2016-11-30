@@ -2,12 +2,14 @@
   "version": "1.0.0-*",
   "testRunner": "xunit",
 
-  "dependencies": {
-    "xunit": "2.2.0-beta4-build3444",
-    "NTumbleBit": "1.0.0-*",
-    "NBitcoin": "3.0.0.77",
-    "dotnet-test-xunit": "2.2.0-preview2-build1029"
-  },
+    "dependencies": {
+        "xunit": "2.2.0-beta4-build3444",
+        "NTumbleBit": "1.0.0-*",
+        "NTumbleBit.TumblerServer": "1.0.0-*",
+        "NTumbleBit.Client": "1.0.0-*",
+        "NBitcoin": "3.0.0.77",
+        "dotnet-test-xunit": "2.2.0-preview2-build1029"
+    },
 
   "frameworks": {
     "netcoreapp1.0": {
