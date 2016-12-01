@@ -1,4 +1,5 @@
 ﻿using NBitcoin;
+using NTumbleBit.ClassicTumbler;
 using NTumbleBit.Client.Tumbler.Models;
 using NTumbleBit.PuzzlePromise;
 using NTumbleBit.PuzzleSolver;
@@ -45,13 +46,13 @@ namespace NTumbleBit.Client.Tumbler
 		}
 
 		readonly static HttpClient Client = new HttpClient();
-		public Task<PromiseParameters> GetPromiseParametersAsync()
+		public Task<ClassicTumblerParameters> GetTumblerParametersAsync()
 		{
-			return GetAsync<PromiseParameters>("api/v1/tumbler/promise/parameters");
+			return GetAsync<ClassicTumblerParameters>("api/v1/tumbler/parameters");
 		}
-		public Task<SolverParameters> GetSolverParametersAsync()
+		public ClassicTumblerParameters GetTumblerParameters()
 		{
-			return GetAsync<SolverParameters>("api/v1/tumbler/solver/parameters");
+			return GetTumblerParametersAsync().GetAwaiter().GetResult();
 		}
 
 		Task<T> GetAsync<T>(string relativePath, params object[] parameters)

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NBitcoin;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -14,16 +15,12 @@ namespace NTumbleBit.Tests
 			using(var server = TumblerServerTester.Create())
 			{
 				var client = server.CreateTumblerClient();
-				var promise = client.GetPromiseParametersAsync().GetAwaiter().GetResult();
-				Assert.NotNull(promise.ServerKey);
-				Assert.NotEqual(0, promise.RealTransactionCount);
-				Assert.NotEqual(0, promise.FakeTransactionCount);
-				Assert.NotNull(promise.FakeFormat);
-
-				var solver = client.GetSolverParametersAsync().GetAwaiter().GetResult();
-				Assert.NotNull(solver.ServerKey);
-				Assert.NotEqual(0, solver.FakePuzzleCount);
-				Assert.NotEqual(0, solver.RealPuzzleCount);
+				var parameters = client.GetTumblerParameters();
+				Assert.NotNull(parameters.ServerKey);
+				Assert.NotEqual(0, parameters.RealTransactionCount);
+				Assert.NotEqual(0, parameters.FakeTransactionCount);
+				Assert.NotNull(parameters.FakeFormat);
+				Assert.True(parameters.FakeFormat != uint256.Zero);
 			}
 		}
     }

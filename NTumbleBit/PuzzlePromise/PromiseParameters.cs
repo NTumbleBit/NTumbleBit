@@ -30,7 +30,7 @@ namespace NTumbleBit.PuzzlePromise
 		{
 			FakeTransactionCount = 42;
 			RealTransactionCount = 42;
-			FakeFormat = Hashes.Hash256(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16 });
+			FakeFormat = new uint256(Enumerable.Range(0, 32).Select(o => o == 0 ? (byte)0 : (byte)1).ToArray());
 		}
 
 		public PromiseParameters(RsaPubKey serverKey) : this()

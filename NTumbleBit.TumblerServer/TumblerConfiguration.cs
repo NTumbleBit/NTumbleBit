@@ -3,6 +3,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using NBitcoin.RPC;
+using NTumbleBit.ClassicTumbler;
 
 namespace NTumbleBit.TumblerServer
 {
@@ -20,6 +22,16 @@ namespace NTumbleBit.TumblerServer
 		public Network Network
 		{
 			get; set;
-		} = Network.Main;
+		}
+		public RPCClient RPCClient
+		{
+			get;
+			set;
+		}
+
+		public ClassicTumblerParameters TumblerParameters
+		{
+			get; set;
+		}
 	}
 }
