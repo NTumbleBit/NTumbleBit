@@ -44,10 +44,12 @@ namespace NTumbleBit.Tests
 			}
 			
 			_NodeBuilder = NodeBuilder.Create(directory);
-			_CoreNode = _NodeBuilder.CreateNode(true);
+			_TumblerNode = _NodeBuilder.CreateNode(false);
+			_AliceNode = _NodeBuilder.CreateNode(false);
+			_BobNode = _NodeBuilder.CreateNode(false);			
 			Directory.CreateDirectory(directory);
 
-			var rpc = _CoreNode.CreateRPCClient();
+			var rpc = _TumblerNode.CreateRPCClient();
 			var confBuilder = new ConfigurationBuilder();
 			confBuilder.AddInMemoryCollection(new[] {
 				new KeyValuePair<string,string>( "NTumbleBit:Network", "regtest" ),
@@ -55,7 +57,6 @@ namespace NTumbleBit.Tests
 				new KeyValuePair<string,string>( "NTumbleBit:RPC:Username", rpc.Credentials.UserName),
 				new KeyValuePair<string,string>( "NTumbleBit:RPC:Password", rpc.Credentials.Password)
 			});
-
 			_Host = new WebHostBuilder()
 				.UseKestrel()
 				.UseConfiguration(confBuilder.Build())
@@ -66,6 +67,7 @@ namespace NTumbleBit.Tests
 				.Build();
 
 			new Thread(() => _Host.Run(_StopHost.Token)).Start();
+			_NodeBuilder.StartAll();
 		}
 
 		private static bool TryDelete(string directory, bool throws)
@@ -87,12 +89,12 @@ namespace NTumbleBit.Tests
 			return false;
 		}
 
-		private readonly CoreNode _CoreNode;
-		public CoreNode CoreNode
+		private readonly CoreNode _TumblerNode;
+		public CoreNode TumblerNode
 		{
 			get
 			{
-				return _CoreNode;
+				return _TumblerNode;
 			}
 		}
 
@@ -140,6 +142,25 @@ namespace NTumbleBit.Tests
 		}
 
 		private readonly string _Directory;
+		private readonly CoreNode _AliceNode;
+		public CoreNode AliceNode
+		{
+			get
+			{
+				return _AliceNode;
+			}
+		}
+
+
+		private readonly CoreNode _BobNode;
+		public CoreNode BobNode
+		{
+			get
+			{
+				return _BobNode;
+			}
+		}
+
 		public string BaseDirectory
 		{
 			get
