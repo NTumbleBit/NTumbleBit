@@ -97,7 +97,7 @@ namespace NTumbleBit.Tests
 				client.Timeout = TimeSpan.FromMinutes(10.0);
 				var data = client.GetByteArrayAsync(url).GetAwaiter().GetResult();
 				File.WriteAllBytes(zip, data);
-				Process.Start("tar", "-zxvf " + zip);
+				Process.Start("tar", "-zxvf " + zip + " -C TestData");
 				return bitcoind;
 			}
 		}		
