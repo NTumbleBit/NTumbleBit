@@ -27,7 +27,7 @@ namespace NTumbleBit.Tests
 			var rootTestData = "TestData";
 			directory = rootTestData + "/" + directory;
 			_Directory = directory;
-			if(Directory.Exists(rootTestData))
+			if(!Directory.Exists(rootTestData))
 				Directory.CreateDirectory(rootTestData);
 
 			if(!TryDelete(directory, false))
