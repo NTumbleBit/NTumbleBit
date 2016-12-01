@@ -13,18 +13,13 @@ You need to install dotnet core on your system as instructed on [.NET Core insta
 
 ##Build
 
-```
-cd NTumbleBit
-dotnet restore
-dotnet build
-```
 You can run the tests with:
 ```
-cd NTumbleBit.Tests
 dotnet restore
-dotnet build
+cd NTumbleBit.Tests
 dotnet test
 ```
+The first time you run the tests, it might take several minutes (5 to 10 minutes) to run. The reason is that bitcoin core is downloaded during the first run.
 
 ##Project status
 The current version has an implementation of the Puzzle Solver algorithm, with a serializer of all the data structures exchanges between the client and server.
