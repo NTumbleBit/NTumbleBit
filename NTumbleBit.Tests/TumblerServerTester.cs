@@ -7,6 +7,7 @@ using NTumbleBit.Client.Tumbler;
 using NTumbleBit.TumblerServer;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -23,17 +24,24 @@ namespace NTumbleBit.Tests
 		}
 		public TumblerServerTester(string directory)
 		{
-			directory = "TestData/" + directory;
+			var rootTestData = "TestData";
+			directory = rootTestData + "/" + directory;
 			_Directory = directory;
-			if(Directory.Exists("TestData"))
-				Directory.CreateDirectory("TestData");
-			try
+			if(Directory.Exists(rootTestData))
+				Directory.CreateDirectory(rootTestData);
+
+			if(TryDelete(directory, false))
 			{
-				Directory.Delete(directory, true);
+				foreach(var process in Process.GetProcessesByName("bitcoind"))
+				{
+					if(process.MainModule.FileName.Replace("\\", "/").StartsWith(Path.GetFullPath(rootTestData).Replace("\\", "/")))
+					{
+						process.Kill();
+					}
+				}
+				TryDelete(directory, true);
 			}
-			catch(DirectoryNotFoundException)
-			{
-			}
+			
 			_NodeBuilder = NodeBuilder.Create(directory);
 			_CoreNode = _NodeBuilder.CreateNode(true);
 			Directory.CreateDirectory(directory);
@@ -59,6 +67,24 @@ namespace NTumbleBit.Tests
 			new Thread(() => _Host.Run(_StopHost.Token)).Start();
 		}
 
+		private static bool TryDelete(string directory, bool throws)
+		{
+			try
+			{
+				Directory.Delete(directory, true);
+				return true;
+			}
+			catch(DirectoryNotFoundException)
+			{
+				return true;
+			}
+			catch(Exception)
+			{
+				if(throws)
+					throw;
+			}
+			return false;
+		}
 
 		private readonly CoreNode _CoreNode;
 		public CoreNode CoreNode
