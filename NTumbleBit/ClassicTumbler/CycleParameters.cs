@@ -6,19 +6,108 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit.ClassicTumbler
 {
-    public class CycleParameters
-    {
+	public enum CyclePhase : int
+	{
+		AliceEscrowPhase = 1,
+		TumblerEscrowPhase = 2,
+		TumblerEscrowConfirmation = 3,
+		PaymentPhase = 4,
+		TumblerCashoutPhase = 5,
+		BobCashoutPhase = 6,
+		BobCashoutConfirmation = 7
+	}
+
+	public class CyclePhaseInformation
+	{
+		public CyclePhase Phase
+		{
+			get; set;
+		}
+		public int RemainingBlock
+		{
+			get; set;
+		}
+		public int Cycle
+		{
+			get; set;
+		}
+		public int Offset
+		{
+			get;
+			set;
+		}
+	}
+	public class CycleParameters
+	{
 		public int Start
 		{
 			get; set;
-		}		
+		}
+
+		public CyclePhaseInformation GetPhaseInformation(int currentHeight)
+		{
+			if(currentHeight < Start)
+				throw new InvalidOperationException("No cycle possible before " + Start);
+			int remainingBlocks;
+			var phase = GetPhase(currentHeight, out remainingBlocks);
+			return new CyclePhaseInformation()
+			{
+				Phase = phase,
+				Cycle = (currentHeight - Start) / GetTumblerLockTimeOffset(),
+				RemainingBlock = remainingBlocks,
+				Offset = (currentHeight - Start) % GetTumblerLockTimeOffset()
+			};
+		}
+
+		CyclePhase GetPhase(int currentHeight, out int remainingBlocks)
+		{
+			var offset = (currentHeight - Start) % GetTumblerLockTimeOffset();
+			if(offset < AliceEscrowDuration)
+			{
+				remainingBlocks = AliceEscrowDuration - offset;
+				return CyclePhase.AliceEscrowPhase;
+			}
+			int nextPhase = AliceEscrowDuration;
+			if(offset < nextPhase + TumblerEscrowDuration)
+			{
+				remainingBlocks = nextPhase + TumblerEscrowDuration - offset;
+				return CyclePhase.TumblerEscrowPhase;
+			}
+			nextPhase += TumblerEscrowDuration;
+			if(offset < nextPhase + ConfirmationDuration)
+			{
+				remainingBlocks = nextPhase + ConfirmationDuration - offset;
+				return CyclePhase.TumblerEscrowConfirmation;
+			}
+			nextPhase += ConfirmationDuration;
+			if(offset < nextPhase + AlicePaymentDuration)
+			{
+				remainingBlocks = nextPhase + AlicePaymentDuration - offset;
+				return CyclePhase.PaymentPhase;
+			}
+			nextPhase += AlicePaymentDuration;
+			if(offset < nextPhase + TumblerCashoutDuration)
+			{
+				remainingBlocks = nextPhase + TumblerCashoutDuration - offset;
+				return CyclePhase.TumblerCashoutPhase;
+			}
+			nextPhase += TumblerCashoutDuration;
+			if(offset < nextPhase + BobCashoutDuration)
+			{
+				remainingBlocks = nextPhase + BobCashoutDuration - offset;
+				return CyclePhase.BobCashoutPhase;
+			}
+			nextPhase += BobCashoutDuration;
+			remainingBlocks = nextPhase + ConfirmationDuration - offset;
+			return CyclePhase.BobCashoutConfirmation;
+		}
 
 		public int ConfirmationDuration
 		{
 			get; set;
 		}
 
-		public int PaymentDuration
+		public int AlicePaymentDuration
 		{
 			get; set;
 		}
@@ -28,7 +117,7 @@ namespace NTumbleBit.ClassicTumbler
 			get; set;
 		}
 
-		public int CashoutDuration
+		public int BobCashoutDuration
 		{
 			get; set;
 		}
@@ -45,14 +134,14 @@ namespace NTumbleBit.ClassicTumbler
 
 		public int GetAliceLockTimeOffset()
 		{
-			return AliceEscrowDuration + TumblerEscrowDuration + 
-				ConfirmationDuration + 
-				PaymentDuration + 
+			return AliceEscrowDuration + TumblerEscrowDuration +
+				ConfirmationDuration +
+				AlicePaymentDuration +
 				TumblerCashoutDuration;
 		}
 		public int GetTumblerLockTimeOffset()
 		{
-			return GetAliceLockTimeOffset() + CashoutDuration + ConfirmationDuration;
+			return GetAliceLockTimeOffset() + BobCashoutDuration + ConfirmationDuration;
 		}
 	}
 }

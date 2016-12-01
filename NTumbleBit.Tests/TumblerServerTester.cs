@@ -42,13 +42,19 @@ namespace NTumbleBit.Tests
 				}
 				TryDelete(directory, true);
 			}
-			
+
 			_NodeBuilder = NodeBuilder.Create(directory);
 			_TumblerNode = _NodeBuilder.CreateNode(false);
 			_AliceNode = _NodeBuilder.CreateNode(false);
-			_BobNode = _NodeBuilder.CreateNode(false);			
+			_BobNode = _NodeBuilder.CreateNode(false);
+
 			Directory.CreateDirectory(directory);
 			_NodeBuilder.StartAll();
+
+			_TumblerNode.Sync(_AliceNode, true);
+			_TumblerNode.Sync(_BobNode, true);
+			_BobNode.Sync(_AliceNode, true);
+
 			var rpc = _TumblerNode.CreateRPCClient();
 			var confBuilder = new ConfigurationBuilder();
 			confBuilder.AddInMemoryCollection(new[] {

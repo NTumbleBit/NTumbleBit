@@ -3,6 +3,7 @@ using NBitcoin.DataEncoders;
 using NBitcoin.Policy;
 using NTumbleBit.BouncyCastle.Crypto.Parameters;
 using NTumbleBit.BouncyCastle.Math;
+using NTumbleBit.ClassicTumbler;
 using NTumbleBit.PuzzlePromise;
 using NTumbleBit.PuzzleSolver;
 using System;
@@ -82,6 +83,53 @@ namespace NTumbleBit.Tests
 					continue;
 				return bytes;
 			}
+		}
+
+		[Fact]
+		public void CanCalculatePhase()
+		{
+			var parameter = new CycleParameters()
+			{
+				Start = 440000,
+				BobCashoutDuration = 38,
+				AliceEscrowDuration = 19,
+				TumblerEscrowDuration = 19,
+				ConfirmationDuration = 6,
+				AlicePaymentDuration = 38,
+				TumblerCashoutDuration = 18
+			};
+			Assert.Throws<InvalidOperationException>(() => parameter.GetPhaseInformation(440000 - 1));
+
+			var phase = parameter.GetPhaseInformation(440000);
+			Assert.True(phase.Cycle == 0);
+			Assert.True(phase.Phase == CyclePhase.AliceEscrowPhase);
+			phase = parameter.GetPhaseInformation(440001);
+			Assert.True(phase.RemainingBlock == 19 - 1);
+			phase = parameter.GetPhaseInformation(440001 + 19);
+			Assert.True(phase.Phase == CyclePhase.TumblerEscrowPhase);
+			Assert.True(phase.RemainingBlock == 19 - 1);
+			phase = parameter.GetPhaseInformation(440001 + 19 + 19);
+			Assert.True(phase.Phase == CyclePhase.TumblerEscrowConfirmation);
+			Assert.True(phase.RemainingBlock == 5);
+			phase = parameter.GetPhaseInformation(440001 + 19 + 19 + 6);
+			Assert.True(phase.Phase == CyclePhase.PaymentPhase);
+			Assert.True(phase.RemainingBlock == 37);
+			phase = parameter.GetPhaseInformation(440001 + 19 + 19 + 6 + 38);
+			Assert.True(phase.Phase == CyclePhase.TumblerCashoutPhase);
+			Assert.True(19 + 19 + 6 + 38 + 18 == parameter.GetAliceLockTimeOffset());
+			Assert.True(phase.RemainingBlock == 17);
+			phase = parameter.GetPhaseInformation(440001 + 19 + 19 + 6 + 38 + 18);
+			Assert.True(phase.Phase == CyclePhase.BobCashoutPhase);
+			Assert.True(phase.RemainingBlock == 37);
+			phase = parameter.GetPhaseInformation(440001 + 19 + 19 + 6 + 38 + 18 + 38);
+			Assert.True(phase.Phase == CyclePhase.BobCashoutConfirmation);
+			Assert.True(phase.RemainingBlock == 5);
+			Assert.True(phase.Offset == 144 - 5);
+			Assert.True(19 + 19 + 6 + 38 + 18 + 38 + 6 == parameter.GetTumblerLockTimeOffset());
+			phase = parameter.GetPhaseInformation(440001 + 19 + 19 + 6 + 38 + 18 + 38 + 6);
+			Assert.True(phase.Phase == CyclePhase.AliceEscrowPhase);
+			Assert.True(phase.RemainingBlock == 19 - 1);
+			Assert.True(phase.Cycle == 1);
 		}
 
 		[Fact]

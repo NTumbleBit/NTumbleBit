@@ -36,11 +36,11 @@ namespace NTumbleBit.ClassicTumbler
 			CycleParameters = new CycleParameters()
 			{
 				Start = 440000,
-				CashoutDuration = 38,
+				BobCashoutDuration = 38,
 				AliceEscrowDuration = 19,
 				TumblerEscrowDuration = 19,
 				ConfirmationDuration = 6,
-				PaymentDuration = 38,
+				AlicePaymentDuration = 38,
 				TumblerCashoutDuration = 18				
 			};
 		}
