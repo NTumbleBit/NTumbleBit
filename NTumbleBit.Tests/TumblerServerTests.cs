@@ -2,13 +2,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace NTumbleBit.Tests
 {
-    public class TumblerServerTests
-    {
+	public class TumblerServerTests
+	{
 		[Fact]
 		public void CanGetParameters()
 		{
@@ -23,5 +24,5 @@ namespace NTumbleBit.Tests
 				Assert.True(parameters.FakeFormat != uint256.Zero);
 			}
 		}
-    }
+	}
 }
