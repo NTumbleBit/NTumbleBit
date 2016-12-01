@@ -73,7 +73,7 @@ namespace NTumbleBit.Tests
 			if(File.Exists(bitcoind))
 				return bitcoind;
 			var zip = String.Format("TestData/bitcoin-{0}-win32.zip", version);
-			string url = String.Format("https://bitcoin.org/bin/bitcoin-core-{0}/" + zip, version);
+			string url = String.Format("https://bitcoin.org/bin/bitcoin-core-{0}/" + Path.GetFileName(zip), version);
 			HttpClient client = new HttpClient();
 			client.Timeout = TimeSpan.FromMinutes(5.0);
 			var data = client.GetByteArrayAsync(url).GetAwaiter().GetResult();

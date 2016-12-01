@@ -48,7 +48,7 @@ namespace NTumbleBit.Tests
 			_AliceNode = _NodeBuilder.CreateNode(false);
 			_BobNode = _NodeBuilder.CreateNode(false);			
 			Directory.CreateDirectory(directory);
-
+			_NodeBuilder.StartAll();
 			var rpc = _TumblerNode.CreateRPCClient();
 			var confBuilder = new ConfigurationBuilder();
 			confBuilder.AddInMemoryCollection(new[] {
@@ -67,7 +67,6 @@ namespace NTumbleBit.Tests
 				.Build();
 
 			new Thread(() => _Host.Run(_StopHost.Token)).Start();
-			_NodeBuilder.StartAll();
 		}
 
 		private static bool TryDelete(string directory, bool throws)
