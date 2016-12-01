@@ -18,7 +18,7 @@ namespace NTumbleBit
 	public class RsaKey
 	{
 		static BigInteger RSA_F4 = BigInteger.ValueOf(65537);
-		internal readonly RsaPrivateCrtKeyParameters _Key;
+		internal readonly RsaPrivateCrtKeyParameters _Key;		
 
 		public RsaKey()
 		{

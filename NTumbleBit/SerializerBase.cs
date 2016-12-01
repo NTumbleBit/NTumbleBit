@@ -10,6 +10,13 @@ namespace NTumbleBit
 {
 	public class SerializerBase
 	{
+		public SerializerBase(Stream inner)
+		{
+			if(inner == null)
+				throw new ArgumentNullException("inner");
+			_Inner = inner;
+			_KeySize = 256;
+		}
 		internal SerializerBase(Stream inner, RsaKeyParameters parameters)
 		{
 			if(inner == null)
@@ -23,6 +30,7 @@ namespace NTumbleBit
 			}
 			_Inner = inner;
 		}
+		
 		protected bool littleEndian = true;
 
 		public void WriteBytes(byte[] bytes, bool fixSize)

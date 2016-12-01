@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Server.Kestrel;
 using Microsoft.Extensions.Configuration;
+using NBitcoin;
 using NTumbleBit.Client.Tumbler;
 using NTumbleBit.TumblerServer;
 using System;
@@ -56,23 +57,21 @@ namespace NTumbleBit.Tests
 			_BobNode.Sync(_AliceNode, true);
 
 			var rpc = _TumblerNode.CreateRPCClient();
-			var confBuilder = new ConfigurationBuilder();
-			confBuilder.AddInMemoryCollection(new[] {
-				new KeyValuePair<string,string>( "NTumbleBit:Network", "regtest" ),
-				new KeyValuePair<string,string>( "NTumbleBit:RPC:Address", rpc.Address.AbsoluteUri),
-				new KeyValuePair<string,string>( "NTumbleBit:RPC:Username", rpc.Credentials.UserName),
-				new KeyValuePair<string,string>( "NTumbleBit:RPC:Password", rpc.Credentials.Password)
-			});
+
+			var conf = new TumblerConfiguration();
+			conf.Network = Network.RegTest;
+			conf.RPCClient = rpc;
+			conf.CycleParameters.Start = 105;
+
 			_Host = new WebHostBuilder()
 				.UseKestrel()
-				.UseConfiguration(confBuilder.Build())
-				.UseAppConfiguration(confBuilder)
+				.UseAppConfiguration(conf)
 				.UseContentRoot(Path.GetFullPath(directory))
 				.UseIISIntegration()
 				.UseStartup<Startup>()
 				.Build();
 
-			new Thread(() => _Host.Run(_StopHost.Token)).Start();
+			_Host.Start();
 		}
 
 		private static bool TryDelete(string directory, bool throws)
@@ -111,8 +110,6 @@ namespace NTumbleBit.Tests
 				return _NodeBuilder;
 			}
 		}
-
-		CancellationTokenSource _StopHost = new CancellationTokenSource();
 
 		private readonly IWebHost _Host;
 		public IWebHost Host
@@ -164,7 +161,7 @@ namespace NTumbleBit.Tests
 			{
 				return _BobNode;
 			}
-		}
+		}		
 
 		public string BaseDirectory
 		{
@@ -176,7 +173,7 @@ namespace NTumbleBit.Tests
 
 		public void Dispose()
 		{
-			_StopHost.Cancel();
+			_Host.Dispose();
 			_NodeBuilder.Dispose();
 		}
 	}

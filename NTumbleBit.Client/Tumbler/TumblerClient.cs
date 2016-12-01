@@ -60,6 +60,16 @@ namespace NTumbleBit.Client.Tumbler
 			return SendAsync<T>(HttpMethod.Get, null, relativePath, parameters);
 		}
 
+		public PuzzleValue AskUnsignedVoucher(int cycle)
+		{
+			return AskUnsignedVoucherAsync(cycle).GetAwaiter().GetResult();
+		}
+
+		public Task<PuzzleValue> AskUnsignedVoucherAsync(int cycle)
+		{
+			return GetAsync<PuzzleValue>("api/v1/tumbler/askvoucher/" + cycle);
+		}
+
 		private string GetFullUri(string relativePath, params object[] parameters)
 		{
 			relativePath = String.Format(relativePath, parameters ?? new object[0]);

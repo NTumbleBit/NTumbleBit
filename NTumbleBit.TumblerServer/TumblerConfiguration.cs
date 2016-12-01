@@ -10,7 +10,17 @@ namespace NTumbleBit.TumblerServer
 {
     public class TumblerConfiguration
     {
-		public RsaKey RsaKey
+		public TumblerConfiguration()
+		{
+			Repository = new ClassicTumblerRepository();
+			CycleParameters = new CycleParameters();
+		}
+		public RsaKey TumblerKey
+		{
+			get; set;
+		}
+
+		public RsaKey VoucherKey
 		{
 			get; set;
 		}
@@ -28,10 +38,14 @@ namespace NTumbleBit.TumblerServer
 			get;
 			set;
 		}
-
-		public ClassicTumblerParameters TumblerParameters
+		public ClassicTumblerRepository Repository
 		{
 			get; set;
+		}
+		public CycleParameters CycleParameters
+		{
+			get;
+			set;
 		}
 	}
 }

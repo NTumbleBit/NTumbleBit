@@ -12,12 +12,10 @@ namespace NTumbleBit.TumblerServer
     {
         public static void Main(string[] args)
         {
-			var options = new ConfigurationBuilder();
-			options.AddCommandLine(args);
+			var configuration = new TumblerConfiguration();
 			var host = new WebHostBuilder()
                 .UseKestrel()
-				.UseConfiguration(options.Build())
-				.UseAppConfiguration(options)
+				.UseAppConfiguration(configuration)
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseIISIntegration()
                 .UseStartup<Startup>()

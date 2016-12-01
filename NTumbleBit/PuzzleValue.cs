@@ -69,5 +69,10 @@ namespace NTumbleBit
 		{
 			return Encoders.Hex.EncodeData(ToBytes());
 		}
+
+		public Puzzle WithRsaKey(RsaPubKey key)
+		{
+			return new Puzzle(key, this);
+		}
 	}
 }

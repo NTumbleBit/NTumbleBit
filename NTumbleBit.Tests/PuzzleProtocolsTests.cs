@@ -112,7 +112,7 @@ namespace NTumbleBit.Tests
 			Assert.True(phase.Phase == CyclePhase.TumblerEscrowConfirmation);
 			Assert.True(phase.RemainingBlock == 5);
 			phase = parameter.GetPhaseInformation(440001 + 19 + 19 + 6);
-			Assert.True(phase.Phase == CyclePhase.PaymentPhase);
+			Assert.True(phase.Phase == CyclePhase.AlicePaymentPhase);
 			Assert.True(phase.RemainingBlock == 37);
 			phase = parameter.GetPhaseInformation(440001 + 19 + 19 + 6 + 38);
 			Assert.True(phase.Phase == CyclePhase.TumblerCashoutPhase);

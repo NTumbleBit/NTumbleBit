@@ -14,11 +14,14 @@ namespace NTumbleBit.ClassicTumbler
 		{
 
 		}
-		public ClassicTumblerParameters(RsaPubKey rsaKey)
+		public ClassicTumblerParameters(RsaPubKey rsaKey, RsaPubKey voucherKey)
 		{
 			if(rsaKey == null)
 				throw new ArgumentNullException("rsaKey");
+			if(voucherKey == null)
+				throw new ArgumentNullException("voucherKey");
 			ServerKey = rsaKey;
+			VoucherKey = voucherKey;
 
 			var solver = new SolverParameters();
 			FakePuzzleCount = solver.FakePuzzleCount;
@@ -31,18 +34,8 @@ namespace NTumbleBit.ClassicTumbler
 
 			Denomination = Money.Coins(1.0m);
 			Fee = Money.Coins(0.01m);
-
-			// 1 day cycle
-			CycleParameters = new CycleParameters()
-			{
-				Start = 440000,
-				BobCashoutDuration = 38,
-				AliceEscrowDuration = 19,
-				TumblerEscrowDuration = 19,
-				ConfirmationDuration = 6,
-				AlicePaymentDuration = 38,
-				TumblerCashoutDuration = 18				
-			};
+			
+			CycleParameters = new CycleParameters();
 		}
 
 		public CycleParameters CycleParameters
@@ -51,6 +44,10 @@ namespace NTumbleBit.ClassicTumbler
 		}
 
 		public RsaPubKey ServerKey
+		{
+			get; set;
+		}
+		public RsaPubKey VoucherKey
 		{
 			get; set;
 		}

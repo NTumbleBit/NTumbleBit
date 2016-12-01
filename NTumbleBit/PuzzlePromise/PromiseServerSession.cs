@@ -157,7 +157,6 @@ namespace NTumbleBit.PuzzlePromise
 		}
 
 
-
 		public PromiseParameters Parameters
 		{
 			get

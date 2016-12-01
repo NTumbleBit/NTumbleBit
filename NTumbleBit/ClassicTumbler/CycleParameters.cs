@@ -11,7 +11,7 @@ namespace NTumbleBit.ClassicTumbler
 		AliceEscrowPhase = 1,
 		TumblerEscrowPhase = 2,
 		TumblerEscrowConfirmation = 3,
-		PaymentPhase = 4,
+		AlicePaymentPhase = 4,
 		TumblerCashoutPhase = 5,
 		BobCashoutPhase = 6,
 		BobCashoutConfirmation = 7
@@ -39,6 +39,17 @@ namespace NTumbleBit.ClassicTumbler
 	}
 	public class CycleParameters
 	{
+		public CycleParameters()
+		{
+			// 1 day
+			Start = 440000;
+			BobCashoutDuration = 38;
+			AliceEscrowDuration = 19;
+			TumblerEscrowDuration = 19;
+			ConfirmationDuration = 6;
+			AlicePaymentDuration = 38;
+			TumblerCashoutDuration = 18;
+		}
 		public int Start
 		{
 			get; set;
@@ -83,7 +94,7 @@ namespace NTumbleBit.ClassicTumbler
 			if(offset < nextPhase + AlicePaymentDuration)
 			{
 				remainingBlocks = nextPhase + AlicePaymentDuration - offset;
-				return CyclePhase.PaymentPhase;
+				return CyclePhase.AlicePaymentPhase;
 			}
 			nextPhase += AlicePaymentDuration;
 			if(offset < nextPhase + TumblerCashoutDuration)
@@ -100,6 +111,15 @@ namespace NTumbleBit.ClassicTumbler
 			nextPhase += BobCashoutDuration;
 			remainingBlocks = nextPhase + ConfirmationDuration - offset;
 			return CyclePhase.BobCashoutConfirmation;
+		}
+
+		public LockTime GetAliceLockTime(int cycle)
+		{
+			return Start + cycle * GetTotalDuration() + GetAliceLockTimeOffset();
+		}
+		public LockTime GetTumblerLockTime(int cycle)
+		{
+			return Start + cycle * GetTotalDuration() + GetTumblerLockTimeOffset();
 		}
 
 		public int ConfirmationDuration
@@ -142,6 +162,10 @@ namespace NTumbleBit.ClassicTumbler
 		public int GetTumblerLockTimeOffset()
 		{
 			return GetAliceLockTimeOffset() + BobCashoutDuration + ConfirmationDuration;
+		}
+		public int GetTotalDuration()
+		{
+			return GetTumblerLockTimeOffset();
 		}
 	}
 }

@@ -1,6 +1,7 @@
 ﻿using NBitcoin;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using NTumbleBit.PuzzleSolver;
 #if !CLIENT
 using NTumbleBit.TumblerServer.JsonConverters;
 #else
@@ -18,8 +19,9 @@ namespace NTumbleBit.Client
 		public static void RegisterFrontConverters(JsonSerializerSettings settings, Network network = null)
 		{
 			settings.Converters.Add(new BitcoinSerializableJsonConverter());
-			settings.Converters.Add(new RsaPubKeyJsonConverter());
+			settings.Converters.Add(new RsaKeyJsonConverter());
 			settings.Converters.Add(new MoneyJsonConverter());
+			settings.Converters.Add(new PuzzleProtocolJsonConverter());
 			//settings.Converters.Add(new CoinJsonConverter(network));
 			//settings.Converters.Add(new ScriptJsonConverter());
 			settings.Converters.Add(new UInt160JsonConverter());

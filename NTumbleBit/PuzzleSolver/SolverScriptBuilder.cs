@@ -8,7 +8,8 @@ using System.Threading.Tasks;
 namespace NTumbleBit.PuzzleSolver
 {
 	public static class SolverScriptBuilder
-	{
+	{		
+
 		public static Script CreateOfferScript(IEnumerable<uint160> hashes, PubKey redeemKey, Script refundScript)
 		{
 			if(hashes == null)
