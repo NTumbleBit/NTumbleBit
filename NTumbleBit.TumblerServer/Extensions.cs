@@ -10,7 +10,7 @@ namespace NTumbleBit.TumblerServer
 {
     public static class Extensions
     {
-		public static IWebHostBuilder UseHostingConfiguration(this IWebHostBuilder builder, ConfigurationBuilder configuration)
+		public static IWebHostBuilder UseAppConfiguration(this IWebHostBuilder builder, ConfigurationBuilder configuration)
 		{
 			builder.UseConfiguration(configuration.Build());
 			builder.ConfigureServices(services =>

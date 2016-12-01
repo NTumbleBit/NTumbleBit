@@ -19,7 +19,7 @@ namespace NTumbleBit.Client
 		{
 			settings.Converters.Add(new BitcoinSerializableJsonConverter());
 			settings.Converters.Add(new RsaPubKeyJsonConverter());
-			//settings.Converters.Add(new MoneyJsonConverter());
+			settings.Converters.Add(new MoneyJsonConverter());
 			//settings.Converters.Add(new CoinJsonConverter(network));
 			//settings.Converters.Add(new ScriptJsonConverter());
 			settings.Converters.Add(new UInt160JsonConverter());

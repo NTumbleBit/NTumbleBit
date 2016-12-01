@@ -30,13 +30,14 @@ namespace NTumbleBit.Tests
 			if(Directory.Exists(rootTestData))
 				Directory.CreateDirectory(rootTestData);
 
-			if(TryDelete(directory, false))
+			if(!TryDelete(directory, false))
 			{
 				foreach(var process in Process.GetProcessesByName("bitcoind"))
 				{
 					if(process.MainModule.FileName.Replace("\\", "/").StartsWith(Path.GetFullPath(rootTestData).Replace("\\", "/")))
 					{
 						process.Kill();
+						process.WaitForExit();
 					}
 				}
 				TryDelete(directory, true);
@@ -58,7 +59,7 @@ namespace NTumbleBit.Tests
 			_Host = new WebHostBuilder()
 				.UseKestrel()
 				.UseConfiguration(confBuilder.Build())
-				.UseHostingConfiguration(confBuilder)
+				.UseAppConfiguration(confBuilder)
 				.UseContentRoot(Path.GetFullPath(directory))
 				.UseIISIntegration()
 				.UseStartup<Startup>()

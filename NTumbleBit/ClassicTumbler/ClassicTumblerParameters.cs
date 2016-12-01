@@ -29,6 +29,9 @@ namespace NTumbleBit.ClassicTumbler
 			RealTransactionCount = promise.RealTransactionCount;
 			FakeFormat = promise.FakeFormat;
 
+			Denomination = Money.Coins(1.0m);
+			Fee = Money.Coins(0.01m);
+
 			// 1 day cycle
 			CycleParameters = new CycleParameters()
 			{
@@ -51,6 +54,17 @@ namespace NTumbleBit.ClassicTumbler
 		{
 			get; set;
 		}
+
+		public Money Denomination
+		{
+			get; set;
+		}
+
+		public Money Fee
+		{
+			get; set;
+		}
+
 		public int FakePuzzleCount
 		{
 			get; set;
