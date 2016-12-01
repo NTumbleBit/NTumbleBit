@@ -87,6 +87,8 @@ namespace NTumbleBit.Tests
 			else
 			{
 				string bitcoind = String.Format("TestData/bitcoin-{0}/bin/bitcoind", version);
+				if(File.Exists(bitcoind))
+					return bitcoind;
 
 				var zip = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? 
 					String.Format("TestData/bitcoin-{0}-x86_64-linux-gnu.tar.gz", version)
