@@ -16,8 +16,6 @@ namespace NTumbleBit
 			settings.Converters.Add(new RsaKeyJsonConverter());
 			settings.Converters.Add(new MoneyJsonConverter());
 			settings.Converters.Add(new SerializerBaseJsonConverter());
-			settings.Converters.Add(new SolverSerializerJsonConverter());
-			settings.Converters.Add(new PromiseSerializerJsonConverter());
 			settings.Converters.Add(new LockTimeJsonConverter());
 			settings.Converters.Add(new StringEnumConverter());
 			settings.Converters.Add(new CoinJsonConverter(network));

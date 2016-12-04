@@ -1,5 +1,6 @@
 ﻿using NBitcoin.DataEncoders;
 using Newtonsoft.Json;
+using NTumbleBit.PuzzlePromise;
 using NTumbleBit.PuzzleSolver;
 using System;
 using System.Collections.Generic;
@@ -15,11 +16,14 @@ namespace NTumbleBit.JsonConverters
 		{
 			Support<PuzzleValue>((a, b) => a.WritePuzzle(b), a => a.ReadPuzzle());
 			Support<PuzzleSolution>((a, b) => a.WritePuzzleSolution(b), a => a.ReadPuzzleSolution());
+			Support<SolutionKey>((a, b) => a.WritePuzzleSolutionKey(b), a => a.ReadPuzzleSolutionKey());
+			Support<BlindFactor>((a, b) => a.WriteBlindFactor(b), a => a.ReadBlindFactor());
+			Support<Quotient>((a, b) => a.WriteQuotient(b), a => a.ReadQuotient());
 		}
 
 		Dictionary<Type, Tuple<Action<SerializerBase, object>, Func<SerializerBase, object>>> _Supports = new Dictionary<Type, Tuple<Action<SerializerBase, object>, Func<SerializerBase, object>>>();
 
-		public void Support<T>(Action<SerializerBase, T> serialize, Func<SerializerBase, T> deserialize)
+		internal void Support<T>(Action<SerializerBase, T> serialize, Func<SerializerBase, T> deserialize)
 		{
 			_Supports.Add(typeof(T), Tuple.Create<Action<SerializerBase, object>, Func<SerializerBase, object>>((a, b) => serialize(a, (T)b), a => deserialize(a)));
 		}		

@@ -5,10 +5,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using NTumbleBit.PuzzlePromise;
+using NTumbleBit.PuzzleSolver;
+using NBitcoin;
 
 namespace NTumbleBit
 {
-	public class SerializerBase
+	class SerializerBase
 	{
 		public SerializerBase(Stream inner)
 		{
@@ -52,8 +55,37 @@ namespace NTumbleBit
 		{
 			WriteBigInteger(puzzle._Value, KeySize);
 		}
+		
+		public void WritePuzzleSolutionKey(SolutionKey key)
+		{
+			WriteBytes(key.ToBytes(true), true);
+		}
+		
+		public void WriteQuotient(Quotient q)
+		{
+			WriteBigInteger(q._Value, KeySize);
+		}
+
+		public Quotient ReadQuotient()
+		{
+			return new Quotient(ReadBigInteger(KeySize));
+		}
 
 
+		public SolutionKey ReadPuzzleSolutionKey()
+		{
+			return new SolutionKey(ReadBytes(Utils.ChachaKeySize));
+		}
+
+		public void WriteBlindFactor(BlindFactor b)
+		{
+			WriteBigInteger(b._Value, KeySize);
+		}
+
+		public BlindFactor ReadBlindFactor()
+		{
+			return new BlindFactor(ReadBigInteger(KeySize));
+		}
 		public PuzzleValue ReadPuzzle()
 		{
 			return new PuzzleValue(ReadBigInteger(KeySize));

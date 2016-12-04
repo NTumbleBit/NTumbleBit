@@ -207,20 +207,7 @@ namespace NTumbleBit.PuzzleSolver
 			WriteTo(ms);
 			ms.Position = 0;
 			return ms.ToArrayEfficient();
-		}
-
-		private void WritePuzzleBase(SolverSerializer seria, PuzzleSetElement el)
-		{
-			seria.WriteUInt(el.Index);
-			seria.WritePuzzle(el.Puzzle.PuzzleValue);
-			if(el.Commitment == null)
-				seria.Inner.WriteByte(0);
-			else
-			{
-				seria.Inner.WriteByte(1);
-				seria.WriteCommitment(el.Commitment);
-			}
-		}
+		}		
 
 
 		public SolverParameters Parameters
