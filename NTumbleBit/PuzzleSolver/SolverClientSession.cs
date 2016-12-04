@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using NTumbleBit.PuzzlePromise;
 
 namespace NTumbleBit.PuzzleSolver
 {
@@ -97,7 +98,6 @@ namespace NTumbleBit.PuzzleSolver
 			state.FakeIndexes = _FakeIndexes;
 			if(_PuzzleElements != null)
 			{
-				var indexes = new int[_PuzzleElements.Length];
 				var commitments = new ServerCommitment[_PuzzleElements.Length];
 				var puzzles = new PuzzleValue[_PuzzleElements.Length];
 				var fakeSolutions = new PuzzleSolution[Parameters.FakePuzzleCount];
@@ -105,7 +105,6 @@ namespace NTumbleBit.PuzzleSolver
 				int fakeI = 0, realI = 0;
 				for(int i = 0; i < _PuzzleElements.Length; i++)
 				{
-					indexes[i] = _PuzzleElements[i].Index;
 					commitments[i] = _PuzzleElements[i].Commitment;
 					puzzles[i] = _PuzzleElements[i].Puzzle.PuzzleValue;
 					var fake = _PuzzleElements[i] as FakePuzzle;
@@ -179,7 +178,7 @@ namespace NTumbleBit.PuzzleSolver
 			var ms = new MemoryStream(bytes);
 			return ReadFrom(ms);
 		}
-		public static SolverClientSession ReadFrom(Stream stream, RsaKey privateKey = null)
+		public static SolverClientSession ReadFrom(Stream stream)
 		{
 			if(stream == null)
 				throw new ArgumentNullException("stream");

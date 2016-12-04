@@ -1,5 +1,6 @@
 ﻿using NBitcoin;
 using NBitcoin.Crypto;
+using Newtonsoft.Json;
 using NTumbleBit.PuzzleSolver;
 using System;
 using System.Collections.Generic;
@@ -46,11 +47,18 @@ namespace NTumbleBit.PuzzlePromise
 		{
 			if(serverKey == null)
 				throw new ArgumentNullException("serverKey");
-			_Parameters = parameters ?? new PromiseParameters();
-			_Parameters.ServerKey = _Parameters.ServerKey ?? serverKey.PubKey;
+			_InternalState.Parameters = parameters ?? new PromiseParameters();
+			_InternalState.Parameters.ServerKey = _InternalState.Parameters.ServerKey ?? serverKey.PubKey;
 			if(serverKey.PubKey != parameters.ServerKey)
 				throw new ArgumentNullException("Private key not matching expected public key");
-			_ServerKey = serverKey;
+			_InternalState.ServerKey = serverKey;
+		}
+
+		PromiseServerSession(InternalState state)
+		{
+			if(state == null)
+				throw new ArgumentNullException("state");
+			this._InternalState = state;
 		}
 
 		public static PromiseServerSession ReadFrom(byte[] bytes, RsaKey rsaKey = null, Key ecdsaKey = null)
@@ -64,35 +72,16 @@ namespace NTumbleBit.PuzzlePromise
 		{
 			if(stream == null)
 				throw new ArgumentNullException("stream");
+			if(stream == null)
+				throw new ArgumentNullException("stream");
 
-			var seria = new PromiseSerializer(new PromiseParameters(), stream);
-			if(seria.Inner.ReadByte() == 1)
-			{
-				rsaKey = new RsaKey(seria.ReadBytes(-1, 10 * 1024));
-				if(seria.Inner.ReadByte() == 1)
-					ecdsaKey = new Key(seria.ReadBytes());
-			}
-
-			var parameters = seria.ReadParameters();
-			seria = new PromiseSerializer(parameters, stream);
-			if(rsaKey == null)
-				throw new InvalidOperationException("RSA key not provided");
-			var server = new PromiseServerSession(rsaKey, parameters);
-			server._TransactionKey = ecdsaKey;
-
-			server._State = (PromiseServerStates)seria.ReadUInt();
-
-			var len = seria.ReadUInt();
-			EncryptedSignature[] encryptedSigs = new EncryptedSignature[len];
-			for(int i = 0; i < len; i++)
-			{
-				var ecdsa = new ECDSASignature(seria.ReadBytes());
-				var signedHash = new uint256(seria.ReadBytes(32));
-				var solution = seria.ReadPuzzleSolution();
-				encryptedSigs[i] = new EncryptedSignature(ecdsa, signedHash, solution);
-			}
-			server._EncryptedSignatures = encryptedSigs;
-			return server;
+			var text = new StreamReader(stream, Encoding.UTF8).ReadToEnd();
+			JsonSerializerSettings settings = new JsonSerializerSettings();
+			Serializer.RegisterFrontConverters(settings);
+			var state = JsonConvert.DeserializeObject<InternalState>(text, settings);
+			state.ServerKey = state.ServerKey ?? rsaKey;
+			state.TransactionKey = state.TransactionKey ?? ecdsaKey;
+			return new PromiseServerSession(state);
 		}
 
 		public byte[] ToBytes(bool includePrivateKeys)
@@ -106,44 +95,60 @@ namespace NTumbleBit.PuzzlePromise
 		{
 			if(stream == null)
 				throw new ArgumentNullException("stream");
-			var seria = new PromiseSerializer(Parameters, stream);
-			if(includePrivateKeys)
+			var writer = new StreamWriter(stream, Encoding.UTF8);
+			JsonSerializerSettings settings = new JsonSerializerSettings();
+			Serializer.RegisterFrontConverters(settings);
+			var result = JsonConvert.SerializeObject(this._InternalState, settings);
+			var key = _InternalState.ServerKey;
+			var ecdsaKey = _InternalState.TransactionKey;
+			if(!includePrivateKeys)
 			{
-				seria.Inner.WriteByte(1);
-				seria.WriteBytes(_ServerKey.ToBytes(), false);
-				if(_TransactionKey != null)
-				{
-					seria.Inner.WriteByte(1);
-					seria.WriteBytes(_TransactionKey.ToBytes(), false);
-				}
-				else
-					seria.Inner.WriteByte(0);
+				_InternalState.ServerKey = null;
 			}
-			else
-				seria.Inner.WriteByte(0);
+			writer.Write(result);
+			_InternalState.ServerKey = key;
+			_InternalState.TransactionKey = ecdsaKey;
+			writer.Flush();
+		}
 
-			seria.WriteParameters();
-			seria.WriteUInt((uint)_State);
-			seria.WriteUInt(_EncryptedSignatures.Length);
-			foreach(var sig in _EncryptedSignatures)
+		class InternalState
+		{
+			public Key TransactionKey
 			{
-				seria.WriteBytes(sig.Signature.ToDER(), false);
-				seria.WriteBytes(sig.SignedHash.ToBytes(), true);
-				seria.WritePuzzleSolution(sig.PuzzleSolution);
+				get; set;
+			}
+			public RsaKey ServerKey
+			{
+				get; set;
+			}
+			public EncryptedSignature[] EncryptedSignatures
+			{
+				get; set;
+			}
+
+			public PromiseParameters Parameters
+			{
+				get; set;
+			}
+
+			public PromiseServerStates State
+			{
+				get; set;
+			}
+			public uint256 FakeIndexesHash
+			{
+				get;
+				set;
 			}
 		}
 
-		private Key _TransactionKey;
-		private readonly RsaKey _ServerKey;
-		EncryptedSignature[] _EncryptedSignatures = new EncryptedSignature[0];
-		private readonly PromiseParameters _Parameters;
-		private PromiseServerStates _State;
+		InternalState _InternalState = new InternalState();
 
 		public Key TransactionKey
 		{
 			get
 			{
-				return _TransactionKey;
+				return _InternalState.TransactionKey;
 			}
 		}
 
@@ -152,7 +157,7 @@ namespace NTumbleBit.PuzzlePromise
 		{
 			get
 			{
-				return _ServerKey;
+				return _InternalState.ServerKey;
 			}
 		}
 
@@ -161,7 +166,7 @@ namespace NTumbleBit.PuzzlePromise
 		{
 			get
 			{
-				return _Parameters;
+				return _InternalState.Parameters;
 			}
 		}		
 
@@ -187,9 +192,10 @@ namespace NTumbleBit.PuzzlePromise
 				promises.Add(new ServerCommitment(puzzle.PuzzleValue, promise));
 				encryptedSignatures.Add(new EncryptedSignature(ecdsa, hash, solution));
 			}
-			_TransactionKey = transactionKey;
-			_State = PromiseServerStates.WaitingRevelation;
-			_EncryptedSignatures = encryptedSignatures.ToArray();
+			_InternalState.TransactionKey = transactionKey;
+			_InternalState.State = PromiseServerStates.WaitingRevelation;
+			_InternalState.EncryptedSignatures = encryptedSignatures.ToArray();
+			_InternalState.FakeIndexesHash = sigRequest.FakeIndexesHash;
 			return promises.ToArray();
 		}
 
@@ -202,11 +208,18 @@ namespace NTumbleBit.PuzzlePromise
 			if(revelation.Salts.Length != Parameters.FakeTransactionCount || revelation.FakeIndexes.Length != Parameters.FakeTransactionCount)
 				throw new ArgumentNullException("The revelation should contains " + Parameters.FakeTransactionCount + " indexes and salts");
 			AssertState(PromiseServerStates.WaitingRevelation);
+
+			var indexSalt = revelation.IndexesSalt;
+			if(_InternalState.FakeIndexesHash != PromiseUtils.HashIndexes(ref indexSalt, revelation.FakeIndexes))
+			{
+				throw new PuzzleException("Invalid index salt");
+			}
+
 			List<PuzzleSolution> solutions = new List<PuzzleSolution>();
 			for(int i = 0; i < Parameters.FakeTransactionCount; i++)
 			{
 				var salt = revelation.Salts[i];
-				var encrypted = _EncryptedSignatures[revelation.FakeIndexes[i]];
+				var encrypted = _InternalState.EncryptedSignatures[revelation.FakeIndexes[i]];
 				var actualSignedHash = Parameters.CreateFakeHash(salt);
 				if(actualSignedHash != encrypted.SignedHash)
 					throw new PuzzleException("Incorrect salt provided");
@@ -214,17 +227,18 @@ namespace NTumbleBit.PuzzlePromise
 			}
 
 			// We can throw away the fake puzzles
-			_EncryptedSignatures = _EncryptedSignatures
+			_InternalState.EncryptedSignatures = _InternalState.EncryptedSignatures
 										.Where((e, i) => !revelation.FakeIndexes.Contains(i)).ToArray();
 
 			Quotient[] quotients = new Quotient[Parameters.RealTransactionCount - 1];
-			for(int i = 0; i < _EncryptedSignatures.Length - 1; i++)
+			for(int i = 0; i < _InternalState.EncryptedSignatures.Length - 1; i++)
 			{
-				var a = _EncryptedSignatures[i].PuzzleSolution._Value;
-				var b = _EncryptedSignatures[i + 1].PuzzleSolution._Value;
+				var a = _InternalState.EncryptedSignatures[i].PuzzleSolution._Value;
+				var b = _InternalState.EncryptedSignatures[i + 1].PuzzleSolution._Value;
 				quotients[i] = new Quotient(b.Multiply(a.ModInverse(Parameters.ServerKey._Key.Modulus)).Mod(Parameters.ServerKey._Key.Modulus));
 			}
-			_State = PromiseServerStates.Completed;
+			_InternalState.FakeIndexesHash = null;
+			_InternalState.State = PromiseServerStates.Completed;
 			return new ServerCommitmentsProof(solutions.ToArray(), quotients);
 		}
 
@@ -233,14 +247,14 @@ namespace NTumbleBit.PuzzlePromise
 		{
 			get
 			{
-				return _State;
+				return _InternalState.State;
 			}
 		}
 
 		private void AssertState(PromiseServerStates state)
 		{
-			if(state != _State)
-				throw new InvalidOperationException("Invalid state, actual " + _State + " while expected is " + state);
+			if(state != _InternalState.State)
+				throw new InvalidOperationException("Invalid state, actual " + _InternalState.State + " while expected is " + state);
 		}		
 	}
 }

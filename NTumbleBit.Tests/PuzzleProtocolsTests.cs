@@ -195,19 +195,19 @@ namespace NTumbleBit.Tests
 
 			SignaturesRequest request = client.CreateSignatureRequest(coin, cashout);
 			RoundTrip(ref client);
-			RoundTrip(ref request, client.Parameters);
+			RoundTrip(ref request);
 
 			PuzzlePromise.ServerCommitment[] commitments = server.SignHashes(request, serverKey);
 			RoundTrip(ref server);
-			RoundTrip(ref commitments, client.Parameters);
+			RoundTrip(ref commitments);
 
 			PuzzlePromise.ClientRevelation revelation = client.Reveal(commitments);
 			RoundTrip(ref client);
-			RoundTrip(ref revelation, client.Parameters);
+			RoundTrip(ref revelation);
 
 			ServerCommitmentsProof proof = server.CheckRevelation(revelation);
 			RoundTrip(ref server);
-			RoundTrip(ref proof, client.Parameters);
+			RoundTrip(ref proof);
 
 			var puzzleToSolve = client.CheckCommitmentProof(proof);
 			RoundTrip(ref client);
@@ -232,43 +232,7 @@ namespace NTumbleBit.Tests
 				Assert.True(builder.Verify(tx));
 			}
 		}
-
-		private void RoundTrip(ref ServerCommitmentsProof proof, PromiseParameters parameters)
-		{
-			var ms = new MemoryStream();
-			var seria = new PromiseSerializer(parameters, ms);
-			seria.WriteCommitmentsProof(proof);
-			ms.Position = 0;
-			proof = seria.ReadCommitmentsProof();
-		}
-
-		private void RoundTrip(ref PuzzlePromise.ClientRevelation revelation, PromiseParameters parameters)
-		{
-			var ms = new MemoryStream();
-			var seria = new PromiseSerializer(parameters, ms);
-			seria.WriteRevelation(revelation);
-			ms.Position = 0;
-			revelation = seria.ReadRevelation();
-		}
-
-		private void RoundTrip(ref PuzzlePromise.ServerCommitment[] commitments, PromiseParameters parameters)
-		{
-			var ms = new MemoryStream();
-			var seria = new PromiseSerializer(parameters, ms);
-			seria.WriteCommitments(commitments);
-			ms.Position = 0;
-			commitments = seria.ReadCommitments();
-		}
-
-		private void RoundTrip(ref SignaturesRequest request, PromiseParameters parameters)
-		{
-			var ms = new MemoryStream();
-			var seria = new PromiseSerializer(parameters, ms);
-			seria.WriteSignaturesRequest(request);
-			ms.Position = 0;
-			request = seria.ReadSignaturesRequest();
-		}
-
+		
 		private ScriptCoin CreateEscrowCoin(PubKey pubKey, PubKey pubKey2)
 		{
 			var redeem = PayToMultiSigTemplate.Instance.GenerateScriptPubKey(2, pubKey, pubKey2);
@@ -299,29 +263,29 @@ namespace NTumbleBit.Tests
 
 			PuzzleValue[] puzzles = client.GeneratePuzzles(puzzle.PuzzleValue);
 			RoundTrip(ref client);
-			RoundTrip(ref puzzles, client.Parameters);			
+			RoundTrip(ref puzzles);
 
 			var commitments = server.SolvePuzzles(puzzles);
 			RoundTrip(ref server);
-			RoundTrip(ref commitments, client.Parameters);
+			RoundTrip(ref commitments);
 
 			var revelation = client.Reveal(commitments);
 			RoundTrip(ref client);
-			RoundTrip(ref revelation, client.Parameters);			
+			RoundTrip(ref revelation);
 
 			SolutionKey[] fakePuzzleKeys = server.CheckRevelation(revelation);
 			RoundTrip(ref server);
-			RoundTrip(ref fakePuzzleKeys, false, client.Parameters);
+			RoundTrip(ref fakePuzzleKeys);
 
 
 			BlindFactor[] blindFactors = client.GetBlindFactors(fakePuzzleKeys);
 			RoundTrip(ref client);
-			RoundTrip(ref blindFactors, client.Parameters);
+			RoundTrip(ref blindFactors);
 
 			server.CheckBlindedFactors(blindFactors);
 			RoundTrip(ref server);
 			SolutionKey[] realPuzzleKeys = server.GetSolutionKeys();
-			RoundTrip(ref realPuzzleKeys, true, client.Parameters);
+			RoundTrip(ref realPuzzleKeys);
 
 			var serverClone = SolverServerSession.ReadFrom(server.ToBytes(true));
 			var clientClone = SolverClientSession.ReadFrom(client.ToBytes());
@@ -355,27 +319,7 @@ namespace NTumbleBit.Tests
 			solution = client.GetSolution();
 			RoundTrip(ref client);
 			Assert.True(solution == expectedSolution);
-		}
-
-		private void RoundTrip(ref PuzzleValue[] puzzles, SolverParameters parameters)
-		{
-			RoundtripJson(ref puzzles);
-		}
-
-		private void RoundTrip(ref PromiseServerSession server)
-		{
-			server = PromiseServerSession.ReadFrom(server.ToBytes(true));
-		}
-
-		private void RoundTrip(ref PromiseClientSession client)
-		{
-			client = PromiseClientSession.ReadFrom(client.ToBytes());
-		}
-
-		private void RoundTrip(ref BlindFactor[] blindFactors, SolverParameters parameters)
-		{
-			RoundtripJson(ref blindFactors);
-		}
+		}		
 
 		private void RoundtripJson<T>(ref T result)
 		{
@@ -384,18 +328,8 @@ namespace NTumbleBit.Tests
 			var str = JsonConvert.SerializeObject(result, settings);
 			result = JsonConvert.DeserializeObject<T>(str, settings);
 		}
-
-		private void RoundTrip(ref SolutionKey[] fakePuzzleKeys, bool real, SolverParameters parameters)
-		{
-			RoundtripJson(ref fakePuzzleKeys);
-		}
-
-		private void RoundTrip(ref PuzzleSolver.ClientRevelation revelation, SolverParameters parameters)
-		{
-			RoundtripJson(ref revelation);
-		}
-
-		private void RoundTrip(ref PuzzleSolver.ServerCommitment[] commitments, SolverParameters parameters)
+		
+		private void RoundTrip<T>(ref T commitments)
 		{
 			RoundtripJson(ref commitments);
 		}
@@ -414,6 +348,22 @@ namespace NTumbleBit.Tests
 			client.WriteTo(ms);
 			ms.Position = 0;
 			client = SolverClientSession.ReadFrom(ms);
+		}
+
+		private void RoundTrip(ref PromiseServerSession server)
+		{
+			var ms = new MemoryStream();
+			server.WriteTo(ms, true);
+			ms.Position = 0;
+			server = PromiseServerSession.ReadFrom(ms, null);
+		}
+
+		private void RoundTrip(ref PromiseClientSession client)
+		{
+			var ms = new MemoryStream();
+			client.WriteTo(ms);
+			ms.Position = 0;
+			client = PromiseClientSession.ReadFrom(ms);
 		}
 
 		LockTime EscrowDate = new LockTime(new DateTimeOffset(1988, 07, 18, 0, 0, 0, TimeSpan.Zero));

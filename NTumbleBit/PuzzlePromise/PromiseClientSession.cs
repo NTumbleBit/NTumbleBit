@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using Newtonsoft.Json;
 
 namespace NTumbleBit.PuzzlePromise
 {
@@ -104,47 +105,166 @@ namespace NTumbleBit.PuzzlePromise
 			ms.Position = 0;
 			return ms.ToArrayEfficient();
 		}
+		public static PromiseClientSession ReadFrom(Stream stream)
+		{
+			if(stream == null)
+				throw new ArgumentNullException("stream");
+
+			var text = new StreamReader(stream, Encoding.UTF8).ReadToEnd();
+			JsonSerializerSettings settings = new JsonSerializerSettings();
+			Serializer.RegisterFrontConverters(settings);
+			var state = JsonConvert.DeserializeObject<InternalState>(text, settings);
+			return new PromiseClientSession(state);
+		}
 		public void WriteTo(Stream stream)
 		{
 			if(stream == null)
 				throw new ArgumentNullException("stream");
-			var seria = new PromiseSerializer(Parameters, stream);
-			seria.WriteParameters();
-			seria.WriteUInt((uint)_State);
-			if(State == PromiseClientStates.Completed)
-			{
-				seria.WriteQuotients(_Quotients);
-			}
-			seria.WriteUInt256(_IndexSalt);
+			var writer = new StreamWriter(stream, Encoding.UTF8);
+			JsonSerializerSettings settings = new JsonSerializerSettings();
+			Serializer.RegisterFrontConverters(settings);
+			var result = JsonConvert.SerializeObject(GetInternalState(), settings);
+			writer.Write(result);
+			writer.Flush();
+		}
 
-			if(_Cashout != null)
+		public class InternalState
+		{
+			public Transaction Cashout
 			{
-				seria.Inner.WriteByte(1);
-				seria.WriteBytes(_Cashout.ToBytes(), false);
-				seria.WriteScriptCoin(_EscrowedCoin);
-				seria.WriteUInt(_Hashes.Length);
-				foreach(var hash in _Hashes)
+				get;
+				set;
+			}
+			public ServerCommitment[] Commitments
+			{
+				get;
+				set;
+			}
+			public ScriptCoin EscrowedCoin
+			{
+				get;
+				set;
+			}
+			public uint256[] FakeSalts
+			{
+				get;
+				set;
+			}
+			public uint256 IndexSalt
+			{
+				get;
+				set;
+			}
+			public LockTime[] LockTimes
+			{
+				get;
+				set;
+			}
+			public PromiseParameters PromiseParameters
+			{
+				get;
+				set;
+			}
+			public Quotient[] Quotients
+			{
+				get;
+				set;
+			}
+			public PromiseClientStates State
+			{
+				get;
+				set;
+			}
+			public int[] FakeIndexes
+			{
+				get; set;
+			}
+		}
+
+		private readonly PromiseParameters _Parameters;
+		private PromiseClientStates _State;
+		Quotient[] _Quotients;
+		private uint256 _IndexSalt;
+		private HashBase[] _Hashes;
+		ScriptCoin _EscrowedCoin;
+		Transaction _Cashout;
+		private int[] _FakeIndexes;
+
+		public PromiseClientSession(InternalState state)
+		{
+			if(state == null)
+				throw new ArgumentNullException("state");
+
+			_Parameters = state.PromiseParameters;
+			_Quotients = state.Quotients;
+			_State = state.State;
+			_IndexSalt = state.IndexSalt;
+			_EscrowedCoin = state.EscrowedCoin;
+			_Cashout = state.Cashout;
+			_FakeIndexes = state.FakeIndexes;
+			if(state.Commitments != null)
+			{
+				_Hashes = new HashBase[state.Commitments.Length];
+				int fakeI = 0, realI = 0;
+				for(int i = 0; i < _Hashes.Length; i++)
 				{
-					seria.WriteUInt(hash.Index);
-					seria.Inner.WriteByte((byte)(hash.Commitment != null ? 1 : 0));
-					if(hash.Commitment != null)
-						seria.WriteCommitment(hash.Commitment);
-					var fake = hash as FakeHash;
-					if(fake != null)
+					HashBase hash = null;
+					if(_FakeIndexes != null && _FakeIndexes.Contains(i))
 					{
-						seria.Inner.WriteByte(0);
-						seria.WriteUInt256(fake.Salt);
+						hash = new FakeHash(_Parameters)
+						{
+							Salt = state.FakeSalts[fakeI++]
+						};
 					}
-					var real = hash as RealHash;
-					if(real != null)
+					else
 					{
-						seria.Inner.WriteByte(1);
-						seria.WriteUInt((uint)real.LockTime);
+						hash = new RealHash(_Cashout, _EscrowedCoin)
+						{
+							LockTime = state.LockTimes[realI++]
+						};
 					}
+					hash.Index = i;
+					hash.Commitment = state.Commitments[i];
+					_Hashes[i] = hash;
 				}
 			}
-			else
-				seria.Inner.WriteByte(0);
+		}
+
+		private InternalState GetInternalState()
+		{
+			InternalState state = new InternalState();
+			state.PromiseParameters = _Parameters;
+			state.Quotients = _Quotients;
+			state.State = State;
+			state.IndexSalt = _IndexSalt;
+			state.EscrowedCoin = _EscrowedCoin;
+			state.Cashout = _Cashout;
+			state.FakeIndexes = _FakeIndexes;
+			if(_Hashes != null)
+			{
+				var commitments = new List<ServerCommitment>();
+				var fakeSalts = new List<uint256>();
+				var lockTimes = new List<LockTime>();
+				for(int i = 0; i < _Hashes.Length; i++)
+				{
+					commitments.Add(_Hashes[i].Commitment);
+					var fake = _Hashes[i] as FakeHash;
+					if(fake != null)
+					{
+						fakeSalts.Add(fake.Salt);
+					}
+
+					var real = _Hashes[i] as RealHash;
+					if(real != null)
+					{
+						lockTimes.Add(real.LockTime);
+					}
+				}
+				state.FakeSalts = fakeSalts.ToArray();
+				state.LockTimes = lockTimes.ToArray();
+				state.Commitments = commitments.ToArray();
+			}
+			return state;
 		}
 
 		public static PromiseClientSession ReadFrom(byte[] bytes)
@@ -154,61 +274,6 @@ namespace NTumbleBit.PuzzlePromise
 			var ms = new MemoryStream(bytes);
 			return ReadFrom(ms);
 		}
-		public static PromiseClientSession ReadFrom(Stream stream)
-		{
-			if(stream == null)
-				throw new ArgumentNullException("stream");
-			var seria = new PromiseSerializer(new PromiseParameters(), stream);
-			var parameters = seria.ReadParameters();
-			seria = new PromiseSerializer(parameters, stream);
-			var client = new PromiseClientSession(parameters);
-			client._State = (PromiseClientStates)seria.ReadUInt();
-			if(client.State == PromiseClientStates.Completed)
-			{
-				client._Quotients = seria.ReadQuotients();
-			}
-			client._IndexSalt = seria.ReadUInt256();
-
-			var hasTransaction = seria.Inner.ReadByte() != 0;
-			if(hasTransaction)
-			{
-				client._Cashout = new Transaction(seria.ReadBytes());
-				client._EscrowedCoin = seria.ReadScriptCoin();
-				client._Hashes = new HashBase[seria.ReadUInt()];
-				for(int i = 0; i < client._Hashes.Length; i++)
-				{
-					var index = seria.ReadUInt();
-					ServerCommitment commitment = null;
-					if(seria.Inner.ReadByte() == 1)
-					{
-						commitment = seria.ReadCommitment();
-					}
-
-					var isFake = seria.Inner.ReadByte() == 0;
-					if(isFake)
-					{
-						var salt = seria.ReadUInt256();
-						client._Hashes[i] = new FakeHash(parameters) { Salt = salt };
-					}
-					else
-					{
-						LockTime l = new LockTime((uint)seria.ReadUInt());
-						client._Hashes[i] = new RealHash(client._Cashout, client._EscrowedCoin) { LockTime = l };
-					}
-					client._Hashes[i].Commitment = commitment;
-					client._Hashes[i].Index = (int)index;
-				}
-			}
-			return client;
-		}
-
-		private readonly PromiseParameters _Parameters;
-		private PromiseClientStates _State;
-		Quotient[] _Quotients = new Quotient[0];
-		private uint256 _IndexSalt = uint256.Zero;
-		private HashBase[] _Hashes = new HashBase[0];
-		ScriptCoin _EscrowedCoin = null;
-		Transaction _Cashout = null;
 
 		public SignaturesRequest CreateSignatureRequest(ScriptCoin escrowedCoin, Transaction cashout)
 		{
@@ -240,15 +305,17 @@ namespace NTumbleBit.PuzzlePromise
 			{
 				_Hashes[i].Index = i;
 			}
+			var fakeIndices = _Hashes.OfType<FakeHash>().Select(h => h.Index).ToArray();
 			uint256 indexSalt = null;
 			var request = new SignaturesRequest()
 			{
 				Hashes = _Hashes.Select(h => h.GetHash()).ToArray(),
-				FakeIndexesHash = PromiseUtils.HashIndexes(ref indexSalt, _Hashes.OfType<FakeHash>().Select(h => h.Index)),
+				FakeIndexesHash = PromiseUtils.HashIndexes(ref indexSalt, fakeIndices),
 			};
 			_IndexSalt = indexSalt;
 			_Cashout = cashout.Clone();
 			_State = PromiseClientStates.WaitingCommitments;
+			_FakeIndexes = fakeIndices;
 			_EscrowedCoin = escrowedCoin;
 			return request;
 		}
@@ -281,9 +348,8 @@ namespace NTumbleBit.PuzzlePromise
 			{
 				_Hashes[i].Commitment = commitments[i];
 			}
-
 			_State = PromiseClientStates.WaitingCommitmentsProof;
-			return new ClientRevelation(indexes.ToArray(), salts.ToArray());
+			return new ClientRevelation(indexes.ToArray(), _IndexSalt, salts.ToArray());
 		}
 
 		public PuzzleValue CheckCommitmentProof(ServerCommitmentsProof proof)
@@ -327,6 +393,7 @@ namespace NTumbleBit.PuzzlePromise
 			}
 
 			_Hashes = _Hashes.OfType<RealHash>().ToArray(); // we do not need the fake one anymore
+			_FakeIndexes = null;
 			_Quotients = proof.Quotients;
 			_State = PromiseClientStates.Completed;
 			return _Hashes.OfType<RealHash>().First().Commitment.Puzzle;

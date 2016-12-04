@@ -1,5 +1,7 @@
 ﻿using NBitcoin;
 using NBitcoin.Crypto;
+using Newtonsoft.Json;
+using NTumbleBit.JsonConverters;
 using System;
 using System.Collections.Generic;
 using System.Linq;

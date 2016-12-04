@@ -4,6 +4,7 @@ using Newtonsoft.Json.Serialization;
 using NTumbleBit.JsonConverters;
 using NTumbleBit.PuzzleSolver;
 using NTumbleBit.JsonConverters;
+using Newtonsoft.Json.Converters;
 
 namespace NTumbleBit
 {
@@ -16,10 +17,16 @@ namespace NTumbleBit
 			settings.Converters.Add(new MoneyJsonConverter());
 			settings.Converters.Add(new SerializerBaseJsonConverter());
 			settings.Converters.Add(new SolverSerializerJsonConverter());
-			//settings.Converters.Add(new CoinJsonConverter(network));
-			//settings.Converters.Add(new ScriptJsonConverter());
+			settings.Converters.Add(new PromiseSerializerJsonConverter());
+			settings.Converters.Add(new LockTimeJsonConverter());
+			settings.Converters.Add(new StringEnumConverter());
+			settings.Converters.Add(new CoinJsonConverter(network));
+			settings.Converters.Add(new LockTimeJsonConverter());
+			settings.Converters.Add(new ScriptJsonConverter());
 			settings.Converters.Add(new UInt160JsonConverter());
 			settings.Converters.Add(new UInt256JsonConverter());
+			settings.Converters.Add(new ECDSASignatureJsonConverter());
+			
 			//settings.Converters.Add(new NetworkJsonConverter());
 			//settings.Converters.Add(new KeyPathJsonConverter());
 			//settings.Converters.Add(new Base58DataJsonConverter()

@@ -7,33 +7,29 @@ namespace NTumbleBit.PuzzlePromise
 {
     public class ServerCommitmentsProof
 	{
+		public ServerCommitmentsProof()
+		{
+
+		}
 		public ServerCommitmentsProof(PuzzleSolution[] solutions, Quotient[] quotients)
 		{
 			if(solutions == null)
 				throw new ArgumentNullException("solutions");
 			if(quotients == null)
 				throw new ArgumentNullException("quotients");
-			_FakeSolutions = solutions;
-			_Quotients = quotients;
+			FakeSolutions = solutions;
+			Quotients = quotients;
 		}
 
-		readonly PuzzleSolution[] _FakeSolutions;
 		public PuzzleSolution[] FakeSolutions
 		{
-			get
-			{
-				return _FakeSolutions;
-			}
+			get; set;
 		}
 
 
-		private readonly Quotient[] _Quotients;
 		public Quotient[] Quotients
 		{
-			get
-			{
-				return _Quotients;
-			}
+			get; set;
 		}
-    }
+	}
 }

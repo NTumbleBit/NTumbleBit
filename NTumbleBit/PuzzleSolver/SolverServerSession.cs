@@ -110,6 +110,7 @@ namespace NTumbleBit.PuzzleSolver
 			JsonSerializerSettings settings = new JsonSerializerSettings();
 			Serializer.RegisterFrontConverters(settings);
 			var state = JsonConvert.DeserializeObject<InternalState>(text, settings);
+			state.ServerKey = state.ServerKey ?? privateKey;
 			return new SolverServerSession(state);
 		}
 		public void WriteTo(Stream stream, bool includePrivateKey)
@@ -120,7 +121,11 @@ namespace NTumbleBit.PuzzleSolver
 			JsonSerializerSettings settings = new JsonSerializerSettings();
 			Serializer.RegisterFrontConverters(settings);
 			var result = JsonConvert.SerializeObject(this._InternalState, settings);
+			var key = _InternalState.ServerKey;
+			if(!includePrivateKey)
+				_InternalState.ServerKey = null;
 			writer.Write(result);
+			_InternalState.ServerKey = key;
 			writer.Flush();
 		}
 		public byte[] ToBytes(bool includePrivateKey)
