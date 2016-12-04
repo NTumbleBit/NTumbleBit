@@ -86,50 +86,62 @@ namespace NTumbleBit.Tests
 		}
 
 		[Fact]
+		//https://medium.com/@nicolasdorier/tumblebit-tumbler-mode-ea44e9a2a2ec#.a4wgwa86u
 		public void CanCalculatePhase()
 		{
 			var parameter = new CycleParameters()
 			{
-				Start = 440000,
-				BobCashoutDuration = 38,
-				AliceEscrowDuration = 19,
-				TumblerEscrowDuration = 19,
-				ConfirmationDuration = 6,
-				AlicePaymentDuration = 38,
-				TumblerCashoutDuration = 18
+				Start = 100,
+				RegistrationDuration = 10,
+				ClientChannelEstablishmentDuration = 11,
+				TumblerChannelEstablishmentDuration = 12,
+				TumblerCashoutDuration = 10,
+				ClientCashoutDuration = 13,
+				PaymentPhaseDuration = 3,
+				SafetyPeriodDuration = 2,
 			};
-			Assert.Throws<InvalidOperationException>(() => parameter.GetPhaseInformation(440000 - 1));
 
-			var phase = parameter.GetPhaseInformation(440000);
-			Assert.True(phase.Cycle == 0);
-			Assert.True(phase.Phase == CyclePhase.AliceEscrowPhase);
-			phase = parameter.GetPhaseInformation(440001);
-			Assert.True(phase.RemainingBlock == 19 - 1);
-			phase = parameter.GetPhaseInformation(440001 + 19);
-			Assert.True(phase.Phase == CyclePhase.TumblerEscrowPhase);
-			Assert.True(phase.RemainingBlock == 19 - 1);
-			phase = parameter.GetPhaseInformation(440001 + 19 + 19);
-			Assert.True(phase.Phase == CyclePhase.TumblerEscrowConfirmation);
-			Assert.True(phase.RemainingBlock == 5);
-			phase = parameter.GetPhaseInformation(440001 + 19 + 19 + 6);
-			Assert.True(phase.Phase == CyclePhase.AlicePaymentPhase);
-			Assert.True(phase.RemainingBlock == 37);
-			phase = parameter.GetPhaseInformation(440001 + 19 + 19 + 6 + 38);
-			Assert.True(phase.Phase == CyclePhase.TumblerCashoutPhase);
-			Assert.True(19 + 19 + 6 + 38 + 18 == parameter.GetAliceLockTimeOffset());
-			Assert.True(phase.RemainingBlock == 17);
-			phase = parameter.GetPhaseInformation(440001 + 19 + 19 + 6 + 38 + 18);
-			Assert.True(phase.Phase == CyclePhase.BobCashoutPhase);
-			Assert.True(phase.RemainingBlock == 37);
-			phase = parameter.GetPhaseInformation(440001 + 19 + 19 + 6 + 38 + 18 + 38);
-			Assert.True(phase.Phase == CyclePhase.BobCashoutConfirmation);
-			Assert.True(phase.RemainingBlock == 5);
-			Assert.True(phase.Offset == 144 - 5);
-			Assert.True(19 + 19 + 6 + 38 + 18 + 38 + 6 == parameter.GetTumblerLockTimeOffset());
-			phase = parameter.GetPhaseInformation(440001 + 19 + 19 + 6 + 38 + 18 + 38 + 6);
-			Assert.True(phase.Phase == CyclePhase.AliceEscrowPhase);
-			Assert.True(phase.RemainingBlock == 19 - 1);
-			Assert.True(phase.Cycle == 1);
+			Assert.True(parameter.IsInPhase(CyclePhase.Registration, 100));
+			Assert.True(parameter.IsInPhase(CyclePhase.Registration, 109));
+			Assert.False(parameter.IsInPhase(CyclePhase.Registration, 110));
+
+			Assert.True(parameter.IsInPhase(CyclePhase.ClientChannelEstablishment, 110));
+			Assert.True(parameter.IsInPhase(CyclePhase.ClientChannelEstablishment, 120));
+			Assert.False(parameter.IsInPhase(CyclePhase.ClientChannelEstablishment, 121));
+
+			Assert.True(parameter.IsInPhase(CyclePhase.TumblerChannelEstablishment, 121));
+			Assert.True(parameter.IsInPhase(CyclePhase.TumblerChannelEstablishment, 132));
+			Assert.False(parameter.IsInPhase(CyclePhase.TumblerChannelEstablishment, 133));
+
+			Assert.False(parameter.IsInPhase(CyclePhase.TumblerCashoutPhase, 133));
+			Assert.False(parameter.IsInPhase(CyclePhase.TumblerCashoutPhase, 134));
+			Assert.True(parameter.IsInPhase(CyclePhase.TumblerCashoutPhase, 135));
+			Assert.True(parameter.IsInPhase(CyclePhase.TumblerCashoutPhase, 144));
+			Assert.False(parameter.IsInPhase(CyclePhase.TumblerCashoutPhase, 145));
+
+			Assert.False(parameter.IsInPhase(CyclePhase.PaymentPhase, 133));
+			Assert.False(parameter.IsInPhase(CyclePhase.PaymentPhase, 134));
+			Assert.True(parameter.IsInPhase(CyclePhase.PaymentPhase, 135));
+			Assert.True(parameter.IsInPhase(CyclePhase.PaymentPhase, 137));
+			Assert.False(parameter.IsInPhase(CyclePhase.PaymentPhase, 138));
+
+			Assert.True(parameter.IsInPhase(CyclePhase.ClientCashoutPhase, 145));
+			Assert.True(parameter.IsInPhase(CyclePhase.ClientCashoutPhase, 157));
+			Assert.False(parameter.IsInPhase(CyclePhase.ClientCashoutPhase, 158));
+			Assert.Equal(147, parameter.GetClientLockTime().Height);
+
+
+			var total = parameter.GetPeriods().Total;
+			Assert.Equal(100, total.Start);
+			Assert.Equal(160, total.End);
+			Assert.Equal(160, parameter.GetTumblerLockTime().Height);
+
+			var cycleGenerator = new OverlappedCycleGenerator();
+			cycleGenerator.FirstCycle = parameter;
+			cycleGenerator.RegistrationOverlap = 3;
+			Assert.Equal(100, cycleGenerator.GetRegistratingCycle(100).Start);
+			Assert.Equal(100, cycleGenerator.GetRegistratingCycle(106).Start);
+			Assert.Equal(107, cycleGenerator.GetRegistratingCycle(107).Start);
 		}
 
 		[Fact]

@@ -109,7 +109,7 @@ namespace NTumbleBit.ClassicTumbler
 			{
 				get; set;
 			}
-			public int Cycle
+			public CycleParameters Cycle
 			{
 				get;
 				set;
@@ -152,14 +152,14 @@ namespace NTumbleBit.ClassicTumbler
 
 			public Script CreateEscrow()
 			{
-				return EscrowScriptBuilder.CreateEscrow(new PubKey[] { TumblerEscrowKey.PubKey, BobPubKey }, TumblerRedeemKey.PubKey, Parameters.CycleParameters.GetTumblerLockTime(Cycle));
+				return EscrowScriptBuilder.CreateEscrow(new PubKey[] { TumblerEscrowKey.PubKey, BobPubKey }, TumblerRedeemKey.PubKey, Cycle.GetTumblerLockTime());
 			}
 		}
 
 		public TumblerBobServerSession(ClassicTumblerParameters parameters,
 										RsaKey tumblerKey,
 										RsaKey voucherKey,
-										int cycle) : base(parameters, tumblerKey, voucherKey)
+										CycleParameters cycle) : base(parameters, tumblerKey, voucherKey)
 		{
 			if(parameters == null)
 				throw new ArgumentNullException("parameters");

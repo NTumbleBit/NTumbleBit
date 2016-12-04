@@ -8,126 +8,199 @@ namespace NTumbleBit.ClassicTumbler
 {
 	public enum CyclePhase : int
 	{
-		AliceEscrowPhase = 1,
-		TumblerEscrowPhase = 2,
-		TumblerEscrowConfirmation = 3,
-		AlicePaymentPhase = 4,
-		TumblerCashoutPhase = 5,
-		BobCashoutPhase = 6,
-		BobCashoutConfirmation = 7
+		Registration,
+		ClientChannelEstablishment,
+		TumblerChannelEstablishment,
+		PaymentPhase,
+		TumblerCashoutPhase,
+		ClientCashoutPhase
 	}
 
-	public class CyclePhaseInformation
+	public class CyclePeriod
 	{
-		public CyclePhase Phase
+		public CyclePeriod(int start, int end)
 		{
-			get; set;
+			if(start > end)
+				throw new ArgumentException("start should be inferiod to end");
+			Start = start;
+			End = end;
 		}
-		public int RemainingBlock
+		public CyclePeriod()
 		{
-			get; set;
-		}
-		public int Cycle
-		{
-			get; set;
-		}
-		public int Offset
-		{
-			get;
-			set;
-		}
-	}
-	public class CycleParameters
-	{
-		public CycleParameters()
-		{
-			// 1 day
-			Start = 440000;
-			BobCashoutDuration = 38;
-			AliceEscrowDuration = 19;
-			TumblerEscrowDuration = 19;
-			ConfirmationDuration = 6;
-			AlicePaymentDuration = 38;
-			TumblerCashoutDuration = 18;
+
 		}
 		public int Start
 		{
 			get; set;
 		}
 
-		public CyclePhaseInformation GetPhaseInformation(int currentHeight)
-		{
-			if(currentHeight < Start)
-				throw new InvalidOperationException("No cycle possible before " + Start);
-			int remainingBlocks;
-			var phase = GetPhase(currentHeight, out remainingBlocks);
-			return new CyclePhaseInformation()
-			{
-				Phase = phase,
-				Cycle = (currentHeight - Start) / GetTumblerLockTimeOffset(),
-				RemainingBlock = remainingBlocks,
-				Offset = (currentHeight - Start) % GetTumblerLockTimeOffset()
-			};
-		}
-
-		CyclePhase GetPhase(int currentHeight, out int remainingBlocks)
-		{
-			var offset = (currentHeight - Start) % GetTumblerLockTimeOffset();
-			if(offset < AliceEscrowDuration)
-			{
-				remainingBlocks = AliceEscrowDuration - offset;
-				return CyclePhase.AliceEscrowPhase;
-			}
-			int nextPhase = AliceEscrowDuration;
-			if(offset < nextPhase + TumblerEscrowDuration)
-			{
-				remainingBlocks = nextPhase + TumblerEscrowDuration - offset;
-				return CyclePhase.TumblerEscrowPhase;
-			}
-			nextPhase += TumblerEscrowDuration;
-			if(offset < nextPhase + ConfirmationDuration)
-			{
-				remainingBlocks = nextPhase + ConfirmationDuration - offset;
-				return CyclePhase.TumblerEscrowConfirmation;
-			}
-			nextPhase += ConfirmationDuration;
-			if(offset < nextPhase + AlicePaymentDuration)
-			{
-				remainingBlocks = nextPhase + AlicePaymentDuration - offset;
-				return CyclePhase.AlicePaymentPhase;
-			}
-			nextPhase += AlicePaymentDuration;
-			if(offset < nextPhase + TumblerCashoutDuration)
-			{
-				remainingBlocks = nextPhase + TumblerCashoutDuration - offset;
-				return CyclePhase.TumblerCashoutPhase;
-			}
-			nextPhase += TumblerCashoutDuration;
-			if(offset < nextPhase + BobCashoutDuration)
-			{
-				remainingBlocks = nextPhase + BobCashoutDuration - offset;
-				return CyclePhase.BobCashoutPhase;
-			}
-			nextPhase += BobCashoutDuration;
-			remainingBlocks = nextPhase + ConfirmationDuration - offset;
-			return CyclePhase.BobCashoutConfirmation;
-		}
-
-		public LockTime GetAliceLockTime(int cycle)
-		{
-			return Start + cycle * GetTotalDuration() + GetAliceLockTimeOffset();
-		}
-		public LockTime GetTumblerLockTime(int cycle)
-		{
-			return Start + cycle * GetTotalDuration() + GetTumblerLockTimeOffset();
-		}
-
-		public int ConfirmationDuration
+		public int End
 		{
 			get; set;
 		}
 
-		public int AlicePaymentDuration
+		public bool IsInPeriod(int blockHeight)
+		{
+			return Start <= blockHeight && blockHeight < End;
+		}
+	}
+	public class CyclePeriods
+	{
+		public CyclePeriod Registration
+		{
+			get; set;
+		}
+		public CyclePeriod ClientChannelEstablishment
+		{
+			get; set;
+		}
+		public CyclePeriod TumblerChannelEstablishment
+		{
+			get; set;
+		}
+		public CyclePeriod TumblerCashout
+		{
+			get; set;
+		}
+		public CyclePeriod ClientCashout
+		{
+			get; set;
+		}
+
+		public CyclePeriod Total
+		{
+			get; set;
+		}
+		public CyclePeriod Payment
+		{
+			get;
+			internal set;
+		}
+
+		public bool IsInPhase(CyclePhase phase, int blockHeight)
+		{
+			switch(phase)
+			{
+				case CyclePhase.Registration:
+					return Registration.IsInPeriod(blockHeight);
+				case CyclePhase.ClientChannelEstablishment:
+					return ClientChannelEstablishment.IsInPeriod(blockHeight);
+				case CyclePhase.TumblerChannelEstablishment:
+					return TumblerChannelEstablishment.IsInPeriod(blockHeight);
+				case CyclePhase.TumblerCashoutPhase:
+					return TumblerCashout.IsInPeriod(blockHeight);
+				case CyclePhase.PaymentPhase:
+					return Payment.IsInPeriod(blockHeight);
+				case CyclePhase.ClientCashoutPhase:
+					return ClientCashout.IsInPeriod(blockHeight);
+				default:
+					throw new NotSupportedException();
+			}
+		}
+
+		public bool IsInside(int blockHeight)
+		{
+			return Total.IsInPeriod(blockHeight);
+		}
+	}
+
+
+	/// <summary>
+	/// See https://medium.com/@nicolasdorier/tumblebit-tumbler-mode-ea44e9a2a2ec#.d1kq6t2px
+	/// </summary>
+	public class CycleParameters
+	{
+		public CycleParameters()
+		{
+			Start = 0;
+			RegistrationDuration = 18;
+			ClientChannelEstablishmentDuration = 3;
+			TumblerChannelEstablishmentDuration = 3;
+			SafetyPeriodDuration = 2;
+			PaymentPhaseDuration = 3;
+			TumblerCashoutDuration = 18;
+			ClientCashoutDuration = 18;
+		}
+
+		public CyclePeriods GetPeriods()
+		{
+			int registrationStart = Start;
+			int registrationEnd = registrationStart + RegistrationDuration;
+			int cchannelRegistrationStart = registrationEnd;
+			int cchannelRegistrationEnd = cchannelRegistrationStart + ClientChannelEstablishmentDuration;
+			int tchannelRegistrationStart = cchannelRegistrationEnd;
+			int tchannelRegistrationEnd = tchannelRegistrationStart + TumblerChannelEstablishmentDuration;
+			int tcashoutStart = tchannelRegistrationEnd + SafetyPeriodDuration;
+			int tcashoutEnd = tcashoutStart + TumblerCashoutDuration;
+			int paymentStart = tcashoutStart;
+			int paymentEnd = paymentStart + PaymentPhaseDuration;
+			int ccashoutStart = tcashoutEnd;
+			int ccashoutEnd = ccashoutStart + ClientCashoutDuration;
+			CyclePeriods periods = new CyclePeriods();
+			periods.Registration = new CyclePeriod(registrationStart, registrationEnd);
+			periods.ClientChannelEstablishment = new CyclePeriod(cchannelRegistrationStart, cchannelRegistrationEnd);
+			periods.TumblerChannelEstablishment = new CyclePeriod(tchannelRegistrationStart, tchannelRegistrationEnd);
+			periods.TumblerCashout = new CyclePeriod(tcashoutStart, tcashoutEnd);
+			periods.Payment = new CyclePeriod(paymentStart, paymentEnd);
+			periods.ClientCashout = new CyclePeriod(ccashoutStart, ccashoutEnd);
+			periods.Total = new CyclePeriod(Start, ccashoutEnd + SafetyPeriodDuration);
+			return periods;
+		}
+
+		public bool IsInPhase(CyclePhase phase, int blockHeight)
+		{
+			var periods = GetPeriods();
+			return periods.IsInPhase(phase, blockHeight);
+		}
+
+		public bool IsInside(int blockHeight)
+		{
+			var periods = GetPeriods();
+			return periods.IsInside(blockHeight);
+		}
+
+		public LockTime GetClientLockTime()
+		{
+			var periods = GetPeriods();
+			return new LockTime(periods.ClientCashout.Start + SafetyPeriodDuration);
+		}
+
+		public LockTime GetTumblerLockTime()
+		{
+			var periods = GetPeriods();
+			return new LockTime(periods.ClientCashout.End + SafetyPeriodDuration);
+		}
+
+		public CycleParameters Clone()
+		{
+			return new CycleParameters()
+			{
+				ClientCashoutDuration = ClientCashoutDuration,
+				SafetyPeriodDuration = SafetyPeriodDuration,
+				Start = Start,
+				ClientChannelEstablishmentDuration = ClientChannelEstablishmentDuration,
+				PaymentPhaseDuration = PaymentPhaseDuration,
+				RegistrationDuration = RegistrationDuration,
+				TumblerCashoutDuration = TumblerCashoutDuration,
+				TumblerChannelEstablishmentDuration = TumblerChannelEstablishmentDuration
+			};
+		}
+
+		public int Start
+		{
+			get; set;
+		}
+
+		public int RegistrationDuration
+		{
+			get; set;
+		}
+		public int ClientChannelEstablishmentDuration
+		{
+			get; set;
+		}
+
+		public int TumblerChannelEstablishmentDuration
 		{
 			get; set;
 		}
@@ -137,35 +210,19 @@ namespace NTumbleBit.ClassicTumbler
 			get; set;
 		}
 
-		public int BobCashoutDuration
+		public int ClientCashoutDuration
 		{
 			get; set;
 		}
 
-		public int AliceEscrowDuration
+		public int PaymentPhaseDuration
 		{
 			get; set;
 		}
 
-		public int TumblerEscrowDuration
+		public int SafetyPeriodDuration
 		{
 			get; set;
-		}
-
-		public int GetAliceLockTimeOffset()
-		{
-			return AliceEscrowDuration + TumblerEscrowDuration +
-				ConfirmationDuration +
-				AlicePaymentDuration +
-				TumblerCashoutDuration;
-		}
-		public int GetTumblerLockTimeOffset()
-		{
-			return GetAliceLockTimeOffset() + BobCashoutDuration + ConfirmationDuration;
-		}
-		public int GetTotalDuration()
-		{
-			return GetTumblerLockTimeOffset();
 		}
 	}
 }

@@ -31,20 +31,19 @@ namespace NTumbleBit.Tests
 		{
 			using(var server = TumblerServerTester.Create())
 			{
+				var bobRPC = server.BobNode.CreateRPCClient();
 				server.BobNode.FindBlock(1);
 				server.TumblerNode.FindBlock(1);
-				server.AliceNode.FindBlock(105);
-
-				var bobRPC = server.BobNode.CreateRPCClient();
-
+				server.AliceNode.FindBlock(103);
+				
 				var client = server.CreateTumblerClient();
 				var parameters = client.GetTumblerParameters();
 
-				var height = bobRPC.GetBlockCount() - 1;
-				var phaseInfo = parameters.CycleParameters.GetPhaseInformation(height);
+				//var height = bobRPC.GetBlockCount();
+				//var phaseInfo = parameters.GetPhaseInformation(height);
 
-				var clientSession = new TumblerClientSession(parameters, phaseInfo.Cycle);
-				var voucher = client.AskUnsignedVoucher(0);
+				//var clientSession = new TumblerClientSession(parameters, phaseInfo.Cycle);
+				//var voucher = client.AskUnsignedVoucher();
 			}
 		}
 	}

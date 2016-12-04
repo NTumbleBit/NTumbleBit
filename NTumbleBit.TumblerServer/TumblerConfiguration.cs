@@ -13,7 +13,7 @@ namespace NTumbleBit.TumblerServer
 		public TumblerConfiguration()
 		{
 			Repository = new ClassicTumblerRepository();
-			CycleParameters = new CycleParameters();
+			CycleGenerator = new OverlappedCycleGenerator();
 		}
 		public RsaKey TumblerKey
 		{
@@ -42,7 +42,7 @@ namespace NTumbleBit.TumblerServer
 		{
 			get; set;
 		}
-		public CycleParameters CycleParameters
+		public OverlappedCycleGenerator CycleGenerator
 		{
 			get;
 			set;

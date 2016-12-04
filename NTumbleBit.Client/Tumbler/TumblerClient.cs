@@ -48,7 +48,7 @@ namespace NTumbleBit.Client.Tumbler
 		readonly static HttpClient Client = new HttpClient();
 		public Task<ClassicTumblerParameters> GetTumblerParametersAsync()
 		{
-			return GetAsync<ClassicTumblerParameters>("api/v1/tumbler/parameters");
+			return GetAsync<ClassicTumblerParameters>("api/v1/tumblers/0/parameters");
 		}
 		public ClassicTumblerParameters GetTumblerParameters()
 		{
@@ -60,14 +60,14 @@ namespace NTumbleBit.Client.Tumbler
 			return SendAsync<T>(HttpMethod.Get, null, relativePath, parameters);
 		}
 
-		public PuzzleValue AskUnsignedVoucher(int cycle)
+		public PuzzleValue AskUnsignedVoucher()
 		{
-			return AskUnsignedVoucherAsync(cycle).GetAwaiter().GetResult();
+			return AskUnsignedVoucherAsync().GetAwaiter().GetResult();
 		}
 
-		public Task<PuzzleValue> AskUnsignedVoucherAsync(int cycle)
+		public Task<PuzzleValue> AskUnsignedVoucherAsync()
 		{
-			return GetAsync<PuzzleValue>("api/v1/tumbler/askvoucher/" + cycle);
+			return GetAsync<PuzzleValue>("api/v1/tumblers/0/askvoucher/");
 		}
 
 		private string GetFullUri(string relativePath, params object[] parameters)

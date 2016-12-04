@@ -9,7 +9,7 @@ namespace NTumbleBit.TumblerServer
 	public class ClassicTumblerRepository
 	{
 		
-		public int GetCurrentCycle()
+		public int GetCurrentBlockHeight()
 		{
 			return 0;
 		}

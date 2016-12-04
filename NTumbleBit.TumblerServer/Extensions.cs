@@ -23,10 +23,7 @@ namespace NTumbleBit.TumblerServer
 				services.AddSingleton<ClassicTumblerParameters>((provider) =>
 				{
 					var conf = provider.GetRequiredService<TumblerConfiguration>();
-					return new ClassicTumblerParameters(conf.TumblerKey.PubKey, conf.VoucherKey.PubKey)
-					{
-						CycleParameters = conf.CycleParameters
-					};
+					return new ClassicTumblerParameters(conf.TumblerKey.PubKey, conf.VoucherKey.PubKey);
 				});
 				services.AddSingleton<TumblerConfiguration>((provider) =>
 			{

@@ -44,18 +44,19 @@ namespace NTumbleBit.TumblerServer.Controllers
 			private set;
 		}
 
-		[HttpGet("api/v1/tumbler/parameters")]
+		[HttpGet("api/v1/tumblers/0/parameters")]
 		public ClassicTumblerParameters GetSolverParameters()
 		{
 			return Parameters;
 		}
 
-		[HttpGet("api/v1/tumbler/askvoucher/{cycle}")]
-		public PuzzleValue AskVoucherParameters(int cycle)
+		[HttpGet("api/v1/tumblers/0/askvoucher")]
+		public PuzzleValue AskVoucherParameters()
 		{
-			if(Repository.GetCurrentCycle() != cycle)
-				return null;
-			var bobSession = new TumblerBobServerSession(Parameters, Tumbler.TumblerKey, Tumbler.VoucherKey, cycle);
+			var height = Repository.GetCurrentBlockHeight();
+
+			var cycleParameters = Tumbler.CycleGenerator.GetRegistratingCycle(height);
+			var bobSession = new TumblerBobServerSession(Parameters, Tumbler.TumblerKey, Tumbler.VoucherKey, cycleParameters);
 			var voucher = bobSession.GenerateUnsignedVoucher();
 			Repository.Save(bobSession);
 			return voucher;

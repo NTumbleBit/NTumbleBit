@@ -16,7 +16,7 @@ namespace NTumbleBit.ClassicTumbler
 			{
 				get; set;
 			}
-			public int Cycle
+			public CycleParameters Cycle
 			{
 				get;
 				set;
@@ -61,13 +61,15 @@ namespace NTumbleBit.ClassicTumbler
 				return EscrowScriptBuilder.CreateEscrow(
 				new[] { TumblerKey, AliceEscrowKey.PubKey },
 				AliceRedeemKey.PubKey,
-				Parameters.CycleParameters.GetAliceLockTime(Cycle));
+				Cycle.GetClientLockTime());
 			}
 		}
-		public TumblerClientSession(ClassicTumblerParameters parameters, int cycle)
+		public TumblerClientSession(ClassicTumblerParameters parameters, CycleParameters cycle)
 		{
 			if(parameters == null)
 				throw new ArgumentNullException("parameters");
+			if(cycle == null)
+				throw new ArgumentNullException("cycle");
 			InternalState = new State();
 			InternalState.Parameters = parameters;
 			InternalState.Cycle = cycle;
