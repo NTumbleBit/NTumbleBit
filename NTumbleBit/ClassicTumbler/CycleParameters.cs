@@ -162,13 +162,19 @@ namespace NTumbleBit.ClassicTumbler
 		public LockTime GetClientLockTime()
 		{
 			var periods = GetPeriods();
-			return new LockTime(periods.ClientCashout.Start + SafetyPeriodDuration);
+			var lockTime = new LockTime(periods.ClientCashout.Start + SafetyPeriodDuration - 1);
+			if(lockTime.IsTimeLock)
+				throw new InvalidOperationException("Invalid cycle");
+			return lockTime;
 		}
 
 		public LockTime GetTumblerLockTime()
 		{
 			var periods = GetPeriods();
-			return new LockTime(periods.ClientCashout.End + SafetyPeriodDuration);
+			var lockTime = new LockTime(periods.ClientCashout.End + SafetyPeriodDuration - 1);
+			if(lockTime.IsTimeLock)
+				throw new InvalidOperationException("Invalid cycle");
+			return lockTime;
 		}
 
 		public CycleParameters Clone()
