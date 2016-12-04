@@ -1,20 +1,13 @@
 ﻿using NBitcoin;
 using Newtonsoft.Json;
+using NTumbleBit.JsonConverters;
 using System;
 using System.Reflection;
 
-#if !CLIENT
-namespace NTumbleBit.TumblerServer.JsonConverters
-#else
-namespace NTumbleBit.Client.Tumbler.JsonConverters
-#endif
+namespace NTumbleBit.JsonConverters
 {
-#if !NOJSONNET
-	public
-#else
-	internal
-#endif
-	class MoneyJsonConverter : JsonConverter
+
+	public class MoneyJsonConverter : JsonConverter
     {
         public override bool CanConvert(Type objectType)
         {

@@ -1,4 +1,5 @@
-﻿using NTumbleBit.BouncyCastle.Math;
+﻿using Newtonsoft.Json;
+using NTumbleBit.BouncyCastle.Math;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -7,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace NTumbleBit.PuzzleSolver
-{
+{	
 	internal class PuzzleSetElement
 	{
 		public Puzzle Puzzle
@@ -15,7 +16,7 @@ namespace NTumbleBit.PuzzleSolver
 			get;
 			set;
 		}
-
+		
 		public int Index
 		{
 			get;

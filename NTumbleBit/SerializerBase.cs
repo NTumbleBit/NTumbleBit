@@ -15,20 +15,6 @@ namespace NTumbleBit
 			if(inner == null)
 				throw new ArgumentNullException("inner");
 			_Inner = inner;
-			_KeySize = 256;
-		}
-		internal SerializerBase(Stream inner, RsaKeyParameters parameters)
-		{
-			if(inner == null)
-				throw new ArgumentNullException("inner");
-			if(parameters != null)
-			{
-				var keySize = parameters.Modulus.ToByteArrayUnsigned().Length;
-				while(keySize % 32 != 0)
-					keySize++;
-				_KeySize = keySize;
-			}
-			_Inner = inner;
 		}
 		
 		protected bool littleEndian = true;
@@ -44,14 +30,15 @@ namespace NTumbleBit
 			}
 		}
 
+		internal const int KeySize = 256;
 		public void WritePuzzleSolution(PuzzleSolution index)
 		{
-			WriteBigInteger(index._Value, GetKeySize());
+			WriteBigInteger(index._Value, KeySize);
 		}		
 
 		public PuzzleSolution ReadPuzzleSolution()
 		{
-			return new PuzzleSolution(ReadBigInteger(GetKeySize()));
+			return new PuzzleSolution(ReadBigInteger(KeySize));
 		}
 
 
@@ -63,13 +50,13 @@ namespace NTumbleBit
 
 		public void WritePuzzle(PuzzleValue puzzle)
 		{
-			WriteBigInteger(puzzle._Value, GetKeySize());
+			WriteBigInteger(puzzle._Value, KeySize);
 		}
 
 
 		public PuzzleValue ReadPuzzle()
 		{
-			return new PuzzleValue(ReadBigInteger(GetKeySize()));
+			return new PuzzleValue(ReadBigInteger(KeySize));
 		}
 
 		public ulong ReadULong()
@@ -159,12 +146,6 @@ namespace NTumbleBit
 			{
 				return _Inner;
 			}
-		}
-
-		int _KeySize;
-		public int GetKeySize()
-		{
-			return _KeySize;
 		}
 	}
 }

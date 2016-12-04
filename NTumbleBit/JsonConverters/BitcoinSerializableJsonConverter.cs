@@ -1,18 +1,15 @@
 ﻿using NBitcoin;
 using NBitcoin.DataEncoders;
 using Newtonsoft.Json;
+using NTumbleBit.JsonConverters;
 using System;
 using System.IO;
 using System.Reflection;
 
 
-#if !CLIENT
-namespace NTumbleBit.TumblerServer.JsonConverters
-#else
-namespace NTumbleBit.Client.Tumbler.JsonConverters
-#endif
+namespace NTumbleBit.JsonConverters
 {
-	class BitcoinSerializableJsonConverter : JsonConverter
+	public class BitcoinSerializableJsonConverter : JsonConverter
     {
         public override bool CanConvert(Type objectType)
         {

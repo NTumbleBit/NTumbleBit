@@ -244,7 +244,7 @@ namespace NTumbleBit.PuzzlePromise
 			var request = new SignaturesRequest()
 			{
 				Hashes = _Hashes.Select(h => h.GetHash()).ToArray(),
-				FakeIndexesHash = PromiseUtils.HashIndexes(ref indexSalt, _Hashes.OfType<FakeHash>().Select(h => h.Index))
+				FakeIndexesHash = PromiseUtils.HashIndexes(ref indexSalt, _Hashes.OfType<FakeHash>().Select(h => h.Index)),
 			};
 			_IndexSalt = indexSalt;
 			_Cashout = cashout.Clone();

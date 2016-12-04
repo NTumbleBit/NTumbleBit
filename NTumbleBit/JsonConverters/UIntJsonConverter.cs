@@ -1,5 +1,6 @@
 ﻿using NBitcoin;
 using Newtonsoft.Json;
+using NTumbleBit.JsonConverters;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -7,18 +8,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-#if !CLIENT
-namespace NTumbleBit.TumblerServer.JsonConverters
-#else
-namespace NTumbleBit.Client.Tumbler.JsonConverters
-#endif
+namespace NTumbleBit.JsonConverters
 {
-#if !NOJSONNET
-	public
-#else
-	internal
-#endif
-	class UInt160JsonConverter : JsonConverter
+	public class UInt160JsonConverter : JsonConverter
     {
         public override bool CanConvert(Type objectType)
         {

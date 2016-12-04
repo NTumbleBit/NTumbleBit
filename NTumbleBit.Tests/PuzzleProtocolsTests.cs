@@ -1,6 +1,7 @@
 ﻿using NBitcoin;
 using NBitcoin.DataEncoders;
 using NBitcoin.Policy;
+using Newtonsoft.Json;
 using NTumbleBit.BouncyCastle.Crypto.Parameters;
 using NTumbleBit.BouncyCastle.Math;
 using NTumbleBit.ClassicTumbler;
@@ -358,11 +359,7 @@ namespace NTumbleBit.Tests
 
 		private void RoundTrip(ref PuzzleValue[] puzzles, SolverParameters parameters)
 		{
-			var ms = new MemoryStream();
-			var seria = new SolverSerializer(parameters, ms);
-			seria.WritePuzzles(puzzles);
-			ms.Position = 0;
-			puzzles = seria.ReadPuzzles();
+			RoundtripJson(ref puzzles);
 		}
 
 		private void RoundTrip(ref PromiseServerSession server)
@@ -377,38 +374,30 @@ namespace NTumbleBit.Tests
 
 		private void RoundTrip(ref BlindFactor[] blindFactors, SolverParameters parameters)
 		{
-			var ms = new MemoryStream();
-			var seria = new SolverSerializer(parameters, ms);
-			seria.WriteBlindFactors(blindFactors);
-			ms.Position = 0;
-			blindFactors = seria.ReadBlindFactors();
+			RoundtripJson(ref blindFactors);
+		}
+
+		private void RoundtripJson<T>(ref T result)
+		{
+			JsonSerializerSettings settings = new JsonSerializerSettings();
+			Serializer.RegisterFrontConverters(settings);
+			var str = JsonConvert.SerializeObject(result, settings);
+			result = JsonConvert.DeserializeObject<T>(str, settings);
 		}
 
 		private void RoundTrip(ref SolutionKey[] fakePuzzleKeys, bool real, SolverParameters parameters)
 		{
-			var ms = new MemoryStream();
-			var seria = new SolverSerializer(parameters, ms);
-			seria.WritePuzzleSolutionKeys(fakePuzzleKeys, real);
-			ms.Position = 0;
-			fakePuzzleKeys = seria.ReadPuzzleSolutionKeys(real);
+			RoundtripJson(ref fakePuzzleKeys);
 		}
 
 		private void RoundTrip(ref PuzzleSolver.ClientRevelation revelation, SolverParameters parameters)
 		{
-			var ms = new MemoryStream();
-			var seria = new SolverSerializer(parameters, ms);
-			seria.WritePuzzleRevelation(revelation);
-			ms.Position = 0;
-			revelation = seria.ReadPuzzleRevelation();
+			RoundtripJson(ref revelation);
 		}
 
 		private void RoundTrip(ref PuzzleSolver.ServerCommitment[] commitments, SolverParameters parameters)
 		{
-			var ms = new MemoryStream();
-			var seria = new SolverSerializer(parameters, ms);
-			seria.WritePuzzleCommitments(commitments);
-			ms.Position = 0;
-			commitments = seria.ReadPuzzleCommitments();
+			RoundtripJson(ref commitments);
 		}
 
 		private void RoundTrip(ref SolverServerSession server)

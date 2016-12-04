@@ -1,6 +1,8 @@
 ﻿using NBitcoin;
 using NBitcoin.BouncyCastle.Math;
 using NBitcoin.Crypto;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -36,6 +38,14 @@ namespace NTumbleBit.PuzzleSolver
 			_Parameters = new SolverParameters(serverKey);
 		}
 
+
+		private readonly SolverParameters _Parameters;
+		private Puzzle _Puzzle;
+		private SolverClientStates _State = SolverClientStates.WaitingPuzzle;
+		private PuzzleSetElement[] _PuzzleElements;
+		private PuzzleSolution _PuzzleSolution;
+		private int[] _FakeIndexes;
+
 		public SolverClientSession(SolverParameters parameters)
 		{
 			if(parameters == null)
@@ -43,12 +53,124 @@ namespace NTumbleBit.PuzzleSolver
 			_Parameters = parameters;
 		}
 
-		private readonly SolverParameters _Parameters;
-		private Puzzle _Puzzle;
-		private SolverClientStates _State = SolverClientStates.WaitingPuzzle;
-		private PuzzleSetElement[] _PuzzleElements = new PuzzleSetElement[0];
-		private PuzzleSolution _PuzzleSolution;
+		SolverClientSession(InternalState state)
+		{
+			if(state == null)
+				throw new ArgumentNullException("state");
 
+			_Parameters = state.SolverParameters;
+			_Puzzle = new Puzzle(_Parameters.ServerKey, state.Puzzle);
+			_PuzzleSolution = state.PuzzleSolution;
+			_FakeIndexes = state.FakeIndexes;
+			_State = state.State;
+			if(_FakeIndexes != null)
+			{
+				_PuzzleElements = new PuzzleSetElement[_Parameters.GetTotalCount()];
+				int fakeI = 0, realI = 0;
+				for(int i = 0; i < _PuzzleElements.Length; i++)
+				{
+					PuzzleSetElement element = null;
+					var puzzle = new Puzzle(_Parameters.ServerKey, state.Puzzles[i]);
+
+					if(_FakeIndexes.Contains(i))
+					{
+						element = new FakePuzzle(puzzle, state.FakeSolutions[fakeI++]);
+					}
+					else
+					{
+						element = new RealPuzzle(puzzle, state.BlindFactors[realI++]);						
+					}
+					element.Index = i;
+					element.Commitment = state.Commitments[i];
+					_PuzzleElements[i] = element;
+				}
+			}
+		}
+
+		private InternalState GetInternalState()
+		{
+			InternalState state = new InternalState();
+			state.SolverParameters = Parameters;
+			state.Puzzle = Puzzle?.PuzzleValue;
+			state.State = State;
+			state.PuzzleSolution = _PuzzleSolution;
+			state.FakeIndexes = _FakeIndexes;
+			if(_PuzzleElements != null)
+			{
+				var indexes = new int[_PuzzleElements.Length];
+				var commitments = new ServerCommitment[_PuzzleElements.Length];
+				var puzzles = new PuzzleValue[_PuzzleElements.Length];
+				var fakeSolutions = new PuzzleSolution[Parameters.FakePuzzleCount];
+				var blinds = new BlindFactor[Parameters.RealPuzzleCount];
+				int fakeI = 0, realI = 0;
+				for(int i = 0; i < _PuzzleElements.Length; i++)
+				{
+					indexes[i] = _PuzzleElements[i].Index;
+					commitments[i] = _PuzzleElements[i].Commitment;
+					puzzles[i] = _PuzzleElements[i].Puzzle.PuzzleValue;
+					var fake = _PuzzleElements[i] as FakePuzzle;
+					if(fake != null)
+					{
+						fakeSolutions[fakeI++] = fake.Solution;
+					}
+
+					var real = _PuzzleElements[i] as RealPuzzle;
+					if(real != null)
+					{
+						blinds[realI++] = real.BlindFactor;
+					}
+				}
+				state.FakeSolutions = fakeSolutions;
+				state.BlindFactors = blinds;
+				state.Commitments = commitments;
+				state.Puzzles = puzzles;
+			}
+			return state;
+		}
+
+		class InternalState
+		{
+			public SolverParameters SolverParameters
+			{
+				get; set;
+			}
+			public PuzzleValue Puzzle
+			{
+				get; set;
+			}
+			[JsonProperty(ItemConverterType = typeof(StringEnumConverter))]
+			public SolverClientStates State
+			{
+				get; set;
+			}
+			public PuzzleSolution PuzzleSolution
+			{
+				get; set;
+			}
+
+			public PuzzleValue[] Puzzles
+			{
+				get; set;
+			}
+			public ServerCommitment[] Commitments
+			{
+				get; set;
+			}			
+			public int[] FakeIndexes
+			{
+				get; set;
+			}
+			public PuzzleSolution[] FakeSolutions
+			{
+				get;
+				set;
+			}
+			public BlindFactor[] BlindFactors
+			{
+				get;
+				set;
+			}
+		}
 
 		public static SolverClientSession ReadFrom(byte[] bytes)
 		{
@@ -57,75 +179,29 @@ namespace NTumbleBit.PuzzleSolver
 			var ms = new MemoryStream(bytes);
 			return ReadFrom(ms);
 		}
-		public static SolverClientSession ReadFrom(Stream stream)
+		public static SolverClientSession ReadFrom(Stream stream, RsaKey privateKey = null)
 		{
 			if(stream == null)
 				throw new ArgumentNullException("stream");
-			var seria = new SolverSerializer(new SolverParameters(), stream);
-			var parameters = seria.ReadParameters();
-			seria = new SolverSerializer(parameters, stream);
-			var client = new SolverClientSession(parameters);
-			client._Puzzle = new Puzzle(parameters.ServerKey, seria.ReadPuzzle());
-			client._State = (SolverClientStates)seria.ReadUInt();
-			int length = (int)seria.ReadUInt();
-			client._PuzzleElements = new PuzzleSetElement[length];
-			for(int i = 0; i < length; i++)
-			{
-				var isFake = seria.Inner.ReadByte() == 0;
-				var index = (int)seria.ReadUInt();
-				var puzzle = new Puzzle(parameters.ServerKey, seria.ReadPuzzle());
-				ServerCommitment commitment = null;
-				if(seria.Inner.ReadByte() != 0)
-				{
-					commitment = seria.ReadCommitment();
-				}
-				if(isFake)
-				{
-					var solution = seria.ReadPuzzleSolution();
-					client._PuzzleElements[i] = new FakePuzzle(puzzle, solution);
-				}
-				else
-				{
-					var blindFactor = seria.ReadBlindFactor();
-					client._PuzzleElements[i] = new RealPuzzle(puzzle, blindFactor);
-				}
-				client._PuzzleElements[i].Index = index;
-				client._PuzzleElements[i].Commitment = commitment;
-				client._PuzzleElements[i].Puzzle = puzzle;
-			}
-			if(client._State == SolverClientStates.Completed)
-				client._PuzzleSolution = seria.ReadPuzzleSolution();
-			return client;
-		}
 
+			var text = new StreamReader(stream, Encoding.UTF8).ReadToEnd();
+			JsonSerializerSettings settings = new JsonSerializerSettings();
+			Serializer.RegisterFrontConverters(settings);
+			var state = JsonConvert.DeserializeObject<InternalState>(text, settings);
+			return new SolverClientSession(state);
+		}
 		public void WriteTo(Stream stream)
 		{
 			if(stream == null)
 				throw new ArgumentNullException("stream");
-			var seria = new SolverSerializer(_Parameters, stream);
-			seria.WriteParameters();
-			seria.WritePuzzle(_Puzzle.PuzzleValue);
-			seria.WriteUInt((uint)_State);
-			seria.WriteUInt((uint)_PuzzleElements.Length);
-			foreach(var el in _PuzzleElements)
-			{
-				var fake = el as FakePuzzle;
-				seria.Inner.WriteByte((byte)(fake != null ? 0 : 1));
-				WritePuzzleBase(seria, el);
-				if(fake != null)
-				{
-					seria.WritePuzzleSolution(fake.Solution);
-				}
-
-				var real = el as RealPuzzle;
-				if(real != null)
-				{
-					seria.WriteBlindFactor(real.BlindFactor);
-				}
-			}
-			if(_State == SolverClientStates.Completed)
-				seria.WritePuzzleSolution(_PuzzleSolution);
+			var writer = new StreamWriter(stream, Encoding.UTF8);
+			JsonSerializerSettings settings = new JsonSerializerSettings();
+			Serializer.RegisterFrontConverters(settings);
+			var result = JsonConvert.SerializeObject(this.GetInternalState(), settings);
+			writer.Write(result);
+			writer.Flush();
 		}
+
 		public byte[] ToBytes()
 		{
 			MemoryStream ms = new MemoryStream();
@@ -146,6 +222,7 @@ namespace NTumbleBit.PuzzleSolver
 				seria.WriteCommitment(el.Commitment);
 			}
 		}
+
 
 		public SolverParameters Parameters
 		{
@@ -202,9 +279,13 @@ namespace NTumbleBit.PuzzleSolver
 
 			_PuzzleElements = puzzles.ToArray();
 			NBitcoin.Utils.Shuffle(_PuzzleElements, RandomUtils.GetInt32());
+			_FakeIndexes = new int[Parameters.FakePuzzleCount];
+			int fakeI = 0;
 			for(int i = 0; i < _PuzzleElements.Length; i++)
 			{
 				_PuzzleElements[i].Index = i;
+				if(_PuzzleElements[i] is FakePuzzle)
+					_FakeIndexes[fakeI++] = i;
 			}
 			_State = SolverClientStates.WaitingCommitments;
 			_Puzzle = paymentPuzzle;
@@ -233,7 +314,7 @@ namespace NTumbleBit.PuzzleSolver
 				_PuzzleElements[i].Commitment = commitments[i];
 			}
 			_State = SolverClientStates.WaitingFakeCommitmentsProof;
-			return new ClientRevelation(indexes.ToArray(), solutions.ToArray());
+			return new ClientRevelation(_FakeIndexes, solutions.ToArray());
 		}
 
 		public BlindFactor[] GetBlindFactors(SolutionKey[] keys)

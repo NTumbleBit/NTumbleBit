@@ -5,11 +5,7 @@ using NTumbleBit.JsonConverters;
 using NTumbleBit.PuzzleSolver;
 using NTumbleBit.JsonConverters;
 
-#if !CLIENT
-namespace NTumbleBit.TumblerServer
-#else
-namespace NTumbleBit.Client
-#endif
+namespace NTumbleBit
 {
 	public class Serializer
 	{
@@ -19,6 +15,7 @@ namespace NTumbleBit.Client
 			settings.Converters.Add(new RsaKeyJsonConverter());
 			settings.Converters.Add(new MoneyJsonConverter());
 			settings.Converters.Add(new SerializerBaseJsonConverter());
+			settings.Converters.Add(new SolverSerializerJsonConverter());
 			//settings.Converters.Add(new CoinJsonConverter(network));
 			//settings.Converters.Add(new ScriptJsonConverter());
 			settings.Converters.Add(new UInt160JsonConverter());

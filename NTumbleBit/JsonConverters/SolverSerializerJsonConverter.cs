@@ -7,26 +7,22 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-#if !CLIENT
-namespace NTumbleBit.TumblerServer.JsonConverters
-#else
-namespace NTumbleBit.Client.Tumbler.JsonConverters
-#endif
+namespace NTumbleBit.JsonConverters
 {
-	public class PuzzleProtocolJsonConverter : JsonConverter
+	public class SolverSerializerJsonConverter : JsonConverter
 	{
-		public PuzzleProtocolJsonConverter()
+		public SolverSerializerJsonConverter()
 		{
-			Support<PuzzleValue>((a, b) => a.WritePuzzle(b), a => a.ReadPuzzle());
-			Support<PuzzleSolution>((a, b) => a.WritePuzzleSolution(b), a => a.ReadPuzzleSolution());
-
+			Support<ServerCommitment>((a, b) => a.WriteCommitment(b), a => a.ReadCommitment());
+			Support<SolutionKey>((a, b) => a.WritePuzzleSolutionKey(b), a => a.ReadPuzzleSolutionKey());
+			Support<BlindFactor>((a, b) => a.WriteBlindFactor(b), a => a.ReadBlindFactor());
 		}
 
-		Dictionary<Type, Tuple<Action<SerializerBase, object>, Func<SerializerBase, object>>> _Supports = new Dictionary<Type, Tuple<Action<SerializerBase, object>, Func<SerializerBase, object>>>();
+		Dictionary<Type, Tuple<Action<SolverSerializer, object>, Func<SolverSerializer, object>>> _Supports = new Dictionary<Type, Tuple<Action<SolverSerializer, object>, Func<SolverSerializer, object>>>();
 
-		public void Support<T>(Action<SerializerBase, T> serialize, Func<SerializerBase, T> deserialize)
+		public void Support<T>(Action<SolverSerializer, T> serialize, Func<SolverSerializer, T> deserialize)
 		{
-			_Supports.Add(typeof(T), Tuple.Create<Action<SerializerBase, object>, Func<SerializerBase, object>>((a, b) => serialize(a, (T)b), a => deserialize(a)));
+			_Supports.Add(typeof(T), Tuple.Create<Action<SolverSerializer, object>, Func<SolverSerializer, object>>((a, b) => serialize(a, (T)b), a => deserialize(a)));
 		}		
 
 
@@ -56,9 +52,9 @@ namespace NTumbleBit.Client.Tumbler.JsonConverters
 			throw new JsonObjectException("Invalid rsa object of type " + objectType.Name, reader);
 		}
 
-		private SerializerBase CreateSolverSerializer(JsonReader reader)
+		private SolverSerializer CreateSolverSerializer(JsonReader reader)
 		{
-			return new SerializerBase(new MemoryStream(Encoders.Hex.DecodeData((string)reader.Value)));
+			return new SolverSerializer(new MemoryStream(Encoders.Hex.DecodeData((string)reader.Value)));
 		}
 
 		public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
@@ -67,7 +63,7 @@ namespace NTumbleBit.Client.Tumbler.JsonConverters
 			{
 				var write = _Supports[value.GetType()];
 				var ms = new MemoryStream();
-				var seria = new SerializerBase(ms);
+				var seria = new SolverSerializer(ms);
 				write.Item1(seria, value);
 				writer.WriteValue(Encoders.Hex.EncodeData(ms.ToArray()));
 			}

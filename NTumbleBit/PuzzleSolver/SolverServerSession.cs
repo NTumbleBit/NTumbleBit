@@ -7,6 +7,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using Newtonsoft.Json.Converters;
+using Newtonsoft.Json;
 
 namespace NTumbleBit.PuzzleSolver
 {
@@ -21,6 +23,10 @@ namespace NTumbleBit.PuzzleSolver
 	{
 		class SolvedPuzzle
 		{
+			public SolvedPuzzle()
+			{
+
+			}
 			public SolvedPuzzle(Puzzle puzzle, SolutionKey key, PuzzleSolution solution)
 			{
 				Puzzle = puzzle;
@@ -41,6 +47,31 @@ namespace NTumbleBit.PuzzleSolver
 				get; set;
 			}
 		}
+
+		class InternalState
+		{
+			public SolverParameters Parameters
+			{
+				get; set;
+			}
+			public RsaKey ServerKey
+			{
+				get; set;
+			}
+			[JsonProperty(ItemConverterType = typeof(StringEnumConverter))]
+			public SolverServerStates State
+			{
+				get; set;
+			}
+
+			public SolvedPuzzle[] SolvedPuzzles
+			{
+				get; set;
+			}
+		}
+
+		InternalState _InternalState = new InternalState();
+
 		public SolverServerSession(RsaKey serverKey) : this(serverKey, null)
 		{
 		}
@@ -52,14 +83,16 @@ namespace NTumbleBit.PuzzleSolver
 				throw new ArgumentNullException("serverKey");
 			if(serverKey.PubKey != parameters.ServerKey)
 				throw new ArgumentNullException("Private key not matching expected public key");
-			_ServerKey = serverKey;
-			_Parameters = parameters;
+			_InternalState.ServerKey = serverKey;
+			_InternalState.Parameters = parameters;
 		}
 
-		private readonly SolverParameters _Parameters;
-		private readonly RsaKey _ServerKey;
-		private SolverServerStates _State = SolverServerStates.WaitingPuzzles;
-		private SolvedPuzzle[] _SolvedPuzzles = new SolvedPuzzle[0];
+		SolverServerSession(InternalState state)
+		{
+			if(state == null)
+				throw new ArgumentNullException("state");
+			_InternalState = state;
+		}		
 
 		public static SolverServerSession ReadFrom(byte[] bytes, RsaKey privateKey = null)
 		{
@@ -72,42 +105,23 @@ namespace NTumbleBit.PuzzleSolver
 		{
 			if(stream == null)
 				throw new ArgumentNullException("stream");
-			var seria = new SolverSerializer(new SolverParameters(), stream);
-			var parameters = seria.ReadParameters();
-			seria = new SolverSerializer(parameters, stream);
-			var key = seria.ReadBytes(-1, 10 * 1024);
-			if(key.Length == 0 && privateKey == null)
-				throw new ArgumentException("You should provide a private key");
-			privateKey = privateKey ?? new RsaKey(key);
-			parameters.ServerKey = privateKey.PubKey;
-			SolverServerSession session = new SolverServerSession(privateKey, parameters);
-			session._State = (SolverServerStates)seria.ReadUInt();
-			var solvedPuzzleCount = (int)seria.ReadUInt();
-			session._SolvedPuzzles = new SolvedPuzzle[solvedPuzzleCount];
-			for(int i = 0; i < solvedPuzzleCount; i++)
-			{
-				var v = seria.ReadPuzzle();
-				var solutionKey = new SolutionKey(seria.ReadBytes(SolutionKey.KeySize));
-				var solution = new PuzzleSolution(seria.ReadBigInteger(seria.GetKeySize()));
-				session._SolvedPuzzles[i] = new SolvedPuzzle(new Puzzle(parameters.ServerKey, v), solutionKey, solution);
-			}
-			return session;
+
+			var text = new StreamReader(stream, Encoding.UTF8).ReadToEnd();
+			JsonSerializerSettings settings = new JsonSerializerSettings();
+			Serializer.RegisterFrontConverters(settings);
+			var state = JsonConvert.DeserializeObject<InternalState>(text, settings);
+			return new SolverServerSession(state);
 		}
 		public void WriteTo(Stream stream, bool includePrivateKey)
 		{
 			if(stream == null)
 				throw new ArgumentNullException("stream");
-			var seria = new SolverSerializer(Parameters, stream);
-			seria.WriteParameters();
-			seria.WriteBytes(includePrivateKey ? ServerKey.ToBytes(): new byte[0], false);
-			seria.WriteUInt((uint)_State);
-			seria.WriteUInt(_SolvedPuzzles.Length);
-			foreach(var solvedPuzzle in _SolvedPuzzles)
-			{
-				seria.WritePuzzle(solvedPuzzle.Puzzle.PuzzleValue);
-				seria.WriteBytes(solvedPuzzle.SolutionKey.ToBytes(true), true);
-				seria.WriteBigInteger(solvedPuzzle.Solution._Value, seria.GetKeySize());
-			}
+			var writer = new StreamWriter(stream, Encoding.UTF8);
+			JsonSerializerSettings settings = new JsonSerializerSettings();
+			Serializer.RegisterFrontConverters(settings);
+			var result = JsonConvert.SerializeObject(this._InternalState, settings);
+			writer.Write(result);
+			writer.Flush();
 		}
 		public byte[] ToBytes(bool includePrivateKey)
 		{
@@ -121,7 +135,7 @@ namespace NTumbleBit.PuzzleSolver
 		{
 			get
 			{
-				return _Parameters;
+				return _InternalState.Parameters;
 			}
 		}
 		
@@ -129,7 +143,7 @@ namespace NTumbleBit.PuzzleSolver
 		{
 			get
 			{
-				return _State;
+				return _InternalState.State;
 			}
 		}
 
@@ -138,7 +152,7 @@ namespace NTumbleBit.PuzzleSolver
 		{
 			get
 			{
-				return _ServerKey;
+				return _InternalState.ServerKey;
 			}
 		}	
 
@@ -161,8 +175,8 @@ namespace NTumbleBit.PuzzleSolver
 				commitments.Add(new ServerCommitment(keyHash, encryptedSolution));
 				solvedPuzzles.Add(new SolvedPuzzle(new Puzzle(ServerKey.PubKey, puzzle), solutionKey, solution));
 			}
-			_SolvedPuzzles = solvedPuzzles.ToArray();
-			_State = SolverServerStates.WaitingRevelation;
+			_InternalState.SolvedPuzzles = solvedPuzzles.ToArray();
+			_InternalState.State = SolverServerStates.WaitingRevelation;
 			return commitments.ToArray();
 		}
 
@@ -170,7 +184,7 @@ namespace NTumbleBit.PuzzleSolver
 		{
 			if(revelation == null)
 				throw new ArgumentNullException("puzzleSolutions");
-			if(revelation.Indexes.Length != Parameters.FakePuzzleCount || revelation.Solutions.Length != Parameters.FakePuzzleCount)
+			if(revelation.FakeIndexes.Length != Parameters.FakePuzzleCount || revelation.Solutions.Length != Parameters.FakePuzzleCount)
 				throw new ArgumentException("Expecting " + Parameters.FakePuzzleCount + " puzzle solutions");
 			AssertState(SolverServerStates.WaitingRevelation);
 
@@ -179,8 +193,8 @@ namespace NTumbleBit.PuzzleSolver
 			List<SolvedPuzzle> fakePuzzles = new List<SolvedPuzzle>();
 			for(int i = 0; i < Parameters.FakePuzzleCount; i++)
 			{
-				var index = revelation.Indexes[i];
-				var solvedPuzzle = _SolvedPuzzles[index];
+				var index = revelation.FakeIndexes[i];
+				var solvedPuzzle = _InternalState.SolvedPuzzles[index];
 				if(solvedPuzzle.Solution != revelation.Solutions[i])
 				{
 					throw new PuzzleException("Incorrect puzzle solution");
@@ -191,13 +205,13 @@ namespace NTumbleBit.PuzzleSolver
 			List<SolvedPuzzle> realPuzzles = new List<SolvedPuzzle>();
 			for(int i = 0; i < Parameters.GetTotalCount(); i++)
 			{
-				if(Array.IndexOf(revelation.Indexes, i) == -1)
+				if(Array.IndexOf(revelation.FakeIndexes, i) == -1)
 				{
-					realPuzzles.Add(_SolvedPuzzles[i]);
+					realPuzzles.Add(_InternalState.SolvedPuzzles[i]);
 				}
-			}						
-			_SolvedPuzzles = realPuzzles.ToArray();
-			_State = SolverServerStates.WaitingBlindFactor;
+			}
+			_InternalState.SolvedPuzzles = realPuzzles.ToArray();
+			_InternalState.State = SolverServerStates.WaitingBlindFactor;
 			return fakePuzzles.Select(f => f.SolutionKey).ToArray();
 		}
 
@@ -213,7 +227,7 @@ namespace NTumbleBit.PuzzleSolver
 			int y = 0;
 			for(int i = 0; i < Parameters.RealPuzzleCount; i++)
 			{
-				var solvedPuzzle = _SolvedPuzzles[i];
+				var solvedPuzzle = _InternalState.SolvedPuzzles[i];
 				var unblinded = solvedPuzzle.Puzzle.Unblind(blindFactors[i]);
 				if(unblindedPuzzle == null)
 					unblindedPuzzle = unblinded;
@@ -221,13 +235,13 @@ namespace NTumbleBit.PuzzleSolver
 					throw new PuzzleException("Invalid blind factor");
 				y++;
 			}
-			_State = SolverServerStates.Completed;
+			_InternalState.State = SolverServerStates.Completed;
 		}
 
 		public SolutionKey[] GetSolutionKeys()
 		{
 			AssertState(SolverServerStates.Completed);
-			return _SolvedPuzzles.Select(s => s.SolutionKey).ToArray();
+			return _InternalState.SolvedPuzzles.Select(s => s.SolutionKey).ToArray();
 		}
 
 		public Script GetFulfillScript(PaymentCashoutContext escrowContext, TransactionSignature cashoutSignature)
@@ -241,8 +255,8 @@ namespace NTumbleBit.PuzzleSolver
 
 		private void AssertState(SolverServerStates state)
 		{
-			if(state != _State)
-				throw new InvalidOperationException("Invalid state, actual " + _State + " while expected is " + state);
+			if(state != _InternalState.State)
+				throw new InvalidOperationException("Invalid state, actual " + _InternalState.State + " while expected is " + state);
 		}		
 	}
 }

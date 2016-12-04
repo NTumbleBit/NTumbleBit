@@ -5,13 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-#if !CLIENT
-namespace NTumbleBit.TumblerServer.JsonConverters
-#else
-namespace NTumbleBit.Client.Tumbler.JsonConverters
-#endif
+namespace NTumbleBit.JsonConverters
 {
-	class JsonObjectException : Exception
+	public class JsonObjectException : Exception
     {
         public JsonObjectException(Exception inner, JsonReader reader)
             : base(inner.Message, inner)

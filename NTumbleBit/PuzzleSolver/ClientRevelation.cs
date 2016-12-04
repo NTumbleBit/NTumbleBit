@@ -8,12 +8,17 @@ namespace NTumbleBit.PuzzleSolver
 {
 	public class ClientRevelation
 	{
-		public ClientRevelation(int[] indexes, PuzzleSolution[] solutions)
+		public ClientRevelation()
 		{
-			Indexes = indexes;
+
+		}
+		public ClientRevelation(int[] fakeIndexes, PuzzleSolution[] solutions)
+		{
+			FakeIndexes = fakeIndexes;
 			Solutions = solutions;
 		}
-		public int[] Indexes
+
+		public int[] FakeIndexes
 		{
 			get; set;
 		}

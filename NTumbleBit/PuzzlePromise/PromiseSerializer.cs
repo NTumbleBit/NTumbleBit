@@ -9,7 +9,7 @@ namespace NTumbleBit.PuzzlePromise
 {
 	public class PromiseSerializer : SerializerBase
 	{
-		public PromiseSerializer(PromiseParameters parameters, Stream inner) : base(inner, parameters?.ServerKey?._Key)
+		public PromiseSerializer(PromiseParameters parameters, Stream inner) : base(inner)
 		{
 			if(inner == null)
 				throw new ArgumentNullException("inner");
@@ -60,7 +60,7 @@ namespace NTumbleBit.PuzzlePromise
 
 		public void WriteQuotient(Quotient q)
 		{
-			WriteBigInteger(q._Value, GetKeySize());
+			WriteBigInteger(q._Value, KeySize);
 		}
 
 		public Quotient[] ReadQuotients()
@@ -75,7 +75,7 @@ namespace NTumbleBit.PuzzlePromise
 
 		public Quotient ReadQuotient()
 		{
-			return new Quotient(ReadBigInteger(GetKeySize()));
+			return new Quotient(ReadBigInteger(KeySize));
 		}
 
 		public void WriteSignaturesRequest(SignaturesRequest signatureRequest)
