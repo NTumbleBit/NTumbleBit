@@ -1,4 +1,5 @@
 ﻿using NBitcoin.DataEncoders;
+using NBitcoin.JsonConverters;
 using Newtonsoft.Json;
 using NTumbleBit.PuzzlePromise;
 using NTumbleBit.PuzzleSolver;

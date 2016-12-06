@@ -12,29 +12,10 @@ namespace NTumbleBit
 	{
 		public static void RegisterFrontConverters(JsonSerializerSettings settings, Network network = null)
 		{
-			settings.Converters.Add(new BitcoinSerializableJsonConverter());
 			settings.Converters.Add(new RsaKeyJsonConverter());
-			settings.Converters.Add(new MoneyJsonConverter());
 			settings.Converters.Add(new SerializerBaseJsonConverter());
-			settings.Converters.Add(new LockTimeJsonConverter());
 			settings.Converters.Add(new StringEnumConverter());
-			settings.Converters.Add(new CoinJsonConverter(network));
-			settings.Converters.Add(new LockTimeJsonConverter());
-			settings.Converters.Add(new ScriptJsonConverter());
-			settings.Converters.Add(new UInt160JsonConverter());
-			settings.Converters.Add(new UInt256JsonConverter());
-			settings.Converters.Add(new ECDSASignatureJsonConverter());
-			
-			//settings.Converters.Add(new NetworkJsonConverter());
-			//settings.Converters.Add(new KeyPathJsonConverter());
-			//settings.Converters.Add(new Base58DataJsonConverter()
-			//{
-			//	Network = network
-			//});
-#if !CLIENT
-			//settings.Converters.Add(new BalanceLocatorJsonConverter());
-#endif
-			settings.ContractResolver = new CamelCasePropertyNamesContractResolver();
+			NBitcoin.JsonConverters.Serializer.RegisterFrontConverters(settings, network);
 		}
 
 		public static T ToObject<T>(string data)

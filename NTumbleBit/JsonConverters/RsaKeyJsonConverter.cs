@@ -1,5 +1,6 @@
 ﻿using NBitcoin;
 using NBitcoin.DataEncoders;
+using NBitcoin.JsonConverters;
 using Newtonsoft.Json;
 using NTumbleBit.JsonConverters;
 using System;

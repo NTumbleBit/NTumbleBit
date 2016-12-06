@@ -2,6 +2,7 @@
     "version": "1.0.0-*",
 
     "dependencies": {
+        "NBitcoin": "3.0.0.79",
         "NETStandard.Library": "1.6.0",
         "NTumbleBit": "1.0.0-*"
     },
