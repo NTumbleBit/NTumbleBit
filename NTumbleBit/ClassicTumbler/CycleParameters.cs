@@ -79,20 +79,25 @@ namespace NTumbleBit.ClassicTumbler
 
 		public bool IsInPhase(CyclePhase phase, int blockHeight)
 		{
+			return GetPeriod(phase).IsInPeriod(blockHeight);
+		}
+
+		public CyclePeriod GetPeriod(CyclePhase phase)
+		{
 			switch(phase)
 			{
 				case CyclePhase.Registration:
-					return Registration.IsInPeriod(blockHeight);
+					return Registration;
 				case CyclePhase.ClientChannelEstablishment:
-					return ClientChannelEstablishment.IsInPeriod(blockHeight);
+					return ClientChannelEstablishment;
 				case CyclePhase.TumblerChannelEstablishment:
-					return TumblerChannelEstablishment.IsInPeriod(blockHeight);
+					return TumblerChannelEstablishment;
 				case CyclePhase.TumblerCashoutPhase:
-					return TumblerCashout.IsInPeriod(blockHeight);
+					return TumblerCashout;
 				case CyclePhase.PaymentPhase:
-					return Payment.IsInPeriod(blockHeight);
+					return Payment;
 				case CyclePhase.ClientCashoutPhase:
-					return ClientCashout.IsInPeriod(blockHeight);
+					return ClientCashout;
 				default:
 					throw new NotSupportedException();
 			}

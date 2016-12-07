@@ -10,9 +10,9 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit
 {
-	internal static class Utils
+	public static class Utils
 	{
-		public static byte[] ChachaEncrypt(byte[] data, ref byte[] key)
+		internal static byte[] ChachaEncrypt(byte[] data, ref byte[] key)
 		{
 			byte[] iv = null;
 			return ChachaEncrypt(data, ref key, ref iv);
@@ -30,7 +30,7 @@ namespace NTumbleBit
 			}
 			return combined;
 		}
-		public static byte[] ChachaEncrypt(byte[] data, ref byte[] key, ref byte[] iv)
+		internal static byte[] ChachaEncrypt(byte[] data, ref byte[] key, ref byte[] iv)
 		{
 			ChaChaEngine engine = new ChaChaEngine();
 			key = key ?? RandomUtils.GetBytes(ChachaKeySize);
@@ -42,8 +42,8 @@ namespace NTumbleBit
 			return result;
 		}
 
-		public const int ChachaKeySize = 128 / 8;
-		public static byte[] ChachaDecrypt(byte[] encrypted, byte[] key)
+		internal const int ChachaKeySize = 128 / 8;
+		internal static byte[] ChachaDecrypt(byte[] encrypted, byte[] key)
 		{
 			ChaChaEngine engine = new ChaChaEngine();
 			var iv = new byte[ChachaKeySize / 2];

@@ -11,6 +11,8 @@ using NBitcoin;
 using System.Diagnostics;
 using NBitcoin.RPC;
 using NTumbleBit.ClassicTumbler;
+using NTumbleBit.TumblerServer.Services;
+using NTumbleBit.TumblerServer.Services.RPCServices;
 
 namespace NTumbleBit.TumblerServer
 {
@@ -20,11 +22,25 @@ namespace NTumbleBit.TumblerServer
 		{
 			builder.ConfigureServices(services =>
 			{
-				services.AddSingleton<ClassicTumblerParameters>((provider) =>
+				services.AddSingleton<ServerServices>((provider) =>
 				{
 					var conf = provider.GetRequiredService<TumblerConfiguration>();
-					return new ClassicTumblerParameters(conf.TumblerKey.PubKey, conf.VoucherKey.PubKey);
+					return new ServerServices()
+					{
+						BroadcastService = new RPCBroadcastService(conf.RPCClient),
+						FeeService = new RPCFeeService(conf.RPCClient),
+						WalletService = new RPCWalletService(conf.RPCClient),
+						BlockExplorerService = new RPCBlockExplorerService(conf.RPCClient),
+					};
 				});
+				services.AddSingleton<ClassicTumblerParameters>((provider) =>
+			{
+				var conf = provider.GetRequiredService<TumblerConfiguration>();
+				return new ClassicTumblerParameters(conf.TumblerKey.PubKey, conf.VoucherKey.PubKey)
+				{
+					CycleGenerator = conf.CycleGenerator
+				};
+			});
 				services.AddSingleton<TumblerConfiguration>((provider) =>
 			{
 				var conf = configuration ?? new TumblerConfiguration();
@@ -87,7 +103,7 @@ namespace NTumbleBit.TumblerServer
 
 				Debug.Assert(conf.Seed != null);
 				Debug.Assert(conf.TumblerKey != null);
-				Debug.Assert(conf.VoucherKey != null);				
+				Debug.Assert(conf.VoucherKey != null);
 
 				logger.LogInformation("Testing RPC connection to " + conf.RPCClient.Address.AbsoluteUri);
 				try

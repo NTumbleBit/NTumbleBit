@@ -1,5 +1,4 @@
-﻿using NBitcoin;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -10,20 +9,13 @@ namespace NTumbleBit.TumblerServer.Models
 namespace NTumbleBit.Client.Tumbler.Models
 #endif
 {
-	public class ChannelToTumblerRequest
+	public class AskVoucherResponse
     {
-		public PubKey EscrowKey
+		public int Cycle
 		{
 			get; set;
 		}
-		public PubKey RedeemKey
-		{
-			get; set;
-		}
-	}
-	public class ChannelToTumblerResponse
-	{
-		public PubKey EscrowKey
+		public PuzzleValue UnsignedVoucher
 		{
 			get; set;
 		}

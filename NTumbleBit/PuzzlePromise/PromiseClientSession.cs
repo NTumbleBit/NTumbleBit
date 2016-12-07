@@ -405,7 +405,7 @@ namespace NTumbleBit.PuzzlePromise
 			signature = null;
 			try
 			{
-				var key = new SignatureKey(solution._Value);
+				var key = new XORKey(solution);
 				signature = new ECDSASignature(key.XOR(hash.Commitment.Promise));
 				foreach(var sig in GetExpectedSigners())
 				{

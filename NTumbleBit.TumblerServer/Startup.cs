@@ -16,6 +16,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using NBitcoin.RPC;
 using NTumbleBit.ClassicTumbler;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 
 namespace NTumbleBit.TumblerServer
 {
@@ -25,6 +26,7 @@ namespace NTumbleBit.TumblerServer
 		// For more information on how to configure your application, visit http://go.microsoft.com/fwlink/?LinkID=398940
 		public void ConfigureServices(IServiceCollection services)
 		{
+			services.AddSingleton<IObjectModelValidator, NoObjectModelValidator>();
 			services.AddMvcCore()
 				.AddJsonFormatters()
 				.AddFormatterMappings();
@@ -56,7 +58,6 @@ namespace NTumbleBit.TumblerServer
 			var config = serviceProvider.GetService<TumblerConfiguration>();
 			var options = GetMVCOptions(serviceProvider);
 			Serializer.RegisterFrontConverters(options.SerializerSettings, config.Network);
-
 		}
 
 		public IConfiguration Configuration
@@ -67,6 +68,14 @@ namespace NTumbleBit.TumblerServer
 		private static MvcJsonOptions GetMVCOptions(IServiceProvider serviceProvider)
 		{
 			return serviceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<MvcJsonOptions>>().Value;
+		}
+	}
+
+	class NoObjectModelValidator : IObjectModelValidator
+	{
+		public void Validate(ActionContext actionContext, ValidationStateDictionary validationState, string prefix, object model)
+		{
+			
 		}
 	}
 }

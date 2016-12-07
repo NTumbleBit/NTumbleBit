@@ -1,4 +1,5 @@
-﻿using NTumbleBit.BouncyCastle.Math;
+﻿using NBitcoin.DataEncoders;
+using NTumbleBit.BouncyCastle.Math;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -63,6 +64,11 @@ namespace NTumbleBit
 			if(blind == null)
 				throw new ArgumentNullException("blind");
 			return new PuzzleSolution(rsaPubKey.Unblind(_Value, blind));
+		}
+
+		public override string ToString()
+		{
+			return Encoders.Hex.EncodeData(ToBytes());
 		}
 	}
 }

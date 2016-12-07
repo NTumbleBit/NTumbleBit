@@ -1,22 +1,20 @@
-﻿using System;
+﻿using NBitcoin;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using NBitcoin;
 
 namespace NTumbleBit.ClassicTumbler
 {
-	public class TumblerEscrowInformation
-	{
+    public class BobEscrowInformation
+    {
 		public PubKey EscrowKey
 		{
-			get;
-			set;
+			get; set;
 		}
-		public PubKey RedeemKey
+		public PuzzleSolution SignedVoucher
 		{
-			get;
-			set;
+			get; set;
 		}
 	}
 }

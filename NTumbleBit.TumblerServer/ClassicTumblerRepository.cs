@@ -3,20 +3,33 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using NTumbleBit.ClassicTumbler;
+using NBitcoin;
 
 namespace NTumbleBit.TumblerServer
 {
 	public class ClassicTumblerRepository
 	{
-		
-		public int GetCurrentBlockHeight()
+		static Dictionary<string, TumblerBobServerSession> _BobSessions = new Dictionary<string, TumblerBobServerSession>();
+		static Dictionary<string, TumblerAliceServerSession> _AliceSessions = new Dictionary<string, TumblerAliceServerSession>();
+
+		public void Save(string sessionId, TumblerBobServerSession session)
 		{
-			return 0;
+			_BobSessions.Add(sessionId, session);
 		}
 
-		public void Save(TumblerBobServerSession session)
+		public TumblerBobServerSession GetBobSession(string sessionId)
 		{
-			
+			return _BobSessions.TryGet(sessionId);
+		}
+
+		public void Save(string sessionId, TumblerAliceServerSession session)
+		{
+			_AliceSessions.Add(sessionId, session);
+		}
+
+		public TumblerAliceServerSession GetAliceSession(string sessionId)
+		{
+			return _AliceSessions.TryGet(sessionId);
 		}
 	}
 }

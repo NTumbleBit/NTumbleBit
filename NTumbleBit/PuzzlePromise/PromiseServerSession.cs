@@ -185,7 +185,7 @@ namespace NTumbleBit.PuzzlePromise
 			{
 				var ecdsa = transactionKey.Sign(hash);
 				var ecdsaDER = ecdsa.ToDER();
-				var key = new SignatureKey(Utils.GenerateEncryptableInteger(Parameters.ServerKey._Key));
+				var key = new XORKey(Parameters.ServerKey);
 				var promise = key.XOR(ecdsaDER);
 				PuzzleSolution solution = new PuzzleSolution(key.ToBytes());
 				var puzzle = Parameters.ServerKey.GeneratePuzzle(ref solution);

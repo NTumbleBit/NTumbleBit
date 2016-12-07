@@ -7,9 +7,16 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit.PuzzlePromise
 {
-    public class SignatureKey
-    {
-		public SignatureKey(byte[] key)
+	public class XORKey
+	{
+		public XORKey(PuzzleSolution puzzleSolution) : this(puzzleSolution._Value)
+		{
+
+		}
+		public XORKey(RsaPubKey pubKey) : this(Utils.GenerateEncryptableInteger(pubKey._Key))
+		{
+		}
+		public XORKey(byte[] key)
 		{
 			if(key == null)
 				throw new ArgumentNullException("key");
@@ -18,7 +25,7 @@ namespace NTumbleBit.PuzzlePromise
 			_Value = new BigInteger(1, key);
 		}
 
-		internal SignatureKey(BigInteger value)
+		private XORKey(BigInteger value)
 		{
 			if(value == null)
 				throw new ArgumentNullException("value");
@@ -49,5 +56,5 @@ namespace NTumbleBit.PuzzlePromise
 			Utils.Pad(ref keyBytes, KeySize);
 			return keyBytes;
 		}
-    }
+	}
 }

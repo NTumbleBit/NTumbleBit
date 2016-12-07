@@ -60,14 +60,35 @@ namespace NTumbleBit.Client.Tumbler
 			return SendAsync<T>(HttpMethod.Get, null, relativePath, parameters);
 		}
 
-		public PuzzleValue AskUnsignedVoucher()
+		public AskVoucherResponse AskUnsignedVoucher()
 		{
 			return AskUnsignedVoucherAsync().GetAwaiter().GetResult();
 		}
 
-		public Task<PuzzleValue> AskUnsignedVoucherAsync()
+		public Task<AskVoucherResponse> AskUnsignedVoucherAsync()
 		{
-			return GetAsync<PuzzleValue>("api/v1/tumblers/0/askvoucher/");
+			return GetAsync<AskVoucherResponse>("api/v1/tumblers/0/vouchers/");
+		}
+
+		public Task<TumblerEscrowInformation> OpenChannelAsync(BobEscrowInformation request)
+		{
+			if(request == null)
+				throw new ArgumentNullException("request");
+			return SendAsync<TumblerEscrowInformation>(HttpMethod.Post, request, "api/v1/tumblers/0/channels/");
+		}
+
+		public TumblerEscrowInformation OpenChannel(BobEscrowInformation request)
+		{
+			return OpenChannelAsync(request).GetAwaiter().GetResult();
+		}
+
+		public Task<PubKey> RequestTumblerEscrowKeyAsync(ClientEscrowInformation clientEscrowInformation)
+		{
+			return SendAsync<PubKey>(HttpMethod.Post, clientEscrowInformation, "api/v1/tumblers/0/clientchannels/");
+		}
+		public PubKey RequestTumblerEscrowKey(ClientEscrowInformation clientEscrowInformation)
+		{
+			return RequestTumblerEscrowKeyAsync(clientEscrowInformation).GetAwaiter().GetResult();
 		}
 
 		private string GetFullUri(string relativePath, params object[] parameters)
@@ -117,6 +138,6 @@ namespace NTumbleBit.Client.Tumbler
 			if(typeof(T) == typeof(string))
 				return (T)(object)str;
 			return Serializer.ToObject<T>(str, Network);
-		}
+		}		
 	}
 }

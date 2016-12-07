@@ -35,5 +35,19 @@ namespace NTumbleBit.ClassicTumbler
 			cycle.Start += registrationLength * cycleCount;
 			return cycle;
 		}
+
+		public CycleParameters GetCycle(int startHeight)
+		{
+			if(startHeight < FirstCycle.Start)
+				throw new InvalidOperationException("cycle generation starts at " + FirstCycle.Start);
+
+			var periods = FirstCycle.GetPeriods();
+			var registrationLength = FirstCycle.RegistrationDuration - RegistrationOverlap;
+			if((startHeight - FirstCycle.Start) % registrationLength != 0)
+				throw new InvalidOperationException("Invalid cycle start height");
+			var result = FirstCycle.Clone();
+			result.Start = startHeight;
+			return result;
+		}
 	}
 }

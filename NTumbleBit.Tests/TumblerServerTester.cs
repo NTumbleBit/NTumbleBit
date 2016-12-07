@@ -52,16 +52,15 @@ namespace NTumbleBit.Tests
 			Directory.CreateDirectory(directory);
 			_NodeBuilder.StartAll();
 
-			_TumblerNode.Sync(_AliceNode, true);
-			_TumblerNode.Sync(_BobNode, true);
-			_BobNode.Sync(_AliceNode, true);
+			SyncNodes();
 
 			var rpc = _TumblerNode.CreateRPCClient();
 
 			var conf = new TumblerConfiguration();
 			conf.Network = Network.RegTest;
 			conf.RPCClient = rpc;
-			conf.CycleGenerator.FirstCycle.Start = 105;
+			conf.CycleGenerator.FirstCycle.Start = 105;		
+
 
 			_Host = new WebHostBuilder()
 				.UseKestrel()
@@ -72,6 +71,13 @@ namespace NTumbleBit.Tests
 				.Build();
 
 			_Host.Start();
+		}
+
+		public void SyncNodes()
+		{
+			_TumblerNode.Sync(_AliceNode, true);
+			_TumblerNode.Sync(_BobNode, true);
+			_BobNode.Sync(_AliceNode, true);
 		}
 
 		private static bool TryDelete(string directory, bool throws)

@@ -33,7 +33,14 @@ namespace NTumbleBit.ClassicTumbler
 			FakeFormat = promise.FakeFormat;
 
 			Denomination = Money.Coins(1.0m);
-			Fee = Money.Coins(0.01m);		
+			Fee = Money.Coins(0.01m);
+			CycleGenerator = new OverlappedCycleGenerator();
+		}
+
+		public OverlappedCycleGenerator CycleGenerator
+		{
+			get;
+			set;
 		}
 
 		public RsaPubKey ServerKey
