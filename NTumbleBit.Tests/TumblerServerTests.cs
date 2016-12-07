@@ -61,30 +61,40 @@ namespace NTumbleBit.Tests
 				/////////////////////////////</Registration>/////////////////////////
 
 
-				//Client waits until client establishment phase
+				//Client waits until client channel establishment phase
 				MineTo(server.AliceNode, cycle, CyclePhase.ClientChannelEstablishment);
 				server.SyncNodes();
 				///////////////
 
 				/////////////////////////////<ClientChannel>/////////////////////////
 				//Client asks the public key of the Tumbler and sends its own
-				var aliceEscrowInformation = clientSession.GenerateKeys();
+				var aliceEscrowInformation = clientSession.GenerateClientTransactionKeys();
 				var key = aliceClient.RequestTumblerEscrowKey(aliceEscrowInformation);
 				clientSession.ReceiveTumblerEscrowKey(key);
 				//Client create the escrow
 				var clientWallet = new RPCWalletService(bobRPC);
-				var txout = clientSession.BuildEscrowTxOut();
+				var txout = clientSession.BuildClientEscrowTxOut();
 				var clientEscrowTx = clientWallet.FundTransaction(txout, FeeRate);
 				bobRPC.SendRawTransaction(clientEscrowTx);
+				server.BobNode.FindBlock(2);
+				server.SyncNodes();
+				clientSession.SetClientSignedTransaction(clientEscrowTx);
+				//Server solves the puzzle
+				var voucher = aliceClient.SolveVoucher(clientEscrowTx.GetHash());
+				clientSession.CheckVoucherSolution(voucher);
 				/////////////////////////////</ClientChannel>/////////////////////////
 
-				//aliceClient.
+				//Client waits until tumbler channel establishment phase
+				MineTo(server.AliceNode, cycle, CyclePhase.TumblerChannelEstablishment);
+				server.SyncNodes();
+				///////////////
 
-				//var height = bobRPC.GetBlockCount();
-				//var phaseInfo = parameters.GetPhaseInformation(height);
-
-				//var clientSession = new TumblerClientSession(parameters, phaseInfo.Cycle);
-				//var voucher = client.AskUnsignedVoucher();
+				/////////////////////////////<TumblerChannel>/////////////////////////
+				//Client asks the Tumbler to make a channel
+				var bobEscrowInformation = clientSession.GenerateTumblerTransactionKey();
+				var tumblerInformation = bobClient.OpenChannel(bobEscrowInformation);
+				clientSession.ReceiveTumblerTumblerKeys(tumblerInformation);
+				/////////////////////////////</TumblerChannel>/////////////////////////				
 			}
 		}
 

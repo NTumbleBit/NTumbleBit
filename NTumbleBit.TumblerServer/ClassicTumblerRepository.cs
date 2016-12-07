@@ -14,7 +14,7 @@ namespace NTumbleBit.TumblerServer
 
 		public void Save(string sessionId, TumblerBobServerSession session)
 		{
-			_BobSessions.Add(sessionId, session);
+			_BobSessions.AddOrReplace(sessionId, session);
 		}
 
 		public TumblerBobServerSession GetBobSession(string sessionId)
@@ -24,7 +24,7 @@ namespace NTumbleBit.TumblerServer
 
 		public void Save(string sessionId, TumblerAliceServerSession session)
 		{
-			_AliceSessions.Add(sessionId, session);
+			_AliceSessions.AddOrReplace(sessionId, session);
 		}
 
 		public TumblerAliceServerSession GetAliceSession(string sessionId)

@@ -10,6 +10,7 @@ using NTumbleBit.TumblerServer.Models;
 using System.Net;
 using NBitcoin;
 using NTumbleBit.TumblerServer.Services;
+using NBitcoin.Crypto;
 
 // For more information on enabling Web API for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -84,7 +85,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 			var bobSession = new TumblerBobServerSession(Parameters, Tumbler.TumblerKey, Tumbler.VoucherKey, cycleParameters.Start);
 			PuzzleSolution solution = null;
 			var voucher = bobSession.GenerateUnsignedVoucher(ref solution);
-			Repository.Save(solution.ToString(), bobSession);
+			Repository.Save(GetKey(solution), bobSession);
 			return new AskVoucherResponse()
 			{
 				Cycle = cycleParameters.Start,
@@ -101,16 +102,50 @@ namespace NTumbleBit.TumblerServer.Controllers
 			var pubKey = aliceSession.ReceiveAliceEscrowInformation(request);
 			if(!aliceSession.GetCycle().IsInPhase(CyclePhase.ClientChannelEstablishment, height))
 				return BadRequest("incorrect-phase");
-
-			Repository.Save(request.UnsignedVoucher.ToString(), aliceSession);
+			Repository.Save(GetKey(aliceSession), aliceSession);
+			Services.BlockExplorerService.Track(aliceSession.BuildEscrowTxOut().ScriptPubKey);
 			return Json(pubKey);
 		}
 
+		private static string GetKey(TumblerAliceServerSession aliceSession)
+		{
+			return aliceSession.BuildEscrowTxOut().ScriptPubKey.ToHex();
+		}
+
+		[HttpPost("api/v1/tumblers/0/clientchannels/voucher")]
+		public IActionResult SolveVoucher([FromBody]uint256 txId)
+		{
+			var transaction = Services.BlockExplorerService.GetTransaction(txId);
+			if(transaction == null || 
+				(transaction.Confirmations < Parameters.CycleGenerator.FirstCycle.SafetyPeriodDuration))
+				return BadRequest("not-enough-confirmation");
+			if(transaction.Transaction.Outputs.Count > 2)
+				return BadRequest("invalid-transaction");
+
+			var sessions = transaction
+				.Transaction
+				.Outputs
+				.Select(o => Repository.GetAliceSession(o.ScriptPubKey.ToHex()))
+				.Where(o => o != null)
+				.ToList();
+			if(sessions.Count != 1)
+				return BadRequest("invalid-transaction");
+
+			var height = Services.BlockExplorerService.GetCurrentHeight();
+			if(!sessions[0].GetCycle().IsInPhase(CyclePhase.ClientChannelEstablishment, height))
+				return BadRequest("incorrect-phase");
+
+
+			var voucher = sessions[0].ConfirmAliceEscrow(transaction.Transaction);
+			Repository.Save(GetKey(sessions[0]), sessions[0]);
+			return Json(voucher);
+		}
+
 		[HttpPost("api/v1/tumblers/0/channels")]
-		public IActionResult OpenChannel(BobEscrowInformation request)
+		public IActionResult OpenChannel([FromBody] BobEscrowInformation request)
 		{
 			var height = Services.BlockExplorerService.GetCurrentHeight();
-			var session = Repository.GetBobSession(request.ToString());
+			var session = Repository.GetBobSession(GetKey(request.SignedVoucher));
 			if(session == null)
 				return NotFound("channel-not-found");
 			if(!session.GetCycle().IsInPhase(CyclePhase.TumblerChannelEstablishment, height))
@@ -118,17 +153,26 @@ namespace NTumbleBit.TumblerServer.Controllers
 			var fee = Services.FeeService.GetFeeRate();
 			try
 			{
-				var tumblerKeys = session.ReceiveBobEscrowInformation(request);
-				var tx = Services.WalletService.FundTransaction(session.BuildEscrowTxOut(), fee);
+				session.ReceiveBobEscrowInformation(request);
+				var txOut = session.BuildEscrowTxOut();
+				var tx = Services.WalletService.FundTransaction(txOut, fee);
 				if(tx == null)
 					return BadRequest("tumbler-insufficient-funds");
+				Services.BlockExplorerService.Track(txOut.ScriptPubKey);
 				Services.BroadcastService.Broadcast(tx);
-				return this.Json(tumblerKeys);
+				var escrowInfo = session.SetSignedTransaction(tx);
+				Repository.Save(GetKey(request.SignedVoucher), session);
+				return this.Json(escrowInfo);
 			}
 			catch(PuzzleException)
 			{
 				return BadRequest("incorrect-voucher");
 			}
+		}
+
+		private string GetKey(PuzzleSolution signedVoucher)
+		{
+			return Hashes.Hash160(signedVoucher.ToBytes()).ToString();
 		}
 	}
 }

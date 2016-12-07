@@ -18,5 +18,9 @@ namespace NTumbleBit.ClassicTumbler
 			get;
 			set;
 		}
+		public Transaction Transaction
+		{
+			get; set;
+		}
 	}
 }

@@ -104,12 +104,17 @@ namespace NTumbleBit.ClassicTumbler
 			{
 				OurEscrowKey = tumblerKey.PubKey,
 				OtherEscrowKey = escrowInformation.EscrowKey,
-				Redeem = escrowInformation.RedeemKey,
+				RedeemKey = escrowInformation.RedeemKey,
 				LockTime = cycle.GetClientLockTime()
 			};
 			InternalState.KnownKeys.Add(tumblerKey);
 			InternalState.UnsignedVoucher = escrowInformation.UnsignedVoucher;
 			return tumblerKey.PubKey;
+		}
+
+		public TxOut BuildEscrowTxOut()
+		{
+			return new TxOut(InternalState.Parameters.Denomination + InternalState.Parameters.Fee, InternalState.EscrowInformation.CreateEscrow().Hash);
 		}
 
 		public PuzzleSolution ConfirmAliceEscrow(Transaction transaction)
@@ -221,7 +226,7 @@ namespace NTumbleBit.ClassicTumbler
 		}
 
 
-		public TumblerEscrowInformation ReceiveBobEscrowInformation(BobEscrowInformation bobEscrowInformation)
+		public void ReceiveBobEscrowInformation(BobEscrowInformation bobEscrowInformation)
 		{
 			if(bobEscrowInformation == null)
 				throw new ArgumentNullException("bobKey");
@@ -236,17 +241,11 @@ namespace NTumbleBit.ClassicTumbler
 			InternalState.EscrowInformation = new EscrowInformation();
 			InternalState.EscrowInformation.OtherEscrowKey = bobEscrowInformation.EscrowKey;
 			InternalState.EscrowInformation.OurEscrowKey = escrow.PubKey;
-			InternalState.EscrowInformation.Redeem = redeem.PubKey;
+			InternalState.EscrowInformation.RedeemKey = redeem.PubKey;
 			InternalState.EscrowInformation.LockTime = InternalState.GetCycle().GetTumblerLockTime();
 			InternalState.VoucherHash = null;
 
 			InternalState.Status = TumblerBobStates.WaitingSignedTransaction;
-
-			return new TumblerEscrowInformation()
-			{
-				RedeemKey = redeem.PubKey,
-				EscrowKey = escrow.PubKey
-			};
 		}
 
 		public TxOut BuildEscrowTxOut()
@@ -256,13 +255,21 @@ namespace NTumbleBit.ClassicTumbler
 			return new TxOut(Parameters.Denomination, escrowScript.Hash);
 		}
 
-		public ScriptCoin SetSignedTransaction(Transaction transaction)
+		public TumblerEscrowInformation SetSignedTransaction(Transaction transaction)
 		{
 			AssertState(TumblerBobStates.WaitingSignedTransaction);
-			var escrow = InternalState.EscrowInformation.CreateEscrow();
-			var output = transaction.Outputs.AsIndexedOutputs().Single(o => o.TxOut.ScriptPubKey == escrow.Hash.ScriptPubKey);
-			InternalState.EscrowedCoin = new Coin(output).ToScriptCoin(escrow);
-			return InternalState.EscrowedCoin;
+			var escrow = BuildEscrowTxOut();
+			var output = transaction.Outputs.AsIndexedOutputs()
+				.Single(o => o.TxOut.ScriptPubKey == escrow.ScriptPubKey && o.TxOut.Value == escrow.Value);
+			var result = new TumblerEscrowInformation()
+			{
+				EscrowKey = InternalState.EscrowInformation.OurEscrowKey,
+				RedeemKey = InternalState.EscrowInformation.RedeemKey,
+				Transaction = transaction
+			};
+			InternalState.EscrowedCoin = new Coin(output).ToScriptCoin(InternalState.EscrowInformation.CreateEscrow());
+			InternalState.EscrowInformation = null;
+			return result;
 		}
 
 		private void AssertState(TumblerBobStates state)

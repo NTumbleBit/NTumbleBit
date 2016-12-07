@@ -16,7 +16,7 @@ namespace NTumbleBit.ClassicTumbler
 		{
 			get; set;
 		}
-		public PubKey Redeem
+		public PubKey RedeemKey
 		{
 			get; set;
 		}
@@ -27,7 +27,7 @@ namespace NTumbleBit.ClassicTumbler
 
 		public Script CreateEscrow()
 		{
-			return EscrowScriptBuilder.CreateEscrow(new PubKey[] { OurEscrowKey, OtherEscrowKey }, Redeem, LockTime);
+			return EscrowScriptBuilder.CreateEscrow(new PubKey[] { OurEscrowKey, OtherEscrowKey }, RedeemKey, LockTime);
 		}
 	}
 }

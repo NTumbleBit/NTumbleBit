@@ -70,6 +70,16 @@ namespace NTumbleBit.Client.Tumbler
 			return GetAsync<AskVoucherResponse>("api/v1/tumblers/0/vouchers/");
 		}
 
+
+		public Task<PuzzleSolution> SolveVoucherAsync(uint256 txId)
+		{
+			return SendAsync<PuzzleSolution>(HttpMethod.Post, txId, "api/v1/tumblers/0/clientchannels/voucher");
+		}
+		public PuzzleSolution SolveVoucher(uint256 txId)
+		{
+			return SolveVoucherAsync(txId).GetAwaiter().GetResult();
+		}
+
 		public Task<TumblerEscrowInformation> OpenChannelAsync(BobEscrowInformation request)
 		{
 			if(request == null)
