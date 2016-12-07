@@ -93,7 +93,7 @@ namespace NTumbleBit.Tests
 				//Client asks the Tumbler to make a channel
 				var bobEscrowInformation = clientSession.GenerateTumblerTransactionKey();
 				var tumblerInformation = bobClient.OpenChannel(bobEscrowInformation);
-				clientSession.ReceiveTumblerTumblerKeys(tumblerInformation);
+				clientSession.ReceiveTumblerEscrowInformation(tumblerInformation);
 				/////////////////////////////</TumblerChannel>/////////////////////////				
 			}
 		}

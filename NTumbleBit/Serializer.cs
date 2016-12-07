@@ -5,6 +5,8 @@ using NTumbleBit.JsonConverters;
 using NTumbleBit.PuzzleSolver;
 using NTumbleBit.JsonConverters;
 using Newtonsoft.Json.Converters;
+using NTumbleBit.ClassicTumbler;
+using System;
 
 namespace NTumbleBit
 {
@@ -44,6 +46,12 @@ namespace NTumbleBit
 		public static string ToString<T>(T response)
 		{
 			return ToString<T>(response, null);
+		}
+
+		public static T Clone<T>(T data)
+		{
+			var o = ToString(data);
+			return ToObject<T>(o);
 		}
 	}
 }

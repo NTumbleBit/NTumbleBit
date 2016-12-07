@@ -20,14 +20,10 @@ namespace NTumbleBit.ClassicTumbler
 		{
 			get; set;
 		}
-		public LockTime LockTime
-		{
-			get; set;
-		}
 
-		public Script CreateEscrow()
+		public Script CreateEscrow(LockTime lockTime)
 		{
-			return EscrowScriptBuilder.CreateEscrow(new PubKey[] { OurEscrowKey, OtherEscrowKey }, RedeemKey, LockTime);
+			return EscrowScriptBuilder.CreateEscrow(new PubKey[] { OurEscrowKey, OtherEscrowKey }, RedeemKey, lockTime);
 		}
 	}
 }
