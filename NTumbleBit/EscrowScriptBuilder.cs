@@ -27,6 +27,9 @@ namespace NTumbleBit
 		{
 			keys = keys.OrderBy(o => o.ToHex()).ToArray();
 			List<Op> ops = new List<Op>();
+			ops.Add(OpcodeType.OP_DEPTH);
+			ops.Add(OpcodeType.OP_3);
+			ops.Add(OpcodeType.OP_EQUAL);
 			ops.Add(OpcodeType.OP_IF);
 			ops.Add(OpcodeType.OP_2);
 			ops.Add(Op.GetPushOp(keys[0].ToBytes()));
@@ -45,32 +48,35 @@ namespace NTumbleBit
 		public static EscrowScriptPubKeyParameters ExtractEscrowScriptPubKeyParameters(Script script)
 		{
 			var ops = script.ToOps().ToArray();
-			if(ops.Length != 13)
+			if(ops.Length != 16)
 				return null;
 			try
 			{
-				if(ops[0].Code != OpcodeType.OP_IF ||
-					ops[1].Code != OpcodeType.OP_2)
+				if(ops[0].Code != OpcodeType.OP_DEPTH ||
+					ops[1].Code != OpcodeType.OP_3 ||
+					ops[2].Code != OpcodeType.OP_EQUAL ||
+					ops[3].Code != OpcodeType.OP_IF ||
+					ops[4].Code != OpcodeType.OP_2)
 					return null;
 
-				var k1 = new PubKey(ops[2].PushData);
-				var k2 = new PubKey(ops[3].PushData);
+				var k1 = new PubKey(ops[5].PushData);
+				var k2 = new PubKey(ops[6].PushData);
 
-				if(ops[4].Code != OpcodeType.OP_2 ||
-					ops[5].Code != OpcodeType.OP_CHECKMULTISIG ||
-					ops[6].Code != OpcodeType.OP_ELSE)
+				if(ops[7].Code != OpcodeType.OP_2 ||
+					ops[8].Code != OpcodeType.OP_CHECKMULTISIG ||
+					ops[9].Code != OpcodeType.OP_ELSE)
 					return null;
 
-				var timeout = new LockTime((uint)ops[7].GetLong().Value);
+				var timeout = new LockTime((uint)ops[10].GetLong().Value);
 
-				if(ops[8].Code != OpcodeType.OP_CHECKLOCKTIMEVERIFY ||
-					ops[9].Code != OpcodeType.OP_DROP)
+				if(ops[11].Code != OpcodeType.OP_CHECKLOCKTIMEVERIFY ||
+					ops[12].Code != OpcodeType.OP_DROP)
 					return null;
 
-				var redeem = new PubKey(ops[10].PushData);
+				var redeem = new PubKey(ops[13].PushData);
 
-				if(ops[11].Code != OpcodeType.OP_CHECKSIG ||
-					ops[12].Code != OpcodeType.OP_ENDIF)
+				if(ops[14].Code != OpcodeType.OP_CHECKSIG ||
+					ops[15].Code != OpcodeType.OP_ENDIF)
 					return null;
 				var keys = new[] { k1, k2 };
 				var orderedKeys = keys.OrderBy(o => o.ToHex()).ToArray();
@@ -92,36 +98,20 @@ namespace NTumbleBit
 		public static TransactionSignature[] ExtractScriptSigParameters(Script scriptSig)
 		{
 			var ops = scriptSig.ToOps().ToArray();
-			if(ops.Length == 4)
+			if(ops.Length == 3)
 			{
-				if(ops[3].Code != OpcodeType.OP_TRUE)
-					return null;
-				if(ops[0].Code != OpcodeType.OP_0)
-					return null;
-				var sigs = new TransactionSignature[2];
-				try
-				{
-					if(ops[1].Code != OpcodeType.OP_0)
-						sigs[0] = new TransactionSignature(ops[1].PushData);
-					if(ops[2].Code != OpcodeType.OP_0)
-						sigs[1] = new TransactionSignature(ops[2].PushData);
-					return sigs;
-				}
-				catch { return null; }
+				return PayToMultiSigTemplate.Instance.ExtractScriptSigParameters(scriptSig);
 			}
-			else if(ops.Length == 3)
+			else if(ops.Length == 1)
 			{
-				if(ops[2].Code != OpcodeType.OP_FALSE)
-					return null;
-				if(ops[0].Code != OpcodeType.OP_0)
-					return null;
-				if(ops[1].Code == OpcodeType.OP_0)
-					return new TransactionSignature[1];
+				var sig = new TransactionSignature[1];
 				try
 				{
-					return new TransactionSignature[] { new TransactionSignature(ops[1].PushData) };
+					if(ops[0].Code != OpcodeType.OP_0)
+						sig[0] = new TransactionSignature(ops[0].PushData);
 				}
 				catch { return null; }
+				return sig;
 			}
 			else
 				return null;
@@ -129,19 +119,16 @@ namespace NTumbleBit
 
 		public static Script GenerateScriptSig(TransactionSignature[] signatures)
 		{
-			if(signatures.Length != 2)
-				throw new ArgumentException("Expecting 2 signatures");
-			List<Op> ops = new List<Op>();
-			ops.Add(OpcodeType.OP_0);
-			foreach(var sig in signatures)
+			if(signatures.Length == 2)
 			{
-				if(sig == null)
-					ops.Add(OpcodeType.OP_0);
-				else
-					ops.Add(Op.GetPushOp(sig.ToBytes()));
+				return PayToMultiSigTemplate.Instance.GenerateScriptSig(signatures);
 			}
-			ops.Add(OpcodeType.OP_TRUE);
-			return new Script(ops.ToArray());
+			else if(signatures.Length == 1 && signatures[0] != null)
+			{
+				return PayToPubkeyTemplate.Instance.GenerateScriptSig(signatures[0]);
+			}
+			else
+				throw new ArgumentException("Invalid signature count");
 		}
 	}
 }
