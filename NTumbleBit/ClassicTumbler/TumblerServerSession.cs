@@ -76,11 +76,23 @@ namespace NTumbleBit.ClassicTumbler
 				get;
 				set;
 			}
+			public ScriptCoin EscrowedCoin
+			{
+				get;
+				set;
+			}
+			public SolverServerSession.InternalState SolverServerSessionState
+			{
+				get;
+				set;
+			}
 		}
 
 		public State GetInternalState()
 		{
-			return Serializer.Clone(InternalState);
+			var state =  Serializer.Clone(InternalState);
+			state.SolverServerSessionState = SolverServerSession.GetInternalState();
+			return state;
 		}
 
 		public TumblerAliceServerSession(ClassicTumblerParameters parameters,
@@ -90,6 +102,7 @@ namespace NTumbleBit.ClassicTumbler
 			if(parameters == null)
 				throw new ArgumentNullException("parameters");
 			InternalState = new State();
+			SolverServerSession = new SolverServerSession(tumblerKey, parameters.CreateSolverParamaters());
 		}
 
 		public TumblerAliceServerSession(ClassicTumblerParameters parameters,
@@ -100,6 +113,8 @@ namespace NTumbleBit.ClassicTumbler
 			if(parameters == null)
 				throw new ArgumentNullException("parameters");
 			InternalState = Serializer.Clone(state);
+			SolverServerSession = new SolverServerSession(tumblerKey, parameters.CreateSolverParamaters(), InternalState.SolverServerSessionState);
+			InternalState.SolverServerSessionState = null;
 		}
 
 		public PubKey ReceiveAliceEscrowInformation(ClientEscrowInformation escrowInformation)
@@ -123,24 +138,39 @@ namespace NTumbleBit.ClassicTumbler
 			return new TxOut(Parameters.Denomination + Parameters.Fee, CreateEscrowScript().Hash);
 		}
 
+		public string GetChannelId()
+		{
+			return CreateEscrowScript().Hash.ScriptPubKey.ToHex();
+		}
+
 		private Script CreateEscrowScript()
 		{
+			if(InternalState.EscrowedCoin != null)
+				return InternalState.EscrowedCoin.GetScriptCode();
 			return InternalState.EscrowInformation.CreateEscrow(GetCycle().GetClientLockTime());
 		}
 
 		public PuzzleSolution ConfirmAliceEscrow(Transaction transaction)
 		{
 			var escrow = CreateEscrowScript();
-			var output = transaction.Outputs.FirstOrDefault(txout => txout.ScriptPubKey == escrow.Hash.ScriptPubKey);
-			if(output == null)
+			var coin = transaction.Outputs.AsCoins().FirstOrDefault(txout => txout.ScriptPubKey == escrow.Hash.ScriptPubKey);
+			if(coin == null)
 				throw new PuzzleException("No output containing the escrowed coin");
-			if(output.Value != Parameters.Denomination + Parameters.Fee)
+			if(coin.Amount != Parameters.Denomination + Parameters.Fee)
 				throw new PuzzleException("Incorrect amount");
 			var voucher = InternalState.UnsignedVoucher;
 			InternalState.UnsignedVoucher = null;
+			InternalState.EscrowInformation = null;
+			InternalState.EscrowedCoin = coin.ToScriptCoin(escrow);
 			return voucher.WithRsaKey(VoucherKey.PubKey).Solve(VoucherKey);
 		}
-		
+
+		public PuzzleSolver.SolverServerSession SolverServerSession
+		{
+			get;
+			internal set;
+		}
+
 		public CycleParameters GetCycle()
 		{
 			return Parameters.CycleGenerator.GetCycle(InternalState.CycleStart);

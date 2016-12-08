@@ -102,15 +102,10 @@ namespace NTumbleBit.TumblerServer.Controllers
 			var pubKey = aliceSession.ReceiveAliceEscrowInformation(request);
 			if(!aliceSession.GetCycle().IsInPhase(CyclePhase.ClientChannelEstablishment, height))
 				return BadRequest("incorrect-phase");
-			Repository.Save(GetKey(aliceSession), aliceSession);
+			Repository.Save(aliceSession.GetChannelId(), aliceSession);
 			Services.BlockExplorerService.Track(aliceSession.BuildEscrowTxOut().ScriptPubKey);
 			return Json(pubKey);
-		}
-
-		private static string GetKey(TumblerAliceServerSession aliceSession)
-		{
-			return aliceSession.BuildEscrowTxOut().ScriptPubKey.ToHex();
-		}
+		}		
 
 		[HttpPost("api/v1/tumblers/0/clientchannels/voucher")]
 		public IActionResult SolveVoucher([FromBody]uint256 txId)
@@ -137,7 +132,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 
 
 			var voucher = sessions[0].ConfirmAliceEscrow(transaction.Transaction);
-			Repository.Save(GetKey(sessions[0]), sessions[0]);
+			Repository.Save(sessions[0].GetChannelId(), sessions[0]);
 			return Json(voucher);
 		}
 
@@ -174,7 +169,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 		[HttpPost("api/v1/tumblers/0/channels/{channelId}/signhashes")]
 		public IActionResult SignHashes(string channelId, [FromBody]SignaturesRequest sigReq)
 		{
-			var session = GetSessionFromChannelId(channelId);
+			var session = GetBobSessionFromChannelId(channelId);
 			var hashes = session.PromiseServerSession.SignHashes(sigReq);
 			Repository.Save(channelId, session);
 			return Json(hashes);
@@ -183,13 +178,52 @@ namespace NTumbleBit.TumblerServer.Controllers
 		[HttpPost("api/v1/tumblers/0/channels/{channelId}/checkrevelation")]
 		public IActionResult CheckRevelation(string channelId, [FromBody]PuzzlePromise.ClientRevelation revelation)
 		{
-			var session = GetSessionFromChannelId(channelId);
+			var session = GetBobSessionFromChannelId(channelId);
 			var proof = session.PromiseServerSession.CheckRevelation(revelation);
 			Repository.Save(channelId, session);
 			return Json(proof);
 		}
 
-		private TumblerBobServerSession GetSessionFromChannelId(string channelId)
+		[HttpPost("api/v1/tumblers/0/clientchannels/{channelId}/solvepuzzles")]
+		public IActionResult SolvePuzzles(string channelId, [FromBody]PuzzleValue[] puzzles)
+		{
+			var session = GetAliceSessionFromChannelId(channelId);
+			var commitments = session.SolverServerSession.SolvePuzzles(puzzles);
+			Repository.Save(channelId, session);
+			return Json(commitments);
+		}
+
+		[HttpPost("api/v1/tumblers/0/clientschannels/{channelId}/checkrevelation")]
+		public IActionResult CheckRevelation(string channelId, [FromBody]PuzzleSolver.ClientRevelation revelation)
+		{
+			var session = GetAliceSessionFromChannelId(channelId);
+			var solutions = session.SolverServerSession.CheckRevelation(revelation);
+			Repository.Save(channelId, session);
+			return Json(solutions);
+		}
+
+		[HttpPost("api/v1/tumblers/0/clientschannels/{channelId}/checkblindfactors")]
+		public IActionResult CheckBlindFactors(string channelId, [FromBody]BlindFactor[] blindFactors)
+		{
+			var session = GetAliceSessionFromChannelId(channelId);
+			session.SolverServerSession.CheckBlindedFactors(blindFactors);
+			Repository.Save(channelId, session);
+			return Json(true);
+		}
+		
+
+		private TumblerAliceServerSession GetAliceSessionFromChannelId(string channelId)
+		{
+			var height = Services.BlockExplorerService.GetCurrentHeight();
+			var session = Repository.GetAliceSession(channelId);
+			if(session == null)
+				throw NotFound("channel-not-found").AsException();
+			if(!session.GetCycle().IsInPhase(CyclePhase.PaymentPhase, height))
+				throw BadRequest("incorrect-phase").AsException();
+			return session;
+		}
+
+		private TumblerBobServerSession GetBobSessionFromChannelId(string channelId)
 		{
 			var height = Services.BlockExplorerService.GetCurrentHeight();
 			var session = Repository.GetBobSession(channelId);

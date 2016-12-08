@@ -102,7 +102,24 @@ namespace NTumbleBit.Tests
 				var revelation = clientSession.PromiseClientSession.Reveal(commiments);
 				var proof = bobClient.CheckRevelation(clientSession.GetTumblerChannelId(), revelation);
 				var puzzle = clientSession.PromiseClientSession.CheckCommitmentProof(proof);
-				/////////////////////////////</TumblerChannel>/////////////////////////				
+				clientSession.SolverClientSession.AcceptPuzzle(puzzle);
+				/////////////////////////////</TumblerChannel>/////////////////////////
+
+				//Client waits until payment phase
+				MineTo(server.AliceNode, cycle, CyclePhase.PaymentPhase);
+				server.SyncNodes();
+				///////////////
+
+				/////////////////////////////<Payment>/////////////////////////
+				//Client pays for the puzzle
+				var puzzles = clientSession.SolverClientSession.GeneratePuzzles();
+				var commmitments = aliceClient.SolvePuzzles(clientSession.GetClientChannelId(), puzzles);
+				var revelation2 = clientSession.SolverClientSession.Reveal(commmitments);
+				var solutionKeys = aliceClient.CheckRevelation(clientSession.GetClientChannelId(), revelation2);
+				var blindFactors = clientSession.SolverClientSession.GetBlindFactors(solutionKeys);
+				//clientSession.SolverClientSession.CreateOfferScript(new PuzzleSolver.PaymentCashoutContext())
+				aliceClient.CheckBlindFactors(clientSession.GetClientChannelId(), blindFactors);
+				/////////////////////////////</Payment>/////////////////////////
 			}
 		}
 

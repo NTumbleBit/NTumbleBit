@@ -36,7 +36,7 @@ namespace NTumbleBit.PuzzleSolver
 			return SolverScriptBuilder.CreateOfferScript(hashes, RedeemKey, refund);
 		}
 
-		public Script CreateFulfillScript(PaymentCashoutContext escrowContext, TransactionSignature signature, SolutionKey[] solutionKey)
+		public Script CreateFulfillScript(TransactionSignature signature, SolutionKey[] solutionKey)
 		{
 			var redeem = CreateOfferScript(solutionKey.Select(s => s.GetHash()).ToArray());
 			return SolverScriptBuilder.GetFulfillScript(signature, solutionKey, redeem);

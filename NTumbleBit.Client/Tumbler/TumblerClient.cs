@@ -165,6 +165,37 @@ namespace NTumbleBit.Client.Tumbler
 			return this.SendAsync<PuzzlePromise.ServerCommitment[]>(HttpMethod.Post, sigReq, "api/v1/tumblers/0/channels/{0}/signhashes", channelId.ToHex());
 		}
 
+		public PuzzleSolver.SolutionKey[] CheckRevelation(Script channelId, PuzzleSolver.ClientRevelation revelation)
+		{
+			return CheckRevelationAsync(channelId, revelation).GetAwaiter().GetResult();
+		}
+		public Task<PuzzleSolver.SolutionKey[]> CheckRevelationAsync(Script channelId, PuzzleSolver.ClientRevelation revelation)
+		{
+			return this.SendAsync<PuzzleSolver.SolutionKey[]>(HttpMethod.Post, revelation, "api/v1/tumblers/0/clientschannels/{0}/checkrevelation", channelId.ToHex());
+		}
+
+		public void CheckBlindFactors(Script channelId, BlindFactor[] blindFactors)
+		{
+			CheckBlindFactorsAsync(channelId, blindFactors).GetAwaiter().GetResult();
+		}
+
+		public Task CheckBlindFactorsAsync(Script channelId, BlindFactor[] blindFactors)
+		{
+			return SendAsync<bool>(HttpMethod.Post, blindFactors, "api/v1/tumblers/0/clientschannels/{0}/checkblindfactors", channelId.ToHex());
+		}
+
+		public PuzzleSolver.ServerCommitment[] SolvePuzzles(Script channelId, PuzzleValue[] puzzles)
+		{
+			return SolvePuzzlesAsync(channelId, puzzles).GetAwaiter().GetResult();
+		}
+
+		public Task<PuzzleSolver.ServerCommitment[]> SolvePuzzlesAsync(Script channelId, PuzzleValue[] puzzles)
+		{
+			return SendAsync<PuzzleSolver.ServerCommitment[]>(HttpMethod.Post, puzzles, "api/v1/tumblers/0/clientchannels/{0}/solvepuzzles", channelId.ToHex());
+		}
+
+
+
 		public PuzzlePromise.ServerCommitment[] SignHashes(Script channelId, SignaturesRequest sigReq)
 		{
 			return SignHashesAsync(channelId, sigReq).GetAwaiter().GetResult();

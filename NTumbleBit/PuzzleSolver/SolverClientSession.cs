@@ -16,6 +16,7 @@ namespace NTumbleBit.PuzzleSolver
 	public enum SolverClientStates
 	{
 		WaitingPuzzle,
+		WaitingGeneratePuzzles,
 		WaitingCommitments,
 		WaitingFakeCommitmentsProof,
 		WaitingPuzzleSolutions,
@@ -54,12 +55,14 @@ namespace NTumbleBit.PuzzleSolver
 			_Parameters = parameters;
 		}
 
-		SolverClientSession(InternalState state)
+		public SolverClientSession(SolverParameters parameters, InternalState state)
 		{
+			if(parameters == null)
+				throw new ArgumentNullException("parameters");
+			_Parameters = parameters;
 			if(state == null)
-				throw new ArgumentNullException("state");
-
-			_Parameters = state.SolverParameters;
+				return;
+			_Parameters = parameters;
 			_Puzzle = new Puzzle(_Parameters.ServerKey, state.Puzzle);
 			_PuzzleSolution = state.PuzzleSolution;
 			_FakeIndexes = state.FakeIndexes;
@@ -88,10 +91,9 @@ namespace NTumbleBit.PuzzleSolver
 			}
 		}
 
-		private InternalState GetInternalState()
+		public InternalState GetInternalState()
 		{
 			InternalState state = new InternalState();
-			state.SolverParameters = Parameters;
 			state.Puzzle = Puzzle?.PuzzleValue;
 			state.State = State;
 			state.PuzzleSolution = _PuzzleSolution;
@@ -127,17 +129,12 @@ namespace NTumbleBit.PuzzleSolver
 			return state;
 		}
 
-		class InternalState
+		public class InternalState
 		{
-			public SolverParameters SolverParameters
-			{
-				get; set;
-			}
 			public PuzzleValue Puzzle
 			{
 				get; set;
 			}
-			[JsonProperty(ItemConverterType = typeof(StringEnumConverter))]
 			public SolverClientStates State
 			{
 				get; set;
@@ -169,45 +166,7 @@ namespace NTumbleBit.PuzzleSolver
 				get;
 				set;
 			}
-		}
-
-		public static SolverClientSession ReadFrom(byte[] bytes)
-		{
-			if(bytes == null)
-				throw new ArgumentNullException("bytes");
-			var ms = new MemoryStream(bytes);
-			return ReadFrom(ms);
-		}
-		public static SolverClientSession ReadFrom(Stream stream)
-		{
-			if(stream == null)
-				throw new ArgumentNullException("stream");
-
-			var text = new StreamReader(stream, Encoding.UTF8).ReadToEnd();
-			JsonSerializerSettings settings = new JsonSerializerSettings();
-			Serializer.RegisterFrontConverters(settings);
-			var state = JsonConvert.DeserializeObject<InternalState>(text, settings);
-			return new SolverClientSession(state);
-		}
-		public void WriteTo(Stream stream)
-		{
-			if(stream == null)
-				throw new ArgumentNullException("stream");
-			var writer = new StreamWriter(stream, Encoding.UTF8);
-			JsonSerializerSettings settings = new JsonSerializerSettings();
-			Serializer.RegisterFrontConverters(settings);
-			var result = JsonConvert.SerializeObject(this.GetInternalState(), settings);
-			writer.Write(result);
-			writer.Flush();
-		}
-
-		public byte[] ToBytes()
-		{
-			MemoryStream ms = new MemoryStream();
-			WriteTo(ms);
-			ms.Position = 0;
-			return ms.ToArrayEfficient();
-		}		
+		}	
 
 
 		public SolverParameters Parameters
@@ -242,17 +201,23 @@ namespace NTumbleBit.PuzzleSolver
 			}
 		}
 
-		public PuzzleValue[] GeneratePuzzles(PuzzleValue puzzleValue)
+		public void AcceptPuzzle(PuzzleValue puzzleValue)
 		{
 			if(puzzleValue == null)
 				throw new ArgumentNullException("puzzleValue");
 			AssertState(SolverClientStates.WaitingPuzzle);
-			var paymentPuzzle = new Puzzle(Parameters.ServerKey, puzzleValue);
+			_Puzzle = new Puzzle(Parameters.ServerKey, puzzleValue);
+			_State = SolverClientStates.WaitingGeneratePuzzles;
+		}
+
+		public PuzzleValue[] GeneratePuzzles()
+		{
+			AssertState(SolverClientStates.WaitingGeneratePuzzles);
 			List<PuzzleSetElement> puzzles = new List<PuzzleSetElement>();
 			for(int i = 0; i < Parameters.RealPuzzleCount; i++)
 			{
 				BlindFactor blind = null;
-				Puzzle puzzle = paymentPuzzle.Blind(ref blind);
+				Puzzle puzzle = _Puzzle.Blind(ref blind);
 				puzzles.Add(new RealPuzzle(puzzle, blind));
 			}
 
@@ -274,10 +239,8 @@ namespace NTumbleBit.PuzzleSolver
 					_FakeIndexes[fakeI++] = i;
 			}
 			_State = SolverClientStates.WaitingCommitments;
-			_Puzzle = paymentPuzzle;
 			return _PuzzleElements.Select(p => p.Puzzle.PuzzleValue).ToArray();
-		}
-
+		}		
 
 		public ClientRevelation Reveal(ServerCommitment[] commitments)
 		{

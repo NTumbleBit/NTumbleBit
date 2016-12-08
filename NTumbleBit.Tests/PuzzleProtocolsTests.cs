@@ -259,38 +259,40 @@ namespace NTumbleBit.Tests
 			SolverClientSession client = new SolverClientSession(parameters);
 			SolverServerSession server = new SolverServerSession(key, parameters);
 
-			PuzzleValue[] puzzles = client.GeneratePuzzles(puzzle.PuzzleValue);
-			RoundTrip(ref client);
+			client.AcceptPuzzle(puzzle.PuzzleValue);
+			RoundTrip(ref client, parameters);
+			PuzzleValue[] puzzles = client.GeneratePuzzles();
+			RoundTrip(ref client, parameters);
 			RoundTrip(ref puzzles);
 
 			var commitments = server.SolvePuzzles(puzzles);
-			RoundTrip(ref server);
+			RoundTrip(ref server, parameters, key);
 			RoundTrip(ref commitments);
 
 			var revelation = client.Reveal(commitments);
-			RoundTrip(ref client);
+			RoundTrip(ref client, parameters);
 			RoundTrip(ref revelation);
 
 			SolutionKey[] fakePuzzleKeys = server.CheckRevelation(revelation);
-			RoundTrip(ref server);
+			RoundTrip(ref server, parameters, key);
 			RoundTrip(ref fakePuzzleKeys);
 
 
 			BlindFactor[] blindFactors = client.GetBlindFactors(fakePuzzleKeys);
-			RoundTrip(ref client);
+			RoundTrip(ref client, parameters);
 			RoundTrip(ref blindFactors);
 
 			server.CheckBlindedFactors(blindFactors);
-			RoundTrip(ref server);
+			RoundTrip(ref server, parameters, key);
 			SolutionKey[] realPuzzleKeys = server.GetSolutionKeys();
 			RoundTrip(ref realPuzzleKeys);
 
-			var serverClone = SolverServerSession.ReadFrom(server.ToBytes(true));
-			var clientClone = SolverClientSession.ReadFrom(client.ToBytes());
+			var serverClone = new SolverServerSession(key, parameters, server.GetInternalState());
+			var clientClone = new SolverClientSession(parameters, client.GetInternalState());
 			client.CheckSolutions(realPuzzleKeys);
-			RoundTrip(ref client);
+			RoundTrip(ref client, parameters);
 			var solution = client.GetSolution();
-			RoundTrip(ref client);
+			RoundTrip(ref client, parameters);
 			Assert.True(solution == expectedSolution);
 
 			client = clientClone;
@@ -313,9 +315,9 @@ namespace NTumbleBit.Tests
 			////////////////////////////////////////////////
 
 			client.CheckSolutions(fulfillTx);
-			RoundTrip(ref client);
+			RoundTrip(ref client, parameters);
 			solution = client.GetSolution();
-			RoundTrip(ref client);
+			RoundTrip(ref client, parameters);
 			Assert.True(solution == expectedSolution);
 		}		
 
@@ -332,20 +334,16 @@ namespace NTumbleBit.Tests
 			RoundtripJson(ref commitments);
 		}
 
-		private void RoundTrip(ref SolverServerSession server)
+		private void RoundTrip(ref SolverServerSession server, SolverParameters parameters, RsaKey key)
 		{
-			var ms = new MemoryStream();
-			server.WriteTo(ms, true);
-			ms.Position = 0;
-			server = SolverServerSession.ReadFrom(ms, null);
+			var clone = Serializer.Clone(server.GetInternalState());
+			server = new SolverServerSession(key, parameters, clone);
 		}
 
-		private void RoundTrip(ref SolverClientSession client)
+		private void RoundTrip(ref SolverClientSession client, SolverParameters parameters)
 		{
-			var ms = new MemoryStream();
-			client.WriteTo(ms);
-			ms.Position = 0;
-			client = SolverClientSession.ReadFrom(ms);
+			var clone = Serializer.Clone(client.GetInternalState());
+			client = new SolverClientSession(parameters, clone);
 		}
 
 		private void RoundTrip(ref PromiseServerSession server, PromiseParameters parameters)
