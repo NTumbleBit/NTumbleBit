@@ -148,6 +148,26 @@ namespace NTumbleBit.Client.Tumbler
 			if(typeof(T) == typeof(string))
 				return (T)(object)str;
 			return Serializer.ToObject<T>(str, Network);
-		}		
+		}
+
+		public ServerCommitmentsProof CheckRevelation(Script channelId, PuzzlePromise.ClientRevelation revelation)
+		{
+			return CheckRevelationAsync(channelId, revelation).GetAwaiter().GetResult();
+		}
+
+		private Task<ServerCommitmentsProof> CheckRevelationAsync(Script channelId, PuzzlePromise.ClientRevelation revelation)
+		{
+			return this.SendAsync<ServerCommitmentsProof>(HttpMethod.Post, revelation, "api/v1/tumblers/0/channels/{0}/checkrevelation", channelId.ToHex());
+		}
+
+		public Task<PuzzlePromise.ServerCommitment[]> SignHashesAsync(Script channelId, SignaturesRequest sigReq)
+		{
+			return this.SendAsync<PuzzlePromise.ServerCommitment[]>(HttpMethod.Post, sigReq, "api/v1/tumblers/0/channels/{0}/signhashes", channelId.ToHex());
+		}
+
+		public PuzzlePromise.ServerCommitment[] SignHashes(Script channelId, SignaturesRequest sigReq)
+		{
+			return SignHashesAsync(channelId, sigReq).GetAwaiter().GetResult();
+		}
 	}
 }

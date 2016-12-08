@@ -56,14 +56,7 @@ namespace NTumbleBit.ClassicTumbler
 			{
 				KnownKeys = new List<Key>();
 			}
-			public ClassicTumblerParameters Parameters
-			{
-				get; set;
-			}
-			public CycleParameters GetCycleParameters()
-			{
-				return Parameters.CycleGenerator.GetCycle(CycleStart);
-			}
+					
 			public EscrowInformation EscrowInformation
 			{
 				get;
@@ -85,6 +78,11 @@ namespace NTumbleBit.ClassicTumbler
 			}
 		}
 
+		public State GetInternalState()
+		{
+			return Serializer.Clone(InternalState);
+		}
+
 		public TumblerAliceServerSession(ClassicTumblerParameters parameters,
 										RsaKey tumblerKey,
 										RsaKey voucherKey) : base(parameters, tumblerKey, voucherKey)
@@ -92,7 +90,16 @@ namespace NTumbleBit.ClassicTumbler
 			if(parameters == null)
 				throw new ArgumentNullException("parameters");
 			InternalState = new State();
-			InternalState.Parameters = parameters;
+		}
+
+		public TumblerAliceServerSession(ClassicTumblerParameters parameters,
+										RsaKey tumblerKey,
+										RsaKey voucherKey,
+										State state) : base(parameters, tumblerKey, voucherKey)
+		{
+			if(parameters == null)
+				throw new ArgumentNullException("parameters");
+			InternalState = Serializer.Clone(state);
 		}
 
 		public PubKey ReceiveAliceEscrowInformation(ClientEscrowInformation escrowInformation)
@@ -113,7 +120,7 @@ namespace NTumbleBit.ClassicTumbler
 
 		public TxOut BuildEscrowTxOut()
 		{
-			return new TxOut(InternalState.Parameters.Denomination + InternalState.Parameters.Fee, CreateEscrowScript().Hash);
+			return new TxOut(Parameters.Denomination + Parameters.Fee, CreateEscrowScript().Hash);
 		}
 
 		private Script CreateEscrowScript()
@@ -127,16 +134,16 @@ namespace NTumbleBit.ClassicTumbler
 			var output = transaction.Outputs.FirstOrDefault(txout => txout.ScriptPubKey == escrow.Hash.ScriptPubKey);
 			if(output == null)
 				throw new PuzzleException("No output containing the escrowed coin");
-			if(output.Value != InternalState.Parameters.Denomination + InternalState.Parameters.Fee)
+			if(output.Value != Parameters.Denomination + Parameters.Fee)
 				throw new PuzzleException("Incorrect amount");
 			var voucher = InternalState.UnsignedVoucher;
 			InternalState.UnsignedVoucher = null;
 			return voucher.WithRsaKey(VoucherKey.PubKey).Solve(VoucherKey);
 		}
-
+		
 		public CycleParameters GetCycle()
 		{
-			return InternalState.GetCycleParameters();
+			return Parameters.CycleGenerator.GetCycle(InternalState.CycleStart);
 		}
 	}
 
@@ -144,7 +151,8 @@ namespace NTumbleBit.ClassicTumbler
 	{
 		WaitingVoucherRequest,
 		WaitingBobEscrowInformation,
-		WaitingSignedTransaction
+		WaitingSignedTransaction,
+		Completed
 	}
 	public class TumblerBobServerSession : TumblerServerSession
 	{
@@ -163,20 +171,11 @@ namespace NTumbleBit.ClassicTumbler
 			{
 				get; set;
 			}
-			public ClassicTumblerParameters Parameters
-			{
-				get; set;
-			}
 			public int CycleStart
 			{
 				get;
 				set;
-			}
-
-			public CycleParameters GetCycle()
-			{
-				return Parameters.CycleGenerator.GetCycle(CycleStart);
-			}
+			}			
 
 			public TumblerBobStates Status
 			{
@@ -201,10 +200,15 @@ namespace NTumbleBit.ClassicTumbler
 				set;
 			}
 
-			public PromiseServerSession PromiseData
+			public PromiseServerSession.InternalState PromiseServerSessionState
 			{
 				get; set;
 			}
+		}
+
+		public CycleParameters GetCycle()
+		{
+			return Parameters.CycleGenerator.GetCycle(InternalState.CycleStart);
 		}
 
 		public TumblerBobServerSession(ClassicTumblerParameters parameters,
@@ -215,15 +219,45 @@ namespace NTumbleBit.ClassicTumbler
 			if(parameters == null)
 				throw new ArgumentNullException("parameters");
 			InternalState = new State();
-			InternalState.Parameters = parameters;
 			InternalState.CycleStart = cycleStart;
 		}
 
-		public CycleParameters GetCycle()
+		public TumblerBobServerSession(ClassicTumblerParameters parameters,
+										RsaKey tumblerKey,
+										RsaKey voucherKey,
+										State state) : base(parameters, tumblerKey, voucherKey)
 		{
-			return InternalState.GetCycle();
+			if(parameters == null)
+				throw new ArgumentNullException("parameters");
+			InternalState = Serializer.Clone(state);
+			InitializePromiseServerSession();
 		}
 
+		private void InitializePromiseServerSession()
+		{
+			if(InternalState.PromiseServerSessionState != null)
+			{
+				_PromiseServerSession = new PromiseServerSession(InternalState.PromiseServerSessionState, Parameters.CreatePromiseParamaters());
+			}
+			InternalState.PromiseServerSessionState = null;
+		}
+
+		public State GetInternalState()
+		{
+			var state = Serializer.Clone(InternalState);
+			if(PromiseServerSession != null)
+				state.PromiseServerSessionState = PromiseServerSession.GetInternalState();
+			return state;
+		}
+
+		private PromiseServerSession _PromiseServerSession;
+		public PromiseServerSession PromiseServerSession
+		{
+			get
+			{
+				return _PromiseServerSession;
+			}
+		}
 
 		public PuzzleValue GenerateUnsignedVoucher(ref PuzzleSolution solution)
 		{
@@ -234,6 +268,11 @@ namespace NTumbleBit.ClassicTumbler
 			return puzzle.PuzzleValue;
 		}
 
+		public string GetChannelId()
+		{
+			AssertState(TumblerBobStates.Completed);
+			return InternalState.EscrowedCoin.ScriptPubKey.ToHex();
+		}
 
 		public void ReceiveBobEscrowInformation(BobEscrowInformation bobEscrowInformation)
 		{
@@ -252,7 +291,7 @@ namespace NTumbleBit.ClassicTumbler
 			InternalState.EscrowInformation.OurEscrowKey = escrow.PubKey;
 			InternalState.EscrowInformation.RedeemKey = redeem.PubKey;
 			InternalState.VoucherHash = null;
-
+			_PromiseServerSession = new PromiseServerSession(escrow, Parameters.CreatePromiseParamaters());
 			InternalState.Status = TumblerBobStates.WaitingSignedTransaction;
 		}
 
@@ -282,6 +321,7 @@ namespace NTumbleBit.ClassicTumbler
 			};
 			InternalState.EscrowedCoin = new Coin(output).ToScriptCoin(CreateEscrowScript());
 			InternalState.EscrowInformation = null;
+			InternalState.Status = TumblerBobStates.Completed;
 			return result;
 		}
 

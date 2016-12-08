@@ -27,7 +27,7 @@ namespace NTumbleBit.TumblerServer
 		public void ConfigureServices(IServiceCollection services)
 		{
 			services.AddSingleton<IObjectModelValidator, NoObjectModelValidator>();
-			services.AddMvcCore()
+			services.AddMvcCore(o => o.Filters.Add(new ActionResultExceptionFilter()))
 				.AddJsonFormatters()
 				.AddFormatterMappings();
 		}
@@ -75,7 +75,7 @@ namespace NTumbleBit.TumblerServer
 	{
 		public void Validate(ActionContext actionContext, ValidationStateDictionary validationState, string prefix, object model)
 		{
-			
+
 		}
 	}
 }

@@ -1,6 +1,7 @@
 ﻿using NBitcoin;
 using NTumbleBit.ClassicTumbler;
 using NTumbleBit.Client.Tumbler.Models;
+using NTumbleBit.PuzzlePromise;
 using NTumbleBit.TumblerServer.Services.RPCServices;
 using System;
 using System.Collections.Generic;
@@ -93,7 +94,14 @@ namespace NTumbleBit.Tests
 				//Client asks the Tumbler to make a channel
 				var bobEscrowInformation = clientSession.GenerateTumblerTransactionKey();
 				var tumblerInformation = bobClient.OpenChannel(bobEscrowInformation);
-				clientSession.ReceiveTumblerEscrowInformation(tumblerInformation);
+				var escrow = clientSession.ReceiveTumblerEscrowInformation(tumblerInformation);
+				//Channel is done, now need to run the promise protocol to get valid puzzle
+				var cashoutDestination = clientWallet.GenerateAddress();
+				var sigReq = clientSession.PromiseClientSession.CreateSignatureRequest(escrow, cashoutDestination, FeeRate);
+				var commiments = bobClient.SignHashes(clientSession.GetTumblerChannelId(), sigReq);
+				var revelation = clientSession.PromiseClientSession.Reveal(commiments);
+				var proof = bobClient.CheckRevelation(clientSession.GetTumblerChannelId(), revelation);
+				var puzzle = clientSession.PromiseClientSession.CheckCommitmentProof(proof);
 				/////////////////////////////</TumblerChannel>/////////////////////////				
 			}
 		}

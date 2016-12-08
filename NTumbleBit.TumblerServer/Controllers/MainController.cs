@@ -161,13 +161,43 @@ namespace NTumbleBit.TumblerServer.Controllers
 				Services.BlockExplorerService.Track(txOut.ScriptPubKey);
 				Services.BroadcastService.Broadcast(tx);
 				var escrowInfo = session.SetSignedTransaction(tx);
-				Repository.Save(GetKey(request.SignedVoucher), session);
+				Repository.Save(session.GetChannelId(), session);
 				return this.Json(escrowInfo);
 			}
 			catch(PuzzleException)
 			{
 				return BadRequest("incorrect-voucher");
 			}
+		}
+
+
+		[HttpPost("api/v1/tumblers/0/channels/{channelId}/signhashes")]
+		public IActionResult SignHashes(string channelId, [FromBody]SignaturesRequest sigReq)
+		{
+			var session = GetSessionFromChannelId(channelId);
+			var hashes = session.PromiseServerSession.SignHashes(sigReq);
+			Repository.Save(channelId, session);
+			return Json(hashes);
+		}
+
+		[HttpPost("api/v1/tumblers/0/channels/{channelId}/checkrevelation")]
+		public IActionResult CheckRevelation(string channelId, [FromBody]PuzzlePromise.ClientRevelation revelation)
+		{
+			var session = GetSessionFromChannelId(channelId);
+			var proof = session.PromiseServerSession.CheckRevelation(revelation);
+			Repository.Save(channelId, session);
+			return Json(proof);
+		}
+
+		private TumblerBobServerSession GetSessionFromChannelId(string channelId)
+		{
+			var height = Services.BlockExplorerService.GetCurrentHeight();
+			var session = Repository.GetBobSession(channelId);
+			if(session == null)
+				throw NotFound("channel-not-found").AsException();
+			if(!session.GetCycle().IsInPhase(CyclePhase.TumblerChannelEstablishment, height))
+				throw BadRequest("incorrect-phase").AsException();
+			return session;
 		}
 
 		private string GetKey(PuzzleSolution signedVoucher)

@@ -59,8 +59,7 @@ namespace NTumbleBit.Tests
 			var conf = new TumblerConfiguration();
 			conf.Network = Network.RegTest;
 			conf.RPCClient = rpc;
-			conf.CycleGenerator.FirstCycle.Start = 105;		
-
+			conf.CycleGenerator.FirstCycle.Start = 105;					
 
 			_Host = new WebHostBuilder()
 				.UseKestrel()

@@ -169,6 +169,8 @@ namespace NTumbleBit.Tests
 			var decrypted = Utils.ChachaDecrypt(encrypted, key1);
 			Assert.True(decrypted.SequenceEqual(msg));
 		}
+
+		FeeRate FeeRate = new FeeRate(Money.Satoshis(50), 1);
 	
 		[Fact]
 		public void TestPuzzlePromise()
@@ -187,35 +189,31 @@ namespace NTumbleBit.Tests
 			var client = new PromiseClientSession(parameters);
 			var server = new PromiseServerSession(serverKey, parameters);
 
-			var coin = CreateEscrowCoin(serverKey.PubKey, clientKey.PubKey);
+			var coin = CreateEscrowCoin(serverKey.PubKey, clientKey.PubKey);			
 
-			Transaction cashout = new Transaction();
-			cashout.AddInput(new TxIn(coin.Outpoint, Script.Empty));
-			cashout.AddOutput(new TxOut(Money.Coins(1.5m), clientKey.PubKey.Hash));
-
-			SignaturesRequest request = client.CreateSignatureRequest(coin, cashout);
-			RoundTrip(ref client);
+			SignaturesRequest request = client.CreateSignatureRequest(coin, clientKey.PubKey.Hash, FeeRate);
+			RoundTrip(ref client, parameters);
 			RoundTrip(ref request);
 
 			PuzzlePromise.ServerCommitment[] commitments = server.SignHashes(request);
-			RoundTrip(ref server, parameters, serverKey);
+			RoundTrip(ref server, parameters);
 			RoundTrip(ref commitments);
 
 			PuzzlePromise.ClientRevelation revelation = client.Reveal(commitments);
-			RoundTrip(ref client);
+			RoundTrip(ref client, parameters);
 			RoundTrip(ref revelation);
 
 			ServerCommitmentsProof proof = server.CheckRevelation(revelation);
-			RoundTrip(ref server, parameters, serverKey);
+			RoundTrip(ref server, parameters);
 			RoundTrip(ref proof);
 
 			var puzzleToSolve = client.CheckCommitmentProof(proof);
-			RoundTrip(ref client);
+			RoundTrip(ref client, parameters);
 			Assert.NotNull(puzzleToSolve);
 
 			var solution = key.SolvePuzzle(puzzleToSolve);
 			var transactions = client.GetSignedTransactions(solution).ToArray();
-			RoundTrip(ref client);
+			RoundTrip(ref client, parameters);
 			Assert.True(transactions.Length == parameters.RealTransactionCount);
 
 			foreach(var tx in transactions)
@@ -350,18 +348,16 @@ namespace NTumbleBit.Tests
 			client = SolverClientSession.ReadFrom(ms);
 		}
 
-		private void RoundTrip(ref PromiseServerSession server, PromiseParameters parameters, Key transactionKey)
+		private void RoundTrip(ref PromiseServerSession server, PromiseParameters parameters)
 		{
 			var clone = Serializer.Clone(server.GetInternalState());
-			server = new PromiseServerSession(transactionKey, parameters);
+			server = new PromiseServerSession(clone, parameters);
 		}
 
-		private void RoundTrip(ref PromiseClientSession client)
+		private void RoundTrip(ref PromiseClientSession client, PromiseParameters parameters)
 		{
-			var ms = new MemoryStream();
-			client.WriteTo(ms);
-			ms.Position = 0;
-			client = PromiseClientSession.ReadFrom(ms);
+			var clone = Serializer.Clone(client.GetInternalState());
+			client = new PromiseClientSession(parameters, clone);
 		}
 
 		LockTime EscrowDate = new LockTime(new DateTimeOffset(1988, 07, 18, 0, 0, 0, TimeSpan.Zero));

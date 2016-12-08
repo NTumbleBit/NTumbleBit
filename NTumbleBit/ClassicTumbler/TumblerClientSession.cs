@@ -17,7 +17,7 @@ namespace NTumbleBit.ClassicTumbler
 		WaitingSolvedVoucher,
 		WaitingGenerateTumblerTransactionKey,
 		WaitingTumblerEscrow,
-		Completed,
+		PromisePhase,
 	}
 	public class TumblerClientSession
 	{
@@ -73,6 +73,12 @@ namespace NTumbleBit.ClassicTumbler
 				get;
 				set;
 			}
+
+			public PromiseClientSession.InternalState PromiseClientSessionState
+			{
+				get; set;
+			}
+
 			public List<Key> KnownKeys
 			{
 				get; set;
@@ -85,6 +91,13 @@ namespace NTumbleBit.ClassicTumbler
 			InternalState = new State();
 			Parameters = parameters;
 			InternalState.CycleStart = cycleStart;
+			InitPromiseClientSession();
+		}
+
+		private void InitPromiseClientSession()
+		{
+			PromiseClientSession = new PromiseClientSession(Parameters.CreatePromiseParamaters(), InternalState.PromiseClientSessionState);
+			InternalState.PromiseClientSessionState = null;
 		}
 
 		public TumblerClientSession(ClassicTumblerParameters parameters, State state)
@@ -94,7 +107,14 @@ namespace NTumbleBit.ClassicTumbler
 			if(state == null)
 				throw new ArgumentNullException("state");
 			Parameters = parameters;
-			InternalState = state;
+			InternalState = Serializer.Clone(state);
+			InitPromiseClientSession();
+		}
+
+		public PromiseClientSession PromiseClientSession
+		{
+			get;
+			private set;
 		}
 
 		State InternalState
@@ -104,7 +124,9 @@ namespace NTumbleBit.ClassicTumbler
 
 		public State GetInternalState()
 		{
-			return Serializer.Clone(InternalState);
+			var clone = Serializer.Clone(InternalState);
+			clone.PromiseClientSessionState = PromiseClientSession.GetInternalState();
+			return clone;
 		}
 
 
@@ -149,6 +171,12 @@ namespace NTumbleBit.ClassicTumbler
 			};
 		}
 
+		public Script GetTumblerChannelId()
+		{
+			AssertState(TumblerClientSessionStates.PromisePhase);
+			return InternalState.TumblerEscrowedCoin.ScriptPubKey;
+		}
+
 		public void ReceiveTumblerEscrowKey(PubKey tumblerKey)
 		{
 			AssertState(TumblerClientSessionStates.WaitingTumblerClientTransactionKey);
@@ -162,7 +190,7 @@ namespace NTumbleBit.ClassicTumbler
 			var escrow = CreateClientEscrowScript();
 			return new TxOut(Parameters.Denomination + Parameters.Fee, escrow.Hash);
 		}
-
+		
 		private Script CreateClientEscrowScript()
 		{
 			return InternalState.ClientEscrowInformation.CreateEscrow(GetCycle().GetClientLockTime());
@@ -183,7 +211,7 @@ namespace NTumbleBit.ClassicTumbler
 		{
 			AssertState(TumblerClientSessionStates.WaitingClientTransaction);
 			var expectedTxout = BuildClientEscrowTxOut();
-			var output = transaction.Outputs.AsIndexedOutputs().Single(o => o.TxOut.ScriptPubKey == expectedTxout.ScriptPubKey && o.TxOut.Value == expectedTxout.Value);			
+			var output = transaction.Outputs.AsIndexedOutputs().Single(o => o.TxOut.ScriptPubKey == expectedTxout.ScriptPubKey && o.TxOut.Value == expectedTxout.Value);
 			InternalState.ClientEscrowedCoin = new Coin(output).ToScriptCoin(CreateClientEscrowScript());
 			InternalState.ClientEscrowInformation = null;
 			InternalState.Status = TumblerClientSessionStates.WaitingSolvedVoucher;
@@ -218,7 +246,7 @@ namespace NTumbleBit.ClassicTumbler
 			};
 		}
 
-		public void ReceiveTumblerEscrowInformation(TumblerEscrowInformation tumblerInformation)
+		public ScriptCoin ReceiveTumblerEscrowInformation(TumblerEscrowInformation tumblerInformation)
 		{
 			AssertState(TumblerClientSessionStates.WaitingTumblerEscrow);
 			InternalState.TumblerEscrowInformation.OtherEscrowKey = tumblerInformation.EscrowKey;
@@ -226,11 +254,10 @@ namespace NTumbleBit.ClassicTumbler
 			var escrow = BuildTumblerEscrowTxOut();
 			var output = tumblerInformation.Transaction.Outputs.AsIndexedOutputs()
 				.Single(o => o.TxOut.ScriptPubKey == escrow.ScriptPubKey && o.TxOut.Value == escrow.Value);
-
 			InternalState.TumblerEscrowedCoin = new Coin(output).ToScriptCoin(CreateTumblerEscrowScript());
-
 			InternalState.TumblerEscrowInformation = null;
-			InternalState.Status = TumblerClientSessionStates.Completed;
+			InternalState.Status = TumblerClientSessionStates.PromisePhase;
+			return InternalState.TumblerEscrowedCoin;
 		}
 
 		public CycleParameters GetCycle()

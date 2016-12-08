@@ -52,13 +52,14 @@ namespace NTumbleBit.PuzzlePromise
 			if(transactionKey == null)
 				throw new ArgumentNullException("transactionKey");
 			_Parameters = parameters ?? new PromiseParameters();
-			_TransactionKey = transactionKey;
+			_InternalState.TransactionKey = transactionKey;
 		}
 
-		public PromiseServerSession(InternalState state, Key transactionKey, PromiseParameters parameters = null):this(transactionKey, parameters)
+		public PromiseServerSession(InternalState state, PromiseParameters parameters = null)
 		{
 			if(state == null)
-				throw new ArgumentNullException("state");			
+				throw new ArgumentNullException("state");
+			_Parameters = parameters ?? new PromiseParameters();
 			this._InternalState = state;
 		}
 
@@ -78,6 +79,11 @@ namespace NTumbleBit.PuzzlePromise
 				get;
 				set;
 			}
+			public Key TransactionKey
+			{
+				get;
+				set;
+			}
 		}
 
 		public InternalState GetInternalState()
@@ -88,12 +94,11 @@ namespace NTumbleBit.PuzzlePromise
 
 		InternalState _InternalState = new InternalState();
 
-		readonly Key _TransactionKey;
 		public Key TransactionKey
 		{
 			get
 			{
-				return _TransactionKey;
+				return _InternalState.TransactionKey;
 			}
 		}
 		
@@ -118,7 +123,7 @@ namespace NTumbleBit.PuzzlePromise
 			List<EncryptedSignature> encryptedSignatures = new List<EncryptedSignature>();
 			foreach(var hash in sigRequest.Hashes)
 			{
-				var ecdsa = _TransactionKey.Sign(hash);
+				var ecdsa = _InternalState.TransactionKey.Sign(hash);
 				var ecdsaDER = ecdsa.ToDER();
 				var key = new XORKey(Parameters.ServerKey);
 				var promise = key.XOR(ecdsaDER);

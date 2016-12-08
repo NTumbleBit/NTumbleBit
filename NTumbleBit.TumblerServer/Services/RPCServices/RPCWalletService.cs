@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using NBitcoin;
 using NBitcoin.RPC;
 using Newtonsoft.Json.Linq;
+using NTumbleBit.PuzzlePromise;
 
 namespace NTumbleBit.TumblerServer.Services.RPCServices
 {

@@ -94,5 +94,16 @@ namespace NTumbleBit.ClassicTumbler
 			return solverParams.FakePuzzleCount == FakePuzzleCount &&
 				solverParams.RealPuzzleCount == RealPuzzleCount;
 		}
+
+		public PromiseParameters CreatePromiseParamaters()
+		{
+			return new PromiseParameters()
+			{
+				FakeFormat = FakeFormat,
+				FakeTransactionCount = FakeTransactionCount,
+				RealTransactionCount = RealTransactionCount,
+				ServerKey = ServerKey
+			};
+		}
 	}
 }

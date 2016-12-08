@@ -98,36 +98,6 @@ namespace NTumbleBit.PuzzlePromise
 			}
 		}
 
-		public byte[] ToBytes()
-		{
-			MemoryStream ms = new MemoryStream();
-			WriteTo(ms);
-			ms.Position = 0;
-			return ms.ToArrayEfficient();
-		}
-		public static PromiseClientSession ReadFrom(Stream stream)
-		{
-			if(stream == null)
-				throw new ArgumentNullException("stream");
-
-			var text = new StreamReader(stream, Encoding.UTF8).ReadToEnd();
-			JsonSerializerSettings settings = new JsonSerializerSettings();
-			Serializer.RegisterFrontConverters(settings);
-			var state = JsonConvert.DeserializeObject<InternalState>(text, settings);
-			return new PromiseClientSession(state);
-		}
-		public void WriteTo(Stream stream)
-		{
-			if(stream == null)
-				throw new ArgumentNullException("stream");
-			var writer = new StreamWriter(stream, Encoding.UTF8);
-			JsonSerializerSettings settings = new JsonSerializerSettings();
-			Serializer.RegisterFrontConverters(settings);
-			var result = JsonConvert.SerializeObject(GetInternalState(), settings);
-			writer.Write(result);
-			writer.Flush();
-		}
-
 		public class InternalState
 		{
 			public Transaction Cashout
@@ -160,11 +130,7 @@ namespace NTumbleBit.PuzzlePromise
 				get;
 				set;
 			}
-			public PromiseParameters PromiseParameters
-			{
-				get;
-				set;
-			}
+
 			public Quotient[] Quotients
 			{
 				get;
@@ -179,6 +145,11 @@ namespace NTumbleBit.PuzzlePromise
 			{
 				get; set;
 			}
+			public BlindFactor BlindFactor
+			{
+				get;
+				set;
+			}
 		}
 
 		private readonly PromiseParameters _Parameters;
@@ -189,19 +160,21 @@ namespace NTumbleBit.PuzzlePromise
 		ScriptCoin _EscrowedCoin;
 		Transaction _Cashout;
 		private int[] _FakeIndexes;
+		private BlindFactor _BlindFactor;
 
-		public PromiseClientSession(InternalState state)
+		public PromiseClientSession(PromiseParameters parameters, InternalState state) : this(parameters)
 		{
 			if(state == null)
-				throw new ArgumentNullException("state");
+				return;
 
-			_Parameters = state.PromiseParameters;
+			_Parameters = parameters;
 			_Quotients = state.Quotients;
 			_State = state.State;
 			_IndexSalt = state.IndexSalt;
 			_EscrowedCoin = state.EscrowedCoin;
 			_Cashout = state.Cashout;
 			_FakeIndexes = state.FakeIndexes;
+			_BlindFactor = state.BlindFactor;
 			if(state.Commitments != null)
 			{
 				_Hashes = new HashBase[state.Commitments.Length];
@@ -230,16 +203,16 @@ namespace NTumbleBit.PuzzlePromise
 			}
 		}
 
-		private InternalState GetInternalState()
+		public InternalState GetInternalState()
 		{
 			InternalState state = new InternalState();
-			state.PromiseParameters = _Parameters;
 			state.Quotients = _Quotients;
 			state.State = State;
 			state.IndexSalt = _IndexSalt;
 			state.EscrowedCoin = _EscrowedCoin;
 			state.Cashout = _Cashout;
 			state.FakeIndexes = _FakeIndexes;
+			state.BlindFactor = _BlindFactor;
 			if(_Hashes != null)
 			{
 				var commitments = new List<ServerCommitment>();
@@ -267,21 +240,29 @@ namespace NTumbleBit.PuzzlePromise
 			return state;
 		}
 
-		public static PromiseClientSession ReadFrom(byte[] bytes)
+		public SignaturesRequest CreateSignatureRequest(ScriptCoin escrowedCoin, IDestination cashoutDestination, FeeRate feeRate)
 		{
-			if(bytes == null)
-				throw new ArgumentNullException("bytes");
-			var ms = new MemoryStream(bytes);
-			return ReadFrom(ms);
+			if(cashoutDestination == null)
+				throw new ArgumentNullException("cashoutDestination");
+			return CreateSignatureRequest(escrowedCoin, cashoutDestination.ScriptPubKey, feeRate);
 		}
-
-		public SignaturesRequest CreateSignatureRequest(ScriptCoin escrowedCoin, Transaction cashout)
+		public SignaturesRequest CreateSignatureRequest(ScriptCoin escrowedCoin, Script cashoutDestination, FeeRate feeRate)
 		{
 			if(escrowedCoin == null)
 				throw new ArgumentNullException("escrowedCoin");
-			if(cashout == null)
-				throw new ArgumentNullException("cashout");
+			if(cashoutDestination == null)
+				throw new ArgumentNullException("cashoutDestination");
+			if(feeRate == null)
+				throw new ArgumentNullException("feeRate");
 			AssertState(PromiseClientStates.WaitingSignatureRequest);
+
+			Transaction cashout = new Transaction();
+			cashout.AddInput(new TxIn(escrowedCoin.Outpoint, Script.Empty));
+			cashout.AddOutput(new TxOut(Money.Zero, cashoutDestination));
+			var fee = feeRate.GetFee(cashout.GetVirtualSize());
+			cashout.Outputs[0].Value = escrowedCoin.Amount - fee;
+
+
 			List<HashBase> hashes = new List<HashBase>();
 			LockTime lockTime = new LockTime(0);
 			for(int i = 0; i < Parameters.RealTransactionCount; i++)
@@ -395,8 +376,13 @@ namespace NTumbleBit.PuzzlePromise
 			_Hashes = _Hashes.OfType<RealHash>().ToArray(); // we do not need the fake one anymore
 			_FakeIndexes = null;
 			_Quotients = proof.Quotients;
-			_State = PromiseClientStates.Completed;
-			return _Hashes.OfType<RealHash>().First().Commitment.Puzzle;
+			var puzzleToSolve = _Hashes.OfType<RealHash>().First().Commitment.Puzzle;
+			BlindFactor blind = null;
+			var blindedPuzzle = new Puzzle(Parameters.ServerKey, puzzleToSolve).Blind(ref blind);
+
+			_BlindFactor = blind;
+			_State = PromiseClientStates.Completed;			
+			return blindedPuzzle.PuzzleValue;
 		}
 
 		private bool IsValidSignature(PuzzleSolution solution, HashBase hash, out PubKey signer, out ECDSASignature signature)
@@ -428,6 +414,8 @@ namespace NTumbleBit.PuzzlePromise
 		{
 			if(solution == null)
 				throw new ArgumentNullException("solution");
+			AssertState(PromiseClientStates.Completed);
+			solution = solution.Unblind(Parameters.ServerKey, _BlindFactor);
 			BigInteger cumul = solution._Value;
 			var hashes = _Hashes.OfType<RealHash>().ToArray();
 			for(int i = 0; i < Parameters.RealTransactionCount; i++)
