@@ -150,6 +150,11 @@ namespace NTumbleBit.Client.Tumbler
 			return Serializer.ToObject<T>(str, Network);
 		}
 
+		public object CheckRevelation(object id, PuzzlePromise.ClientRevelation revelation)
+		{
+			throw new NotImplementedException();
+		}
+
 		public ServerCommitmentsProof CheckRevelation(Script channelId, PuzzlePromise.ClientRevelation revelation)
 		{
 			return CheckRevelationAsync(channelId, revelation).GetAwaiter().GetResult();
@@ -163,6 +168,11 @@ namespace NTumbleBit.Client.Tumbler
 		public Task<PuzzlePromise.ServerCommitment[]> SignHashesAsync(Script channelId, SignaturesRequest sigReq)
 		{
 			return this.SendAsync<PuzzlePromise.ServerCommitment[]>(HttpMethod.Post, sigReq, "api/v1/tumblers/0/channels/{0}/signhashes", channelId.ToHex());
+		}
+
+		public object CheckRevelation(object id, PuzzleSolver.ClientRevelation revelation2)
+		{
+			throw new NotImplementedException();
 		}
 
 		public PuzzleSolver.SolutionKey[] CheckRevelation(Script channelId, PuzzleSolver.ClientRevelation revelation)

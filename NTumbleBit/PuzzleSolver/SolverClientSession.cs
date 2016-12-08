@@ -15,6 +15,7 @@ namespace NTumbleBit.PuzzleSolver
 {
 	public enum SolverClientStates
 	{
+		WaitingEscrow,
 		WaitingPuzzle,
 		WaitingGeneratePuzzles,
 		WaitingCommitments,
@@ -33,41 +34,36 @@ namespace NTumbleBit.PuzzleSolver
 
 	public class SolverClientSession
 	{
+		public State InternalState
+		{
+			get; set;
+		}
 		public SolverClientSession(RsaPubKey serverKey)
 		{
 			if(serverKey == null)
 				throw new ArgumentNullException("serverKey");
 			_Parameters = new SolverParameters(serverKey);
+			InternalState = new SolverClientSession.State();
 		}
 
 
 		private readonly SolverParameters _Parameters;
-		private Puzzle _Puzzle;
-		private SolverClientStates _State = SolverClientStates.WaitingPuzzle;
 		private PuzzleSetElement[] _PuzzleElements;
-		private PuzzleSolution _PuzzleSolution;
-		private int[] _FakeIndexes;
 
 		public SolverClientSession(SolverParameters parameters)
 		{
 			if(parameters == null)
 				throw new ArgumentNullException("parameters");
 			_Parameters = parameters;
+			InternalState = new SolverClientSession.State();
 		}
 
-		public SolverClientSession(SolverParameters parameters, InternalState state)
+		public SolverClientSession(SolverParameters parameters, State state):this(parameters)
 		{
-			if(parameters == null)
-				throw new ArgumentNullException("parameters");
-			_Parameters = parameters;
 			if(state == null)
 				return;
-			_Parameters = parameters;
-			_Puzzle = new Puzzle(_Parameters.ServerKey, state.Puzzle);
-			_PuzzleSolution = state.PuzzleSolution;
-			_FakeIndexes = state.FakeIndexes;
-			_State = state.State;
-			if(_FakeIndexes != null)
+			InternalState = state;
+			if(InternalState.FakeIndexes != null)
 			{
 				_PuzzleElements = new PuzzleSetElement[_Parameters.GetTotalCount()];
 				int fakeI = 0, realI = 0;
@@ -76,7 +72,7 @@ namespace NTumbleBit.PuzzleSolver
 					PuzzleSetElement element = null;
 					var puzzle = new Puzzle(_Parameters.ServerKey, state.Puzzles[i]);
 
-					if(_FakeIndexes.Contains(i))
+					if(InternalState.FakeIndexes.Contains(i))
 					{
 						element = new FakePuzzle(puzzle, state.FakeSolutions[fakeI++]);
 					}
@@ -91,13 +87,9 @@ namespace NTumbleBit.PuzzleSolver
 			}
 		}
 
-		public InternalState GetInternalState()
+		public State GetInternalState()
 		{
-			InternalState state = new InternalState();
-			state.Puzzle = Puzzle?.PuzzleValue;
-			state.State = State;
-			state.PuzzleSolution = _PuzzleSolution;
-			state.FakeIndexes = _FakeIndexes;
+			var state = Serializer.Clone(InternalState);
 			if(_PuzzleElements != null)
 			{
 				var commitments = new ServerCommitment[_PuzzleElements.Length];
@@ -129,13 +121,13 @@ namespace NTumbleBit.PuzzleSolver
 			return state;
 		}
 
-		public class InternalState
+		public class State
 		{
 			public PuzzleValue Puzzle
 			{
 				get; set;
 			}
-			public SolverClientStates State
+			public SolverClientStates Status
 			{
 				get; set;
 			}
@@ -143,7 +135,10 @@ namespace NTumbleBit.PuzzleSolver
 			{
 				get; set;
 			}
-
+			public ScriptCoin EscrowedCoin
+			{
+				get; set;
+			}
 			public PuzzleValue[] Puzzles
 			{
 				get; set;
@@ -185,20 +180,23 @@ namespace NTumbleBit.PuzzleSolver
 			}
 		}
 
-		public Puzzle Puzzle
+		public Script Id
 		{
 			get
 			{
-				return _Puzzle;
+				return InternalState.EscrowedCoin.ScriptPubKey;
 			}
 		}
 
-		public SolverClientStates State
+		public void ConfigureEscrowedCoin(ScriptCoin escrowedCoin)
 		{
-			get
-			{
-				return _State;
-			}
+			if(escrowedCoin == null)
+				throw new ArgumentNullException("escrowedCoin");
+			AssertState(SolverClientStates.WaitingEscrow);
+			if(EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(escrowedCoin.Redeem) == null)
+				throw new PuzzleException("Invalid escrow");
+			InternalState.EscrowedCoin = escrowedCoin;
+			InternalState.Status = SolverClientStates.WaitingPuzzle;
 		}
 
 		public void AcceptPuzzle(PuzzleValue puzzleValue)
@@ -206,8 +204,8 @@ namespace NTumbleBit.PuzzleSolver
 			if(puzzleValue == null)
 				throw new ArgumentNullException("puzzleValue");
 			AssertState(SolverClientStates.WaitingPuzzle);
-			_Puzzle = new Puzzle(Parameters.ServerKey, puzzleValue);
-			_State = SolverClientStates.WaitingGeneratePuzzles;
+			InternalState.Puzzle = puzzleValue;
+			InternalState.Status = SolverClientStates.WaitingGeneratePuzzles;
 		}
 
 		public PuzzleValue[] GeneratePuzzles()
@@ -217,7 +215,7 @@ namespace NTumbleBit.PuzzleSolver
 			for(int i = 0; i < Parameters.RealPuzzleCount; i++)
 			{
 				BlindFactor blind = null;
-				Puzzle puzzle = _Puzzle.Blind(ref blind);
+				Puzzle puzzle = new Puzzle(ServerKey, InternalState.Puzzle).Blind(ref blind);
 				puzzles.Add(new RealPuzzle(puzzle, blind));
 			}
 
@@ -230,15 +228,15 @@ namespace NTumbleBit.PuzzleSolver
 
 			_PuzzleElements = puzzles.ToArray();
 			NBitcoin.Utils.Shuffle(_PuzzleElements, RandomUtils.GetInt32());
-			_FakeIndexes = new int[Parameters.FakePuzzleCount];
+			InternalState.FakeIndexes = new int[Parameters.FakePuzzleCount];
 			int fakeI = 0;
 			for(int i = 0; i < _PuzzleElements.Length; i++)
 			{
 				_PuzzleElements[i].Index = i;
 				if(_PuzzleElements[i] is FakePuzzle)
-					_FakeIndexes[fakeI++] = i;
+					InternalState.FakeIndexes[fakeI++] = i;
 			}
-			_State = SolverClientStates.WaitingCommitments;
+			InternalState.Status = SolverClientStates.WaitingCommitments;
 			return _PuzzleElements.Select(p => p.Puzzle.PuzzleValue).ToArray();
 		}		
 
@@ -262,8 +260,8 @@ namespace NTumbleBit.PuzzleSolver
 			{
 				_PuzzleElements[i].Commitment = commitments[i];
 			}
-			_State = SolverClientStates.WaitingFakeCommitmentsProof;
-			return new ClientRevelation(_FakeIndexes, solutions.ToArray());
+			InternalState.Status = SolverClientStates.WaitingFakeCommitmentsProof;
+			return new ClientRevelation(InternalState.FakeIndexes, solutions.ToArray());
 		}
 
 		public BlindFactor[] GetBlindFactors(SolutionKey[] keys)
@@ -290,7 +288,7 @@ namespace NTumbleBit.PuzzleSolver
 				}
 			}
 
-			_State = SolverClientStates.WaitingPuzzleSolutions;
+			InternalState.Status = SolverClientStates.WaitingPuzzleSolutions;
 			return _PuzzleElements.OfType<RealPuzzle>()
 				.Select(p => p.BlindFactor)
 				.ToArray();
@@ -372,20 +370,20 @@ namespace NTumbleBit.PuzzleSolver
 			if(solution == null)
 				throw new PuzzleException("Impossible to find solution to the puzzle");
 
-			_PuzzleSolution = solution.Unblind(ServerKey, solvedPuzzle.BlindFactor);
-			_State = SolverClientStates.Completed;
+			InternalState.PuzzleSolution = solution.Unblind(ServerKey, solvedPuzzle.BlindFactor);
+			InternalState.Status = SolverClientStates.Completed;
 		}
 
 		public PuzzleSolution GetSolution()
 		{
 			AssertState(SolverClientStates.Completed);
-			return _PuzzleSolution;
+			return InternalState.PuzzleSolution;
 		}
 
 		private void AssertState(SolverClientStates state)
 		{
-			if(state != _State)
-				throw new InvalidOperationException("Invalid state, actual " + _State + " while expected is " + state);
+			if(state != InternalState.Status)
+				throw new InvalidOperationException("Invalid state, actual " + InternalState.Status + " while expected is " + state);
 		}
 	}
 }

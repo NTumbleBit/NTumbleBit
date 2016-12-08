@@ -189,9 +189,10 @@ namespace NTumbleBit.Tests
 			var client = new PromiseClientSession(parameters);
 			var server = new PromiseServerSession(serverKey, parameters);
 
-			var coin = CreateEscrowCoin(serverKey.PubKey, clientKey.PubKey);			
+			var coin = CreateEscrowCoin(serverKey.PubKey, clientKey.PubKey);
 
-			SignaturesRequest request = client.CreateSignatureRequest(coin, clientKey.PubKey.Hash, FeeRate);
+			client.ConfigureEscrowedCoin(coin);
+			SignaturesRequest request = client.CreateSignatureRequest(clientKey.PubKey.Hash, FeeRate);
 			RoundTrip(ref client, parameters);
 			RoundTrip(ref request);
 
@@ -260,6 +261,8 @@ namespace NTumbleBit.Tests
 			SolverClientSession client = new SolverClientSession(parameters);
 			SolverServerSession server = new SolverServerSession(key, parameters);
 
+			var escrow = CreateEscrowCoin(new Key().PubKey, new Key().PubKey);
+			client.ConfigureEscrowedCoin(escrow);
 			client.AcceptPuzzle(puzzle.PuzzleValue);
 			RoundTrip(ref client, parameters);
 			PuzzleValue[] puzzles = client.GeneratePuzzles();

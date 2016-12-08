@@ -79,7 +79,7 @@ namespace NTumbleBit.Tests
 				bobRPC.SendRawTransaction(clientEscrowTx);
 				server.BobNode.FindBlock(2);
 				server.SyncNodes();
-				clientSession.SetClientSignedTransaction(clientEscrowTx);
+				var solverClientSession = clientSession.SetClientSignedTransaction(clientEscrowTx);
 				//Server solves the puzzle
 				var voucher = aliceClient.SolveVoucher(clientEscrowTx.GetHash());
 				clientSession.CheckVoucherSolution(voucher);
@@ -94,15 +94,15 @@ namespace NTumbleBit.Tests
 				//Client asks the Tumbler to make a channel
 				var bobEscrowInformation = clientSession.GenerateTumblerTransactionKey();
 				var tumblerInformation = bobClient.OpenChannel(bobEscrowInformation);
-				var escrow = clientSession.ReceiveTumblerEscrowInformation(tumblerInformation);
+				var promiseClientSession = clientSession.ReceiveTumblerEscrowInformation(tumblerInformation);
 				//Channel is done, now need to run the promise protocol to get valid puzzle
 				var cashoutDestination = clientWallet.GenerateAddress();
-				var sigReq = clientSession.PromiseClientSession.CreateSignatureRequest(escrow, cashoutDestination, FeeRate);
-				var commiments = bobClient.SignHashes(clientSession.GetTumblerChannelId(), sigReq);
-				var revelation = clientSession.PromiseClientSession.Reveal(commiments);
-				var proof = bobClient.CheckRevelation(clientSession.GetTumblerChannelId(), revelation);
-				var puzzle = clientSession.PromiseClientSession.CheckCommitmentProof(proof);
-				clientSession.SolverClientSession.AcceptPuzzle(puzzle);
+				var sigReq = promiseClientSession.CreateSignatureRequest(cashoutDestination, FeeRate);
+				var commiments = bobClient.SignHashes(promiseClientSession.Id, sigReq);
+				var revelation = promiseClientSession.Reveal(commiments);
+				var proof = bobClient.CheckRevelation(promiseClientSession.Id, revelation);
+				var puzzle = promiseClientSession.CheckCommitmentProof(proof);
+				solverClientSession.AcceptPuzzle(puzzle);
 				/////////////////////////////</TumblerChannel>/////////////////////////
 
 				//Client waits until payment phase
@@ -112,14 +112,13 @@ namespace NTumbleBit.Tests
 
 				/////////////////////////////<Payment>/////////////////////////
 				//Client pays for the puzzle
-				var puzzles = clientSession.SolverClientSession.GeneratePuzzles();
-				var commmitments = aliceClient.SolvePuzzles(clientSession.GetClientChannelId(), puzzles);
-				var revelation2 = clientSession.SolverClientSession.Reveal(commmitments);
-				var solutionKeys = aliceClient.CheckRevelation(clientSession.GetClientChannelId(), revelation2);
-				var blindFactors = clientSession.SolverClientSession.GetBlindFactors(solutionKeys);
-				
+				var puzzles = solverClientSession.GeneratePuzzles();
+				var commmitments = aliceClient.SolvePuzzles(solverClientSession.Id, puzzles);
+				var revelation2 = solverClientSession.Reveal(commmitments);
+				var solutionKeys = aliceClient.CheckRevelation(solverClientSession.Id, revelation2);
+				var blindFactors = solverClientSession.GetBlindFactors(solutionKeys);
 				//clientSession.SolverClientSession.CreateOfferScript(new PuzzleSolver.PaymentCashoutContext())
-				aliceClient.CheckBlindFactors(clientSession.GetClientChannelId(), blindFactors);
+				aliceClient.CheckBlindFactors(solverClientSession.Id, blindFactors);
 				/////////////////////////////</Payment>/////////////////////////
 			}
 		}
