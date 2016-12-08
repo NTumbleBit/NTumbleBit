@@ -303,10 +303,10 @@ namespace NTumbleBit.PuzzlePromise
 
 		PubKey[] GetExpectedSigners()
 		{
-			var multiSig = PayToMultiSigTemplate.Instance.ExtractScriptPubKeyParameters(_EscrowedCoin.GetScriptCode());
-			if(multiSig == null || multiSig.SignatureCount != 2 || multiSig.InvalidPubKeys.Length != 0 || multiSig.PubKeys.Length != 2)
-				throw new ArgumentException("Invalid escrow 2-2 multisig");
-			return multiSig.PubKeys;
+			var parameters = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(_EscrowedCoin.GetScriptCode());
+			if(parameters == null)
+				throw new ArgumentException("Invalid escrow");
+			return parameters.EscrowKeys;
 		}
 
 		public ClientRevelation Reveal(ServerCommitment[] commitments)
