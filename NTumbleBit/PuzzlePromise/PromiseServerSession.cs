@@ -47,21 +47,15 @@ namespace NTumbleBit.PuzzlePromise
 				get; set;
 			}
 		}
-		public PromiseServerSession(RsaKey serverKey, Key transactionKey, PromiseParameters parameters = null)
+		public PromiseServerSession(Key transactionKey, PromiseParameters parameters = null)
 		{
-			if(serverKey == null)
-				throw new ArgumentNullException("serverKey");
 			if(transactionKey == null)
 				throw new ArgumentNullException("transactionKey");
 			_Parameters = parameters ?? new PromiseParameters();
-			_Parameters.ServerKey = _Parameters.ServerKey ?? serverKey.PubKey;
-			if(serverKey.PubKey != _Parameters.ServerKey)
-				throw new ArgumentNullException("Private key not matching expected public key");
-			_ServerKey = serverKey;
 			_TransactionKey = transactionKey;
 		}
 
-		public PromiseServerSession(InternalState state, RsaKey serverKey, Key transactionKey, PromiseParameters parameters = null):this(serverKey, transactionKey, parameters)
+		public PromiseServerSession(InternalState state, Key transactionKey, PromiseParameters parameters = null):this(transactionKey, parameters)
 		{
 			if(state == null)
 				throw new ArgumentNullException("state");			
@@ -102,17 +96,7 @@ namespace NTumbleBit.PuzzlePromise
 				return _TransactionKey;
 			}
 		}
-
-
-		readonly RsaKey _ServerKey;
-		public RsaKey ServerKey
-		{
-			get
-			{
-				return _ServerKey;
-			}
-		}
-
+		
 
 		readonly PromiseParameters _Parameters;
 		public PromiseParameters Parameters

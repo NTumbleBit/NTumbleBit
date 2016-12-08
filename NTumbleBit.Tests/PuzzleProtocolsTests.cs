@@ -185,7 +185,7 @@ namespace NTumbleBit.Tests
 			};
 
 			var client = new PromiseClientSession(parameters);
-			var server = new PromiseServerSession(key, serverKey, parameters);
+			var server = new PromiseServerSession(serverKey, parameters);
 
 			var coin = CreateEscrowCoin(serverKey.PubKey, clientKey.PubKey);
 
@@ -198,7 +198,7 @@ namespace NTumbleBit.Tests
 			RoundTrip(ref request);
 
 			PuzzlePromise.ServerCommitment[] commitments = server.SignHashes(request);
-			RoundTrip(ref server, parameters, key, serverKey);
+			RoundTrip(ref server, parameters, serverKey);
 			RoundTrip(ref commitments);
 
 			PuzzlePromise.ClientRevelation revelation = client.Reveal(commitments);
@@ -206,7 +206,7 @@ namespace NTumbleBit.Tests
 			RoundTrip(ref revelation);
 
 			ServerCommitmentsProof proof = server.CheckRevelation(revelation);
-			RoundTrip(ref server, parameters, key, serverKey);
+			RoundTrip(ref server, parameters, serverKey);
 			RoundTrip(ref proof);
 
 			var puzzleToSolve = client.CheckCommitmentProof(proof);
@@ -350,10 +350,10 @@ namespace NTumbleBit.Tests
 			client = SolverClientSession.ReadFrom(ms);
 		}
 
-		private void RoundTrip(ref PromiseServerSession server, PromiseParameters parameters,  RsaKey rsaKey, Key transactionKey)
+		private void RoundTrip(ref PromiseServerSession server, PromiseParameters parameters, Key transactionKey)
 		{
 			var clone = Serializer.Clone(server.GetInternalState());
-			server = new PromiseServerSession(rsaKey, transactionKey, parameters);
+			server = new PromiseServerSession(transactionKey, parameters);
 		}
 
 		private void RoundTrip(ref PromiseClientSession client)
