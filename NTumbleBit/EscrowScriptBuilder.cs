@@ -88,5 +88,60 @@ namespace NTumbleBit
 				return null;
 			}
 		}
+
+		public static TransactionSignature[] ExtractScriptSigParameters(Script scriptSig)
+		{
+			var ops = scriptSig.ToOps().ToArray();
+			if(ops.Length == 4)
+			{
+				if(ops[3].Code != OpcodeType.OP_TRUE)
+					return null;
+				if(ops[0].Code != OpcodeType.OP_0)
+					return null;
+				var sigs = new TransactionSignature[2];
+				try
+				{
+					if(ops[1].Code != OpcodeType.OP_0)
+						sigs[0] = new TransactionSignature(ops[1].PushData);
+					if(ops[2].Code != OpcodeType.OP_0)
+						sigs[1] = new TransactionSignature(ops[2].PushData);
+					return sigs;
+				}
+				catch { return null; }
+			}
+			else if(ops.Length == 3)
+			{
+				if(ops[2].Code != OpcodeType.OP_FALSE)
+					return null;
+				if(ops[0].Code != OpcodeType.OP_0)
+					return null;
+				if(ops[1].Code == OpcodeType.OP_0)
+					return new TransactionSignature[1];
+				try
+				{
+					return new TransactionSignature[] { new TransactionSignature(ops[1].PushData) };
+				}
+				catch { return null; }
+			}
+			else
+				return null;
+		}
+
+		public static Script GenerateScriptSig(TransactionSignature[] signatures)
+		{
+			if(signatures.Length != 2)
+				throw new ArgumentException("Expecting 2 signatures");
+			List<Op> ops = new List<Op>();
+			ops.Add(OpcodeType.OP_0);
+			foreach(var sig in signatures)
+			{
+				if(sig == null)
+					ops.Add(OpcodeType.OP_0);
+				else
+					ops.Add(Op.GetPushOp(sig.ToBytes()));
+			}
+			ops.Add(OpcodeType.OP_TRUE);
+			return new Script(ops.ToArray());
+		}
 	}
 }

@@ -59,6 +59,11 @@ namespace NTumbleBit.PuzzleSolver
 			{
 				get; set;
 			}
+			public Key RedeemOfferKey
+			{
+				get;
+				set;
+			}
 		}
 
 		InternalState _InternalState = new InternalState();
@@ -177,7 +182,7 @@ namespace NTumbleBit.PuzzleSolver
 			return fakePuzzles.Select(f => f.SolutionKey).ToArray();
 		}
 
-		public void CheckBlindedFactors(BlindFactor[] blindFactors)
+		public PubKey CheckBlindedFactors(BlindFactor[] blindFactors)
 		{
 			if(blindFactors == null)
 				throw new ArgumentNullException("blindFactors");
@@ -197,7 +202,10 @@ namespace NTumbleBit.PuzzleSolver
 					throw new PuzzleException("Invalid blind factor");
 				y++;
 			}
+
+			_InternalState.RedeemOfferKey = new Key();
 			_InternalState.State = SolverServerStates.Completed;
+			return _InternalState.RedeemOfferKey.PubKey;
 		}
 
 		public SolutionKey[] GetSolutionKeys()

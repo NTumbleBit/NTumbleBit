@@ -219,6 +219,7 @@ namespace NTumbleBit.Tests
 			foreach(var tx in transactions)
 			{
 				TransactionBuilder builder = new TransactionBuilder();
+				builder.Extensions.Add(new EscrowBuilderExtension());
 				builder.AddCoins(coin);
 				builder.AddKeys(clientKey);
 				builder.StandardTransactionPolicy = new StandardTransactionPolicy()
@@ -233,7 +234,7 @@ namespace NTumbleBit.Tests
 		
 		private ScriptCoin CreateEscrowCoin(PubKey pubKey, PubKey pubKey2)
 		{
-			var redeem = PayToMultiSigTemplate.Instance.GenerateScriptPubKey(2, pubKey, pubKey2);
+			var redeem = EscrowScriptBuilder.CreateEscrow(new[] { pubKey, pubKey2 }, pubKey, new LockTime(0));
 			var scriptCoin = new Coin(new OutPoint(new uint256(RandomUtils.GetBytes(32)), 0), 
 				new TxOut()
 				{

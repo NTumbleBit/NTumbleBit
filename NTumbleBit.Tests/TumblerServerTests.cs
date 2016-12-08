@@ -117,6 +117,7 @@ namespace NTumbleBit.Tests
 				var revelation2 = clientSession.SolverClientSession.Reveal(commmitments);
 				var solutionKeys = aliceClient.CheckRevelation(clientSession.GetClientChannelId(), revelation2);
 				var blindFactors = clientSession.SolverClientSession.GetBlindFactors(solutionKeys);
+				
 				//clientSession.SolverClientSession.CreateOfferScript(new PuzzleSolver.PaymentCashoutContext())
 				aliceClient.CheckBlindFactors(clientSession.GetClientChannelId(), blindFactors);
 				/////////////////////////////</Payment>/////////////////////////

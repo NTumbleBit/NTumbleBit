@@ -431,6 +431,7 @@ namespace NTumbleBit.PuzzlePromise
 
 				var transaction = hash.GetTransaction();
 				TransactionBuilder txBuilder = new TransactionBuilder();
+				txBuilder.Extensions.Add(new EscrowBuilderExtension());
 				txBuilder.AddCoins(_EscrowedCoin);
 				txBuilder.AddKnownSignature(signer, signature);
 				txBuilder.SignTransactionInPlace(transaction);

@@ -38,8 +38,8 @@ namespace NTumbleBit.PuzzleSolver
 
 		public Script CreateFulfillScript(TransactionSignature signature, SolutionKey[] solutionKey)
 		{
-			var redeem = CreateOfferScript(solutionKey.Select(s => s.GetHash()).ToArray());
-			return SolverScriptBuilder.GetFulfillScript(signature, solutionKey, redeem);
+			var offerScript = CreateOfferScript(solutionKey.Select(s => s.GetHash()).ToArray());
+			return SolverScriptBuilder.GetFulfillScript(signature, solutionKey, offerScript);
 		}
 	}
 }
