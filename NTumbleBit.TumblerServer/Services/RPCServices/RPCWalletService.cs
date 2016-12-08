@@ -52,7 +52,7 @@ namespace NTumbleBit.TumblerServer.Services.RPCServices
 			var result = _RPCClient.SendCommand("fundrawtransaction", tx.ToHex(), new JObject()
 			{
 				new JProperty("lockUnspents", true),
-				new JProperty("feeRate", feeRate.GetFee(1024).ToDecimal(MoneyUnit.BTC)),				
+				new JProperty("feeRate", feeRate.GetFee(1000).ToDecimal(MoneyUnit.BTC)),				
 			});			
 			if(result.Error != null)
 				return null;

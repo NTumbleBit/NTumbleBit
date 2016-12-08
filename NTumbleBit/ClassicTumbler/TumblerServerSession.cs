@@ -200,6 +200,11 @@ namespace NTumbleBit.ClassicTumbler
 				get;
 				set;
 			}
+
+			public PromiseServerSession PromiseData
+			{
+				get; set;
+			}
 		}
 
 		public TumblerBobServerSession(ClassicTumblerParameters parameters,

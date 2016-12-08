@@ -20,8 +20,12 @@ namespace NTumbleBit.PuzzlePromise
 
 	public class PromiseServerSession
 	{
-		class EncryptedSignature
+		public class EncryptedSignature
 		{
+			public EncryptedSignature()
+			{
+
+			}
 			public EncryptedSignature(ECDSASignature ecdsa, uint256 signedHash, PuzzleSolution solution)
 			{
 				this.Signature = ecdsa;
@@ -43,93 +47,33 @@ namespace NTumbleBit.PuzzlePromise
 				get; set;
 			}
 		}
-		public PromiseServerSession(RsaKey serverKey, PromiseParameters parameters = null)
+		public PromiseServerSession(RsaKey serverKey, Key transactionKey, PromiseParameters parameters = null)
 		{
 			if(serverKey == null)
 				throw new ArgumentNullException("serverKey");
-			_InternalState.Parameters = parameters ?? new PromiseParameters();
-			_InternalState.Parameters.ServerKey = _InternalState.Parameters.ServerKey ?? serverKey.PubKey;
-			if(serverKey.PubKey != parameters.ServerKey)
+			if(transactionKey == null)
+				throw new ArgumentNullException("transactionKey");
+			_Parameters = parameters ?? new PromiseParameters();
+			_Parameters.ServerKey = _Parameters.ServerKey ?? serverKey.PubKey;
+			if(serverKey.PubKey != _Parameters.ServerKey)
 				throw new ArgumentNullException("Private key not matching expected public key");
-			_InternalState.ServerKey = serverKey;
+			_ServerKey = serverKey;
+			_TransactionKey = transactionKey;
 		}
 
-		PromiseServerSession(InternalState state)
+		public PromiseServerSession(InternalState state, RsaKey serverKey, Key transactionKey, PromiseParameters parameters = null):this(serverKey, transactionKey, parameters)
 		{
 			if(state == null)
-				throw new ArgumentNullException("state");
+				throw new ArgumentNullException("state");			
 			this._InternalState = state;
 		}
 
-		public static PromiseServerSession ReadFrom(byte[] bytes, RsaKey rsaKey = null, Key ecdsaKey = null)
+		public class InternalState
 		{
-			if(bytes == null)
-				throw new ArgumentNullException("bytes");
-			var ms = new MemoryStream(bytes);
-			return ReadFrom(ms);
-		}
-		public static PromiseServerSession ReadFrom(Stream stream, RsaKey rsaKey = null, Key ecdsaKey = null)
-		{
-			if(stream == null)
-				throw new ArgumentNullException("stream");
-			if(stream == null)
-				throw new ArgumentNullException("stream");
-
-			var text = new StreamReader(stream, Encoding.UTF8).ReadToEnd();
-			JsonSerializerSettings settings = new JsonSerializerSettings();
-			Serializer.RegisterFrontConverters(settings);
-			var state = JsonConvert.DeserializeObject<InternalState>(text, settings);
-			state.ServerKey = state.ServerKey ?? rsaKey;
-			state.TransactionKey = state.TransactionKey ?? ecdsaKey;
-			return new PromiseServerSession(state);
-		}
-
-		public byte[] ToBytes(bool includePrivateKeys)
-		{
-			MemoryStream ms = new MemoryStream();
-			WriteTo(ms, includePrivateKeys);
-			ms.Position = 0;
-			return ms.ToArrayEfficient();
-		}
-		public void WriteTo(Stream stream, bool includePrivateKeys)
-		{
-			if(stream == null)
-				throw new ArgumentNullException("stream");
-			var writer = new StreamWriter(stream, Encoding.UTF8);
-			JsonSerializerSettings settings = new JsonSerializerSettings();
-			Serializer.RegisterFrontConverters(settings);
-			var result = JsonConvert.SerializeObject(this._InternalState, settings);
-			var key = _InternalState.ServerKey;
-			var ecdsaKey = _InternalState.TransactionKey;
-			if(!includePrivateKeys)
-			{
-				_InternalState.ServerKey = null;
-			}
-			writer.Write(result);
-			_InternalState.ServerKey = key;
-			_InternalState.TransactionKey = ecdsaKey;
-			writer.Flush();
-		}
-
-		class InternalState
-		{
-			public Key TransactionKey
-			{
-				get; set;
-			}
-			public RsaKey ServerKey
-			{
-				get; set;
-			}
 			public EncryptedSignature[] EncryptedSignatures
 			{
 				get; set;
-			}
-
-			public PromiseParameters Parameters
-			{
-				get; set;
-			}
+			}			
 
 			public PromiseServerStates State
 			{
@@ -142,40 +86,47 @@ namespace NTumbleBit.PuzzlePromise
 			}
 		}
 
+		public InternalState GetInternalState()
+		{
+			var state = Serializer.Clone(_InternalState);
+			return state;
+		}
+
 		InternalState _InternalState = new InternalState();
 
+		readonly Key _TransactionKey;
 		public Key TransactionKey
 		{
 			get
 			{
-				return _InternalState.TransactionKey;
+				return _TransactionKey;
 			}
 		}
 
 
+		readonly RsaKey _ServerKey;
 		public RsaKey ServerKey
 		{
 			get
 			{
-				return _InternalState.ServerKey;
+				return _ServerKey;
 			}
 		}
 
 
+		readonly PromiseParameters _Parameters;
 		public PromiseParameters Parameters
 		{
 			get
 			{
-				return _InternalState.Parameters;
+				return _Parameters;
 			}
 		}		
 
-		public ServerCommitment[] SignHashes(SignaturesRequest sigRequest, Key transactionKey)
+		public ServerCommitment[] SignHashes(SignaturesRequest sigRequest)
 		{
 			if(sigRequest == null)
 				throw new ArgumentNullException("sigRequest");
-			if(transactionKey == null)
-				throw new ArgumentNullException("transactionKey");
 			if(sigRequest.Hashes.Length != Parameters.GetTotalTransactionsCount())
 				throw new ArgumentException("Incorrect number of hashes, expected " + sigRequest.Hashes.Length);
 			AssertState(PromiseServerStates.WaitingHashes);
@@ -183,7 +134,7 @@ namespace NTumbleBit.PuzzlePromise
 			List<EncryptedSignature> encryptedSignatures = new List<EncryptedSignature>();
 			foreach(var hash in sigRequest.Hashes)
 			{
-				var ecdsa = transactionKey.Sign(hash);
+				var ecdsa = _TransactionKey.Sign(hash);
 				var ecdsaDER = ecdsa.ToDER();
 				var key = new XORKey(Parameters.ServerKey);
 				var promise = key.XOR(ecdsaDER);
@@ -192,7 +143,6 @@ namespace NTumbleBit.PuzzlePromise
 				promises.Add(new ServerCommitment(puzzle.PuzzleValue, promise));
 				encryptedSignatures.Add(new EncryptedSignature(ecdsa, hash, solution));
 			}
-			_InternalState.TransactionKey = transactionKey;
 			_InternalState.State = PromiseServerStates.WaitingRevelation;
 			_InternalState.EncryptedSignatures = encryptedSignatures.ToArray();
 			_InternalState.FakeIndexesHash = sigRequest.FakeIndexesHash;
