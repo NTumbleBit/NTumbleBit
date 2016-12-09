@@ -177,9 +177,9 @@ namespace NTumbleBit.Tests
 		{
 			RsaKey key = TestKeys.Default;
 
-			Key serverKey = new Key();
-			Key redeemServerKey = new Key();
-			Key clientKey = new Key();
+			Key serverEscrow = new Key();
+			Key serverRedeem = new Key();
+			Key clientEscrow = new Key();
 
 			var parameters = new PromiseParameters(key.PubKey)
 			{
@@ -190,14 +190,14 @@ namespace NTumbleBit.Tests
 			var client = new PromiseClientSession(parameters);
 			var server = new PromiseServerSession(parameters);
 
-			var coin = CreateEscrowCoin(serverKey.PubKey, clientKey.PubKey, redeemServerKey.PubKey);
+			var coin = CreateEscrowCoin(serverEscrow.PubKey, clientEscrow.PubKey, serverRedeem.PubKey);
 
-			client.ConfigureEscrowedCoin(coin, clientKey);
-			SignaturesRequest request = client.CreateSignatureRequest(clientKey.PubKey.Hash, FeeRate);
+			client.ConfigureEscrowedCoin(coin, clientEscrow);
+			SignaturesRequest request = client.CreateSignatureRequest(clientEscrow.PubKey.Hash, FeeRate);
 			RoundTrip(ref client, parameters);
 			RoundTrip(ref request);
 
-			server.ConfigureEscrowedCoin(coin, serverKey, redeemServerKey);
+			server.ConfigureEscrowedCoin(coin, serverEscrow, serverRedeem);
 			PuzzlePromise.ServerCommitment[] commitments = server.SignHashes(request);
 			RoundTrip(ref server, parameters);
 			RoundTrip(ref commitments);
@@ -224,7 +224,7 @@ namespace NTumbleBit.Tests
 				TransactionBuilder builder = new TransactionBuilder();
 				builder.Extensions.Add(new EscrowBuilderExtension());
 				builder.AddCoins(coin);
-				builder.AddKeys(clientKey);
+				builder.AddKeys(clientEscrow);
 				builder.StandardTransactionPolicy = new StandardTransactionPolicy()
 				{
 					CheckFee = false
@@ -263,14 +263,19 @@ namespace NTumbleBit.Tests
 			SolverClientSession client = new SolverClientSession(parameters);
 			SolverServerSession server = new SolverServerSession(key, parameters);
 
-			var escrow = CreateEscrowCoin(new Key().PubKey, new Key().PubKey, new Key().PubKey);
-			client.ConfigureEscrowedCoin(escrow);
+			var clientEscrow = new Key();
+			var serverEscrow = new Key();
+			var clientRedeem = new Key();
+
+			var escrow = CreateEscrowCoin(clientEscrow.PubKey, serverEscrow.PubKey, clientRedeem.PubKey);
+			client.ConfigureEscrowedCoin(escrow, clientEscrow, clientRedeem);
 			client.AcceptPuzzle(puzzle.PuzzleValue);
 			RoundTrip(ref client, parameters);
 			PuzzleValue[] puzzles = client.GeneratePuzzles();
 			RoundTrip(ref client, parameters);
 			RoundTrip(ref puzzles);
 
+			server.ConfigureEscrowedCoin(escrow, serverEscrow);
 			var commitments = server.SolvePuzzles(puzzles);
 			RoundTrip(ref server, parameters, key);
 			RoundTrip(ref commitments);
