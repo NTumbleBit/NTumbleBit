@@ -43,7 +43,7 @@ namespace NTumbleBit.Client.Tumbler
 			{
 				return _Address;
 			}
-		}
+		}	
 
 		readonly static HttpClient Client = new HttpClient();
 		public Task<ClassicTumblerParameters> GetTumblerParametersAsync()
@@ -179,14 +179,14 @@ namespace NTumbleBit.Client.Tumbler
 			return this.SendAsync<PuzzleSolver.SolutionKey[]>(HttpMethod.Post, revelation, "api/v1/tumblers/0/clientschannels/{0}/checkrevelation", channelId);
 		}
 
-		public void CheckBlindFactors(string channelId, BlindFactor[] blindFactors)
+		public PubKey CheckBlindFactors(string channelId, BlindFactor[] blindFactors)
 		{
-			CheckBlindFactorsAsync(channelId, blindFactors).GetAwaiter().GetResult();
+			return CheckBlindFactorsAsync(channelId, blindFactors).GetAwaiter().GetResult();
 		}
 
-		public Task CheckBlindFactorsAsync(string channelId, BlindFactor[] blindFactors)
+		public Task<PubKey> CheckBlindFactorsAsync(string channelId, BlindFactor[] blindFactors)
 		{
-			return SendAsync<bool>(HttpMethod.Post, blindFactors, "api/v1/tumblers/0/clientschannels/{0}/checkblindfactors", channelId);
+			return SendAsync<PubKey>(HttpMethod.Post, blindFactors, "api/v1/tumblers/0/clientschannels/{0}/checkblindfactors", channelId);
 		}
 
 		public PuzzleSolver.ServerCommitment[] SolvePuzzles(string channelId, PuzzleValue[] puzzles)
@@ -204,6 +204,16 @@ namespace NTumbleBit.Client.Tumbler
 		public PuzzlePromise.ServerCommitment[] SignHashes(string channelId, SignaturesRequest sigReq)
 		{
 			return SignHashesAsync(channelId, sigReq).GetAwaiter().GetResult();
+		}
+
+		public void FullfillOffer(string channelId, Transaction offer)
+		{
+			FullfillOfferAsync(channelId, offer).GetAwaiter().GetResult();
+		}
+
+		public Task FullfillOfferAsync(string channelId, Transaction offer)
+		{
+			return SendAsync<bool>(HttpMethod.Post, offer, "api/v1/tumblers/0/clientchannels/{0}/offer", channelId);
 		}
 	}
 }

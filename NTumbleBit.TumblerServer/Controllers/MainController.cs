@@ -105,13 +105,13 @@ namespace NTumbleBit.TumblerServer.Controllers
 			Repository.Save(aliceSession.GetChannelId(), aliceSession);
 			Services.BlockExplorerService.Track(aliceSession.BuildEscrowTxOut().ScriptPubKey);
 			return Json(pubKey);
-		}		
+		}
 
 		[HttpPost("api/v1/tumblers/0/clientchannels/confirm")]
 		public IActionResult ClientChannelConfirmed([FromBody]uint256 txId)
 		{
 			var transaction = Services.BlockExplorerService.GetTransaction(txId);
-			if(transaction == null || 
+			if(transaction == null ||
 				(transaction.Confirmations < Parameters.CycleGenerator.FirstCycle.SafetyPeriodDuration))
 				return BadRequest("not-enough-confirmation");
 			if(transaction.Transaction.Outputs.Count > 2)
@@ -172,7 +172,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 		[HttpPost("api/v1/tumblers/0/channels/{channelId}/signhashes")]
 		public IActionResult SignHashes(string channelId, [FromBody]SignaturesRequest sigReq)
 		{
-			var session = GetPromiseServerSession(channelId, CyclePhase.TumblerChannelEstablishment);			
+			var session = GetPromiseServerSession(channelId, CyclePhase.TumblerChannelEstablishment);
 			var hashes = session.SignHashes(sigReq);
 			Repository.Save(session);
 			return Json(hashes);
@@ -241,10 +241,34 @@ namespace NTumbleBit.TumblerServer.Controllers
 		public IActionResult CheckBlindFactors(string channelId, [FromBody]BlindFactor[] blindFactors)
 		{
 			var session = GetSolverServerSession(channelId, CyclePhase.PaymentPhase);
-			session.CheckBlindedFactors(blindFactors);
+			var fullfillKey = session.CheckBlindedFactors(blindFactors);
 			Repository.Save(session);
-			return Json(true);
-		}			
+			return Json(fullfillKey);
+		}
+
+		[HttpPost("api/v1/tumblers/0/clientchannels/{channelId}/offer")]
+		public IActionResult FullfillOffer(string channelId, [FromBody]Transaction offer)
+		{
+			var session = GetSolverServerSession(channelId, CyclePhase.TumblerCashoutPhase);
+			var cashout = Services.WalletService.GenerateAddress();
+			var feeRate = Services.FeeService.GetFeeRate();
+			if(session.Status != SolverServerStates.WaitingOffer)
+				return BadRequest("invalid-state");
+			try
+			{
+
+				var fullfill = session.SignOfferAndCreateFullfillTransaction(offer, cashout.ScriptPubKey, feeRate);
+				Services.BroadcastService.Broadcast(offer, fullfill);
+				Repository.Save(session);
+				return Json(true);
+			}
+			catch(PuzzleException)
+			{
+				return BadRequest("invalid-offer");
+			}
+		}
+
+
 
 		private string GetKey(PuzzleSolution signedVoucher)
 		{

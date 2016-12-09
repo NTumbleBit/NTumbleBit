@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using NBitcoin;
+using Newtonsoft.Json.Linq;
 
 namespace NTumbleBit.TumblerServer.Services.RPCServices
 {
@@ -27,6 +28,49 @@ namespace NTumbleBit.TumblerServer.Services.RPCServices
 		public int GetCurrentHeight()
 		{
 			return RPCClient.GetBlockCount();
+		}
+
+		public TransactionInformation[] GetTransactions(Script scriptPubKey)
+		{
+			if(scriptPubKey == null)
+				throw new ArgumentNullException("scriptPubKey");
+
+			var address = scriptPubKey.GetDestinationAddress(RPCClient.Network);
+			if(address == null)
+				return new TransactionInformation[0];
+
+
+			var result = RPCClient.SendCommand("listtransactions", "", 100, 0, true);
+			if(result.Error != null)
+				return null;
+
+
+			var transactions = (JArray)result.Result;
+			List<TransactionInformation> results = new List<TransactionInformation>();
+			foreach(var obj in transactions)
+			{
+				var txId = new uint256((string)obj["txid"]);
+				var tx = GetTransaction(txId);
+				if((string)obj["address"] == address.ToString())
+				{
+					results.Add(tx);
+				}
+				else
+				{
+					foreach(var input in tx.Transaction.Inputs)
+					{
+						var p2shSig = PayToScriptHashTemplate.Instance.ExtractScriptSigParameters(input.ScriptSig);
+						if(p2shSig != null)
+						{
+							if(p2shSig.RedeemScript.Hash.ScriptPubKey == address.ScriptPubKey)
+							{
+								results.Add(tx);
+							}
+						}
+					}
+				}
+			}
+			return results.ToArray();
 		}
 
 		public TransactionInformation GetTransaction(uint256 txId)

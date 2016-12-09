@@ -24,9 +24,10 @@ namespace NTumbleBit.TumblerServer.Services.RPCServices
 				return _RPCClient;
 			}
 		}
-		public void Broadcast(Transaction transaction)
+		public void Broadcast(params NBitcoin.Transaction[] transactions)
 		{
-			_RPCClient.SendRawTransaction(transaction);
+			foreach(var tx in transactions)
+				_RPCClient.SendRawTransaction(tx);
 		}
 	}
 }

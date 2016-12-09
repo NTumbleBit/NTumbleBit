@@ -74,6 +74,8 @@ namespace NTumbleBit.Tests
 				clientSession.ReceiveTumblerEscrowKey(key);
 				//Client create the escrow
 				var clientWallet = new RPCWalletService(bobRPC);
+				var clientBlockExplorer = new RPCBlockExplorerService(bobRPC);
+
 				var txout = clientSession.BuildClientEscrowTxOut();
 				var clientEscrowTx = clientWallet.FundTransaction(txout, FeeRate);
 				bobRPC.SendRawTransaction(clientEscrowTx);
@@ -130,9 +132,24 @@ namespace NTumbleBit.Tests
 				var revelation2 = solverClientSession.Reveal(commmitments);
 				var solutionKeys = aliceClient.CheckRevelation(solverClientSession.Id, revelation2);
 				var blindFactors = solverClientSession.GetBlindFactors(solutionKeys);
-				//clientSession.SolverClientSession.CreateOfferScript(new PuzzleSolver.PaymentCashoutContext())
-				aliceClient.CheckBlindFactors(solverClientSession.Id, blindFactors);
+				var fullfillKey = aliceClient.CheckBlindFactors(solverClientSession.Id, blindFactors);
+				var offer = solverClientSession.CreateOfferTransaction(fullfillKey, FeeRate);
+				clientBlockExplorer.Track(offer.Outputs[0].ScriptPubKey);
+				aliceClient.FullfillOffer(solverClientSession.Id, offer);
 				/////////////////////////////</Payment>/////////////////////////
+
+				//Client waits until can cashout
+				MineTo(server.AliceNode, cycle, CyclePhase.ClientCashoutPhase);
+				server.SyncNodes();
+				///////////////
+
+				/////////////////////////////<ClientCashout>/////////////////////////
+				var txs = clientBlockExplorer.GetTransactions(offer.Outputs[0].ScriptPubKey);
+				solverClientSession.CheckSolutions(txs.Select(t => t.Transaction).ToArray());
+				var tumblingSolution = solverClientSession.GetSolution();
+				var transaction = promiseClientSession.GetSignedTransaction(tumblingSolution);
+				Assert.True(transaction.Inputs.AsIndexedInputs().First().VerifyScript(promiseClientSession.EscrowedCoin));
+				/////////////////////////////</ClientCashout>/////////////////////////
 			}
 		}
 
@@ -143,6 +160,7 @@ namespace NTumbleBit.Tests
 			var blocksToFind = periodStart - height;
 			if(blocksToFind <= 0)
 				return;
+			
 			node.FindBlock(blocksToFind);
 		}
 	}

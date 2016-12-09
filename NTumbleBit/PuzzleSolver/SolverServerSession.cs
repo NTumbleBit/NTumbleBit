@@ -18,6 +18,7 @@ namespace NTumbleBit.PuzzleSolver
 		WaitingPuzzles,
 		WaitingRevelation,
 		WaitingBlindFactor,
+		WaitingOffer,
 		Completed
 	}
 	public class SolverServerSession : EscrowReceiver
@@ -226,13 +227,13 @@ namespace NTumbleBit.PuzzleSolver
 			}
 
 			InternalState.FullfillKey = new Key();
-			InternalState.Status = SolverServerStates.Completed;
+			InternalState.Status = SolverServerStates.WaitingOffer;
 			return InternalState.FullfillKey.PubKey;
 		}
 
 		public SolutionKey[] GetSolutionKeys()
 		{
-			AssertState(SolverServerStates.Completed);
+			AssertState(SolverServerStates.WaitingOffer);
 			return InternalState.SolvedPuzzles.Select(s => s.SolutionKey).ToArray();
 		}
 
@@ -249,8 +250,8 @@ namespace NTumbleBit.PuzzleSolver
 			if(feeRate == null)
 				throw new ArgumentNullException("feeRate");
 			if(offer.Outputs.Count != 1)
-				throw new PuzzleException("invalid-offer-tx");			
-
+				throw new PuzzleException("invalid-offer-tx");
+			AssertState(SolverServerStates.WaitingOffer);
 			var escrow = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(InternalState.EscrowedCoin.Redeem);
 
 			var offerScript = SolverScriptBuilder.CreateOfferScript(
@@ -282,6 +283,7 @@ namespace NTumbleBit.PuzzleSolver
 			var fullfillScript = SolverScriptBuilder.CreateFulfillScript(signature, GetSolutionKeys());
 			fullfill.Inputs[0].ScriptSig = fullfillScript + Op.GetPushOp(offerCoin.Redeem.ToBytes());
 
+			InternalState.Status = SolverServerStates.Completed;
 			return fullfill;
 		}
 	}

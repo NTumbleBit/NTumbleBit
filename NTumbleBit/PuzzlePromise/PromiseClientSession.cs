@@ -416,6 +416,7 @@ namespace NTumbleBit.PuzzlePromise
 				TransactionBuilder txBuilder = new TransactionBuilder();
 				txBuilder.Extensions.Add(new EscrowBuilderExtension());
 				txBuilder.AddCoins(InternalState.EscrowedCoin);
+				txBuilder.AddKeys(InternalState.EscrowKey);
 				txBuilder.AddKnownSignature(signer, signature);
 				txBuilder.SignTransactionInPlace(transaction);
 				yield return transaction;
@@ -447,6 +448,14 @@ namespace NTumbleBit.PuzzlePromise
 			get
 			{
 				return InternalState.Status;
+			}
+		}
+
+		public ScriptCoin EscrowedCoin
+		{
+			get
+			{
+				return InternalState.EscrowedCoin;
 			}
 		}
 

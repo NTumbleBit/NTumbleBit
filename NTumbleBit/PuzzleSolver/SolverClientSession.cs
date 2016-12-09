@@ -312,12 +312,31 @@ namespace NTumbleBit.PuzzleSolver
 			return tx;
 		}
 
-		public void CheckSolutions(Transaction cashout)
+		public void CheckSolutions(Transaction[] transactions)
 		{
-			if(cashout == null)
-				throw new ArgumentNullException("cashout");
+			if(transactions == null)
+				throw new ArgumentNullException("transactions");
+			foreach(var tx in transactions)
+			{
+				try
+				{
+					CheckSolutions(tx);
+					return;
+				}
+				catch(PuzzleException)
+				{
+
+				}
+			}
+			throw new PuzzleException("Impossible to find solution to the puzzle");
+		}
+
+		public void CheckSolutions(Transaction fullfillTx)
+		{
+			if(fullfillTx == null)
+				throw new ArgumentNullException("fullfillTx");
 			AssertState(SolverClientStates.WaitingPuzzleSolutions);
-			foreach(var input in cashout.Inputs)
+			foreach(var input in fullfillTx.Inputs)
 			{
 				var solutions = SolverScriptBuilder.ExtractSolutions(input.ScriptSig, Parameters.RealPuzzleCount);
 				if(solutions == null)
