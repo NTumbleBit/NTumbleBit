@@ -60,7 +60,7 @@ namespace NTumbleBit.PuzzleSolver
 			{
 				get; set;
 			}
-			public Key RedeemOfferKey
+			public Key FullfillKey
 			{
 				get;
 				set;
@@ -225,9 +225,9 @@ namespace NTumbleBit.PuzzleSolver
 				y++;
 			}
 
-			InternalState.RedeemOfferKey = new Key();
+			InternalState.FullfillKey = new Key();
 			InternalState.Status = SolverServerStates.Completed;
-			return InternalState.RedeemOfferKey.PubKey;
+			return InternalState.FullfillKey.PubKey;
 		}
 
 		public SolutionKey[] GetSolutionKeys()
@@ -236,19 +236,53 @@ namespace NTumbleBit.PuzzleSolver
 			return InternalState.SolvedPuzzles.Select(s => s.SolutionKey).ToArray();
 		}
 
-		public Script GetFulfillScript(PaymentCashoutContext escrowContext, TransactionSignature cashoutSignature)
-		{
-			if(escrowContext == null)
-				throw new ArgumentNullException("escrowContext");
-			if(cashoutSignature == null)
-				throw new ArgumentNullException("cashoutSignature");
-			return escrowContext.CreateFulfillScript(cashoutSignature, GetSolutionKeys());
-		}
-
 		private void AssertState(SolverServerStates state)
 		{
 			if(state != InternalState.Status)
 				throw new InvalidOperationException("Invalid state, actual " + InternalState.Status + " while expected is " + state);
+		}
+
+		public Transaction SignOfferAndCreateFullfillTransaction(Transaction offer, Script cashout, FeeRate feeRate)
+		{
+			if(offer == null)
+				throw new ArgumentNullException("offer");
+			if(feeRate == null)
+				throw new ArgumentNullException("feeRate");
+			if(offer.Outputs.Count != 1)
+				throw new PuzzleException("invalid-offer-tx");			
+
+			var escrow = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(InternalState.EscrowedCoin.Redeem);
+
+			var offerScript = SolverScriptBuilder.CreateOfferScript(
+				InternalState.SolvedPuzzles.Select(p => p.SolutionKey.GetHash()).ToArray(),
+				InternalState.FullfillKey.PubKey,
+				escrow.RedeemKey,
+				escrow.LockTime
+				);
+
+			if(offer.Outputs[0].ScriptPubKey != offerScript.Hash.ScriptPubKey)
+				throw new PuzzleException("invalid-offer-tx");
+
+			TransactionBuilder builder = new TransactionBuilder();
+			builder.Extensions.Add(new EscrowBuilderExtension());
+			builder.AddCoins(InternalState.EscrowedCoin);
+			builder.AddKeys(InternalState.EscrowKey);
+			builder.SignTransactionInPlace(offer);
+			if(!builder.Verify(offer))
+				throw new PuzzleException("invalid-offer-tx");
+
+			var offerCoin = offer.Outputs.AsCoins().First().ToScriptCoin(offerScript);
+			Transaction fullfill = new Transaction();
+			fullfill.Inputs.Add(new TxIn(offerCoin.Outpoint));
+			fullfill.Outputs.Add(new TxOut(offerCoin.Amount, cashout));
+			var size = fullfill.GetVirtualSize() + 72 + offerCoin.Redeem.Length + GetSolutionKeys().Length * 21;
+			fullfill.Outputs[0].Value -= feeRate.GetFee(size);
+
+			var signature = fullfill.Inputs.AsIndexedInputs().First().Sign(InternalState.FullfillKey, offerCoin, SigHash.All);
+			var fullfillScript = SolverScriptBuilder.CreateFulfillScript(signature, GetSolutionKeys());
+			fullfill.Inputs[0].ScriptSig = fullfillScript + Op.GetPushOp(offerCoin.Redeem.ToBytes());
+
+			return fullfill;
 		}
 	}
 }

@@ -285,18 +285,31 @@ namespace NTumbleBit.PuzzleSolver
 				.ToArray();
 		}
 
-		public Script CreateOfferScript(PaymentCashoutContext escrowContext)
+		public Transaction CreateOfferTransaction(PubKey fullFillKey, FeeRate feeRate)
 		{
-			if(escrowContext == null)
-				throw new ArgumentNullException("escrowContext");
+			if(feeRate == null)
+				throw new ArgumentNullException("feeRate");
 			AssertState(SolverClientStates.WaitingPuzzleSolutions);
-			List<uint160> hashes = new List<uint160>();
-			foreach(var puzzle in _PuzzleElements.OfType<RealPuzzle>())
-			{
-				var commitment = puzzle.Commitment;
-				hashes.Add(commitment.KeyHash);
-			}
-			return escrowContext.CreateOfferScript(hashes.ToArray());
+			var coin = InternalState.EscrowedCoin;
+			var offer = SolverScriptBuilder.CreateOfferScript(
+				_PuzzleElements.OfType<RealPuzzle>().Select(p => p.Commitment.KeyHash).ToArray(),
+				fullFillKey,
+				InternalState.RedeemKey.PubKey,
+				EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(coin.Redeem).LockTime
+				);
+
+			var tx = new Transaction();
+			tx.Inputs.Add(new TxIn(coin.Outpoint));
+			tx.Outputs.Add(new TxOut(coin.Amount, offer.Hash));
+			var fee = feeRate.GetFee(tx.GetVirtualSize() + 72 * 2 + coin.Redeem.Length);
+			tx.Outputs[0].Value -= fee;
+
+			TransactionBuilder builder = new TransactionBuilder();
+			builder.Extensions.Add(new EscrowBuilderExtension());
+			builder.AddCoins(coin);
+			builder.AddKeys(InternalState.EscrowKey);
+			builder.SignTransactionInPlace(tx);
+			return tx;
 		}
 
 		public void CheckSolutions(Transaction cashout)
@@ -307,6 +320,8 @@ namespace NTumbleBit.PuzzleSolver
 			foreach(var input in cashout.Inputs)
 			{
 				var solutions = SolverScriptBuilder.ExtractSolutions(input.ScriptSig, Parameters.RealPuzzleCount);
+				if(solutions == null)
+					continue;
 				try
 				{
 					CheckSolutions(solutions);

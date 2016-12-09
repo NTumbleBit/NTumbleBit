@@ -300,7 +300,7 @@ namespace NTumbleBit.Tests
 			RoundTrip(ref client, parameters);
 			RoundTrip(ref blindFactors);
 
-			server.CheckBlindedFactors(blindFactors);
+			var fullfillKey = server.CheckBlindedFactors(blindFactors);
 			RoundTrip(ref server, parameters, key);
 			SolutionKey[] realPuzzleKeys = server.GetSolutionKeys();
 			RoundTrip(ref realPuzzleKeys);
@@ -316,23 +316,14 @@ namespace NTumbleBit.Tests
 			client = clientClone;
 			server = serverClone;
 			//Verify if the scripts are correctly created
-			Key serverKey = new Key();
-			Key clientKey = new Key();
-			PaymentCashoutContext ctx = new PaymentCashoutContext();
-			ctx.RedeemKey = serverKey.PubKey;
-			ctx.RefundKey = clientKey.PubKey;
-			ctx.Expiration = EscrowDate;
-			var offer = client.CreateOfferScript(ctx);
-			Coin coin = new Coin(new OutPoint(), new TxOut(Money.Zero, offer.Hash)).ToScriptCoin(offer);
-			Transaction fulfillTx = new Transaction();
-			fulfillTx.Inputs.Add(new TxIn(coin.Outpoint));
-			var sig = serverKey.Sign(Script.SignatureHash(coin, fulfillTx), SigHash.All);
-			fulfillTx.Inputs[0].ScriptSig = server.GetFulfillScript(ctx, sig);
-			ScriptError error;
-			Assert.True(Script.VerifyScript(coin.ScriptPubKey, fulfillTx, 0, Money.Zero, out error));
+			var offer = client.CreateOfferTransaction(fullfillKey, FeeRate);
+			var offerCoin = offer.Outputs.AsCoins().First();
+			var fullfill = server.SignOfferAndCreateFullfillTransaction(offer, new Key().ScriptPubKey, FeeRate);
+			Assert.True(offer.Inputs.AsIndexedInputs().First().VerifyScript(escrow));
+			Assert.True(fullfill.Inputs.AsIndexedInputs().First().VerifyScript(offerCoin));
 			////////////////////////////////////////////////
 
-			client.CheckSolutions(fulfillTx);
+			client.CheckSolutions(fullfill);
 			RoundTrip(ref client, parameters);
 			solution = client.GetSolution();
 			RoundTrip(ref client, parameters);
