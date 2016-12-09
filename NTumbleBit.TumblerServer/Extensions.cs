@@ -61,6 +61,11 @@ namespace NTumbleBit.TumblerServer
 					var conf = provider.GetRequiredService<TumblerConfiguration>();
 					return conf.CreateClassicTumblerParameters();
 				});
+				services.AddSingleton<ClassicTumblerRepository>((provider) =>
+				{
+					var conf = provider.GetRequiredService<TumblerConfiguration>();
+					return conf.Repository;
+				});
 				services.AddSingleton<TumblerConfiguration>((provider) =>
 				{
 					var conf = configuration ?? new TumblerConfiguration();

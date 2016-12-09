@@ -80,6 +80,12 @@ namespace NTumbleBit.Tests
 				server.BobNode.FindBlock(2);
 				server.SyncNodes();
 				var solverClientSession = clientSession.SetClientSignedTransaction(clientEscrowTx);
+				//Checking that the redeem transaction of the client escrow has proper validation time
+				var redeem = solverClientSession.CreateRedeemTransaction(FeeRate, new Key().ScriptPubKey);
+				var firstExpectedRedeemableBlock = clientSession.GetCycle().GetPeriods().TumblerCashout.End + clientSession.GetCycle().SafetyPeriodDuration;
+				Assert.True(redeem.IsFinal(DateTimeOffset.UtcNow, firstExpectedRedeemableBlock));
+				Assert.True(redeem.IsFinal(DateTimeOffset.UtcNow, firstExpectedRedeemableBlock + 1));
+				Assert.False(redeem.IsFinal(DateTimeOffset.UtcNow, firstExpectedRedeemableBlock - 1));
 				//Server solves the puzzle
 				var voucher = aliceClient.ClientChannelConfirmed(clientEscrowTx.GetHash());
 				clientSession.CheckVoucherSolution(voucher);
@@ -103,6 +109,13 @@ namespace NTumbleBit.Tests
 				var proof = bobClient.CheckRevelation(promiseClientSession.Id, revelation);
 				var puzzle = promiseClientSession.CheckCommitmentProof(proof);
 				solverClientSession.AcceptPuzzle(puzzle);
+				//Checking that the redeem transaction of the tumbler escrow has proper validation time
+				var tumblerPromiseSession = server.TumblerRepository.GetPromiseServerSession(promiseClientSession.Id);
+				redeem = tumblerPromiseSession.CreateRedeemTransaction(FeeRate, new Key().ScriptPubKey);
+				firstExpectedRedeemableBlock = clientSession.GetCycle().GetPeriods().ClientCashout.End + clientSession.GetCycle().SafetyPeriodDuration;
+				Assert.True(redeem.IsFinal(DateTimeOffset.UtcNow, firstExpectedRedeemableBlock));
+				Assert.True(redeem.IsFinal(DateTimeOffset.UtcNow, firstExpectedRedeemableBlock + 1));
+				Assert.False(redeem.IsFinal(DateTimeOffset.UtcNow, firstExpectedRedeemableBlock - 1));
 				/////////////////////////////</TumblerChannel>/////////////////////////
 
 				//Client waits until payment phase

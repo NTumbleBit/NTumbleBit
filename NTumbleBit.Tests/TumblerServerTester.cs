@@ -135,6 +135,14 @@ namespace NTumbleBit.Tests
 			}
 		}
 
+		public ClassicTumblerRepository TumblerRepository
+		{
+			get
+			{
+				return (ClassicTumblerRepository)_Host.Services.GetService(typeof(ClassicTumblerRepository));
+			}
+		}
+
 		public TumblerConfiguration TumblerConfiguration
 		{
 			get
