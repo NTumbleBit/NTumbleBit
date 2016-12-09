@@ -21,7 +21,7 @@ namespace NTumbleBit.PuzzlePromise
 		Completed
 	}
 
-	public class PromiseClientSession
+	public class PromiseClientSession : EscrowReceiver
 	{
 		abstract class HashBase
 		{
@@ -100,7 +100,7 @@ namespace NTumbleBit.PuzzlePromise
 			}
 		}
 
-		public class State
+		public new class State : EscrowReceiver.State
 		{
 			public Transaction Cashout
 			{
@@ -108,11 +108,6 @@ namespace NTumbleBit.PuzzlePromise
 				set;
 			}
 			public ServerCommitment[] Commitments
-			{
-				get;
-				set;
-			}
-			public ScriptCoin EscrowedCoin
 			{
 				get;
 				set;
@@ -151,11 +146,6 @@ namespace NTumbleBit.PuzzlePromise
 			{
 				get;
 				set;
-			}
-			public Key EscrowKey
-			{
-				get;
-				internal set;
 			}
 		}
 
@@ -228,19 +218,11 @@ namespace NTumbleBit.PuzzlePromise
 			return state;
 		}
 
-		public void ConfigureEscrowedCoin(ScriptCoin escrowedCoin, Key escrowKey)
-		{
-			if(escrowedCoin == null)
-				throw new ArgumentNullException("escrowedCoin");
-			AssertState(PromiseClientStates.WaitingEscrow);
-			var redeem = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(escrowedCoin.Redeem);
-			if(redeem == null)
-				throw new PuzzleException("Invalid escrow");
-			if(!redeem.EscrowKeys.Contains(escrowKey.PubKey))
-				throw new PuzzleException("Invalid escrow");
 
-			InternalState.EscrowKey = escrowKey;
-			InternalState.EscrowedCoin = escrowedCoin;
+		public override void ConfigureEscrowedCoin(ScriptCoin escrowedCoin, Key escrowKey)
+		{
+			AssertState(PromiseClientStates.WaitingEscrow);
+			base.ConfigureEscrowedCoin(escrowedCoin, escrowKey);
 			InternalState.Status = PromiseClientStates.WaitingSignatureRequest;
 		}
 
@@ -448,9 +430,16 @@ namespace NTumbleBit.PuzzlePromise
 			return tx;
 		}
 
-		public State InternalState
+		protected new State InternalState
 		{
-			get; set;
+			get
+			{
+				return (State)base.InternalState;
+			}
+			set
+			{
+				base.InternalState = value;
+			}
 		}
 
 		public PromiseClientStates Status
@@ -458,14 +447,6 @@ namespace NTumbleBit.PuzzlePromise
 			get
 			{
 				return InternalState.Status;
-			}
-		}
-
-		public string Id
-		{
-			get
-			{
-				return InternalState.EscrowedCoin.ScriptPubKey.ToHex();
 			}
 		}
 

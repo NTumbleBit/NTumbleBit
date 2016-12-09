@@ -78,7 +78,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 		}
 
 		[HttpGet("api/v1/tumblers/0/vouchers")]
-		public AskVoucherResponse AskVoucherParameters()
+		public AskVoucherResponse AskUnsignedVoucher()
 		{
 			var height = Services.BlockExplorerService.GetCurrentHeight();
 			var cycleParameters = Parameters.CycleGenerator.GetRegistratingCycle(height);
@@ -209,7 +209,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 			var session = Repository.GetSolverServerSession(channelId);
 			if(session == null)
 				throw NotFound("channel-not-found").AsException();
-			var lockTime = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(session.EscrowedCoin.Redeem).LockTime;
+			var lockTime = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(session.InternalState.EscrowedCoin.Redeem).LockTime;
 			var firstCycle = Parameters.CycleGenerator.GetCycle(Parameters.CycleGenerator.FirstCycle.Start);
 			var lockOffset = (uint)firstCycle.GetClientLockTime() - firstCycle.Start;
 			var start = checked((uint)lockTime - lockOffset);

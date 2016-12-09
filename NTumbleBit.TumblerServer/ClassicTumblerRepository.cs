@@ -63,7 +63,7 @@ namespace NTumbleBit.TumblerServer
 				return null;
 			return new SolverServerSession(_Configuration.TumblerKey,
 				this._Configuration.CreateClassicTumblerParameters().CreateSolverParamaters(),
-				Serializer.ToObject<SolverServerSession.InternalState>(session));
+				Serializer.ToObject<SolverServerSession.State>(session));
 		}
 
 

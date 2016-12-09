@@ -20,7 +20,7 @@ namespace NTumbleBit.PuzzleSolver
 		WaitingBlindFactor,
 		Completed
 	}
-	public class SolverServerSession
+	public class SolverServerSession : EscrowReceiver
 	{
 		public class SolvedPuzzle
 		{
@@ -49,9 +49,9 @@ namespace NTumbleBit.PuzzleSolver
 			}
 		}
 
-		public class InternalState
+		public new class State : EscrowReceiver.State
 		{
-			public SolverServerStates State
+			public SolverServerStates Status
 			{
 				get; set;
 			}
@@ -65,25 +65,26 @@ namespace NTumbleBit.PuzzleSolver
 				get;
 				set;
 			}
-			public ScriptCoin EscrowedCoin
-			{
-				get;
-				set;
-			}
-			public Key EscrowKey
-			{
-				get;
-				set;
-			}
 		}
+		
 
-		InternalState _InternalState = new InternalState();
-
-		public InternalState GetInternalState()
+		public State GetInternalState()
 		{
-			return Serializer.Clone(_InternalState);
+			return Serializer.Clone(InternalState);
 		}
 
+
+		public new State InternalState
+		{
+			get
+			{
+				return (State)base.InternalState;	
+			}
+			set
+			{
+				base.InternalState = value;
+			}
+		}
 
 		public SolverServerSession(RsaKey serverKey) : this(serverKey, null)
 		{
@@ -96,15 +97,17 @@ namespace NTumbleBit.PuzzleSolver
 				throw new ArgumentNullException("serverKey");
 			if(serverKey.PubKey != parameters.ServerKey)
 				throw new ArgumentNullException("Private key not matching expected public key");
+			InternalState = new SolverServerSession.State();
 			_ServerKey = serverKey;
 			_Parameters = parameters;
 		}
 
-		public SolverServerSession(RsaKey serverKey, SolverParameters parameters, InternalState state) 
+		public SolverServerSession(RsaKey serverKey, SolverParameters parameters, State state) 
 			: this(serverKey, parameters)
 		{
-			if(state != null)			
-				_InternalState = state;
+			if(state == null)			
+				return;
+			InternalState = state;
 		}
 
 
@@ -126,49 +129,21 @@ namespace NTumbleBit.PuzzleSolver
 			}
 		}
 
-		public SolverServerStates State
+		public SolverServerStates Status
 		{
 			get
 			{
-				return _InternalState.State;
+				return InternalState.Status;
 			}
 		}
+		
 
-
-
-		public string Id
+		public override void ConfigureEscrowedCoin(ScriptCoin escrowedCoin, Key escrowKey)
 		{
-			get
-			{
-				return _InternalState.EscrowedCoin.ScriptPubKey.ToHex();
-			}
-		}
-
-		public ScriptCoin EscrowedCoin
-		{
-			get
-			{
-				return _InternalState.EscrowedCoin;
-			}
-		}
-
-		public void ConfigureEscrowedCoin(ScriptCoin escrowedCoin, Key escrowKey)
-		{
-			if(escrowedCoin == null)
-				throw new ArgumentNullException("escrowedCoin");
-			if(escrowKey == null)
-				throw new ArgumentNullException("escrowKey");
 			AssertState(SolverServerStates.WaitingEscrow);
-
-			var escrow = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(escrowedCoin.Redeem);
-			if(escrow == null || !escrow.EscrowKeys.Any(e => e == escrowKey.PubKey) )
-				throw new PuzzleException("Invalid escrow");
-
-			_InternalState.EscrowedCoin = escrowedCoin;
-			_InternalState.EscrowKey = escrowKey;
-			_InternalState.State = SolverServerStates.WaitingPuzzles;
+			base.ConfigureEscrowedCoin(escrowedCoin, escrowKey);
+			InternalState.Status = SolverServerStates.WaitingPuzzles;
 		}
-
 
 		public ServerCommitment[] SolvePuzzles(PuzzleValue[] puzzles)
 		{
@@ -189,8 +164,8 @@ namespace NTumbleBit.PuzzleSolver
 				commitments.Add(new ServerCommitment(keyHash, encryptedSolution));
 				solvedPuzzles.Add(new SolvedPuzzle(puzzle, solutionKey, solution));
 			}
-			_InternalState.SolvedPuzzles = solvedPuzzles.ToArray();
-			_InternalState.State = SolverServerStates.WaitingRevelation;
+			InternalState.SolvedPuzzles = solvedPuzzles.ToArray();
+			InternalState.Status = SolverServerStates.WaitingRevelation;
 			return commitments.ToArray();
 		}
 
@@ -208,7 +183,7 @@ namespace NTumbleBit.PuzzleSolver
 			for(int i = 0; i < Parameters.FakePuzzleCount; i++)
 			{
 				var index = revelation.FakeIndexes[i];
-				var solvedPuzzle = _InternalState.SolvedPuzzles[index];
+				var solvedPuzzle = InternalState.SolvedPuzzles[index];
 				if(solvedPuzzle.Solution != revelation.Solutions[i])
 				{
 					throw new PuzzleException("Incorrect puzzle solution");
@@ -221,11 +196,11 @@ namespace NTumbleBit.PuzzleSolver
 			{
 				if(Array.IndexOf(revelation.FakeIndexes, i) == -1)
 				{
-					realPuzzles.Add(_InternalState.SolvedPuzzles[i]);
+					realPuzzles.Add(InternalState.SolvedPuzzles[i]);
 				}
 			}
-			_InternalState.SolvedPuzzles = realPuzzles.ToArray();
-			_InternalState.State = SolverServerStates.WaitingBlindFactor;
+			InternalState.SolvedPuzzles = realPuzzles.ToArray();
+			InternalState.Status = SolverServerStates.WaitingBlindFactor;
 			return fakePuzzles.Select(f => f.SolutionKey).ToArray();
 		}
 
@@ -241,7 +216,7 @@ namespace NTumbleBit.PuzzleSolver
 			int y = 0;
 			for(int i = 0; i < Parameters.RealPuzzleCount; i++)
 			{
-				var solvedPuzzle = _InternalState.SolvedPuzzles[i];
+				var solvedPuzzle = InternalState.SolvedPuzzles[i];
 				var unblinded = new Puzzle(Parameters.ServerKey, solvedPuzzle.Puzzle).Unblind(blindFactors[i]);
 				if(unblindedPuzzle == null)
 					unblindedPuzzle = unblinded;
@@ -250,15 +225,15 @@ namespace NTumbleBit.PuzzleSolver
 				y++;
 			}
 
-			_InternalState.RedeemOfferKey = new Key();
-			_InternalState.State = SolverServerStates.Completed;
-			return _InternalState.RedeemOfferKey.PubKey;
+			InternalState.RedeemOfferKey = new Key();
+			InternalState.Status = SolverServerStates.Completed;
+			return InternalState.RedeemOfferKey.PubKey;
 		}
 
 		public SolutionKey[] GetSolutionKeys()
 		{
 			AssertState(SolverServerStates.Completed);
-			return _InternalState.SolvedPuzzles.Select(s => s.SolutionKey).ToArray();
+			return InternalState.SolvedPuzzles.Select(s => s.SolutionKey).ToArray();
 		}
 
 		public Script GetFulfillScript(PaymentCashoutContext escrowContext, TransactionSignature cashoutSignature)
@@ -272,8 +247,8 @@ namespace NTumbleBit.PuzzleSolver
 
 		private void AssertState(SolverServerStates state)
 		{
-			if(state != _InternalState.State)
-				throw new InvalidOperationException("Invalid state, actual " + _InternalState.State + " while expected is " + state);
+			if(state != InternalState.Status)
+				throw new InvalidOperationException("Invalid state, actual " + InternalState.Status + " while expected is " + state);
 		}
 	}
 }
