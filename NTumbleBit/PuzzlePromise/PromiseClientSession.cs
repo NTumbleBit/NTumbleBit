@@ -152,6 +152,11 @@ namespace NTumbleBit.PuzzlePromise
 				get;
 				set;
 			}
+			public Key EscrowKey
+			{
+				get;
+				internal set;
+			}
 		}
 
 		private readonly PromiseParameters _Parameters;
@@ -223,15 +228,18 @@ namespace NTumbleBit.PuzzlePromise
 			return state;
 		}
 
-		public void ConfigureEscrowedCoin(ScriptCoin escrowedCoin)
+		public void ConfigureEscrowedCoin(ScriptCoin escrowedCoin, Key escrowKey)
 		{
 			if(escrowedCoin == null)
 				throw new ArgumentNullException("escrowedCoin");
 			AssertState(PromiseClientStates.WaitingEscrow);
-
-			if(EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(escrowedCoin.Redeem) == null)
+			var redeem = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(escrowedCoin.Redeem);
+			if(redeem == null)
+				throw new PuzzleException("Invalid escrow");
+			if(!redeem.EscrowKeys.Contains(escrowKey.PubKey))
 				throw new PuzzleException("Invalid escrow");
 
+			InternalState.EscrowKey = escrowKey;
 			InternalState.EscrowedCoin = escrowedCoin;
 			InternalState.Status = PromiseClientStates.WaitingSignatureRequest;
 		}

@@ -178,6 +178,7 @@ namespace NTumbleBit.Tests
 			RsaKey key = TestKeys.Default;
 
 			Key serverKey = new Key();
+			Key redeemServerKey = new Key();
 			Key clientKey = new Key();
 
 			var parameters = new PromiseParameters(key.PubKey)
@@ -187,15 +188,16 @@ namespace NTumbleBit.Tests
 			};
 
 			var client = new PromiseClientSession(parameters);
-			var server = new PromiseServerSession(serverKey, parameters);
+			var server = new PromiseServerSession(parameters);
 
-			var coin = CreateEscrowCoin(serverKey.PubKey, clientKey.PubKey);
+			var coin = CreateEscrowCoin(serverKey.PubKey, clientKey.PubKey, redeemServerKey.PubKey);
 
-			client.ConfigureEscrowedCoin(coin);
+			client.ConfigureEscrowedCoin(coin, clientKey);
 			SignaturesRequest request = client.CreateSignatureRequest(clientKey.PubKey.Hash, FeeRate);
 			RoundTrip(ref client, parameters);
 			RoundTrip(ref request);
 
+			server.ConfigureEscrowedCoin(coin, serverKey, redeemServerKey);
 			PuzzlePromise.ServerCommitment[] commitments = server.SignHashes(request);
 			RoundTrip(ref server, parameters);
 			RoundTrip(ref commitments);
@@ -233,9 +235,9 @@ namespace NTumbleBit.Tests
 			}
 		}
 		
-		private ScriptCoin CreateEscrowCoin(PubKey pubKey, PubKey pubKey2)
+		private ScriptCoin CreateEscrowCoin(PubKey escrow1, PubKey escrow2, PubKey redeemKey)
 		{
-			var redeem = EscrowScriptBuilder.CreateEscrow(new[] { pubKey, pubKey2 }, pubKey, new LockTime(0));
+			var redeem = EscrowScriptBuilder.CreateEscrow(new[] { escrow1, escrow2 }, redeemKey, new LockTime(0));
 			var scriptCoin = new Coin(new OutPoint(new uint256(RandomUtils.GetBytes(32)), 0), 
 				new TxOut()
 				{
@@ -261,7 +263,7 @@ namespace NTumbleBit.Tests
 			SolverClientSession client = new SolverClientSession(parameters);
 			SolverServerSession server = new SolverServerSession(key, parameters);
 
-			var escrow = CreateEscrowCoin(new Key().PubKey, new Key().PubKey);
+			var escrow = CreateEscrowCoin(new Key().PubKey, new Key().PubKey, new Key().PubKey);
 			client.ConfigureEscrowedCoin(escrow);
 			client.AcceptPuzzle(puzzle.PuzzleValue);
 			RoundTrip(ref client, parameters);

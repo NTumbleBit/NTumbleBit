@@ -14,6 +14,7 @@ namespace NTumbleBit.PuzzleSolver
 {
 	public enum SolverServerStates
 	{
+		WaitingEscrow,
 		WaitingPuzzles,
 		WaitingRevelation,
 		WaitingBlindFactor,
@@ -60,6 +61,16 @@ namespace NTumbleBit.PuzzleSolver
 				get; set;
 			}
 			public Key RedeemOfferKey
+			{
+				get;
+				set;
+			}
+			public ScriptCoin EscrowedCoin
+			{
+				get;
+				set;
+			}
+			public Key EscrowKey
 			{
 				get;
 				set;
@@ -121,7 +132,43 @@ namespace NTumbleBit.PuzzleSolver
 			{
 				return _InternalState.State;
 			}
-		}		
+		}
+
+
+
+		public string Id
+		{
+			get
+			{
+				return _InternalState.EscrowedCoin.ScriptPubKey.ToHex();
+			}
+		}
+
+		public ScriptCoin EscrowedCoin
+		{
+			get
+			{
+				return _InternalState.EscrowedCoin;
+			}
+		}
+
+		public void ConfigureEscrowedCoin(ScriptCoin escrowedCoin, Key escrowKey)
+		{
+			if(escrowedCoin == null)
+				throw new ArgumentNullException("escrowedCoin");
+			if(escrowKey == null)
+				throw new ArgumentNullException("escrowKey");
+			AssertState(SolverServerStates.WaitingEscrow);
+
+			var escrow = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(escrowedCoin.Redeem);
+			if(escrow == null || !escrow.EscrowKeys.Any(e => e == escrowKey.PubKey) )
+				throw new PuzzleException("Invalid escrow");
+
+			_InternalState.EscrowedCoin = escrowedCoin;
+			_InternalState.EscrowKey = escrowKey;
+			_InternalState.State = SolverServerStates.WaitingPuzzles;
+		}
+
 
 		public ServerCommitment[] SolvePuzzles(PuzzleValue[] puzzles)
 		{

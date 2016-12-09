@@ -81,7 +81,7 @@ namespace NTumbleBit.Tests
 				server.SyncNodes();
 				var solverClientSession = clientSession.SetClientSignedTransaction(clientEscrowTx);
 				//Server solves the puzzle
-				var voucher = aliceClient.SolveVoucher(clientEscrowTx.GetHash());
+				var voucher = aliceClient.ClientChannelConfirmed(clientEscrowTx.GetHash());
 				clientSession.CheckVoucherSolution(voucher);
 				/////////////////////////////</ClientChannel>/////////////////////////
 
@@ -94,7 +94,7 @@ namespace NTumbleBit.Tests
 				//Client asks the Tumbler to make a channel
 				var bobEscrowInformation = clientSession.GenerateTumblerTransactionKey();
 				var tumblerInformation = bobClient.OpenChannel(bobEscrowInformation);
-				var promiseClientSession = clientSession.ReceiveTumblerEscrowInformation(tumblerInformation);
+				var promiseClientSession = clientSession.ReceiveTumblerEscrowedCoin(tumblerInformation);
 				//Channel is done, now need to run the promise protocol to get valid puzzle
 				var cashoutDestination = clientWallet.GenerateAddress();
 				var sigReq = promiseClientSession.CreateSignatureRequest(cashoutDestination, FeeRate);

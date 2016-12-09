@@ -71,23 +71,23 @@ namespace NTumbleBit.Client.Tumbler
 		}
 
 
-		public Task<PuzzleSolution> SolveVoucherAsync(uint256 txId)
+		public Task<PuzzleSolution> ClientChannelConfirmedAsync(uint256 txId)
 		{
-			return SendAsync<PuzzleSolution>(HttpMethod.Post, txId, "api/v1/tumblers/0/clientchannels/voucher");
+			return SendAsync<PuzzleSolution>(HttpMethod.Post, txId, "api/v1/tumblers/0/clientchannels/confirm");
 		}
-		public PuzzleSolution SolveVoucher(uint256 txId)
+		public PuzzleSolution ClientChannelConfirmed(uint256 txId)
 		{
-			return SolveVoucherAsync(txId).GetAwaiter().GetResult();
+			return ClientChannelConfirmedAsync(txId).GetAwaiter().GetResult();
 		}
 
-		public Task<TumblerEscrowInformation> OpenChannelAsync(BobEscrowInformation request)
+		public Task<ScriptCoin> OpenChannelAsync(BobEscrowInformation request)
 		{
 			if(request == null)
 				throw new ArgumentNullException("request");
-			return SendAsync<TumblerEscrowInformation>(HttpMethod.Post, request, "api/v1/tumblers/0/channels/");
+			return SendAsync<ScriptCoin>(HttpMethod.Post, request, "api/v1/tumblers/0/channels/");
 		}
 
-		public TumblerEscrowInformation OpenChannel(BobEscrowInformation request)
+		public ScriptCoin OpenChannel(BobEscrowInformation request)
 		{
 			return OpenChannelAsync(request).GetAwaiter().GetResult();
 		}

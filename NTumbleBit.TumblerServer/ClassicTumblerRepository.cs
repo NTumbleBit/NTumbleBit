@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using NTumbleBit.ClassicTumbler;
 using NBitcoin;
 using NTumbleBit.PuzzlePromise;
+using NTumbleBit.PuzzleSolver;
 
 namespace NTumbleBit.TumblerServer
 {
@@ -29,11 +30,42 @@ namespace NTumbleBit.TumblerServer
 
 		static Dictionary<string, string> _BobSessions = new Dictionary<string, string>();
 		static Dictionary<string, string> _AliceSessions = new Dictionary<string, string>();
+		static Dictionary<string, string> _Promises = new Dictionary<string, string>();
 
 		public void Save(string sessionId, TumblerBobServerSession session)
 		{
 			_BobSessions.AddOrReplace(sessionId, Serializer.ToString(session.GetInternalState()));
 		}
+
+		public void Save(PromiseServerSession session)
+		{
+			_Promises.AddOrReplace(session.Id, Serializer.ToString(session.GetInternalState()));
+		}
+
+		public void Save(SolverServerSession session)
+		{
+			_Promises.AddOrReplace(session.Id, Serializer.ToString(session.GetInternalState()));
+		}
+
+		public PromiseServerSession GetPromiseServerSession(string id)
+		{
+			var session = _Promises.TryGet(id);
+			if(session == null)
+				return null;
+			return new PromiseServerSession(Serializer.ToObject<PromiseServerSession.InternalState>(session),
+				_Configuration.CreateClassicTumblerParameters().CreatePromiseParamaters());
+		}
+
+		public SolverServerSession GetSolverServerSession(string id)
+		{
+			var session = _Promises.TryGet(id);
+			if(session == null)
+				return null;
+			return new SolverServerSession(_Configuration.TumblerKey,
+				this._Configuration.CreateClassicTumblerParameters().CreateSolverParamaters(),
+				Serializer.ToObject<SolverServerSession.InternalState>(session));
+		}
+
 
 		public TumblerBobServerSession GetBobSession(string sessionId)
 		{
@@ -58,6 +90,6 @@ namespace NTumbleBit.TumblerServer
 
 			TumblerAliceServerSession.State state = Serializer.ToObject<TumblerAliceServerSession.State>(data);
 			return new TumblerAliceServerSession(_Configuration.CreateClassicTumblerParameters(), _Configuration.TumblerKey, _Configuration.VoucherKey, state);
-		}
+		}		
 	}
 }
