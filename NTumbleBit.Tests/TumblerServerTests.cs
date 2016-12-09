@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -144,6 +145,7 @@ namespace NTumbleBit.Tests
 				///////////////
 
 				/////////////////////////////<ClientCashout>/////////////////////////
+				Thread.Sleep(5000);
 				var txs = clientBlockExplorer.GetTransactions(offer.Outputs[0].ScriptPubKey);
 				solverClientSession.CheckSolutions(txs.Select(t => t.Transaction).ToArray());
 				var tumblingSolution = solverClientSession.GetSolution();

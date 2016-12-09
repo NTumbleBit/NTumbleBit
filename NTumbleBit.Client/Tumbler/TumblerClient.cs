@@ -110,7 +110,7 @@ namespace NTumbleBit.Client.Tumbler
 			uri += relativePath;
 			return uri;
 		}
-
+		
 		async Task<T> SendAsync<T>(HttpMethod method, object body, string relativePath, params object[] parameters)
 		{
 			var uri = GetFullUri(relativePath, parameters);

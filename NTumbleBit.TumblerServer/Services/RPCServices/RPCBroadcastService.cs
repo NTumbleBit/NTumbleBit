@@ -5,7 +5,11 @@ using System.Threading.Tasks;
 using NBitcoin;
 using NBitcoin.RPC;
 
+#if !CLIENT
 namespace NTumbleBit.TumblerServer.Services.RPCServices
+#else
+namespace NTumbleBit.Client.Tumbler.Services.RPCServices
+#endif
 {
 	public class RPCBroadcastService : IBroadcastService
 	{

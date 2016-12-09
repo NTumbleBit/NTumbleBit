@@ -45,10 +45,10 @@ namespace NTumbleBit.TumblerServer
 		{
 			builder.ConfigureServices(services =>
 			{
-				services.AddSingleton<ServerServices>((provider) =>
+				services.AddSingleton<ExternalServices>((provider) =>
 				{
 					var conf = provider.GetRequiredService<TumblerConfiguration>();
-					return new ServerServices()
+					return new ExternalServices()
 					{
 						BroadcastService = new RPCBroadcastService(conf.RPCClient),
 						FeeService = new RPCFeeService(conf.RPCClient),

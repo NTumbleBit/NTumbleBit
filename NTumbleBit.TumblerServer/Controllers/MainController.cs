@@ -18,7 +18,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 {
 	public class MainController : Controller
 	{
-		public MainController(TumblerConfiguration configuration, ClassicTumblerParameters parameters, ServerServices services)
+		public MainController(TumblerConfiguration configuration, ClassicTumblerParameters parameters, ExternalServices services)
 		{
 			if(configuration == null)
 				throw new ArgumentNullException("configuration");
@@ -34,8 +34,8 @@ namespace NTumbleBit.TumblerServer.Controllers
 		}
 
 
-		private readonly ServerServices _Services;
-		public ServerServices Services
+		private readonly ExternalServices _Services;
+		public ExternalServices Services
 		{
 			get
 			{

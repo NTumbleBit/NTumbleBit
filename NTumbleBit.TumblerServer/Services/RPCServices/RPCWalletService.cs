@@ -7,7 +7,11 @@ using NBitcoin.RPC;
 using Newtonsoft.Json.Linq;
 using NTumbleBit.PuzzlePromise;
 
+#if !CLIENT
 namespace NTumbleBit.TumblerServer.Services.RPCServices
+#else
+namespace NTumbleBit.Client.Tumbler.Services.RPCServices
+#endif
 {
 	public class RPCWalletService : IWalletService
 	{

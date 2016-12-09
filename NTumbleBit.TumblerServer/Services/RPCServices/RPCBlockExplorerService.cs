@@ -6,7 +6,12 @@ using System.Threading.Tasks;
 using NBitcoin;
 using Newtonsoft.Json.Linq;
 
+
+#if !CLIENT
 namespace NTumbleBit.TumblerServer.Services.RPCServices
+#else
+namespace NTumbleBit.Client.Tumbler.Services.RPCServices
+#endif
 {
 	public class RPCBlockExplorerService : IBlockExplorerService
 	{

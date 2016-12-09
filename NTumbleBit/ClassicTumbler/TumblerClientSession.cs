@@ -97,6 +97,15 @@ namespace NTumbleBit.ClassicTumbler
 			get; set;
 		}
 
+
+		public TumblerClientSessionStates Status
+		{
+			get
+			{
+				return InternalState.Status;
+			}
+		}
+
 		public State GetInternalState()
 		{
 			var clone = Serializer.Clone(InternalState);

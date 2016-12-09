@@ -16,7 +16,8 @@
         "compile": [
             "../NTumbleBit.TumblerServer/Models/*.cs",
             "../NTumbleBit.TumblerServer/JsonConverters/*.cs",
-            "../NTumbleBit.TumblerServer/Serializer.cs"
+            "../NTumbleBit.TumblerServer/Serializer.cs",
+            "../NTumbleBit.TumblerServer/Services/**/*.cs"
         ],
         "define": ["CLIENT"]
     }

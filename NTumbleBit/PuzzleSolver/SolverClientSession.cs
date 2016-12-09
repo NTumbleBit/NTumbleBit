@@ -20,6 +20,7 @@ namespace NTumbleBit.PuzzleSolver
 		WaitingGeneratePuzzles,
 		WaitingCommitments,
 		WaitingFakeCommitmentsProof,
+		WaitingFullfillKey,
 		WaitingPuzzleSolutions,
 		Completed
 	}
@@ -164,6 +165,11 @@ namespace NTumbleBit.PuzzleSolver
 				get;
 				set;
 			}
+			public Script OfferScript
+			{
+				get;
+				set;
+			}
 		}	
 
 
@@ -181,7 +187,23 @@ namespace NTumbleBit.PuzzleSolver
 			{
 				return _Parameters.ServerKey;
 			}
-		}		
+		}
+
+		public ScriptCoin EscrowedCoin
+		{
+			get
+			{
+				return InternalState.EscrowedCoin;
+			}
+		}
+
+		public SolverClientStates Status
+		{
+			get
+			{
+				return InternalState.Status;
+			}
+		}
 
 		public override void ConfigureEscrowedCoin(ScriptCoin escrowedCoin, Key escrowKey, Key redeemKey)
 		{
@@ -279,7 +301,7 @@ namespace NTumbleBit.PuzzleSolver
 				}
 			}
 
-			InternalState.Status = SolverClientStates.WaitingPuzzleSolutions;
+			InternalState.Status = SolverClientStates.WaitingFullfillKey;
 			return _PuzzleElements.OfType<RealPuzzle>()
 				.Select(p => p.BlindFactor)
 				.ToArray();
@@ -289,7 +311,7 @@ namespace NTumbleBit.PuzzleSolver
 		{
 			if(feeRate == null)
 				throw new ArgumentNullException("feeRate");
-			AssertState(SolverClientStates.WaitingPuzzleSolutions);
+			AssertState(SolverClientStates.WaitingFullfillKey);
 			var coin = InternalState.EscrowedCoin;
 			var offer = SolverScriptBuilder.CreateOfferScript(
 				_PuzzleElements.OfType<RealPuzzle>().Select(p => p.Commitment.KeyHash).ToArray(),
@@ -309,7 +331,15 @@ namespace NTumbleBit.PuzzleSolver
 			builder.AddCoins(coin);
 			builder.AddKeys(InternalState.EscrowKey);
 			builder.SignTransactionInPlace(tx);
+			InternalState.OfferScript = offer;
+			InternalState.Status = SolverClientStates.WaitingPuzzleSolutions;
 			return tx;
+		}
+
+		public Script GetOfferScript()
+		{
+			AssertState(SolverClientStates.WaitingPuzzleSolutions);
+			return InternalState.OfferScript;
 		}
 
 		public void CheckSolutions(Transaction[] transactions)
