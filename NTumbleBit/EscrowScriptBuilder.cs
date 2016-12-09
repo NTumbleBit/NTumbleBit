@@ -37,7 +37,7 @@ namespace NTumbleBit
 			ops.Add(OpcodeType.OP_2);
 			ops.Add(OpcodeType.OP_CHECKMULTISIG);
 			ops.Add(OpcodeType.OP_ELSE);
-			ops.Add(Op.GetPushOp(timeout.ToBytes()));
+			ops.Add(Op.GetPushOp(timeout));
 			ops.Add(OpcodeType.OP_CHECKLOCKTIMEVERIFY);
 			ops.Add(OpcodeType.OP_DROP);
 			ops.Add(Op.GetPushOp(redeem.ToBytes()));

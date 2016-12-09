@@ -219,6 +219,13 @@ namespace NTumbleBit.Tests
 			RoundTrip(ref client, parameters);
 			Assert.True(transactions.Length == parameters.RealTransactionCount);
 
+
+			// In case things do not go well and timeout is hit...
+			var redeemTransaction = server.CreateRedeemTransaction(FeeRate, new Key().ScriptPubKey);
+			TransactionBuilder bb = new TransactionBuilder();
+			bb.AddCoins(server.GetInternalState().EscrowedCoin);
+			Assert.True(bb.Verify(redeemTransaction));
+
 			foreach(var tx in transactions)
 			{
 				TransactionBuilder builder = new TransactionBuilder();

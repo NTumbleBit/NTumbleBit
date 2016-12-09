@@ -32,11 +32,18 @@ namespace NTumbleBit.PuzzleSolver
 		}
 	}
 
-	public class SolverClientSession
+	public class SolverClientSession : EscrowInitiator
 	{
-		public State InternalState
+		protected new State InternalState
 		{
-			get; set;
+			get
+			{
+				return (State)base.InternalState;
+			}
+			set
+			{
+				base.InternalState = value;
+			}
 		}
 		public SolverClientSession(RsaPubKey serverKey)
 		{
@@ -121,7 +128,7 @@ namespace NTumbleBit.PuzzleSolver
 			return state;
 		}
 
-		public class State
+		public new class State : EscrowInitiator.State
 		{
 			public PuzzleValue Puzzle
 			{
@@ -132,10 +139,6 @@ namespace NTumbleBit.PuzzleSolver
 				get; set;
 			}
 			public PuzzleSolution PuzzleSolution
-			{
-				get; set;
-			}
-			public ScriptCoin EscrowedCoin
 			{
 				get; set;
 			}
@@ -161,16 +164,6 @@ namespace NTumbleBit.PuzzleSolver
 				get;
 				set;
 			}
-			public Key EscrowKey
-			{
-				get;
-				set;
-			}
-			public Key RedeemKey
-			{
-				get;
-				set;
-			}
 		}	
 
 
@@ -188,27 +181,12 @@ namespace NTumbleBit.PuzzleSolver
 			{
 				return _Parameters.ServerKey;
 			}
-		}
+		}		
 
-		public Script Id
+		public override void ConfigureEscrowedCoin(ScriptCoin escrowedCoin, Key escrowKey, Key redeemKey)
 		{
-			get
-			{
-				return InternalState.EscrowedCoin.ScriptPubKey;
-			}
-		}
-
-		public void ConfigureEscrowedCoin(ScriptCoin escrowedCoin, Key escrowKey, Key redeemKey)
-		{
-			if(escrowedCoin == null)
-				throw new ArgumentNullException("escrowedCoin");
 			AssertState(SolverClientStates.WaitingEscrow);
-			var escrow = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(escrowedCoin.Redeem);
-			if(escrow == null || !escrow.EscrowKeys.Any(e => e == escrowKey.PubKey))
-				throw new PuzzleException("Invalid escrow");
-			InternalState.EscrowedCoin = escrowedCoin;
-			InternalState.EscrowKey = escrowKey;
-			InternalState.RedeemKey = redeemKey;
+			base.ConfigureEscrowedCoin(escrowedCoin, escrowKey, redeemKey);
 			InternalState.Status = SolverClientStates.WaitingPuzzle;
 		}
 

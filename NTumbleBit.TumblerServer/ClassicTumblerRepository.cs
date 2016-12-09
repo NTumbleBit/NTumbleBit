@@ -52,7 +52,7 @@ namespace NTumbleBit.TumblerServer
 			var session = _Promises.TryGet(id);
 			if(session == null)
 				return null;
-			return new PromiseServerSession(Serializer.ToObject<PromiseServerSession.InternalState>(session),
+			return new PromiseServerSession(Serializer.ToObject<PromiseServerSession.State>(session),
 				_Configuration.CreateClassicTumblerParameters().CreatePromiseParamaters());
 		}
 

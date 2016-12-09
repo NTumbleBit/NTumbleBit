@@ -461,11 +461,11 @@ namespace NTumbleBit.PuzzlePromise
 			}
 		}
 
-		public Script Id
+		public string Id
 		{
 			get
 			{
-				return InternalState.EscrowedCoin.ScriptPubKey;
+				return InternalState.EscrowedCoin.ScriptPubKey.ToHex();
 			}
 		}
 

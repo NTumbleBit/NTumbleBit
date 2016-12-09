@@ -3,7 +3,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using NTumbleBit.JsonConverters;
 using NTumbleBit.PuzzleSolver;
-using NTumbleBit.JsonConverters;
 using Newtonsoft.Json.Converters;
 using NTumbleBit.ClassicTumbler;
 using System;
