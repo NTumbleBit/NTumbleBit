@@ -23,7 +23,7 @@ namespace NTumbleBit.Client.Tumbler
 			AliceClient = client;
 			BobClient = client;
 			Services = services;
-			ClientSession = new TumblerClientSession(Parameters, startCycle);
+			ClientChannelNegotiation = new ClientChannelNegotiation(Parameters, startCycle);
 		}
 
 		public ExternalServices Services
@@ -46,7 +46,7 @@ namespace NTumbleBit.Client.Tumbler
 		{
 			get; set;
 		}
-		public TumblerClientSession ClientSession
+		public ClientChannelNegotiation ClientChannelNegotiation
 		{
 			get; set;
 		}
@@ -63,7 +63,7 @@ namespace NTumbleBit.Client.Tumbler
 
 		public void Update()
 		{
-			switch(ClientSession.Status)
+			switch(ClientChannelNegotiation.Status)
 			{
 				case TumblerClientSessionStates.WaitingVoucher:
 					/////////////////////////////<Registration>/////////////////////////
@@ -74,35 +74,35 @@ namespace NTumbleBit.Client.Tumbler
 					var expectedCycle = Parameters.CycleGenerator.GetRegistratingCycle(Services.BlockExplorerService.GetCurrentHeight());
 					Assert(expectedCycle.Start == cycle.Start, "invalid-phase");
 					//Saving the voucher for later
-					ClientSession.ReceiveUnsignedVoucher(voucherResponse.UnsignedVoucher);
+					ClientChannelNegotiation.ReceiveUnsignedVoucher(voucherResponse.UnsignedVoucher);
 					/////////////////////////////</Registration>/////////////////////////
 					return;
 				case TumblerClientSessionStates.WaitingGenerateClientTransactionKeys:
 					/////////////////////////////<ClientChannel>/////////////////////////
 					//Client asks the public key of the Tumbler and sends its own
-					var aliceEscrowInformation = ClientSession.GenerateClientTransactionKeys();
+					var aliceEscrowInformation = ClientChannelNegotiation.GenerateClientTransactionKeys();
 					var key = AliceClient.RequestTumblerEscrowKey(aliceEscrowInformation);
-					ClientSession.ReceiveTumblerEscrowKey(key);
+					ClientChannelNegotiation.ReceiveTumblerEscrowKey(key);
 					return;
 				case TumblerClientSessionStates.WaitingClientTransaction:
 					//Client create the escrow
-					var txout = ClientSession.BuildClientEscrowTxOut();
+					var txout = ClientChannelNegotiation.BuildClientEscrowTxOut();
 					var clientEscrowTx = Services.WalletService.FundTransaction(txout, GetFeeRate());
 					Services.BlockExplorerService.Track(txout.ScriptPubKey);
 					Services.BroadcastService.Broadcast(clientEscrowTx);
-					SolverClientSession = ClientSession.SetClientSignedTransaction(clientEscrowTx);
+					SolverClientSession = ClientChannelNegotiation.SetClientSignedTransaction(clientEscrowTx);
 					return;
 				case TumblerClientSessionStates.WaitingSolvedVoucher:
 					var voucher = AliceClient.ClientChannelConfirmed(SolverClientSession.EscrowedCoin.Outpoint.Hash);
-					ClientSession.CheckVoucherSolution(voucher);
+					ClientChannelNegotiation.CheckVoucherSolution(voucher);
 					/////////////////////////////</ClientChannel>/////////////////////////
 					return;
 				case TumblerClientSessionStates.WaitingGenerateTumblerTransactionKey:
 					/////////////////////////////<TumblerChannel>/////////////////////////
 					//Client asks the Tumbler to make a channel
-					var bobEscrowInformation = ClientSession.GenerateTumblerTransactionKey();
+					var bobEscrowInformation = ClientChannelNegotiation.GenerateTumblerTransactionKey();
 					var tumblerInformation = BobClient.OpenChannel(bobEscrowInformation);
-					PromiseClientSession = ClientSession.ReceiveTumblerEscrowedCoin(tumblerInformation);
+					PromiseClientSession = ClientChannelNegotiation.ReceiveTumblerEscrowedCoin(tumblerInformation);
 					//Channel is done, now need to run the promise protocol to get valid puzzle
 					var cashoutDestination = Services.WalletService.GenerateAddress();
 					var sigReq = PromiseClientSession.CreateSignatureRequest(cashoutDestination, GetFeeRate());
@@ -143,7 +143,7 @@ namespace NTumbleBit.Client.Tumbler
 							throw new NotSupportedException(SolverClientSession.Status.ToString());
 					}
 				default:
-					throw new NotSupportedException(ClientSession.Status.ToString());
+					throw new NotSupportedException(ClientChannelNegotiation.Status.ToString());
 			}
 		}
 

@@ -58,8 +58,8 @@ namespace NTumbleBit.Tests
 				Assert.Equal(expectedCycle.Start, cycle.Start);
 
 				//Saving the voucher for later
-				var clientSession = new TumblerClientSession(parameters, cycle.Start);
-				clientSession.ReceiveUnsignedVoucher(voucherResponse.UnsignedVoucher);
+				var clientNegotiation = new ClientChannelNegotiation(parameters, cycle.Start);
+				clientNegotiation.ReceiveUnsignedVoucher(voucherResponse.UnsignedVoucher);
 				/////////////////////////////</Registration>/////////////////////////
 
 
@@ -70,28 +70,28 @@ namespace NTumbleBit.Tests
 
 				/////////////////////////////<ClientChannel>/////////////////////////
 				//Client asks the public key of the Tumbler and sends its own
-				var aliceEscrowInformation = clientSession.GenerateClientTransactionKeys();
+				var aliceEscrowInformation = clientNegotiation.GenerateClientTransactionKeys();
 				var key = aliceClient.RequestTumblerEscrowKey(aliceEscrowInformation);
-				clientSession.ReceiveTumblerEscrowKey(key);
+				clientNegotiation.ReceiveTumblerEscrowKey(key);
 				//Client create the escrow
 				var clientWallet = new RPCWalletService(bobRPC);
 				var clientBlockExplorer = new RPCBlockExplorerService(bobRPC);
 
-				var txout = clientSession.BuildClientEscrowTxOut();
+				var txout = clientNegotiation.BuildClientEscrowTxOut();
 				var clientEscrowTx = clientWallet.FundTransaction(txout, FeeRate);
 				bobRPC.SendRawTransaction(clientEscrowTx);
 				server.BobNode.FindBlock(2);
 				server.SyncNodes();
-				var solverClientSession = clientSession.SetClientSignedTransaction(clientEscrowTx);
+				var solverClientSession = clientNegotiation.SetClientSignedTransaction(clientEscrowTx);
 				//Checking that the redeem transaction of the client escrow has proper validation time
 				var redeem = solverClientSession.CreateRedeemTransaction(FeeRate, new Key().ScriptPubKey);
-				var firstExpectedRedeemableBlock = clientSession.GetCycle().GetPeriods().TumblerCashout.End + clientSession.GetCycle().SafetyPeriodDuration;
+				var firstExpectedRedeemableBlock = clientNegotiation.GetCycle().GetPeriods().TumblerCashout.End + clientNegotiation.GetCycle().SafetyPeriodDuration;
 				Assert.True(redeem.IsFinal(DateTimeOffset.UtcNow, firstExpectedRedeemableBlock));
 				Assert.True(redeem.IsFinal(DateTimeOffset.UtcNow, firstExpectedRedeemableBlock + 1));
 				Assert.False(redeem.IsFinal(DateTimeOffset.UtcNow, firstExpectedRedeemableBlock - 1));
 				//Server solves the puzzle
 				var voucher = aliceClient.ClientChannelConfirmed(clientEscrowTx.GetHash());
-				clientSession.CheckVoucherSolution(voucher);
+				clientNegotiation.CheckVoucherSolution(voucher);
 				/////////////////////////////</ClientChannel>/////////////////////////
 
 				//Client waits until tumbler channel establishment phase
@@ -101,9 +101,9 @@ namespace NTumbleBit.Tests
 
 				/////////////////////////////<TumblerChannel>/////////////////////////
 				//Client asks the Tumbler to make a channel
-				var bobEscrowInformation = clientSession.GenerateTumblerTransactionKey();
+				var bobEscrowInformation = clientNegotiation.GenerateTumblerTransactionKey();
 				var tumblerInformation = bobClient.OpenChannel(bobEscrowInformation);
-				var promiseClientSession = clientSession.ReceiveTumblerEscrowedCoin(tumblerInformation);
+				var promiseClientSession = clientNegotiation.ReceiveTumblerEscrowedCoin(tumblerInformation);
 				//Channel is done, now need to run the promise protocol to get valid puzzle
 				var cashoutDestination = clientWallet.GenerateAddress();
 				var sigReq = promiseClientSession.CreateSignatureRequest(cashoutDestination, FeeRate);
@@ -115,7 +115,7 @@ namespace NTumbleBit.Tests
 				//Checking that the redeem transaction of the tumbler escrow has proper validation time
 				var tumblerPromiseSession = server.TumblerRepository.GetPromiseServerSession(promiseClientSession.Id);
 				redeem = tumblerPromiseSession.CreateRedeemTransaction(FeeRate, new Key().ScriptPubKey);
-				firstExpectedRedeemableBlock = clientSession.GetCycle().GetPeriods().ClientCashout.End + clientSession.GetCycle().SafetyPeriodDuration;
+				firstExpectedRedeemableBlock = clientNegotiation.GetCycle().GetPeriods().ClientCashout.End + clientNegotiation.GetCycle().SafetyPeriodDuration;
 				Assert.True(redeem.IsFinal(DateTimeOffset.UtcNow, firstExpectedRedeemableBlock));
 				Assert.True(redeem.IsFinal(DateTimeOffset.UtcNow, firstExpectedRedeemableBlock + 1));
 				Assert.False(redeem.IsFinal(DateTimeOffset.UtcNow, firstExpectedRedeemableBlock - 1));

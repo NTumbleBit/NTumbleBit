@@ -9,10 +9,10 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit.ClassicTumbler
 {
-	public class TumblerServerSession
+	public class ServerChannelNegotiation
 	{
 
-		public TumblerServerSession(ClassicTumblerParameters parameters, RsaKey tumblerKey, RsaKey voucherKey)
+		public ServerChannelNegotiation(ClassicTumblerParameters parameters, RsaKey tumblerKey, RsaKey voucherKey)
 		{
 			if(tumblerKey == null)
 				throw new ArgumentNullException("tumblerKey");
@@ -43,7 +43,7 @@ namespace NTumbleBit.ClassicTumbler
 			get; set;
 		}
 	}
-	public class TumblerAliceServerSession : TumblerServerSession
+	public class TumblerAliceServerSession : ServerChannelNegotiation
 	{
 		State InternalState
 		{
@@ -165,7 +165,7 @@ namespace NTumbleBit.ClassicTumbler
 		WaitingSignedTransaction,
 		Completed
 	}
-	public class TumblerBobServerSession : TumblerServerSession
+	public class TumblerBobServerSession : ServerChannelNegotiation
 	{
 		State InternalState
 		{

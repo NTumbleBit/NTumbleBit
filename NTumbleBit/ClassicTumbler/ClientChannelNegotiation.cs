@@ -19,7 +19,7 @@ namespace NTumbleBit.ClassicTumbler
 		WaitingTumblerEscrow,
 		PromisePhase,
 	}
-	public class TumblerClientSession
+	public class ClientChannelNegotiation
 	{
 		public class State
 		{
@@ -73,7 +73,7 @@ namespace NTumbleBit.ClassicTumbler
 				set;
 			}
 		}
-		public TumblerClientSession(ClassicTumblerParameters parameters, int cycleStart)
+		public ClientChannelNegotiation(ClassicTumblerParameters parameters, int cycleStart)
 		{
 			if(parameters == null)
 				throw new ArgumentNullException("parameters");
@@ -82,7 +82,7 @@ namespace NTumbleBit.ClassicTumbler
 			InternalState.CycleStart = cycleStart;
 		}		
 
-		public TumblerClientSession(ClassicTumblerParameters parameters, State state)
+		public ClientChannelNegotiation(ClassicTumblerParameters parameters, State state)
 		{
 			if(parameters == null)
 				throw new ArgumentNullException("parameters");
