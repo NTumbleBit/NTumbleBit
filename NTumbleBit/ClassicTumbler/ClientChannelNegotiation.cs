@@ -130,7 +130,7 @@ namespace NTumbleBit.ClassicTumbler
 			InternalState.BlindedVoucher = puzzle.Blind(ref factor).PuzzleValue;
 			InternalState.BlindedVoucherFactor = factor;
 			InternalState.Status = TumblerClientSessionStates.WaitingGenerateClientTransactionKeys;
-		}
+		}		
 
 		public ClientEscrowInformation GenerateClientTransactionKeys()
 		{

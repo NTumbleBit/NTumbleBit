@@ -32,7 +32,7 @@ namespace NTumbleBit.TumblerServer
 		static Dictionary<string, string> _AliceSessions = new Dictionary<string, string>();
 		static Dictionary<string, string> _Promises = new Dictionary<string, string>();
 
-		public void Save(string sessionId, TumblerBobServerSession session)
+		public void Save(string sessionId, BobServerChannelNegotiation session)
 		{
 			_BobSessions.AddOrReplace(sessionId, Serializer.ToString(session.GetInternalState()));
 		}
@@ -67,29 +67,29 @@ namespace NTumbleBit.TumblerServer
 		}
 
 
-		public TumblerBobServerSession GetBobSession(string sessionId)
+		public BobServerChannelNegotiation GetBobSession(string sessionId)
 		{
 			var data = _BobSessions.TryGet(sessionId);
 			if(data == null)
 				return null;
 
-			TumblerBobServerSession.State state = Serializer.ToObject<TumblerBobServerSession.State>(data);
-			return new TumblerBobServerSession(_Configuration.CreateClassicTumblerParameters(), _Configuration.TumblerKey, _Configuration.VoucherKey, state);
+			BobServerChannelNegotiation.State state = Serializer.ToObject<BobServerChannelNegotiation.State>(data);
+			return new BobServerChannelNegotiation(_Configuration.CreateClassicTumblerParameters(), _Configuration.TumblerKey, _Configuration.VoucherKey, state);
 		}
 
-		public void Save(string sessionId, TumblerAliceServerSession session)
+		public void Save(string sessionId, AliceServerChannelNegotiation session)
 		{
 			_AliceSessions.AddOrReplace(sessionId, Serializer.ToString(session.GetInternalState()));
 		}
 
-		public TumblerAliceServerSession GetAliceSession(string sessionId)
+		public AliceServerChannelNegotiation GetAliceSession(string sessionId)
 		{
 			var data = _AliceSessions.TryGet(sessionId);
 			if(data == null)
 				return null;
 
-			TumblerAliceServerSession.State state = Serializer.ToObject<TumblerAliceServerSession.State>(data);
-			return new TumblerAliceServerSession(_Configuration.CreateClassicTumblerParameters(), _Configuration.TumblerKey, _Configuration.VoucherKey, state);
+			AliceServerChannelNegotiation.State state = Serializer.ToObject<AliceServerChannelNegotiation.State>(data);
+			return new AliceServerChannelNegotiation(_Configuration.CreateClassicTumblerParameters(), _Configuration.TumblerKey, _Configuration.VoucherKey, state);
 		}		
 	}
 }

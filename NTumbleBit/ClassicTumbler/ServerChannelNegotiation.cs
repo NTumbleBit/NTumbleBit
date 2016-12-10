@@ -43,7 +43,7 @@ namespace NTumbleBit.ClassicTumbler
 			get; set;
 		}
 	}
-	public class TumblerAliceServerSession : ServerChannelNegotiation
+	public class AliceServerChannelNegotiation : ServerChannelNegotiation
 	{
 		State InternalState
 		{
@@ -85,7 +85,7 @@ namespace NTumbleBit.ClassicTumbler
 			return state;
 		}
 
-		public TumblerAliceServerSession(ClassicTumblerParameters parameters,
+		public AliceServerChannelNegotiation(ClassicTumblerParameters parameters,
 										RsaKey tumblerKey,
 										RsaKey voucherKey) : base(parameters, tumblerKey, voucherKey)
 		{
@@ -94,7 +94,7 @@ namespace NTumbleBit.ClassicTumbler
 			InternalState = new State();
 		}
 
-		public TumblerAliceServerSession(ClassicTumblerParameters parameters,
+		public AliceServerChannelNegotiation(ClassicTumblerParameters parameters,
 										RsaKey tumblerKey,
 										RsaKey voucherKey,
 										State state) : base(parameters, tumblerKey, voucherKey)
@@ -165,7 +165,7 @@ namespace NTumbleBit.ClassicTumbler
 		WaitingSignedTransaction,
 		Completed
 	}
-	public class TumblerBobServerSession : ServerChannelNegotiation
+	public class BobServerChannelNegotiation : ServerChannelNegotiation
 	{
 		State InternalState
 		{
@@ -213,7 +213,7 @@ namespace NTumbleBit.ClassicTumbler
 			return Parameters.CycleGenerator.GetCycle(InternalState.CycleStart);
 		}
 
-		public TumblerBobServerSession(ClassicTumblerParameters parameters,
+		public BobServerChannelNegotiation(ClassicTumblerParameters parameters,
 										RsaKey tumblerKey,
 										RsaKey voucherKey,
 										int cycleStart) : base(parameters, tumblerKey, voucherKey)
@@ -224,7 +224,7 @@ namespace NTumbleBit.ClassicTumbler
 			InternalState.CycleStart = cycleStart;
 		}
 
-		public TumblerBobServerSession(ClassicTumblerParameters parameters,
+		public BobServerChannelNegotiation(ClassicTumblerParameters parameters,
 										RsaKey tumblerKey,
 										RsaKey voucherKey,
 										State state) : base(parameters, tumblerKey, voucherKey)

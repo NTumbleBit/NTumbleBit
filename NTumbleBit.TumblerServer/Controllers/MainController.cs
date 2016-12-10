@@ -82,7 +82,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 		{
 			var height = Services.BlockExplorerService.GetCurrentHeight();
 			var cycleParameters = Parameters.CycleGenerator.GetRegistratingCycle(height);
-			var bobSession = new TumblerBobServerSession(Parameters, Tumbler.TumblerKey, Tumbler.VoucherKey, cycleParameters.Start);
+			var bobSession = new BobServerChannelNegotiation(Parameters, Tumbler.TumblerKey, Tumbler.VoucherKey, cycleParameters.Start);
 			PuzzleSolution solution = null;
 			var voucher = bobSession.GenerateUnsignedVoucher(ref solution);
 			Repository.Save(Hashes.Hash160(solution.ToBytes()).ToString(), bobSession);
@@ -98,7 +98,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 		public IActionResult RequestTumblerEscrowKey([FromBody]ClientEscrowInformation request)
 		{
 			var height = Services.BlockExplorerService.GetCurrentHeight();
-			var aliceSession = new TumblerAliceServerSession(Parameters, Tumbler.TumblerKey, Tumbler.VoucherKey);
+			var aliceSession = new AliceServerChannelNegotiation(Parameters, Tumbler.TumblerKey, Tumbler.VoucherKey);
 			var pubKey = aliceSession.ReceiveAliceEscrowInformation(request);
 			if(!aliceSession.GetCycle().IsInPhase(CyclePhase.ClientChannelEstablishment, height))
 				return BadRequest("incorrect-phase");
