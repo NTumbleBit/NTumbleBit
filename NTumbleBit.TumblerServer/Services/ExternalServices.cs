@@ -27,5 +27,9 @@ namespace NTumbleBit.Client.Tumbler.Services
 		{
 			get; set;
 		}
+		public ILockTimedBroadcastService LockTimedBroadcastService
+		{
+			get; set;
+		}
 	}
 }

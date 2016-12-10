@@ -79,10 +79,14 @@ namespace NTumbleBit.Tests
 
 				var txout = clientNegotiation.BuildClientEscrowTxOut();
 				var clientEscrowTx = clientWallet.FundTransaction(txout, FeeRate);
+
+				var clientBroadcastLater = new RPCLockTimedBroadcastService(bobRPC);
 				bobRPC.SendRawTransaction(clientEscrowTx);
 				server.BobNode.FindBlock(2);
 				server.SyncNodes();
 				var solverClientSession = clientNegotiation.SetClientSignedTransaction(clientEscrowTx);
+				clientBroadcastLater.BroadcastLater(solverClientSession.CreateRedeemTransaction(FeeRate, new Key().ScriptPubKey));
+
 				//Checking that the redeem transaction of the client escrow has proper validation time
 				var redeem = solverClientSession.CreateRedeemTransaction(FeeRate, new Key().ScriptPubKey);
 				var firstExpectedRedeemableBlock = clientNegotiation.GetCycle().GetPeriods().TumblerCashout.End + clientNegotiation.GetCycle().SafetyPeriodDuration;

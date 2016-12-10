@@ -156,10 +156,13 @@ namespace NTumbleBit.TumblerServer.Controllers
 				if(tx == null)
 					return BadRequest("tumbler-insufficient-funds");
 				Services.BlockExplorerService.Track(txOut.ScriptPubKey);
-				Services.BroadcastService.Broadcast(tx);
+				Services.BroadcastService.Broadcast(tx);				
 				var promiseServerSession = session.SetSignedTransaction(tx);
 				Repository.Save(request.SignedVoucher.ToString(), session);
 				Repository.Save(promiseServerSession);
+
+				var redeem = Services.WalletService.GenerateAddress();
+				Services.LockTimedBroadcastService.BroadcastLater(promiseServerSession.CreateRedeemTransaction(fee, redeem.ScriptPubKey));
 				return this.Json(promiseServerSession.EscrowedCoin);
 			}
 			catch(PuzzleException)
