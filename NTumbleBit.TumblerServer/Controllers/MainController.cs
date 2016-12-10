@@ -103,7 +103,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 			if(!aliceSession.GetCycle().IsInPhase(CyclePhase.ClientChannelEstablishment, height))
 				return BadRequest("incorrect-phase");
 			Repository.Save(aliceSession.GetChannelId(), aliceSession);
-			Services.BlockExplorerService.Track(aliceSession.BuildEscrowTxOut().ScriptPubKey);
+			Services.BlockExplorerService.Track(aliceSession.CreateEscrowScript().Hash.ScriptPubKey);
 			return Json(pubKey);
 		}
 
@@ -193,13 +193,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 			var session = Repository.GetPromiseServerSession(channelId);
 			if(session == null)
 				throw NotFound("channel-not-found").AsException();
-			var lockTime = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(session.EscrowedCoin.Redeem).LockTime;
-			var firstCycle = Parameters.CycleGenerator.GetCycle(Parameters.CycleGenerator.FirstCycle.Start);
-			var lockOffset = (uint)firstCycle.GetTumblerLockTime() - firstCycle.Start;
-			var start = checked((uint)lockTime - lockOffset);
-			var cycle = Parameters.CycleGenerator.GetCycle(checked((int)start));
-			if(!cycle.IsInPhase(expectedPhase, height))
-				throw BadRequest("invalid-phase").AsException();
+			CheckPhase(expectedPhase, height, session);
 			return session;
 		}
 
@@ -209,14 +203,19 @@ namespace NTumbleBit.TumblerServer.Controllers
 			var session = Repository.GetSolverServerSession(channelId);
 			if(session == null)
 				throw NotFound("channel-not-found").AsException();
-			var lockTime = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(session.InternalState.EscrowedCoin.Redeem).LockTime;
+			CheckPhase(expectedPhase, height, session);
+			return session;
+		}
+
+		private void CheckPhase(CyclePhase expectedPhase, int height, IEscrow escrow)
+		{
+			var lockTime = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(escrow.EscrowedCoin.Redeem).LockTime;
 			var firstCycle = Parameters.CycleGenerator.GetCycle(Parameters.CycleGenerator.FirstCycle.Start);
-			var lockOffset = (uint)firstCycle.GetClientLockTime() - firstCycle.Start;
+			var lockOffset = (uint)lockTime - firstCycle.Start;
 			var start = checked((uint)lockTime - lockOffset);
 			var cycle = Parameters.CycleGenerator.GetCycle(checked((int)start));
 			if(!cycle.IsInPhase(expectedPhase, height))
 				throw BadRequest("invalid-phase").AsException();
-			return session;
 		}
 
 		[HttpPost("api/v1/tumblers/0/clientchannels/{channelId}/solvepuzzles")]

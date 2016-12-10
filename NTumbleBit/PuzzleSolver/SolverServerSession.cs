@@ -75,7 +75,7 @@ namespace NTumbleBit.PuzzleSolver
 		}
 
 
-		public new State InternalState
+		protected new State InternalState
 		{
 			get
 			{
@@ -136,8 +136,7 @@ namespace NTumbleBit.PuzzleSolver
 			{
 				return InternalState.Status;
 			}
-		}
-		
+		}		
 
 		public override void ConfigureEscrowedCoin(ScriptCoin escrowedCoin, Key escrowKey)
 		{

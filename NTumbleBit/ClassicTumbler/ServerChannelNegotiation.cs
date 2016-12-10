@@ -140,7 +140,7 @@ namespace NTumbleBit.ClassicTumbler
 			return CreateEscrowScript().Hash.ScriptPubKey.ToHex();
 		}
 
-		private Script CreateEscrowScript()
+		public Script CreateEscrowScript()
 		{
 			return EscrowScriptBuilder.CreateEscrow(new[] { InternalState.EscrowKey.PubKey, InternalState.OtherEscrowKey }, InternalState.RedeemKey, GetCycle().GetClientLockTime());
 		}

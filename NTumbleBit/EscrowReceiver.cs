@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit
 {
-    public class EscrowReceiver
+    public class EscrowReceiver : IEscrow
     {
 		public class State
 		{
@@ -50,6 +50,14 @@ namespace NTumbleBit
 
 			InternalState.EscrowKey = escrowKey;
 			InternalState.EscrowedCoin = escrowedCoin;			
+		}
+
+		public ScriptCoin EscrowedCoin
+		{
+			get
+			{
+				return InternalState.EscrowedCoin;
+			}
 		}
 	}
 }

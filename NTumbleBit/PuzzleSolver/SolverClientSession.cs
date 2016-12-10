@@ -189,14 +189,6 @@ namespace NTumbleBit.PuzzleSolver
 			}
 		}
 
-		public ScriptCoin EscrowedCoin
-		{
-			get
-			{
-				return InternalState.EscrowedCoin;
-			}
-		}
-
 		public SolverClientStates Status
 		{
 			get

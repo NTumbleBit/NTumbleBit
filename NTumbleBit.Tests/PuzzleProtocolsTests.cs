@@ -231,13 +231,6 @@ namespace NTumbleBit.Tests
 				TransactionBuilder builder = new TransactionBuilder();
 				builder.Extensions.Add(new EscrowBuilderExtension());
 				builder.AddCoins(coin);
-				builder.AddKeys(clientEscrow);
-				builder.StandardTransactionPolicy = new StandardTransactionPolicy()
-				{
-					CheckFee = false
-				};
-				Assert.False(builder.Verify(tx));
-				builder.SignTransactionInPlace(tx);
 				Assert.True(builder.Verify(tx));
 			}
 		}
@@ -307,6 +300,8 @@ namespace NTumbleBit.Tests
 
 			var serverClone = new SolverServerSession(key, parameters, server.GetInternalState());
 			var clientClone = new SolverClientSession(parameters, client.GetInternalState());
+
+			client.CreateOfferTransaction(fullfillKey, FeeRate);
 			client.CheckSolutions(realPuzzleKeys);
 			RoundTrip(ref client, parameters);
 			var solution = client.GetSolution();

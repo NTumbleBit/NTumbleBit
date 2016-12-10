@@ -196,15 +196,7 @@ namespace NTumbleBit.PuzzlePromise
 			{
 				return InternalState.Status;
 			}
-		}
-
-		public ScriptCoin EscrowedCoin
-		{
-			get
-			{
-				return InternalState.EscrowedCoin;
-			}
-		}
+		}		
 
 		private void AssertState(PromiseServerStates state)
 		{
