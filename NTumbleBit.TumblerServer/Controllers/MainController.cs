@@ -99,7 +99,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 		{
 			var height = Services.BlockExplorerService.GetCurrentHeight();
 			var aliceSession = new AliceServerChannelNegotiation(Parameters, Tumbler.TumblerKey, Tumbler.VoucherKey);
-			var pubKey = aliceSession.ReceiveAliceEscrowInformation(request);
+			var pubKey = aliceSession.ReceiveClientEscrowInformation(request);
 			if(!aliceSession.GetCycle().IsInPhase(CyclePhase.ClientChannelEstablishment, height))
 				return BadRequest("incorrect-phase");
 			Repository.Save(aliceSession.GetChannelId(), aliceSession);
@@ -132,7 +132,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 
 			var channelId = sessions[0].GetChannelId();
 			PuzzleSolution voucher;
-			var solverServerSession = sessions[0].ConfirmAliceEscrow(transaction.Transaction, out voucher);
+			var solverServerSession = sessions[0].ConfirmClientEscrow(transaction.Transaction, out voucher);
 			Repository.Save(channelId, sessions[0]);
 			Repository.Save(solverServerSession);
 			return Json(voucher);

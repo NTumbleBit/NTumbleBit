@@ -43,6 +43,14 @@ namespace NTumbleBit.ClassicTumbler
 			get; set;
 		}
 	}
+
+	public enum AliceServerChannelNegotiationStates
+	{
+		WaitingClientEscrowInformation,
+		WaitingClientEscrow,
+		Completed
+	}
+
 	public class AliceServerChannelNegotiation : ServerChannelNegotiation
 	{
 		State InternalState
@@ -77,6 +85,11 @@ namespace NTumbleBit.ClassicTumbler
 				get;
 				set;
 			}
+			public AliceServerChannelNegotiationStates Status
+			{
+				get;
+				set;
+			}
 		}
 
 		public State GetInternalState()
@@ -104,14 +117,16 @@ namespace NTumbleBit.ClassicTumbler
 			InternalState = Serializer.Clone(state);
 		}
 
-		public PubKey ReceiveAliceEscrowInformation(ClientEscrowInformation escrowInformation)
+		public PubKey ReceiveClientEscrowInformation(ClientEscrowInformation escrowInformation)
 		{
+			AssertState(AliceServerChannelNegotiationStates.WaitingClientEscrowInformation);
 			var cycle = Parameters.CycleGenerator.GetCycle(escrowInformation.Cycle);
 			InternalState.CycleStart = cycle.Start;
 			InternalState.EscrowKey = new Key();
 			InternalState.OtherEscrowKey = escrowInformation.EscrowKey;
 			InternalState.RedeemKey = escrowInformation.RedeemKey;
 			InternalState.UnsignedVoucher = escrowInformation.UnsignedVoucher;
+			InternalState.Status = AliceServerChannelNegotiationStates.WaitingClientEscrow;
 			return InternalState.EscrowKey.PubKey;
 		}
 
@@ -130,8 +145,9 @@ namespace NTumbleBit.ClassicTumbler
 			return EscrowScriptBuilder.CreateEscrow(new[] { InternalState.EscrowKey.PubKey, InternalState.OtherEscrowKey }, InternalState.RedeemKey, GetCycle().GetClientLockTime());
 		}
 
-		public SolverServerSession ConfirmAliceEscrow(Transaction transaction, out PuzzleSolution solvedVoucher)
+		public SolverServerSession ConfirmClientEscrow(Transaction transaction, out PuzzleSolution solvedVoucher)
 		{
+			AssertState(AliceServerChannelNegotiationStates.WaitingClientEscrow);
 			solvedVoucher = null;
 			var escrow = CreateEscrowScript();
 			var coin = transaction.Outputs.AsCoins().FirstOrDefault(txout => txout.ScriptPubKey == escrow.Hash.ScriptPubKey);
@@ -149,6 +165,7 @@ namespace NTumbleBit.ClassicTumbler
 			InternalState.RedeemKey = null;
 			InternalState.EscrowKey = null;
 			solvedVoucher = voucher.WithRsaKey(VoucherKey.PubKey).Solve(VoucherKey);
+			InternalState.Status = AliceServerChannelNegotiationStates.Completed;
 			return session;
 		}		
 
@@ -156,9 +173,23 @@ namespace NTumbleBit.ClassicTumbler
 		{
 			return Parameters.CycleGenerator.GetCycle(InternalState.CycleStart);
 		}
+
+		public AliceServerChannelNegotiationStates Status
+		{
+			get
+			{
+				return InternalState.Status;
+			}
+		}
+
+		private void AssertState(AliceServerChannelNegotiationStates state)
+		{
+			if(state != Status)
+				throw new InvalidOperationException("Invalid state, actual " + InternalState.Status + " while expected is " + state);
+		}
 	}
 
-	public enum TumblerBobStates
+	public enum BobServerChannelNegotiationStates
 	{
 		WaitingVoucherRequest,
 		WaitingBobEscrowInformation,
@@ -191,7 +222,7 @@ namespace NTumbleBit.ClassicTumbler
 				set;
 			}			
 
-			public TumblerBobStates Status
+			public BobServerChannelNegotiationStates Status
 			{
 				get;
 				set;
@@ -242,10 +273,10 @@ namespace NTumbleBit.ClassicTumbler
 		
 		public PuzzleValue GenerateUnsignedVoucher(ref PuzzleSolution solution)
 		{
-			AssertState(TumblerBobStates.WaitingVoucherRequest);
+			AssertState(BobServerChannelNegotiationStates.WaitingVoucherRequest);
 			var puzzle = Parameters.VoucherKey.GeneratePuzzle(ref solution);
 			InternalState.VoucherHash = Hashes.Hash160(solution.ToBytes());
-			InternalState.Status = TumblerBobStates.WaitingBobEscrowInformation;
+			InternalState.Status = BobServerChannelNegotiationStates.WaitingBobEscrowInformation;
 			return puzzle.PuzzleValue;
 		}		
 
@@ -253,7 +284,7 @@ namespace NTumbleBit.ClassicTumbler
 		{
 			if(openChannelRequest == null)
 				throw new ArgumentNullException("bobKey");
-			AssertState(TumblerBobStates.WaitingBobEscrowInformation);
+			AssertState(BobServerChannelNegotiationStates.WaitingBobEscrowInformation);
 			if(openChannelRequest.SignedVoucher != InternalState.VoucherHash)
 				throw new PuzzleException("Incorrect voucher");
 
@@ -263,12 +294,12 @@ namespace NTumbleBit.ClassicTumbler
 			InternalState.OtherEscrowKey = openChannelRequest.EscrowKey;
 			InternalState.RedeemKey = redeem;
 			InternalState.VoucherHash = null;
-			InternalState.Status = TumblerBobStates.WaitingSignedTransaction;
+			InternalState.Status = BobServerChannelNegotiationStates.WaitingSignedTransaction;
 		}
 
 		public TxOut BuildEscrowTxOut()
 		{
-			AssertState(TumblerBobStates.WaitingSignedTransaction);
+			AssertState(BobServerChannelNegotiationStates.WaitingSignedTransaction);
 			var escrowScript = CreateEscrowScript();
 			return new TxOut(Parameters.Denomination, escrowScript.Hash);
 		}
@@ -287,7 +318,7 @@ namespace NTumbleBit.ClassicTumbler
 
 		public PromiseServerSession SetSignedTransaction(Transaction transaction)
 		{
-			AssertState(TumblerBobStates.WaitingSignedTransaction);
+			AssertState(BobServerChannelNegotiationStates.WaitingSignedTransaction);
 			var escrow = BuildEscrowTxOut();
 			var output = transaction.Outputs.AsIndexedOutputs()
 				.Single(o => o.TxOut.ScriptPubKey == escrow.ScriptPubKey && o.TxOut.Value == escrow.Value);
@@ -296,11 +327,11 @@ namespace NTumbleBit.ClassicTumbler
 			session.ConfigureEscrowedCoin(escrowedCoin, InternalState.EscrowKey, InternalState.RedeemKey);
 			InternalState.EscrowKey = null;
 			InternalState.RedeemKey = null;
-			InternalState.Status = TumblerBobStates.Completed;			
+			InternalState.Status = BobServerChannelNegotiationStates.Completed;			
 			return session;
 		}
 
-		private void AssertState(TumblerBobStates state)
+		private void AssertState(BobServerChannelNegotiationStates state)
 		{
 			if(state != InternalState.Status)
 				throw new InvalidOperationException("Invalid state, actual " + InternalState.Status + " while expected is " + state);
