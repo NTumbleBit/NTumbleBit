@@ -6,13 +6,13 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit.ClassicTumbler
 {
-    public class BobEscrowInformation
+    public class OpenChannelRequest
     {
 		public PubKey EscrowKey
 		{
 			get; set;
 		}
-		public PuzzleSolution SignedVoucher
+		public uint160 SignedVoucher
 		{
 			get; set;
 		}

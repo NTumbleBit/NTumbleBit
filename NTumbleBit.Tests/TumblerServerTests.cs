@@ -101,7 +101,7 @@ namespace NTumbleBit.Tests
 
 				/////////////////////////////<TumblerChannel>/////////////////////////
 				//Client asks the Tumbler to make a channel
-				var bobEscrowInformation = clientNegotiation.GenerateTumblerTransactionKey();
+				var bobEscrowInformation = clientNegotiation.GetOpenChannelRequest();
 				var tumblerInformation = bobClient.OpenChannel(bobEscrowInformation);
 				var promiseClientSession = clientNegotiation.ReceiveTumblerEscrowedCoin(tumblerInformation);
 				//Channel is done, now need to run the promise protocol to get valid puzzle
@@ -145,7 +145,7 @@ namespace NTumbleBit.Tests
 				///////////////
 
 				/////////////////////////////<ClientCashout>/////////////////////////
-				Thread.Sleep(5000);
+				Thread.Sleep(10000);
 				var txs = clientBlockExplorer.GetTransactions(offer.Outputs[0].ScriptPubKey);
 				solverClientSession.CheckSolutions(txs.Select(t => t.Transaction).ToArray());
 				var tumblingSolution = solverClientSession.GetSolution();

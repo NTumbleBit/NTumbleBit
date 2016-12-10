@@ -249,18 +249,18 @@ namespace NTumbleBit.ClassicTumbler
 			return puzzle.PuzzleValue;
 		}		
 
-		public void ReceiveBobEscrowInformation(BobEscrowInformation bobEscrowInformation)
+		public void ReceiveBobEscrowInformation(OpenChannelRequest openChannelRequest)
 		{
-			if(bobEscrowInformation == null)
+			if(openChannelRequest == null)
 				throw new ArgumentNullException("bobKey");
 			AssertState(TumblerBobStates.WaitingBobEscrowInformation);
-			if(Hashes.Hash160(bobEscrowInformation.SignedVoucher.ToBytes()) != InternalState.VoucherHash)
+			if(openChannelRequest.SignedVoucher != InternalState.VoucherHash)
 				throw new PuzzleException("Incorrect voucher");
 
 			var escrow = new Key();
 			var redeem = new Key();
 			InternalState.EscrowKey = escrow;
-			InternalState.OtherEscrowKey = bobEscrowInformation.EscrowKey;
+			InternalState.OtherEscrowKey = openChannelRequest.EscrowKey;
 			InternalState.RedeemKey = redeem;
 			InternalState.VoucherHash = null;
 			InternalState.Status = TumblerBobStates.WaitingSignedTransaction;

@@ -100,7 +100,7 @@ namespace NTumbleBit.Client.Tumbler
 				case TumblerClientSessionStates.WaitingGenerateTumblerTransactionKey:
 					/////////////////////////////<TumblerChannel>/////////////////////////
 					//Client asks the Tumbler to make a channel
-					var bobEscrowInformation = ClientChannelNegotiation.GenerateTumblerTransactionKey();
+					var bobEscrowInformation = ClientChannelNegotiation.GetOpenChannelRequest();
 					var tumblerInformation = BobClient.OpenChannel(bobEscrowInformation);
 					PromiseClientSession = ClientChannelNegotiation.ReceiveTumblerEscrowedCoin(tumblerInformation);
 					//Channel is done, now need to run the promise protocol to get valid puzzle

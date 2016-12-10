@@ -80,14 +80,14 @@ namespace NTumbleBit.Client.Tumbler
 			return ClientChannelConfirmedAsync(txId).GetAwaiter().GetResult();
 		}
 
-		public Task<ScriptCoin> OpenChannelAsync(BobEscrowInformation request)
+		public Task<ScriptCoin> OpenChannelAsync(OpenChannelRequest request)
 		{
 			if(request == null)
 				throw new ArgumentNullException("request");
 			return SendAsync<ScriptCoin>(HttpMethod.Post, request, "api/v1/tumblers/0/channels/");
 		}
 
-		public ScriptCoin OpenChannel(BobEscrowInformation request)
+		public ScriptCoin OpenChannel(OpenChannelRequest request)
 		{
 			return OpenChannelAsync(request).GetAwaiter().GetResult();
 		}

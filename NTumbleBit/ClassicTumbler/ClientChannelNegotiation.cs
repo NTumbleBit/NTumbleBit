@@ -1,4 +1,5 @@
 ﻿using NBitcoin;
+using NBitcoin.Crypto;
 using NTumbleBit.PuzzlePromise;
 using NTumbleBit.PuzzleSolver;
 using System;
@@ -37,7 +38,7 @@ namespace NTumbleBit.ClassicTumbler
 				get; set;
 			}
 
-			public PuzzleSolution SignedVoucher
+			public uint160 SignedVoucher
 			{
 				get; set;
 			}
@@ -193,12 +194,12 @@ namespace NTumbleBit.ClassicTumbler
 			if(!InternalState.UnsignedVoucher.WithRsaKey(Parameters.VoucherKey).Verify(solution))
 				throw new PuzzleException("Incorrect puzzle solution");
 			InternalState.BlindedVoucherFactor = null;
-			InternalState.SignedVoucher = solution;
+			InternalState.SignedVoucher = Hashes.Hash160(solution.ToBytes());
 			InternalState.UnsignedVoucher = null;
 			InternalState.Status = TumblerClientSessionStates.WaitingGenerateTumblerTransactionKey;
 		}
 
-		public BobEscrowInformation GenerateTumblerTransactionKey()
+		public OpenChannelRequest GetOpenChannelRequest()
 		{
 			AssertState(TumblerClientSessionStates.WaitingGenerateTumblerTransactionKey);
 			var escrow = new Key();
@@ -206,7 +207,7 @@ namespace NTumbleBit.ClassicTumbler
 			var signedVoucher = InternalState.SignedVoucher;
 			InternalState.SignedVoucher = null;
 			InternalState.Status = TumblerClientSessionStates.WaitingTumblerEscrow;
-			return new BobEscrowInformation()
+			return new OpenChannelRequest()
 			{
 				EscrowKey = escrow.PubKey,
 				SignedVoucher = signedVoucher
