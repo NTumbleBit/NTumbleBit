@@ -1,4 +1,5 @@
 ﻿using NBitcoin;
+using NTumbleBit.ClassicTumbler;
 using NTumbleBit.PuzzleSolver;
 using System;
 using System.Collections.Generic;
@@ -7,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit
 {
-    public class EscrowReceiver : IEscrow
+    public abstract class EscrowReceiver : IEscrow
     {
 		public class State
 		{
@@ -59,5 +60,7 @@ namespace NTumbleBit
 				return InternalState.EscrowedCoin;
 			}
 		}
+
+		public abstract LockTime GetLockTime(CycleParameters cycle);
 	}
 }

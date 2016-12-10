@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using NTumbleBit.ClassicTumbler;
 
 namespace NTumbleBit
 {
@@ -13,8 +14,9 @@ namespace NTumbleBit
 		{
 			get;
 		}
+		LockTime GetLockTime(CycleParameters cycle);
 	}
-    public class EscrowInitiator : IEscrow
+    public abstract class EscrowInitiator : IEscrow
     {
 		public class State
 		{
@@ -78,6 +80,8 @@ namespace NTumbleBit
 
 			return tx;
 		}
+
+		public abstract LockTime GetLockTime(CycleParameters cycle);
 
 		public string Id
 		{

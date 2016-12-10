@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using NTumbleBit.ClassicTumbler;
 
 namespace NTumbleBit.PuzzlePromise
 {
@@ -202,6 +203,11 @@ namespace NTumbleBit.PuzzlePromise
 		{
 			if(state != InternalState.Status)
 				throw new InvalidOperationException("Invalid state, actual " + InternalState.Status + " while expected is " + state);
+		}
+
+		public override LockTime GetLockTime(CycleParameters cycle)
+		{
+			return cycle.GetTumblerLockTime();
 		}
 	}
 }

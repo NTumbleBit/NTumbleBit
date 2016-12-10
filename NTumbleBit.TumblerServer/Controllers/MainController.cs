@@ -211,7 +211,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 		{
 			var lockTime = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(escrow.EscrowedCoin.Redeem).LockTime;
 			var firstCycle = Parameters.CycleGenerator.GetCycle(Parameters.CycleGenerator.FirstCycle.Start);
-			var lockOffset = (uint)lockTime - firstCycle.Start;
+			var lockOffset = (uint)escrow.GetLockTime(firstCycle) - firstCycle.Start;
 			var start = checked((uint)lockTime - lockOffset);
 			var cycle = Parameters.CycleGenerator.GetCycle(checked((int)start));
 			if(!cycle.IsInPhase(expectedPhase, height))

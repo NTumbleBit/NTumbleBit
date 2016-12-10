@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.IO;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json;
+using NTumbleBit.ClassicTumbler;
 
 namespace NTumbleBit.PuzzleSolver
 {
@@ -284,6 +285,11 @@ namespace NTumbleBit.PuzzleSolver
 
 			InternalState.Status = SolverServerStates.Completed;
 			return fullfill;
+		}
+
+		public override LockTime GetLockTime(CycleParameters cycle)
+		{
+			return cycle.GetClientLockTime();
 		}
 	}
 }

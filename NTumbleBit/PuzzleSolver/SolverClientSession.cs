@@ -10,6 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using NTumbleBit.PuzzlePromise;
+using NTumbleBit.ClassicTumbler;
 
 namespace NTumbleBit.PuzzleSolver
 {
@@ -425,6 +426,11 @@ namespace NTumbleBit.PuzzleSolver
 		{
 			AssertState(SolverClientStates.Completed);
 			return InternalState.PuzzleSolution;
+		}
+
+		public override LockTime GetLockTime(CycleParameters cycle)
+		{
+			return cycle.GetClientLockTime();
 		}
 
 		private void AssertState(SolverClientStates state)
