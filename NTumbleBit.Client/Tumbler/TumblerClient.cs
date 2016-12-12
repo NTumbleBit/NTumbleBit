@@ -179,14 +179,14 @@ namespace NTumbleBit.Client.Tumbler
 			return this.SendAsync<PuzzleSolver.SolutionKey[]>(HttpMethod.Post, revelation, "api/v1/tumblers/0/clientschannels/{0}/checkrevelation", channelId);
 		}
 
-		public PubKey CheckBlindFactors(string channelId, BlindFactor[] blindFactors)
+		public OfferInformation CheckBlindFactors(string channelId, BlindFactor[] blindFactors)
 		{
 			return CheckBlindFactorsAsync(channelId, blindFactors).GetAwaiter().GetResult();
 		}
 
-		public Task<PubKey> CheckBlindFactorsAsync(string channelId, BlindFactor[] blindFactors)
+		public Task<OfferInformation> CheckBlindFactorsAsync(string channelId, BlindFactor[] blindFactors)
 		{
-			return SendAsync<PubKey>(HttpMethod.Post, blindFactors, "api/v1/tumblers/0/clientschannels/{0}/checkblindfactors", channelId);
+			return SendAsync<OfferInformation>(HttpMethod.Post, blindFactors, "api/v1/tumblers/0/clientschannels/{0}/checkblindfactors", channelId);
 		}
 
 		public PuzzleSolver.ServerCommitment[] SolvePuzzles(string channelId, PuzzleValue[] puzzles)
@@ -206,14 +206,14 @@ namespace NTumbleBit.Client.Tumbler
 			return SignHashesAsync(channelId, sigReq).GetAwaiter().GetResult();
 		}
 
-		public void FullfillOffer(string channelId, Transaction offer)
+		public Transaction FullfillOffer(string channelId, TransactionSignature clientSignature)
 		{
-			FullfillOfferAsync(channelId, offer).GetAwaiter().GetResult();
+			return FullfillOfferAsync(channelId, clientSignature).GetAwaiter().GetResult();
 		}
 
-		public Task FullfillOfferAsync(string channelId, Transaction offer)
+		public Task<Transaction> FullfillOfferAsync(string channelId, TransactionSignature clientSignature)
 		{
-			return SendAsync<bool>(HttpMethod.Post, offer, "api/v1/tumblers/0/clientchannels/{0}/offer", channelId);
+			return SendAsync<Transaction>(HttpMethod.Post, clientSignature, "api/v1/tumblers/0/clientchannels/{0}/offer", channelId);
 		}
 	}
 }

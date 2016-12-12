@@ -293,34 +293,27 @@ namespace NTumbleBit.Tests
 			RoundTrip(ref client, parameters);
 			RoundTrip(ref blindFactors);
 
-			var fullfillKey = server.CheckBlindedFactors(blindFactors);
+			var offerInformation = server.CheckBlindedFactors(blindFactors, FeeRate);
 			RoundTrip(ref server, parameters, key);
-			SolutionKey[] realPuzzleKeys = server.GetSolutionKeys();
-			RoundTrip(ref realPuzzleKeys);
 
-			var serverClone = new SolverServerSession(key, parameters, server.GetInternalState());
-			var clientClone = new SolverClientSession(parameters, client.GetInternalState());
+			var clientOfferSig = client.SignOffer(offerInformation);
 
-			client.CreateOfferTransaction(fullfillKey, FeeRate);
-			client.CheckSolutions(realPuzzleKeys);
-			RoundTrip(ref client, parameters);
-			var solution = client.GetSolution();
-			RoundTrip(ref client, parameters);
-			Assert.True(solution == expectedSolution);
-
-			client = clientClone;
-			server = serverClone;
 			//Verify if the scripts are correctly created
-			var offer = client.CreateOfferTransaction(fullfillKey, FeeRate);
-			var offerCoin = offer.Outputs.AsCoins().First();
-			var fullfill = server.SignOfferAndCreateFullfillTransaction(offer, new Key().ScriptPubKey, FeeRate);
-			Assert.True(offer.Inputs.AsIndexedInputs().First().VerifyScript(escrow));
-			Assert.True(fullfill.Inputs.AsIndexedInputs().First().VerifyScript(offerCoin));
+			var fullfill = server.FullfillOffer(clientOfferSig, new Key().ScriptPubKey, FeeRate);
+
+			var offerTransaction = server.GetSignedOfferTransaction();
+			TransactionBuilder txBuilder = new TransactionBuilder();
+			txBuilder.AddCoins(client.EscrowedCoin);
+			Assert.True(txBuilder.Verify(offerTransaction));
+
+			txBuilder = new TransactionBuilder();
+			txBuilder.AddCoins(offerTransaction.Outputs.AsCoins().ToArray());
+			Assert.True(txBuilder.Verify(fullfill));
 			////////////////////////////////////////////////
 
 			client.CheckSolutions(fullfill);
 			RoundTrip(ref client, parameters);
-			solution = client.GetSolution();
+			var solution = client.GetSolution();
 			RoundTrip(ref client, parameters);
 			Assert.True(solution == expectedSolution);
 		}		

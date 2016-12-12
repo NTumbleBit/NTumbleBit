@@ -21,7 +21,7 @@ namespace NTumbleBit.PuzzleSolver
 		WaitingGeneratePuzzles,
 		WaitingCommitments,
 		WaitingFakeCommitmentsProof,
-		WaitingFullfillKey,
+		WaitingOffer,
 		WaitingPuzzleSolutions,
 		Completed
 	}
@@ -171,6 +171,11 @@ namespace NTumbleBit.PuzzleSolver
 				get;
 				set;
 			}
+			public PubKey FullfillKey
+			{
+				get;
+				internal set;
+			}
 		}	
 
 
@@ -294,39 +299,45 @@ namespace NTumbleBit.PuzzleSolver
 				}
 			}
 
-			InternalState.Status = SolverClientStates.WaitingFullfillKey;
+			InternalState.Status = SolverClientStates.WaitingOffer;
 			return _PuzzleElements.OfType<RealPuzzle>()
 				.Select(p => p.BlindFactor)
 				.ToArray();
 		}
 
-		public Transaction CreateOfferTransaction(PubKey fullFillKey, FeeRate feeRate)
+		public TransactionSignature SignOffer(OfferInformation offerInformation)
 		{
-			if(feeRate == null)
-				throw new ArgumentNullException("feeRate");
-			AssertState(SolverClientStates.WaitingFullfillKey);
+			if(offerInformation == null)
+				throw new ArgumentNullException("offerInformation");
+			AssertState(SolverClientStates.WaitingOffer);
+			InternalState.FullfillKey = offerInformation.FullfillKey;
+
+			Script offer = CreateOfferScript();
+
 			var coin = InternalState.EscrowedCoin;
-			var offer = SolverScriptBuilder.CreateOfferScript(
-				_PuzzleElements.OfType<RealPuzzle>().Select(p => p.Commitment.KeyHash).ToArray(),
-				fullFillKey,
-				InternalState.RedeemKey.PubKey,
-				EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(coin.Redeem).LockTime
-				);
 
 			var tx = new Transaction();
 			tx.Inputs.Add(new TxIn(coin.Outpoint));
 			tx.Outputs.Add(new TxOut(coin.Amount, offer.Hash));
-			var fee = feeRate.GetFee(tx.GetVirtualSize() + 72 * 2 + coin.Redeem.Length);
-			tx.Outputs[0].Value -= fee;
-
-			TransactionBuilder builder = new TransactionBuilder();
-			builder.Extensions.Add(new EscrowBuilderExtension());
-			builder.AddCoins(coin);
-			builder.AddKeys(InternalState.EscrowKey);
-			builder.SignTransactionInPlace(tx);
-			InternalState.OfferScript = offer;
+			tx.Outputs[0].Value -= offerInformation.Fee;
+			var signature = tx.Inputs.AsIndexedInputs().First().Sign(InternalState.EscrowKey, InternalState.EscrowedCoin, SigHash.All);
 			InternalState.Status = SolverClientStates.WaitingPuzzleSolutions;
-			return tx;
+			return signature;
+		}
+
+		private Script CreateOfferScript()
+		{
+			return SolverScriptBuilder.CreateOfferScript(
+				_PuzzleElements.OfType<RealPuzzle>().Select(p => p.Commitment.KeyHash).ToArray(),
+				InternalState.FullfillKey,
+				InternalState.RedeemKey.PubKey,
+				EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(InternalState.EscrowedCoin.Redeem).LockTime
+				);
+		}
+
+		public Script GetOfferScriptPubKey()
+		{
+			return CreateOfferScript().Hash.ScriptPubKey;
 		}
 
 		public Script GetOfferScript()

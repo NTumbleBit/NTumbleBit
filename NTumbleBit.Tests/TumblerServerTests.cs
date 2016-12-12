@@ -137,10 +137,11 @@ namespace NTumbleBit.Tests
 				var revelation2 = solverClientSession.Reveal(commmitments);
 				var solutionKeys = aliceClient.CheckRevelation(solverClientSession.Id, revelation2);
 				var blindFactors = solverClientSession.GetBlindFactors(solutionKeys);
-				var fullfillKey = aliceClient.CheckBlindFactors(solverClientSession.Id, blindFactors);
-				var offer = solverClientSession.CreateOfferTransaction(fullfillKey, FeeRate);
-				clientBlockExplorer.Track(offer.Outputs[0].ScriptPubKey);
-				aliceClient.FullfillOffer(solverClientSession.Id, offer);
+				var offerInformation = aliceClient.CheckBlindFactors(solverClientSession.Id, blindFactors);
+				var offerSignature = solverClientSession.SignOffer(offerInformation);
+				var offerScriptPubKey = solverClientSession.GetOfferScriptPubKey();
+				clientBlockExplorer.Track(offerScriptPubKey);
+				var fullfill = aliceClient.FullfillOffer(solverClientSession.Id, offerSignature);				
 				/////////////////////////////</Payment>/////////////////////////
 
 				//Client waits until can cashout
@@ -149,9 +150,7 @@ namespace NTumbleBit.Tests
 				///////////////
 
 				/////////////////////////////<ClientCashout>/////////////////////////
-				Thread.Sleep(10000);
-				var txs = clientBlockExplorer.GetTransactions(offer.Outputs[0].ScriptPubKey);
-				solverClientSession.CheckSolutions(txs.Select(t => t.Transaction).ToArray());
+				solverClientSession.CheckSolutions(fullfill);
 				var tumblingSolution = solverClientSession.GetSolution();
 				var transaction = promiseClientSession.GetSignedTransaction(tumblingSolution);
 				Assert.True(transaction.Inputs.AsIndexedInputs().First().VerifyScript(promiseClientSession.EscrowedCoin));

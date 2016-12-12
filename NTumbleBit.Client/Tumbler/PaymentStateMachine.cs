@@ -124,10 +124,10 @@ namespace NTumbleBit.Client.Tumbler
 							var revelation2 = SolverClientSession.Reveal(commmitments);
 							var solutionKeys = AliceClient.CheckRevelation(SolverClientSession.Id, revelation2);
 							var blindFactors = SolverClientSession.GetBlindFactors(solutionKeys);
-							var fullfillKey = AliceClient.CheckBlindFactors(SolverClientSession.Id, blindFactors);
-							var offer = SolverClientSession.CreateOfferTransaction(fullfillKey, GetFeeRate());
-							Services.BlockExplorerService.Track(offer.Outputs[0].ScriptPubKey);
-							AliceClient.FullfillOffer(SolverClientSession.Id, offer);
+							var offerInformation = AliceClient.CheckBlindFactors(SolverClientSession.Id, blindFactors);
+							var offerSignature = SolverClientSession.SignOffer(offerInformation);
+							Services.BlockExplorerService.Track(SolverClientSession.GetOfferScriptPubKey());
+							AliceClient.FullfillOffer(SolverClientSession.Id, offerSignature);
 							/////////////////////////////</Payment>/////////////////////////
 							return;
 						case SolverClientStates.WaitingPuzzleSolutions:

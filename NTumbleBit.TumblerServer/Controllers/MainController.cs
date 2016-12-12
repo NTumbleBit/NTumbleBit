@@ -243,31 +243,30 @@ namespace NTumbleBit.TumblerServer.Controllers
 		public IActionResult CheckBlindFactors(string channelId, [FromBody]BlindFactor[] blindFactors)
 		{
 			var session = GetSolverServerSession(channelId, CyclePhase.PaymentPhase);
-			var fullfillKey = session.CheckBlindedFactors(blindFactors);
+			var feeRate = Services.FeeService.GetFeeRate();
+			var fullfillKey = session.CheckBlindedFactors(blindFactors, feeRate);
 			Repository.Save(session);
 			return Json(fullfillKey);
 		}
 
 		[HttpPost("api/v1/tumblers/0/clientchannels/{channelId}/offer")]
-		public IActionResult FullfillOffer(string channelId, [FromBody]Transaction offer)
+		public IActionResult FullfillOffer(string channelId, [FromBody]TransactionSignature clientSignature)
 		{
 			var session = GetSolverServerSession(channelId, CyclePhase.TumblerCashoutPhase);
 			var cashout = Services.WalletService.GenerateAddress();
 			var feeRate = Services.FeeService.GetFeeRate();
-			if(session.Status != SolverServerStates.WaitingOffer)
+			if(session.Status != SolverServerStates.WaitingFullfillment)
 				return BadRequest("invalid-state");
 			try
 			{
-
-				var fullfill = session.SignOfferAndCreateFullfillTransaction(offer, cashout.ScriptPubKey, feeRate);
-				Services.BroadcastService.Broadcast(offer, fullfill);
+				var fullfill = session.FullfillOffer(clientSignature, cashout.ScriptPubKey, feeRate);
 				Repository.Save(session);
-				return Json(true);
+				return Json(fullfill);
 			}
 			catch(PuzzleException)
 			{
 				return BadRequest("invalid-offer");
 			}
-		}		
+		}
 	}
 }
