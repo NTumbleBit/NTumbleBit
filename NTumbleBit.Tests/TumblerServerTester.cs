@@ -64,7 +64,7 @@ namespace NTumbleBit.Tests
 			conf.ClassicTumblerParameters.FakeTransactionCount /= 4;
 			conf.ClassicTumblerParameters.RealTransactionCount /= 4;
 			conf.ClassicTumblerParameters.RealPuzzleCount /= 4;
-			conf.ClassicTumblerParameters.CycleGenerator.FirstCycle.Start = 105;					
+			conf.ClassicTumblerParameters.CycleGenerator.FirstCycle.Start = 105;
 
 			_Host = new WebHostBuilder()
 				.UseKestrel()
@@ -79,9 +79,14 @@ namespace NTumbleBit.Tests
 
 		public void SyncNodes()
 		{
-			_TumblerNode.Sync(_AliceNode, true);
-			_TumblerNode.Sync(_BobNode, true);
-			_BobNode.Sync(_AliceNode, true);
+			foreach(var node in NodeBuilder.Nodes)
+			{
+				foreach(var node2 in NodeBuilder.Nodes)
+				{
+					if(node != node2)
+						node.Sync(node2, true);
+				}
+			}
 		}
 
 		private static bool TryDelete(string directory, bool throws)
@@ -187,7 +192,7 @@ namespace NTumbleBit.Tests
 			{
 				return _BobNode;
 			}
-		}		
+		}
 
 		public string BaseDirectory
 		{

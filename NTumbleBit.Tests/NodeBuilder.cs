@@ -1,4 +1,5 @@
 ﻿using NBitcoin;
+using NBitcoin.Crypto;
 using NBitcoin.DataEncoders;
 using NBitcoin.Protocol;
 using NBitcoin.RPC;
@@ -90,7 +91,7 @@ namespace NTumbleBit.Tests
 				if(File.Exists(bitcoind))
 					return bitcoind;
 
-				var zip = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? 
+				var zip = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ?
 					String.Format("TestData/bitcoin-{0}-x86_64-linux-gnu.tar.gz", version)
 					: String.Format("TestData/bitcoin-{0}-osx64.tar.gz", version);
 
@@ -102,7 +103,7 @@ namespace NTumbleBit.Tests
 				Process.Start("tar", "-zxvf " + zip + " -C TestData");
 				return bitcoind;
 			}
-		}		
+		}
 
 		int last = 0;
 		private string _Root;
@@ -421,6 +422,12 @@ namespace NTumbleBit.Tests
 			transactions.AddRange(tasks.Select(t => t.Result).ToArray());
 		}
 
+		public void Broadcast(Transaction[] transactions)
+		{
+			foreach(var tx in transactions)
+				Broadcast(tx);
+		}
+
 		public void Split(Money amount, int parts)
 		{
 			var rpc = CreateRPCClient();
@@ -499,9 +506,22 @@ namespace NTumbleBit.Tests
 					block.AddTransaction(coinbase);
 					if(includeUnbroadcasted)
 					{
+						foreach(var tx in transactions.ToList())
+						{
+							if(tx.Inputs.Any(input => _ToMalleate.Contains(input.PrevOut.Hash)))
+								transactions.Remove(tx);
+						}
 						transactions = Reorder(transactions);
 						block.Transactions.AddRange(transactions);
+						for(int y = 0; y < block.Transactions.Count; y++)
+						{
+							if(_ToMalleate.Contains(block.Transactions[y].GetHash()))
+							{
+								block.Transactions[y] = DoMalleate(block.Transactions[y]);
+							}
+						}
 						transactions.Clear();
+						_ToMalleate.Clear();
 					}
 					block.UpdateMerkleRoot();
 					while(!block.CheckProofOfWork())
@@ -514,6 +534,43 @@ namespace NTumbleBit.Tests
 			}
 			return blocks.ToArray();
 #endif
+		}
+
+		List<uint256> _ToMalleate = new List<uint256>();
+		public void Malleate(uint256 txId)
+		{
+			_ToMalleate.Add(txId);
+		}
+
+		Transaction DoMalleate(Transaction transaction)
+		{
+			transaction = transaction.Clone();
+			if(!transaction.IsCoinBase)
+				foreach(var input in transaction.Inputs)
+				{
+					List<Op> malleated = new List<Op>();
+					foreach(var op in input.ScriptSig.ToOps())
+					{
+						try
+						{
+							var sig = new TransactionSignature(op.PushData);
+							sig = MakeHighS(sig);
+							malleated.Add(Op.GetPushOp(sig.ToBytes()));
+						}
+						catch { malleated.Add(op); }
+					}
+					input.ScriptSig = new Script(malleated.ToArray());
+				}
+			return transaction;
+		}
+
+
+
+		private TransactionSignature MakeHighS(TransactionSignature sig)
+		{
+			var curveOrder = new NBitcoin.BouncyCastle.Math.BigInteger("115792089237316195423570985008687907852837564279074904382605163141518161494337", 10);
+			var ecdsa = new ECDSASignature(sig.Signature.R, sig.Signature.S.Negate().Mod(curveOrder));
+			return new TransactionSignature(ecdsa, sig.SigHash);
 		}
 
 		public void BroadcastBlocks(Block[] blocks)

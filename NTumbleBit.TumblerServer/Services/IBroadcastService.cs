@@ -12,6 +12,6 @@ namespace NTumbleBit.Client.Tumbler.Services
 {
 	public interface IBroadcastService
     {
-		void Broadcast(Transaction tx);
+		bool Broadcast(Transaction tx);
     }
 }

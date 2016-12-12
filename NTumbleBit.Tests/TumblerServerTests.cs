@@ -40,7 +40,9 @@ namespace NTumbleBit.Tests
 			{
 				var bobRPC = server.BobNode.CreateRPCClient();
 				server.BobNode.FindBlock(1);
+				server.SyncNodes();
 				server.TumblerNode.FindBlock(1);
+				server.SyncNodes();
 				server.AliceNode.FindBlock(103);
 				server.SyncNodes();
 
@@ -166,16 +168,20 @@ namespace NTumbleBit.Tests
 		{
 			using(var server = TumblerServerTester.Create())
 			{
+				var rpc = server.AliceNode.CreateRPCClient();
 				server.AliceNode.FindBlock(1);
+				server.SyncNodes();
 				server.TumblerNode.FindBlock(1);
+				server.SyncNodes();
 				server.BobNode.FindBlock(103);
 				server.SyncNodes();
 				
-				var rpc = server.AliceNode.CreateRPCClient();
 
 				var aliceClient = server.CreateTumblerClient();
 				var parameters = aliceClient.GetTumblerParameters();
 				var cycle = parameters.CycleGenerator.GetCycle(rpc.GetBlockCount());
+
+				var trustedServerBroadcaster = (TumblerServer.Services.RPCServices.RPCTrustedBroadcastService)server.ExtenalServices.TrustedBroadcastService;
 
 
 				var machine = new PaymentStateMachine(parameters, aliceClient, new NTumbleBit.Client.Tumbler.Services.ExternalServices()
@@ -185,7 +191,9 @@ namespace NTumbleBit.Tests
 					FeeService = new NTumbleBit.Client.Tumbler.Services.RPCServices.RPCFeeService(rpc),
 					TrustedBroadcastService = new NTumbleBit.Client.Tumbler.Services.RPCServices.RPCTrustedBroadcastService(rpc),
 					WalletService = new NTumbleBit.Client.Tumbler.Services.RPCServices.RPCWalletService(rpc)
-				});				
+				});
+
+				var trustedClientBroadcaster = (NTumbleBit.Client.Tumbler.Services.RPCServices.RPCTrustedBroadcastService)machine.Services.TrustedBroadcastService;
 
 				machine.Update();
 
@@ -196,6 +204,7 @@ namespace NTumbleBit.Tests
 
 				//Wait the client escrow is confirmed
 				server.AliceNode.FindBlock(2);
+				server.SyncNodes();
 
 				machine.Update();
 
@@ -204,22 +213,47 @@ namespace NTumbleBit.Tests
 
 				machine.Update();
 
-				MineTo(server.AliceNode, cycle, CyclePhase.PaymentPhase);
+				MineTo(server.TumblerNode, cycle, CyclePhase.PaymentPhase);
 				server.SyncNodes();
 
 				machine.Update();
+
+				MineTo(server.AliceNode, cycle, CyclePhase.PaymentPhase, true);
+				server.SyncNodes();
+
+				//Offer + Fullfill should be broadcasted
+				var transactions = trustedServerBroadcaster.TryBroadcast();
+				Assert.Equal(2, transactions.Length);
+
+				//Offer got malleated
+				server.TumblerNode.Malleate(transactions[0].GetHash());
+				server.TumblerNode.FindBlock(1);
+				server.SyncNodes();
+
+				//Fullfill get resigned and broadcasted
+				transactions = trustedServerBroadcaster.TryBroadcast();
+				Assert.Equal(1, transactions.Length);
 
 				MineTo(server.AliceNode, cycle, CyclePhase.ClientCashoutPhase);
 				server.SyncNodes();
 
 				machine.Update();
+				Thread.Sleep(1000);
+				server.AliceNode.FindBlock();
+				var bestBlock = server.AliceNode.CreateRPCClient().GetBlock(server.AliceNode.CreateRPCClient().GetBlockCount());
+				//Should contains cashout
+				Assert.Equal(2, bestBlock.Transactions.Count);
+
+				//Just a sanity tests, this one contains escrow redeem and offer redeem, both of which should not be available now
+				transactions = trustedClientBroadcaster.TryBroadcast();
+				Assert.Equal(0, transactions.Length);
 			}
 		}
 
-		private void MineTo(CoreNode node, CycleParameters cycle, CyclePhase phase)
+		private void MineTo(CoreNode node, CycleParameters cycle, CyclePhase phase, bool end = false)
 		{
 			var height = node.CreateRPCClient().GetBlockCount();
-			var periodStart = cycle.GetPeriods().GetPeriod(phase).Start;
+			var periodStart = end ? cycle.GetPeriods().GetPeriod(phase).End : cycle.GetPeriods().GetPeriod(phase).Start;
 			var blocksToFind = periodStart - height;
 			if(blocksToFind <= 0)
 				return;

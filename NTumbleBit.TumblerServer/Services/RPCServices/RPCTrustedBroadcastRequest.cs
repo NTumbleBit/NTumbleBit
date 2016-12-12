@@ -43,6 +43,9 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				throw new NotSupportedException("ScriptPubKey to track not supported");
 			RPCClient.ImportAddress(address, "", false);
 			_Broadcasts.Add(broadcast);
+			var height = RPCClient.GetBlockCount();
+			if(height < broadcast.BroadcastAt.Height)
+				return;
 			_Broadcaster.Broadcast(broadcast.Transaction);
 		}
 
@@ -62,14 +65,15 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 						if(coin.ScriptPubKey == broadcast.PreviousScriptPubKey)
 						{
 							var transaction = broadcast.ReSign(coin);
-							_Broadcaster.Broadcast(transaction);
+							if(_Broadcaster.Broadcast(transaction))
+								broadcasted.Add(transaction);
 						}
 					}
 				}
 			}
 			return broadcasted.ToArray();
 		}
-		
+
 
 		public Transaction[] GetReceivedTransactions(Script scriptPubKey)
 		{
@@ -81,7 +85,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				return new Transaction[0];
 
 
-			var result = RPCClient.SendCommand("listtransactions", "", 100, 0, true);
+			var result = RPCClient.SendCommandNoThrows("listtransactions", "", 100, 0, true);
 			if(result.Error != null)
 				return null;
 
@@ -90,10 +94,14 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			foreach(var obj in transactions)
 			{
 				var txId = new uint256((string)obj["txid"]);
-				var tx = GetTransaction(txId);
 				if((string)obj["address"] == address.ToString())
 				{
-					results.Add(tx);
+					var tx = GetTransaction(txId);
+					if(tx != null)
+						if((string)obj["category"] == "receive")
+						{
+							results.Add(tx);
+						}
 				}
 			}
 			return results.Select(t => t.Transaction).ToArray();
@@ -101,7 +109,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 
 		public TransactionInformation GetTransaction(uint256 txId)
 		{
-			var result = RPCClient.SendCommand("getrawtransaction", txId.ToString(), 1);
+			var result = RPCClient.SendCommandNoThrows("getrawtransaction", txId.ToString(), 1);
 			if(result == null || result.Error != null)
 				return null;
 			var tx = new Transaction((string)result.Result["hex"]);

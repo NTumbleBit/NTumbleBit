@@ -166,11 +166,6 @@ namespace NTumbleBit.PuzzleSolver
 				get;
 				set;
 			}
-			public Script OfferScript
-			{
-				get;
-				set;
-			}
 			public PubKey FullfillKey
 			{
 				get;
@@ -336,38 +331,50 @@ namespace NTumbleBit.PuzzleSolver
 
 		public TrustedBroadcastRequest CreateOfferRedeemTransaction(FeeRate feeRate, Script redeemDestination)
 		{
-			return new TrustedBroadcastRequest()
+			var coin = CreateUnsignedOfferTransaction().Outputs.AsCoins().First().ToScriptCoin(CreateOfferScript());
+
+			Transaction tx = new Transaction();
+			tx.LockTime = CreateOfferScriptParameters().Expiration;
+			tx.Inputs.Add(new TxIn(coin.Outpoint));
+			tx.Inputs[0].Sequence = 0;
+			tx.Outputs.Add(new TxOut(coin.Amount, redeemDestination));
+			var vSize = tx.GetVirtualSize() + 80;
+			tx.Outputs[0].Value -= feeRate.GetFee(vSize);
+			tx.Inputs[0].ScriptSig = new Script(OpcodeType.OP_0) + Op.GetPushOp(coin.Redeem.ToBytes());
+
+			var redeemTransaction = new TrustedBroadcastRequest()
 			{
 				Key = InternalState.RedeemKey,
-				Transaction = CreateRedeemTransaction(feeRate, redeemDestination).Transaction,
-				PreviousScriptPubKey = CreateUnsignedOfferTransaction().Outputs.Single().ScriptPubKey
+				PreviousScriptPubKey = coin.Redeem.Hash.ScriptPubKey,
+				Transaction = tx
 			};
+			//Strip redeem script information so we check if TrustedBroadcastRequest can sign correctly
+			redeemTransaction.Transaction = redeemTransaction.ReSign(new Coin(coin.Outpoint, coin.TxOut));
+			return redeemTransaction;
 		}
 
 
 		private Script CreateOfferScript()
 		{
-			return SolverScriptBuilder.CreateOfferScript(
-				new OfferScriptPubKeyParameters()
-				{
-					Hashes = _PuzzleElements.OfType<RealPuzzle>().Select(p => p.Commitment.KeyHash).ToArray(),
-					FullfillKey = InternalState.FullfillKey,
-					RedeemKey = InternalState.RedeemKey.PubKey,
-					Expiration = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(InternalState.EscrowedCoin.Redeem).LockTime
-				});
+			return SolverScriptBuilder.CreateOfferScript(CreateOfferScriptParameters());
+		}
+
+		private OfferScriptPubKeyParameters CreateOfferScriptParameters()
+		{
+			return new OfferScriptPubKeyParameters()
+			{
+				Hashes = _PuzzleElements.OfType<RealPuzzle>().Select(p => p.Commitment.KeyHash).ToArray(),
+				FullfillKey = InternalState.FullfillKey,
+				RedeemKey = InternalState.RedeemKey.PubKey,
+				Expiration = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(InternalState.EscrowedCoin.Redeem).LockTime
+			};
 		}
 
 		public Script GetOfferScriptPubKey()
 		{
 			return CreateOfferScript().Hash.ScriptPubKey;
 		}
-
-		public Script GetOfferScript()
-		{
-			AssertState(SolverClientStates.WaitingPuzzleSolutions);
-			return InternalState.OfferScript;
-		}
-
+		
 		public void CheckSolutions(Transaction[] transactions)
 		{
 			if(transactions == null)

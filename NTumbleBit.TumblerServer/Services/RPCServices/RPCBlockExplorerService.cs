@@ -45,7 +45,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				return new TransactionInformation[0];
 
 
-			var result = RPCClient.SendCommand("listtransactions", "", 100, 0, true);
+			var result = RPCClient.SendCommandNoThrows("listtransactions", "", 100, 0, true);
 			if(result.Error != null)
 				return null;
 
@@ -82,7 +82,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		{
 			try
 			{
-				var result = RPCClient.SendCommand("getrawtransaction", txId.ToString(), 1);
+				var result = RPCClient.SendCommandNoThrows("getrawtransaction", txId.ToString(), 1);
 				if(result == null || result.Error != null)
 					return null;
 				var tx = new Transaction((string)result.Result["hex"]);

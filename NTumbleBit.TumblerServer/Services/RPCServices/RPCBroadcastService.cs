@@ -75,10 +75,10 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		}
 
 		List<Transaction> _Transactions = new List<Transaction>();
-		public void Broadcast(Transaction transaction)
+		public bool Broadcast(Transaction transaction)
 		{
 			_Transactions.Add(transaction);
-			TryBroadcastCore(transaction);
+			return TryBroadcastCore(transaction);
 		}
 	}
 }

@@ -5,8 +5,8 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit.ClassicTumbler
 {
-    public class OverlappedCycleGenerator
-    {
+	public class OverlappedCycleGenerator
+	{
 		public OverlappedCycleGenerator()
 		{
 			FirstCycle = new CycleParameters();
@@ -39,7 +39,7 @@ namespace NTumbleBit.ClassicTumbler
 		public CycleParameters GetCycle(int startHeight)
 		{
 			if(startHeight < FirstCycle.Start)
-				throw new InvalidOperationException("cycle generation starts at " + FirstCycle.Start);
+				throw new InvalidOperationException("cycle generation starts at " + FirstCycle.Start + "(actual " + startHeight + ")");
 
 			var periods = FirstCycle.GetPeriods();
 			var registrationLength = FirstCycle.RegistrationDuration - RegistrationOverlap;

@@ -54,7 +54,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		{
 			Transaction tx = new Transaction();
 			tx.Outputs.Add(txOut);
-			var result = _RPCClient.SendCommand("fundrawtransaction", tx.ToHex(), new JObject()
+			var result = _RPCClient.SendCommandNoThrows("fundrawtransaction", tx.ToHex(), new JObject()
 			{
 				new JProperty("lockUnspents", true),
 				new JProperty("feeRate", feeRate.GetFee(1000).ToDecimal(MoneyUnit.BTC)),				
@@ -64,7 +64,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			var jobj = (JObject)result.Result;
 			var hex = jobj["hex"].Value<string>();
 			tx = new Transaction(hex);
-			result = _RPCClient.SendCommand("signrawtransaction", tx.ToHex());
+			result = _RPCClient.SendCommandNoThrows("signrawtransaction", tx.ToHex());
 			if(result.Error != null)
 				return null;
 			jobj = (JObject)result.Result;
