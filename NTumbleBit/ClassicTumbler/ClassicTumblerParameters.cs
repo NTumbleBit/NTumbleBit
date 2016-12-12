@@ -12,17 +12,6 @@ namespace NTumbleBit.ClassicTumbler
 	{
 		public ClassicTumblerParameters()
 		{
-
-		}
-		public ClassicTumblerParameters(RsaPubKey rsaKey, RsaPubKey voucherKey)
-		{
-			if(rsaKey == null)
-				throw new ArgumentNullException("rsaKey");
-			if(voucherKey == null)
-				throw new ArgumentNullException("voucherKey");
-			ServerKey = rsaKey;
-			VoucherKey = voucherKey;
-
 			var solver = new SolverParameters();
 			FakePuzzleCount = solver.FakePuzzleCount;
 			RealPuzzleCount = solver.RealPuzzleCount;
@@ -35,6 +24,15 @@ namespace NTumbleBit.ClassicTumbler
 			Denomination = Money.Coins(1.0m);
 			Fee = Money.Coins(0.01m);
 			CycleGenerator = new OverlappedCycleGenerator();
+		}
+		public ClassicTumblerParameters(RsaPubKey rsaKey, RsaPubKey voucherKey) : this()
+		{
+			if(rsaKey == null)
+				throw new ArgumentNullException("rsaKey");
+			if(voucherKey == null)
+				throw new ArgumentNullException("voucherKey");
+			ServerKey = rsaKey;
+			VoucherKey = voucherKey;
 		}
 
 		public OverlappedCycleGenerator CycleGenerator
@@ -81,7 +79,7 @@ namespace NTumbleBit.ClassicTumbler
 		public uint256 FakeFormat
 		{
 			get; set;
-		}		
+		}
 
 		public bool Check(PromiseParameters promiseParams)
 		{

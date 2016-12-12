@@ -60,7 +60,11 @@ namespace NTumbleBit.Tests
 			var conf = new TumblerConfiguration();
 			conf.Network = Network.RegTest;
 			conf.RPCClient = rpc;
-			conf.CycleGenerator.FirstCycle.Start = 105;					
+			conf.ClassicTumblerParameters.FakePuzzleCount /= 4;
+			conf.ClassicTumblerParameters.FakeTransactionCount /= 4;
+			conf.ClassicTumblerParameters.RealTransactionCount /= 4;
+			conf.ClassicTumblerParameters.RealPuzzleCount /= 4;
+			conf.ClassicTumblerParameters.CycleGenerator.FirstCycle.Start = 105;					
 
 			_Host = new WebHostBuilder()
 				.UseKestrel()

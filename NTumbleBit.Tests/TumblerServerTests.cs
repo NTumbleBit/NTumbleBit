@@ -1,6 +1,8 @@
 ﻿using NBitcoin;
 using NTumbleBit.ClassicTumbler;
+using NTumbleBit.Client.Tumbler;
 using NTumbleBit.Client.Tumbler.Models;
+using NTumbleBit.Client.Tumbler.Services;
 using NTumbleBit.PuzzlePromise;
 using NTumbleBit.TumblerServer.Services.RPCServices;
 using System;
@@ -80,7 +82,7 @@ namespace NTumbleBit.Tests
 				var txout = clientNegotiation.BuildClientEscrowTxOut();
 				var clientEscrowTx = clientWallet.FundTransaction(txout, FeeRate);
 
-				var clientBroadcastLater = new RPCTrustedBroadcastRequest(bobRPC);
+				var clientBroadcastLater = new RPCTrustedBroadcastService(bobRPC);
 				bobRPC.SendRawTransaction(clientEscrowTx);
 				server.BobNode.FindBlock(2);
 				server.SyncNodes();
@@ -150,12 +152,67 @@ namespace NTumbleBit.Tests
 				///////////////
 
 				/////////////////////////////<ClientCashout>/////////////////////////
-				((RPCTrustedBroadcastRequest)server.ExtenalServices.TrustedBroadcastService).TryBroadcast();
+				((RPCTrustedBroadcastService)server.ExtenalServices.TrustedBroadcastService).TryBroadcast();
 				solverClientSession.CheckSolutions(solutionKeys);
 				var tumblingSolution = solverClientSession.GetSolution();
 				var transaction = promiseClientSession.GetSignedTransaction(tumblingSolution);
 				Assert.True(transaction.Inputs.AsIndexedInputs().First().VerifyScript(promiseClientSession.EscrowedCoin));
 				/////////////////////////////</ClientCashout>/////////////////////////
+			}
+		}
+
+		[Fact]
+		public void CanCompleteCycleWithMachineState()
+		{
+			using(var server = TumblerServerTester.Create())
+			{
+				server.AliceNode.FindBlock(1);
+				server.TumblerNode.FindBlock(1);
+				server.BobNode.FindBlock(103);
+				server.SyncNodes();
+				
+				var rpc = server.AliceNode.CreateRPCClient();
+
+				var aliceClient = server.CreateTumblerClient();
+				var parameters = aliceClient.GetTumblerParameters();
+				var cycle = parameters.CycleGenerator.GetCycle(rpc.GetBlockCount());
+
+
+				var machine = new PaymentStateMachine(parameters, aliceClient, new NTumbleBit.Client.Tumbler.Services.ExternalServices()
+				{
+					BlockExplorerService = new NTumbleBit.Client.Tumbler.Services.RPCServices.RPCBlockExplorerService(rpc),
+					BroadcastService = new NTumbleBit.Client.Tumbler.Services.RPCServices.RPCBroadcastService(rpc),
+					FeeService = new NTumbleBit.Client.Tumbler.Services.RPCServices.RPCFeeService(rpc),
+					TrustedBroadcastService = new NTumbleBit.Client.Tumbler.Services.RPCServices.RPCTrustedBroadcastService(rpc),
+					WalletService = new NTumbleBit.Client.Tumbler.Services.RPCServices.RPCWalletService(rpc)
+				});				
+
+				machine.Update();
+
+				MineTo(server.AliceNode, cycle, CyclePhase.ClientChannelEstablishment);
+				server.SyncNodes();
+
+				machine.Update();
+
+				//Wait the client escrow is confirmed
+				server.AliceNode.FindBlock(2);
+
+				machine.Update();
+
+				MineTo(server.AliceNode, cycle, CyclePhase.TumblerChannelEstablishment);
+				server.SyncNodes();
+
+				machine.Update();
+
+				MineTo(server.AliceNode, cycle, CyclePhase.PaymentPhase);
+				server.SyncNodes();
+
+				machine.Update();
+
+				MineTo(server.AliceNode, cycle, CyclePhase.ClientCashoutPhase);
+				server.SyncNodes();
+
+				machine.Update();
 			}
 		}
 
@@ -166,7 +223,7 @@ namespace NTumbleBit.Tests
 			var blocksToFind = periodStart - height;
 			if(blocksToFind <= 0)
 				return;
-			
+
 			node.FindBlock(blocksToFind);
 		}
 	}

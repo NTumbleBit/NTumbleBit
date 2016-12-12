@@ -176,6 +176,11 @@ namespace NTumbleBit.PuzzleSolver
 				get;
 				internal set;
 			}
+			public Money OfferTransactionFee
+			{
+				get;
+				internal set;
+			}
 		}
 
 
@@ -311,19 +316,34 @@ namespace NTumbleBit.PuzzleSolver
 				throw new ArgumentNullException("offerInformation");
 			AssertState(SolverClientStates.WaitingOffer);
 			InternalState.FullfillKey = offerInformation.FullfillKey;
-
-			Script offer = CreateOfferScript();
-
-			var coin = InternalState.EscrowedCoin;
-
-			var tx = new Transaction();
-			tx.Inputs.Add(new TxIn(coin.Outpoint));
-			tx.Outputs.Add(new TxOut(coin.Amount, offer.Hash));
-			tx.Outputs[0].Value -= offerInformation.Fee;
+			InternalState.OfferTransactionFee = offerInformation.Fee;		
+			Transaction tx = CreateUnsignedOfferTransaction();
 			var signature = tx.Inputs.AsIndexedInputs().First().Sign(InternalState.EscrowKey, InternalState.EscrowedCoin, SigHash.All);
 			InternalState.Status = SolverClientStates.WaitingPuzzleSolutions;
 			return signature;
 		}
+
+		private Transaction CreateUnsignedOfferTransaction()
+		{
+			Script offer = CreateOfferScript();
+			var coin = InternalState.EscrowedCoin;
+			var tx = new Transaction();
+			tx.Inputs.Add(new TxIn(coin.Outpoint));
+			tx.Outputs.Add(new TxOut(coin.Amount, offer.Hash));
+			tx.Outputs[0].Value -= InternalState.OfferTransactionFee;
+			return tx;
+		}
+
+		public TrustedBroadcastRequest CreateOfferRedeemTransaction(FeeRate feeRate, Script redeemDestination)
+		{
+			return new TrustedBroadcastRequest()
+			{
+				Key = InternalState.RedeemKey,
+				Transaction = CreateRedeemTransaction(feeRate, redeemDestination).Transaction,
+				PreviousScriptPubKey = CreateUnsignedOfferTransaction().Outputs.Single().ScriptPubKey
+			};
+		}
+
 
 		private Script CreateOfferScript()
 		{

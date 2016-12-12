@@ -12,7 +12,7 @@ namespace NTumbleBit.TumblerServer
     {
 		public TumblerConfiguration()
 		{			
-			CycleGenerator = new OverlappedCycleGenerator();
+			ClassicTumblerParameters = new ClassicTumblerParameters();
 		}
 		public RsaKey TumblerKey
 		{
@@ -41,18 +41,18 @@ namespace NTumbleBit.TumblerServer
 		{
 			get; set;
 		}
-		public OverlappedCycleGenerator CycleGenerator
+
+		public ClassicTumblerParameters ClassicTumblerParameters
 		{
-			get;
-			set;
+			get; set;
 		}
 
 		public ClassicTumblerParameters CreateClassicTumblerParameters()
 		{
-			return new ClassicTumblerParameters(TumblerKey.PubKey, VoucherKey.PubKey)
-			{
-				CycleGenerator = CycleGenerator
-			};
+			var clone = Serializer.Clone(ClassicTumblerParameters);
+			clone.ServerKey = TumblerKey.PubKey;
+			clone.VoucherKey = VoucherKey.PubKey;
+			return clone;
 		}
 	}
 }

@@ -80,16 +80,20 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 
 		public TransactionInformation GetTransaction(uint256 txId)
 		{
-			var result = RPCClient.SendCommand("getrawtransaction", txId.ToString(), 1);
-			if(result == null || result.Error != null)
-				return null;
-			var tx = new Transaction((string)result.Result["hex"]);
-			var confirmations = result.Result["confirmations"];
-			return new TransactionInformation()
+			try
 			{
-				Confirmations = confirmations == null ? 0 : (int)confirmations,
-				Transaction = tx
-			};
+				var result = RPCClient.SendCommand("getrawtransaction", txId.ToString(), 1);
+				if(result == null || result.Error != null)
+					return null;
+				var tx = new Transaction((string)result.Result["hex"]);
+				var confirmations = result.Result["confirmations"];
+				return new TransactionInformation()
+				{
+					Confirmations = confirmations == null ? 0 : (int)confirmations,
+					Transaction = tx
+				};
+			}
+			catch(RPCException) { return null; }
 		}
 
 		public void Track(Script scriptPubkey)

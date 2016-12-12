@@ -12,9 +12,9 @@ namespace NTumbleBit.TumblerServer.Services.RPCServices
 namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 #endif
 {
-	public class RPCTrustedBroadcastRequest : ITrustedBroadcastService
+	public class RPCTrustedBroadcastService : ITrustedBroadcastService
 	{
-		public RPCTrustedBroadcastRequest(RPCClient rpc)
+		public RPCTrustedBroadcastService(RPCClient rpc)
 		{
 			if(rpc == null)
 				throw new ArgumentNullException("rpc");
