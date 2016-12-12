@@ -90,7 +90,7 @@ namespace NTumbleBit.PuzzleSolver
 											   .First(e => e != EscrowKey.PubKey);
 			}
 		}
-		
+
 
 		public State GetInternalState()
 		{
@@ -102,7 +102,7 @@ namespace NTumbleBit.PuzzleSolver
 		{
 			get
 			{
-				return (State)base.InternalState;	
+				return (State)base.InternalState;
 			}
 			set
 			{
@@ -126,10 +126,10 @@ namespace NTumbleBit.PuzzleSolver
 			_Parameters = parameters;
 		}
 
-		public SolverServerSession(RsaKey serverKey, SolverParameters parameters, State state) 
+		public SolverServerSession(RsaKey serverKey, SolverParameters parameters, State state)
 			: this(serverKey, parameters)
 		{
-			if(state == null)			
+			if(state == null)
 				return;
 			InternalState = state;
 		}
@@ -159,7 +159,7 @@ namespace NTumbleBit.PuzzleSolver
 			{
 				return InternalState.Status;
 			}
-		}		
+		}
 
 		public override void ConfigureEscrowedCoin(ScriptCoin escrowedCoin, Key escrowKey)
 		{
@@ -248,7 +248,7 @@ namespace NTumbleBit.PuzzleSolver
 				y++;
 			}
 
-			InternalState.FullfillKey = new Key();			
+			InternalState.FullfillKey = new Key();
 
 			var offerScript = GetOfferScript();
 
@@ -283,7 +283,7 @@ namespace NTumbleBit.PuzzleSolver
 			return tx;
 		}
 
-		public Transaction GetSignedOfferTransaction()
+		public TrustedBroadcastRequest GetSignedOfferTransaction()
 		{
 			AssertState(SolverServerStates.Completed);
 			var offerTransaction = GetUnsignedOfferTransaction();
@@ -293,7 +293,12 @@ namespace NTumbleBit.PuzzleSolver
 			txBuilder.AddKnownSignature(InternalState.EscrowKey.PubKey, InternalState.OfferSignature);
 			txBuilder.AddKnownSignature(InternalState.GetClientEscrowPubKey(), InternalState.OfferClientSignature);
 			txBuilder.SignTransactionInPlace(offerTransaction);
-			return offerTransaction;
+			return new TrustedBroadcastRequest()
+			{
+				Key = InternalState.EscrowKey,
+				Transaction = offerTransaction,
+				PreviousScriptPubKey = EscrowedCoin.ScriptPubKey
+			};
 		}
 
 		public SolutionKey[] GetSolutionKeys()
@@ -308,7 +313,10 @@ namespace NTumbleBit.PuzzleSolver
 				throw new InvalidOperationException("Invalid state, actual " + InternalState.Status + " while expected is " + state);
 		}
 
-		public Transaction FullfillOffer(TransactionSignature clientSignature, Script cashout, FeeRate feeRate)
+		public TrustedBroadcastRequest FullfillOffer(
+			TransactionSignature clientSignature,
+			Script cashout, 
+			FeeRate feeRate)
 		{
 			if(clientSignature == null)
 				throw new ArgumentNullException("clientSignature");
@@ -327,14 +335,13 @@ namespace NTumbleBit.PuzzleSolver
 			builder.SignTransactionInPlace(offer);
 			if(!builder.Verify(offer))
 				throw new PuzzleException("invalid-signature");
-
 			var offerCoin = offer.Outputs.AsCoins().First().ToScriptCoin(offerScript);
+
+			var solutions = InternalState.SolvedPuzzles.Select(s => s.SolutionKey).ToArray();
 			Transaction fullfill = new Transaction();
 			fullfill.Inputs.Add(new TxIn(offerCoin.Outpoint));
 			fullfill.Outputs.Add(new TxOut(offerCoin.Amount, cashout));
-
-			var solutions = InternalState.SolvedPuzzles.Select(s => s.SolutionKey).ToArray();
-			var size = fullfill.GetVirtualSize() + 72 + offerCoin.Redeem.Length + solutions.Length * 21;
+			var size = new OfferBuilderExtension().EstimateScriptSigSize(offerCoin.Redeem);
 			fullfill.Outputs[0].Value -= feeRate.GetFee(size);
 
 			var signature = fullfill.Inputs.AsIndexedInputs().First().Sign(InternalState.FullfillKey, offerCoin, SigHash.All);
@@ -343,18 +350,24 @@ namespace NTumbleBit.PuzzleSolver
 
 			InternalState.OfferClientSignature = clientSignature;
 			InternalState.Status = SolverServerStates.Completed;
-			return fullfill;
+			return new TrustedBroadcastRequest()
+			{
+				Key = InternalState.FullfillKey,
+				PreviousScriptPubKey = offerCoin.ScriptPubKey,
+				Transaction = fullfill
+			};
 		}
 
 		private Script GetOfferScript()
 		{
 			var escrow = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(InternalState.EscrowedCoin.Redeem);
-			return SolverScriptBuilder.CreateOfferScript(
-				InternalState.SolvedPuzzles.Select(p => p.SolutionKey.GetHash()).ToArray(),
-				InternalState.FullfillKey.PubKey,
-				escrow.RedeemKey,
-				escrow.LockTime
-				);
+			return SolverScriptBuilder.CreateOfferScript(new OfferScriptPubKeyParameters()
+			{
+				Hashes = InternalState.SolvedPuzzles.Select(p => p.SolutionKey.GetHash()).ToArray(),
+				FullfillKey = InternalState.FullfillKey.PubKey,
+				RedeemKey = escrow.RedeemKey,
+				Expiration = escrow.LockTime
+			});
 		}
 
 		public override LockTime GetLockTime(CycleParameters cycle)

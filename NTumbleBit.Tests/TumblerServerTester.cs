@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using NBitcoin;
 using NTumbleBit.Client.Tumbler;
 using NTumbleBit.TumblerServer;
+using NTumbleBit.TumblerServer.Services;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -148,6 +149,14 @@ namespace NTumbleBit.Tests
 			get
 			{
 				return (TumblerConfiguration)_Host.Services.GetService(typeof(TumblerConfiguration));
+			}
+		}
+
+		public ExternalServices ExtenalServices
+		{
+			get
+			{
+				return (ExternalServices)_Host.Services.GetService(typeof(ExternalServices));
 			}
 		}
 

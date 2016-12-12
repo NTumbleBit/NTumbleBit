@@ -13,6 +13,10 @@ namespace NTumbleBit.PuzzleSolver
 			get;
 			set;
 		}
+		public LockTime LockTime
+		{
+			get; set;
+		}
 		public PubKey FullfillKey
 		{
 			get; set;

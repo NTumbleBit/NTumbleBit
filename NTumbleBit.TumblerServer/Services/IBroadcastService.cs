@@ -1,8 +1,8 @@
-﻿using System;
+﻿using NBitcoin;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using NBitcoin;
 
 #if !CLIENT
 namespace NTumbleBit.TumblerServer.Services
@@ -12,6 +12,6 @@ namespace NTumbleBit.Client.Tumbler.Services
 {
 	public interface IBroadcastService
     {
-		void Broadcast(params NBitcoin.Transaction[] transactions);
-	}
+		void Broadcast(Transaction tx);
+    }
 }

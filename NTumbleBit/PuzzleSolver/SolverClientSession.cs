@@ -67,7 +67,7 @@ namespace NTumbleBit.PuzzleSolver
 			InternalState = new SolverClientSession.State();
 		}
 
-		public SolverClientSession(SolverParameters parameters, State state):this(parameters)
+		public SolverClientSession(SolverParameters parameters, State state) : this(parameters)
 		{
 			if(state == null)
 				return;
@@ -87,7 +87,7 @@ namespace NTumbleBit.PuzzleSolver
 					}
 					else
 					{
-						element = new RealPuzzle(puzzle, state.BlindFactors[realI++]);						
+						element = new RealPuzzle(puzzle, state.BlindFactors[realI++]);
 					}
 					element.Index = i;
 					element.Commitment = state.Commitments[i];
@@ -151,7 +151,7 @@ namespace NTumbleBit.PuzzleSolver
 			public ServerCommitment[] Commitments
 			{
 				get; set;
-			}			
+			}
 			public int[] FakeIndexes
 			{
 				get; set;
@@ -176,7 +176,7 @@ namespace NTumbleBit.PuzzleSolver
 				get;
 				internal set;
 			}
-		}	
+		}
 
 
 		public SolverParameters Parameters
@@ -249,7 +249,7 @@ namespace NTumbleBit.PuzzleSolver
 			}
 			InternalState.Status = SolverClientStates.WaitingCommitments;
 			return _PuzzleElements.Select(p => p.Puzzle.PuzzleValue).ToArray();
-		}		
+		}
 
 		public ClientRevelation Reveal(ServerCommitment[] commitments)
 		{
@@ -328,11 +328,13 @@ namespace NTumbleBit.PuzzleSolver
 		private Script CreateOfferScript()
 		{
 			return SolverScriptBuilder.CreateOfferScript(
-				_PuzzleElements.OfType<RealPuzzle>().Select(p => p.Commitment.KeyHash).ToArray(),
-				InternalState.FullfillKey,
-				InternalState.RedeemKey.PubKey,
-				EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(InternalState.EscrowedCoin.Redeem).LockTime
-				);
+				new OfferScriptPubKeyParameters()
+				{
+					Hashes = _PuzzleElements.OfType<RealPuzzle>().Select(p => p.Commitment.KeyHash).ToArray(),
+					FullfillKey = InternalState.FullfillKey,
+					RedeemKey = InternalState.RedeemKey.PubKey,
+					Expiration = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(InternalState.EscrowedCoin.Redeem).LockTime
+				});
 		}
 
 		public Script GetOfferScriptPubKey()

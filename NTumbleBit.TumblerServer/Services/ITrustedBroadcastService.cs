@@ -9,9 +9,9 @@ namespace NTumbleBit.TumblerServer.Services
 #else
 namespace NTumbleBit.Client.Tumbler.Services
 #endif
-{
-	public interface ILockTimedBroadcastService
+{	
+    public interface ITrustedBroadcastService
     {
-		void BroadcastLater(Transaction transaction);
-	}
+		void Broadcast(TrustedBroadcastRequest broadcast);
+    }
 }

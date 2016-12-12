@@ -80,19 +80,19 @@ namespace NTumbleBit.Tests
 				var txout = clientNegotiation.BuildClientEscrowTxOut();
 				var clientEscrowTx = clientWallet.FundTransaction(txout, FeeRate);
 
-				var clientBroadcastLater = new RPCLockTimedBroadcastService(bobRPC);
+				var clientBroadcastLater = new RPCTrustedBroadcastRequest(bobRPC);
 				bobRPC.SendRawTransaction(clientEscrowTx);
 				server.BobNode.FindBlock(2);
 				server.SyncNodes();
 				var solverClientSession = clientNegotiation.SetClientSignedTransaction(clientEscrowTx);
-				clientBroadcastLater.BroadcastLater(solverClientSession.CreateRedeemTransaction(FeeRate, new Key().ScriptPubKey));
+				clientBroadcastLater.Broadcast(solverClientSession.CreateRedeemTransaction(FeeRate, new Key().ScriptPubKey));
 
 				//Checking that the redeem transaction of the client escrow has proper validation time
 				var redeem = solverClientSession.CreateRedeemTransaction(FeeRate, new Key().ScriptPubKey);
 				var firstExpectedRedeemableBlock = clientNegotiation.GetCycle().GetPeriods().TumblerCashout.End + clientNegotiation.GetCycle().SafetyPeriodDuration;
-				Assert.True(redeem.IsFinal(DateTimeOffset.UtcNow, firstExpectedRedeemableBlock));
-				Assert.True(redeem.IsFinal(DateTimeOffset.UtcNow, firstExpectedRedeemableBlock + 1));
-				Assert.False(redeem.IsFinal(DateTimeOffset.UtcNow, firstExpectedRedeemableBlock - 1));
+				Assert.True(redeem.Transaction.IsFinal(DateTimeOffset.UtcNow, firstExpectedRedeemableBlock));
+				Assert.True(redeem.Transaction.IsFinal(DateTimeOffset.UtcNow, firstExpectedRedeemableBlock + 1));
+				Assert.False(redeem.Transaction.IsFinal(DateTimeOffset.UtcNow, firstExpectedRedeemableBlock - 1));
 				//Server solves the puzzle
 				var voucher = aliceClient.ClientChannelConfirmed(clientEscrowTx.GetHash());
 				clientNegotiation.CheckVoucherSolution(voucher);
@@ -120,9 +120,9 @@ namespace NTumbleBit.Tests
 				var tumblerPromiseSession = server.TumblerRepository.GetPromiseServerSession(promiseClientSession.Id);
 				redeem = tumblerPromiseSession.CreateRedeemTransaction(FeeRate, new Key().ScriptPubKey);
 				firstExpectedRedeemableBlock = clientNegotiation.GetCycle().GetPeriods().ClientCashout.End + clientNegotiation.GetCycle().SafetyPeriodDuration;
-				Assert.True(redeem.IsFinal(DateTimeOffset.UtcNow, firstExpectedRedeemableBlock));
-				Assert.True(redeem.IsFinal(DateTimeOffset.UtcNow, firstExpectedRedeemableBlock + 1));
-				Assert.False(redeem.IsFinal(DateTimeOffset.UtcNow, firstExpectedRedeemableBlock - 1));
+				Assert.True(redeem.Transaction.IsFinal(DateTimeOffset.UtcNow, firstExpectedRedeemableBlock));
+				Assert.True(redeem.Transaction.IsFinal(DateTimeOffset.UtcNow, firstExpectedRedeemableBlock + 1));
+				Assert.False(redeem.Transaction.IsFinal(DateTimeOffset.UtcNow, firstExpectedRedeemableBlock - 1));
 				/////////////////////////////</TumblerChannel>/////////////////////////
 
 				//Client waits until payment phase
@@ -141,7 +141,7 @@ namespace NTumbleBit.Tests
 				var offerSignature = solverClientSession.SignOffer(offerInformation);
 				var offerScriptPubKey = solverClientSession.GetOfferScriptPubKey();
 				clientBlockExplorer.Track(offerScriptPubKey);
-				var fullfill = aliceClient.FullfillOffer(solverClientSession.Id, offerSignature);				
+				solutionKeys = aliceClient.FullfillOffer(solverClientSession.Id, offerSignature);
 				/////////////////////////////</Payment>/////////////////////////
 
 				//Client waits until can cashout
@@ -150,7 +150,8 @@ namespace NTumbleBit.Tests
 				///////////////
 
 				/////////////////////////////<ClientCashout>/////////////////////////
-				solverClientSession.CheckSolutions(fullfill);
+				((RPCTrustedBroadcastRequest)server.ExtenalServices.TrustedBroadcastService).TryBroadcast();
+				solverClientSession.CheckSolutions(solutionKeys);
 				var tumblingSolution = solverClientSession.GetSolution();
 				var transaction = promiseClientSession.GetSignedTransaction(tumblingSolution);
 				Assert.True(transaction.Inputs.AsIndexedInputs().First().VerifyScript(promiseClientSession.EscrowedCoin));

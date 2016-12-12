@@ -11,7 +11,14 @@ namespace NTumbleBit
 	{
 		public override bool CanCombineScriptSig(Script scriptPubKey, Script a, Script b)
 		{
-			return EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(scriptPubKey) != null;
+			var escrow = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(scriptPubKey);
+			if(escrow == null)
+				return false;
+			var aSigs = EscrowScriptBuilder.ExtractScriptSigParameters(a);
+			var bSigs = EscrowScriptBuilder.ExtractScriptSigParameters(b);
+			if(aSigs == null || bSigs == null)
+				return true;
+			return aSigs.Length == bSigs.Length;
 		}
 
 		public override bool CanDeduceScriptPubKey(Script scriptSig)
@@ -34,11 +41,17 @@ namespace NTumbleBit
 			var para = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(scriptPubKey);
 			// Combine all the signatures we've got:
 			var aSigs = EscrowScriptBuilder.ExtractScriptSigParameters(a);
-			if(aSigs == null || aSigs.Length != 2)
+			if(aSigs == null)
 				return b;
 			var bSigs = EscrowScriptBuilder.ExtractScriptSigParameters(b);
-			if(bSigs == null || bSigs.Length != 2)
+			if(bSigs == null)
 				return a;
+			if(aSigs.Length == 1)
+			{
+				var sig = aSigs[0] ?? bSigs[0];
+				return new Script(Op.GetPushOp(sig.ToBytes()));
+			}
+
 			int sigCount = 0;
 			TransactionSignature[] sigs = new TransactionSignature[2];
 			for(int i = 0; i < 2; i++)
@@ -79,6 +92,14 @@ namespace NTumbleBit
 				.EscrowKeys
 				.Select(p => keyRepo.FindKey(p.ScriptPubKey))
 				.ToArray();
+
+			if(keys.All(k => k == null))
+			{
+				var redeem = keyRepo.FindKey(multiSigParams.RedeemKey.ScriptPubKey);
+				if(redeem == null)
+					return null;
+				return new Script(Op.GetPushOp(signer.Sign(redeem).ToBytes()));
+			}
 
 			int sigCount = 0;
 			for(int i = 0; i < keys.Length; i++)

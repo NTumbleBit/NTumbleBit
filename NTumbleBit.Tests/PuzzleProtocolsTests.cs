@@ -224,7 +224,16 @@ namespace NTumbleBit.Tests
 			var redeemTransaction = server.CreateRedeemTransaction(FeeRate, new Key().ScriptPubKey);
 			TransactionBuilder bb = new TransactionBuilder();
 			bb.AddCoins(server.GetInternalState().EscrowedCoin);
-			Assert.True(bb.Verify(redeemTransaction));
+			Assert.True(bb.Verify(redeemTransaction.Transaction));
+
+			//Check can ve reclaimed if malleated
+			bb = new TransactionBuilder();
+			var escrow = server.GetInternalState().EscrowedCoin;
+			escrow.Outpoint = new OutPoint(escrow.Outpoint.Hash, 10);
+			bb.AddCoins(escrow);
+			var resigned = redeemTransaction.ReSign(escrow);
+			Assert.False(bb.Verify(redeemTransaction.Transaction));
+			Assert.True(bb.Verify(resigned));
 
 			foreach(var tx in transactions)
 			{
@@ -300,18 +309,28 @@ namespace NTumbleBit.Tests
 
 			//Verify if the scripts are correctly created
 			var fullfill = server.FullfillOffer(clientOfferSig, new Key().ScriptPubKey, FeeRate);
-
+			
 			var offerTransaction = server.GetSignedOfferTransaction();
 			TransactionBuilder txBuilder = new TransactionBuilder();
 			txBuilder.AddCoins(client.EscrowedCoin);
-			Assert.True(txBuilder.Verify(offerTransaction));
+			Assert.True(txBuilder.Verify(offerTransaction.Transaction));
 
 			txBuilder = new TransactionBuilder();
-			txBuilder.AddCoins(offerTransaction.Outputs.AsCoins().ToArray());
-			Assert.True(txBuilder.Verify(fullfill));
+			txBuilder.AddCoins(offerTransaction.Transaction.Outputs.AsCoins().ToArray());
+			Assert.True(txBuilder.Verify(fullfill.Transaction));
+
+			//Check if can resign fullfill in case offer get malleated
+			offerTransaction.Transaction.LockTime = new LockTime(1);
+			fullfill.Transaction.Inputs[0].PrevOut = offerTransaction.Transaction.Outputs.AsCoins().First().Outpoint;
+			txBuilder = new TransactionBuilder();
+			txBuilder.Extensions.Add(new OfferBuilderExtension());
+			txBuilder.AddKeys(server.GetInternalState().FullfillKey);
+			txBuilder.AddCoins(offerTransaction.Transaction.Outputs.AsCoins().ToArray());
+			txBuilder.SignTransactionInPlace(fullfill.Transaction);
+			Assert.True(txBuilder.Verify(fullfill.Transaction));
 			////////////////////////////////////////////////
 
-			client.CheckSolutions(fullfill);
+			client.CheckSolutions(fullfill.Transaction);
 			RoundTrip(ref client, parameters);
 			var solution = client.GetSolution();
 			RoundTrip(ref client, parameters);

@@ -58,7 +58,7 @@ namespace NTumbleBit
 			InternalState.RedeemKey = redeemKey;			
 		}
 
-		public Transaction CreateRedeemTransaction(FeeRate feeRate, Script redeemDestination)
+		public TrustedBroadcastRequest CreateRedeemTransaction(FeeRate feeRate, Script redeemDestination)
 		{
 			if(feeRate == null)
 				throw new ArgumentNullException("feeRate");
@@ -73,12 +73,17 @@ namespace NTumbleBit
 			tx.Outputs.Add(new TxOut(coin.Amount, redeemDestination));
 			var vSize = tx.GetVirtualSize() + 80;
 			tx.Outputs[0].Value -= feeRate.GetFee(vSize);
+			tx.Inputs[0].ScriptSig = EscrowScriptBuilder.GenerateScriptSig(new TransactionSignature[] { null }) + Op.GetPushOp(coin.Redeem.ToBytes());
 
-			var hash = tx.GetSignatureHash(coin);
-			var sig = tx.SignInput(InternalState.RedeemKey, coin);
-			tx.Inputs[0].ScriptSig = EscrowScriptBuilder.GenerateScriptSig(new[] { sig }) + Op.GetPushOp(coin.Redeem.ToBytes());
-
-			return tx;
+			var redeemTransaction =  new TrustedBroadcastRequest()
+			{
+				Key = InternalState.RedeemKey,
+				PreviousScriptPubKey = coin.Redeem.Hash.ScriptPubKey,
+				Transaction = tx
+			};
+			//Strip redeem script information so we check if TrustedBroadcastRequest can sign correctly
+			redeemTransaction.Transaction = redeemTransaction.ReSign(new Coin(coin.Outpoint, coin.TxOut));
+			return redeemTransaction;
 		}
 
 		public abstract LockTime GetLockTime(CycleParameters cycle);

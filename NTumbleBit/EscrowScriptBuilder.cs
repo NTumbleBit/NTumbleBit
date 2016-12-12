@@ -123,8 +123,10 @@ namespace NTumbleBit
 			{
 				return PayToMultiSigTemplate.Instance.GenerateScriptSig(signatures);
 			}
-			else if(signatures.Length == 1 && signatures[0] != null)
+			else if(signatures.Length == 1)
 			{
+				if(signatures[0] == null)
+					return new Script(OpcodeType.OP_0);
 				return PayToPubkeyTemplate.Instance.GenerateScriptSig(signatures[0]);
 			}
 			else

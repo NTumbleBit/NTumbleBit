@@ -54,7 +54,7 @@ namespace NTumbleBit.TumblerServer
 						FeeService = new RPCFeeService(conf.RPCClient),
 						WalletService = new RPCWalletService(conf.RPCClient),
 						BlockExplorerService = new RPCBlockExplorerService(conf.RPCClient),
-						LockTimedBroadcastService = new RPCLockTimedBroadcastService(conf.RPCClient),
+						TrustedBroadcastService = new RPCTrustedBroadcastRequest(conf.RPCClient)
 					};
 				});
 				services.AddSingleton<ClassicTumblerParameters>((provider) =>

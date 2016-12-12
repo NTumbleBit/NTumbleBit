@@ -162,7 +162,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 				Repository.Save(promiseServerSession);
 
 				var redeem = Services.WalletService.GenerateAddress();
-				Services.LockTimedBroadcastService.BroadcastLater(promiseServerSession.CreateRedeemTransaction(fee, redeem.ScriptPubKey));
+				Services.TrustedBroadcastService.Broadcast(promiseServerSession.CreateRedeemTransaction(fee, redeem.ScriptPubKey));
 				return this.Json(promiseServerSession.EscrowedCoin);
 			}
 			catch(PuzzleException)
@@ -212,13 +212,19 @@ namespace NTumbleBit.TumblerServer.Controllers
 
 		private void CheckPhase(CyclePhase expectedPhase, int height, IEscrow escrow)
 		{
+			CycleParameters cycle = GetCycle(escrow);
+			if(!cycle.IsInPhase(expectedPhase, height))
+				throw BadRequest("invalid-phase").AsException();
+		}
+
+		private CycleParameters GetCycle(IEscrow escrow)
+		{
 			var lockTime = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(escrow.EscrowedCoin.Redeem).LockTime;
 			var firstCycle = Parameters.CycleGenerator.GetCycle(Parameters.CycleGenerator.FirstCycle.Start);
 			var lockOffset = (uint)escrow.GetLockTime(firstCycle) - firstCycle.Start;
 			var start = checked((uint)lockTime - lockOffset);
 			var cycle = Parameters.CycleGenerator.GetCycle(checked((int)start));
-			if(!cycle.IsInPhase(expectedPhase, height))
-				throw BadRequest("invalid-phase").AsException();
+			return cycle;
 		}
 
 		[HttpPost("api/v1/tumblers/0/clientchannels/{channelId}/solvepuzzles")]
@@ -259,9 +265,16 @@ namespace NTumbleBit.TumblerServer.Controllers
 				return BadRequest("invalid-state");
 			try
 			{
+				var cycle = GetCycle(session);
 				var fullfill = session.FullfillOffer(clientSignature, cashout.ScriptPubKey, feeRate);
+				fullfill.BroadcastAt = new LockTime(cycle.GetPeriods().Payment.End - 1);
 				Repository.Save(session);
-				return Json(fullfill);
+
+				var signedOffer = session.GetSignedOfferTransaction();
+				signedOffer.BroadcastAt = fullfill.BroadcastAt - 1;
+				Services.TrustedBroadcastService.Broadcast(signedOffer);
+				Services.TrustedBroadcastService.Broadcast(fullfill);
+				return Json(session.GetSolutionKeys());
 			}
 			catch(PuzzleException)
 			{

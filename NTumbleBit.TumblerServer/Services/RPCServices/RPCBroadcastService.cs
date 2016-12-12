@@ -1,9 +1,9 @@
-﻿using System;
+﻿using NBitcoin.RPC;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using NBitcoin;
-using NBitcoin.RPC;
 
 #if !CLIENT
 namespace NTumbleBit.TumblerServer.Services.RPCServices
@@ -12,7 +12,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 #endif
 {
 	public class RPCBroadcastService : IBroadcastService
-	{
+    {
 		public RPCBroadcastService(RPCClient rpc)
 		{
 			if(rpc == null)
@@ -28,10 +28,57 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				return _RPCClient;
 			}
 		}
-		public void Broadcast(params NBitcoin.Transaction[] transactions)
+
+		public Transaction[] TryBroadcast()
 		{
-			foreach(var tx in transactions)
-				_RPCClient.SendRawTransaction(tx);
+			List<Transaction> broadcasted = new List<Transaction>();
+			foreach(var tx in _Transactions.ToList())
+			{
+				if(TryBroadcastCore(tx))
+				{
+					broadcasted.Add(tx);
+				}
+			}
+			return broadcasted.ToArray();
+		}
+
+		bool TryBroadcastCore(Transaction tx)
+		{
+			try
+			{
+				RPCClient.SendRawTransaction(tx);
+				_Transactions.Remove(tx);
+				return true;
+			}
+			catch(RPCException ex)
+			{
+				if(ex.RPCResult == null || ex.RPCResult.Error == null)
+				{
+					//TODO: LOG? RETRY?
+					return false;
+				}
+				var error = ex.RPCResult.Error.Message;
+				if(!error.EndsWith("non-final", StringComparison.OrdinalIgnoreCase))
+				{
+					if(error.EndsWith("bad-txns-inputs-spent", StringComparison.OrdinalIgnoreCase))
+					{
+						_Transactions.Remove(tx);
+					}
+					else if(!error.EndsWith("txn-mempool-conflict", StringComparison.OrdinalIgnoreCase))
+					{
+						//TODO: LOG? RETRY?
+						return false;
+					}
+				}
+			}
+			return false;
+		}
+
+		List<Transaction> _Transactions = new List<Transaction>();
+		public void Broadcast(Transaction transaction)
+		{
+			_Transactions.Add(transaction);
+			TryBroadcastCore(transaction);
 		}
 	}
 }
