@@ -130,16 +130,16 @@ namespace NTumbleBit.Tests
 			Assert.True(parameter.IsInPhase(CyclePhase.ClientCashoutPhase, 157));
 			Assert.False(parameter.IsInPhase(CyclePhase.ClientCashoutPhase, 158));
 
-			//The block 147 will be the first able to satisfy the lockTime
-			Assert.Equal(146, parameter.GetClientLockTime().Height);
+			//At block 147 we will be able to broadcast refund for expected confirmation at 148
+			Assert.Equal(147, parameter.GetClientLockTime().Height);
 
 
 			var total = parameter.GetPeriods().Total;
 			Assert.Equal(100, total.Start);
 			Assert.Equal(160, total.End);
 
-			//The block 160 will be the first able to satisfy the lockTime
-			Assert.Equal(159, parameter.GetTumblerLockTime().Height);
+			////At block 160 we will be able to broadcast refund for expected confirmation at 161
+			Assert.Equal(160, parameter.GetTumblerLockTime().Height);
 
 			var cycleGenerator = new OverlappedCycleGenerator();
 			cycleGenerator.FirstCycle = parameter;
