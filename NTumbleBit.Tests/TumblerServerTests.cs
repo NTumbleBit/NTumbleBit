@@ -147,7 +147,7 @@ namespace NTumbleBit.Tests
 
 				transactions = untrustedBroadcast.TryBroadcast();
 				Assert.Equal(1, transactions.Length);
-				block = server.TumblerNode.FindBlock().First();
+				block = server.AliceNode.FindBlock().First();
 				//Should contains client cashout
 				Assert.Equal(2, block.Transactions.Count);
 
