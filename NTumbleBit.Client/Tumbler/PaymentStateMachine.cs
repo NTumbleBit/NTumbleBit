@@ -127,8 +127,9 @@ namespace NTumbleBit.Client.Tumbler
 					CyclePhase.Registration,
 					CyclePhase.ClientChannelEstablishment,
 					CyclePhase.TumblerChannelEstablishment,
-					CyclePhase.PaymentPhase,
-					CyclePhase.TumblerCashoutPhase
+					CyclePhase.PaymentPhase,					
+					CyclePhase.TumblerCashoutPhase,
+					CyclePhase.ClientCashoutPhase
 				};
 				if(!phases.Any(p => cycle.IsInPhase(p, height)))
 					return;

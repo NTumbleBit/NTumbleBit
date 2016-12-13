@@ -594,10 +594,10 @@ namespace NTumbleBit.Tests
 			node.PingPong();
 		}
 
-		public void FindBlock(int blockCount = 1, bool includeMempool = true)
+		public Block[] FindBlock(int blockCount = 1, bool includeMempool = true)
 		{
 			SelectMempoolTransactions();
-			Generate(blockCount, includeMempool);
+			return Generate(blockCount, includeMempool);
 		}
 
 		class TransactionNode

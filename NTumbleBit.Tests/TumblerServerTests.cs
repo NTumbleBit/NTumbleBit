@@ -123,32 +123,34 @@ namespace NTumbleBit.Tests
 
 				machine.Update();
 
-				MineTo(server.AliceNode, cycle, CyclePhase.PaymentPhase, true);
+				MineTo(server.TumblerNode, cycle, CyclePhase.PaymentPhase, true);
 				server.SyncNodes();
-
-				Thread.Sleep(5000);
+				
 				//Offer + Fullfill should be broadcasted
 				var transactions = trustedServerBroadcaster.TryBroadcast();
 				Assert.Equal(2, transactions.Length);
 
 				//Offer got malleated
 				server.TumblerNode.Malleate(transactions[0].GetHash());
-				server.TumblerNode.FindBlock(1);
+				var block = server.TumblerNode.FindBlock(1).First();
+				Assert.Equal(2, block.Transactions.Count); //Offer get mined
 				server.SyncNodes();
 
 				//Fullfill get resigned and broadcasted
 				transactions = trustedServerBroadcaster.TryBroadcast();
 				Assert.Equal(1, transactions.Length);
+				block = server.TumblerNode.FindBlock(1).First();
+				Assert.Equal(2, block.Transactions.Count); //Fullfill get mined		
 
-				MineTo(server.AliceNode, cycle, CyclePhase.ClientCashoutPhase);
+				MineTo(server.TumblerNode, cycle, CyclePhase.ClientCashoutPhase);
 				server.SyncNodes();
-
 				machine.Update();
-				Thread.Sleep(5000);
-				server.AliceNode.FindBlock();
-				var bestBlock = server.AliceNode.CreateRPCClient().GetBlock(server.AliceNode.CreateRPCClient().GetBlockCount());
-				//Should contains cashout
-				Assert.Equal(2, bestBlock.Transactions.Count);
+
+				transactions = untrustedBroadcast.TryBroadcast();
+				Assert.Equal(1, transactions.Length);
+				block = server.TumblerNode.FindBlock().First();
+				//Should contains client cashout
+				Assert.Equal(2, block.Transactions.Count);
 
 				//Just a sanity tests, this one contains escrow redeem and offer redeem, both of which should not be available now
 				transactions = trustedClientBroadcaster.TryBroadcast();
@@ -156,11 +158,11 @@ namespace NTumbleBit.Tests
 			}
 		}
 
-		private void MineTo(CoreNode node, CycleParameters cycle, CyclePhase phase, bool end = false)
+		private void MineTo(CoreNode node, CycleParameters cycle, CyclePhase phase, bool end = false, int offset = 0)
 		{
 			var height = node.CreateRPCClient().GetBlockCount();
 			var periodStart = end ? cycle.GetPeriods().GetPeriod(phase).End : cycle.GetPeriods().GetPeriod(phase).Start;
-			var blocksToFind = periodStart - height;
+			var blocksToFind = periodStart - height + offset;
 			if(blocksToFind <= 0)
 				return;
 
