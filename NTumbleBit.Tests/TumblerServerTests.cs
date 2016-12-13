@@ -40,7 +40,7 @@ namespace NTumbleBit.Tests
 		{
 			using(var server = TumblerServerTester.Create())
 			{
-				var repo = server.GetService<IRepository>();
+				var repo = server.GetService<NTumbleBit.TumblerServer.Services.IRepository>();
 				repo.Add("a", "b", "c");
 				var result = repo.Get<string>("a", "b");
 				Assert.Equal("c", result);
@@ -78,12 +78,13 @@ namespace NTumbleBit.Tests
 				var trustedServerBroadcaster = (TumblerServer.Services.RPCServices.RPCTrustedBroadcastService)server.ExtenalServices.TrustedBroadcastService;
 				var serverBlockExplorer = (TumblerServer.Services.RPCServices.RPCBlockExplorerService)server.ExtenalServices.BlockExplorerService;
 
+				var untrustedBroadcast = new NTumbleBit.Client.Tumbler.Services.RPCServices.RPCBroadcastService(rpc, server.ClientRepository);
 				var machine = new PaymentStateMachine(parameters, aliceClient, new NTumbleBit.Client.Tumbler.Services.ExternalServices()
 				{
 					BlockExplorerService = new NTumbleBit.Client.Tumbler.Services.RPCServices.RPCBlockExplorerService(rpc),
-					BroadcastService = new NTumbleBit.Client.Tumbler.Services.RPCServices.RPCBroadcastService(rpc),
+					BroadcastService = untrustedBroadcast,
 					FeeService = new NTumbleBit.Client.Tumbler.Services.RPCServices.RPCFeeService(rpc),
-					TrustedBroadcastService = new NTumbleBit.Client.Tumbler.Services.RPCServices.RPCTrustedBroadcastService(rpc),
+					TrustedBroadcastService = new NTumbleBit.Client.Tumbler.Services.RPCServices.RPCTrustedBroadcastService(rpc, untrustedBroadcast, server.ClientRepository),
 					WalletService = new NTumbleBit.Client.Tumbler.Services.RPCServices.RPCWalletService(rpc)
 				});
 
@@ -125,6 +126,7 @@ namespace NTumbleBit.Tests
 				MineTo(server.AliceNode, cycle, CyclePhase.PaymentPhase, true);
 				server.SyncNodes();
 
+				Thread.Sleep(5000);
 				//Offer + Fullfill should be broadcasted
 				var transactions = trustedServerBroadcaster.TryBroadcast();
 				Assert.Equal(2, transactions.Length);
@@ -142,7 +144,7 @@ namespace NTumbleBit.Tests
 				server.SyncNodes();
 
 				machine.Update();
-				Thread.Sleep(1000);
+				Thread.Sleep(5000);
 				server.AliceNode.FindBlock();
 				var bestBlock = server.AliceNode.CreateRPCClient().GetBlock(server.AliceNode.CreateRPCClient().GetBlockCount());
 				//Should contains cashout

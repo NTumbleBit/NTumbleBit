@@ -14,15 +14,20 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 {
 	public class RPCTrustedBroadcastService : ITrustedBroadcastService
 	{
-		public RPCTrustedBroadcastService(RPCClient rpc)
+		public RPCTrustedBroadcastService(RPCClient rpc, IBroadcastService innerBroadcast, IRepository repository)
 		{
 			if(rpc == null)
 				throw new ArgumentNullException("rpc");
+			if(innerBroadcast == null)
+				throw new ArgumentNullException("innerBroadcast");
+			if(repository == null)
+				throw new ArgumentNullException("repository");
+			_Repository = repository;
 			_RPCClient = rpc;
-			_Broadcaster = new RPCBroadcastService(rpc);
+			_Broadcaster = innerBroadcast;
 		}
 
-		RPCBroadcastService _Broadcaster;
+		IBroadcastService _Broadcaster;
 
 		private readonly RPCClient _RPCClient;
 		public RPCClient RPCClient
@@ -33,7 +38,6 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			}
 		}
 
-		List<TrustedBroadcastRequest> _Broadcasts = new List<TrustedBroadcastRequest>();
 		public void Broadcast(TrustedBroadcastRequest broadcast)
 		{
 			if(broadcast == null)
@@ -42,18 +46,38 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			if(address == null)
 				throw new NotSupportedException("ScriptPubKey to track not supported");
 			RPCClient.ImportAddress(address, "", false);
-			_Broadcasts.Add(broadcast);
+			
+			AddBroadcast(broadcast);
 			var height = RPCClient.GetBlockCount();
 			if(height < broadcast.BroadcastAt.Height)
 				return;
 			_Broadcaster.Broadcast(broadcast.Transaction);
 		}
 
+		private void AddBroadcast(TrustedBroadcastRequest broadcast)
+		{
+			_Repository.Add("TrustedBroadcasts", broadcast.Transaction.GetHash().ToString(), broadcast);
+		}
+
+		private readonly IRepository _Repository;
+		public IRepository Repository
+		{
+			get
+			{
+				return _Repository;
+			}
+		}
+
+		public TrustedBroadcastRequest[] GetRequests()
+		{
+			return Repository.List<TrustedBroadcastRequest>("TrustedBroadcasts");
+		}
+
 		public Transaction[] TryBroadcast()
 		{
 			var height = RPCClient.GetBlockCount();
 			List<Transaction> broadcasted = new List<Transaction>();
-			foreach(var broadcast in _Broadcasts)
+			foreach(var broadcast in GetRequests())
 			{
 				if(height < broadcast.BroadcastAt.Height)
 					continue;

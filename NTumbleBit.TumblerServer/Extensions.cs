@@ -62,13 +62,15 @@ namespace NTumbleBit.TumblerServer
 				services.AddSingleton<ExternalServices>((provider) =>
 				{
 					var conf = provider.GetRequiredService<TumblerConfiguration>();
+					var repo = provider.GetRequiredService<IRepository>();
+					var broadcast = new RPCBroadcastService(conf.RPCClient, repo);
 					return new ExternalServices()
 					{
-						BroadcastService = new RPCBroadcastService(conf.RPCClient),
+						BroadcastService = broadcast,
 						FeeService = new RPCFeeService(conf.RPCClient),
 						WalletService = new RPCWalletService(conf.RPCClient),
 						BlockExplorerService = new RPCBlockExplorerService(conf.RPCClient),
-						TrustedBroadcastService = new RPCTrustedBroadcastService(conf.RPCClient)
+						TrustedBroadcastService = new RPCTrustedBroadcastService(conf.RPCClient, broadcast, repo)
 					};
 				});
 				services.AddSingleton<ClassicTumblerParameters>((provider) =>

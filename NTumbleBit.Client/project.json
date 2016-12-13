@@ -4,7 +4,8 @@
     "dependencies": {
         "NBitcoin": "3.0.0.84",
         "NETStandard.Library": "1.6.0",
-        "NTumbleBit": "1.0.0-*"
+        "NTumbleBit": "1.0.0-*",
+        "DBreeze": "1.79.0"
     },
 
     "frameworks": {

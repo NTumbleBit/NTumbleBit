@@ -8,7 +8,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+#if !CLIENT
 namespace NTumbleBit.TumblerServer.Services
+#else
+namespace NTumbleBit.Client.Tumbler.Services
+#endif
 {
 	public class DBreezeRepository : IRepository, IDisposable
 	{

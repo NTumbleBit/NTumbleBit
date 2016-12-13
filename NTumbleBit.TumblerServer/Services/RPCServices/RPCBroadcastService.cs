@@ -13,11 +13,24 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 {
 	public class RPCBroadcastService : IBroadcastService
     {
-		public RPCBroadcastService(RPCClient rpc)
+		public RPCBroadcastService(RPCClient rpc, IRepository repository)
 		{
 			if(rpc == null)
 				throw new ArgumentNullException("rpc");
+			if(repository == null)
+				throw new ArgumentNullException("repository");
 			_RPCClient = rpc;
+			_Repository = repository;
+		}
+
+
+		private readonly IRepository _Repository;
+		public IRepository Repository
+		{
+			get
+			{
+				return _Repository;
+			}
 		}
 
 		private readonly RPCClient _RPCClient;
@@ -29,10 +42,15 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			}
 		}
 
+		public Transaction[] GetTransactions()
+		{
+			return Repository.List<Transaction>("Broadcasts");
+		}
+
 		public Transaction[] TryBroadcast()
 		{
 			List<Transaction> broadcasted = new List<Transaction>();
-			foreach(var tx in _Transactions.ToList())
+			foreach(var tx in GetTransactions())
 			{
 				if(TryBroadcastCore(tx))
 				{
@@ -53,7 +71,6 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			{
 				if(ex.RPCResult == null || ex.RPCResult.Error == null)
 				{
-					//TODO: LOG? RETRY?
 					return false;
 				}
 				var error = ex.RPCResult.Error.Message;
@@ -61,22 +78,18 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				{
 					if(error.EndsWith("bad-txns-inputs-spent", StringComparison.OrdinalIgnoreCase))
 					{
-						_Transactions.Remove(tx);
 					}
 					else if(!error.EndsWith("txn-mempool-conflict", StringComparison.OrdinalIgnoreCase))
 					{
-						//TODO: LOG? RETRY?
-						return false;
 					}
 				}
 			}
 			return false;
 		}
 
-		List<Transaction> _Transactions = new List<Transaction>();
 		public bool Broadcast(Transaction transaction)
 		{
-			_Transactions.Add(transaction);
+			Repository.Add<Transaction>("Broadcasts", transaction.GetHash().ToString(), transaction);
 			return TryBroadcastCore(transaction);
 		}
 	}

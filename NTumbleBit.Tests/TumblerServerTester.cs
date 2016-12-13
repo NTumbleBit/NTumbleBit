@@ -51,6 +51,9 @@ namespace NTumbleBit.Tests
 			_BobNode = _NodeBuilder.CreateNode(false);
 
 			Directory.CreateDirectory(directory);
+
+			ClientRepository = new NTumbleBit.Client.Tumbler.Services.DBreezeRepository(Path.Combine(directory, "client"));
+
 			_NodeBuilder.StartAll();
 
 			SyncNodes();
@@ -76,6 +79,11 @@ namespace NTumbleBit.Tests
 				.Build();
 
 			_Host.Start();
+		}
+
+		public NTumbleBit.Client.Tumbler.Services.IRepository ClientRepository
+		{
+			get; set;
 		}
 
 		public void SyncNodes()
