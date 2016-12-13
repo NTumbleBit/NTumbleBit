@@ -163,12 +163,18 @@ namespace NTumbleBit.Client.Tumbler
 						var clientEscrowTx = Services.WalletService.FundTransaction(txout, feeRate);
 						SolverClientSession = ClientChannelNegotiation.SetClientSignedTransaction(clientEscrowTx);
 						var redeem = SolverClientSession.CreateRedeemTransaction(feeRate, Services.WalletService.GenerateAddress().ScriptPubKey);
+						Services.BlockExplorerService.Track(SolverClientSession.EscrowedCoin.ScriptPubKey);
 						Services.BroadcastService.Broadcast(clientEscrowTx);
 						Services.TrustedBroadcastService.Broadcast(redeem);
 					}
 					else if(ClientChannelNegotiation.Status == TumblerClientSessionStates.WaitingSolvedVoucher)
 					{
-						var voucher = AliceClient.ClientChannelConfirmed(SolverClientSession.EscrowedCoin.Outpoint.Hash);
+						TransactionInformation clientTx = GetTransactionInformation(SolverClientSession.EscrowedCoin, true);
+						var voucher = AliceClient.SignVoucher(new Models.SignVoucherRequest()
+						{
+							MerkleProof = clientTx.MerkleProof,
+							Transaction = clientTx.Transaction
+						});
 						ClientChannelNegotiation.CheckVoucherSolution(voucher);
 					}
 					break;
@@ -190,10 +196,9 @@ namespace NTumbleBit.Client.Tumbler
 					SolverClientSession.AcceptPuzzle(puzzle);
 					break;
 				case CyclePhase.PaymentPhase:
-					var tx = Services.BlockExplorerService.GetTransaction(PromiseClientSession.EscrowedCoin.Outpoint.Hash);
-					cycle = ClientChannelNegotiation.GetCycle();
+					TransactionInformation tumblerTx = GetTransactionInformation(PromiseClientSession.EscrowedCoin, false);
 					//Ensure the tumbler coin is confirmed before paying anything
-					if(tx == null || tx.Confirmations < cycle.SafetyPeriodDuration)
+					if(tumblerTx == null || tumblerTx.Confirmations < cycle.SafetyPeriodDuration)
 						return;
 					if(SolverClientSession.Status == SolverClientStates.WaitingGeneratePuzzles)
 					{
@@ -223,7 +228,7 @@ namespace NTumbleBit.Client.Tumbler
 					//If the tumbler is uncooperative, he published solutions on the blockchain
 					if(SolverClientSession.Status == SolverClientStates.WaitingPuzzleSolutions)
 					{
-						var transactions = Services.BlockExplorerService.GetTransactions(SolverClientSession.GetOfferScriptPubKey());
+						var transactions = Services.BlockExplorerService.GetTransactions(SolverClientSession.GetOfferScriptPubKey(), false);
 						SolverClientSession.CheckSolutions(transactions.Select(t => t.Transaction).ToArray());
 					}
 
@@ -235,6 +240,15 @@ namespace NTumbleBit.Client.Tumbler
 					}
 					break;
 			}
+		}
+
+		private TransactionInformation GetTransactionInformation(ICoin coin, bool withProof)
+		{
+			var expectedTxout = coin.TxOut;
+			var tx = Services.BlockExplorerService
+				.GetTransactions(coin.TxOut.ScriptPubKey, withProof)
+				.FirstOrDefault(t => t.Transaction.GetHash() == coin.Outpoint.Hash);
+			return tx;
 		}
 
 		private FeeRate GetFeeRate()

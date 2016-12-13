@@ -103,22 +103,23 @@ namespace NTumbleBit.TumblerServer.Controllers
 			if(!aliceSession.GetCycle().IsInPhase(CyclePhase.ClientChannelEstablishment, height))
 				return BadRequest("incorrect-phase");
 			Repository.Save(aliceSession.GetChannelId(), aliceSession);
-			Services.BlockExplorerService.Track(aliceSession.CreateEscrowScript().Hash.ScriptPubKey);
 			return Json(pubKey);
 		}
 
 		[HttpPost("api/v1/tumblers/0/clientchannels/confirm")]
-		public IActionResult ClientChannelConfirmed([FromBody]uint256 txId)
+		public IActionResult SignVoucher([FromBody]SignVoucherRequest request)
 		{
-			var transaction = Services.BlockExplorerService.GetTransaction(txId);
-			if(transaction == null ||
-				(transaction.Confirmations < Parameters.CycleGenerator.FirstCycle.SafetyPeriodDuration))
-				return BadRequest("not-enough-confirmation");
-			if(transaction.Transaction.Outputs.Count > 2)
+			if(request.MerkleProof.PartialMerkleTree
+				.GetMatchedTransactions()
+				.FirstOrDefault() != request.Transaction.GetHash() || !request.MerkleProof.Header.CheckProofOfWork())
+				return BadRequest("invalid-merkleproof");
+
+
+			var transaction = request.Transaction;			
+			if(transaction.Outputs.Count > 2)
 				return BadRequest("invalid-transaction");
 
 			var sessions = transaction
-				.Transaction
 				.Outputs
 				.Select(o => Repository.GetAliceSession(o.ScriptPubKey.ToHex()))
 				.Where(o => o != null)
@@ -126,13 +127,21 @@ namespace NTumbleBit.TumblerServer.Controllers
 			if(sessions.Count != 1)
 				return BadRequest("invalid-transaction");
 
+			var confirmations = Services.BlockExplorerService.GetBlockConfirmations(request.MerkleProof.Header.GetHash());
+			if((confirmations < Parameters.CycleGenerator.FirstCycle.SafetyPeriodDuration))
+				return BadRequest("not-enough-confirmation");
+
 			var height = Services.BlockExplorerService.GetCurrentHeight();
 			if(!sessions[0].GetCycle().IsInPhase(CyclePhase.ClientChannelEstablishment, height))
 				return BadRequest("incorrect-phase");
 
+			Services.BlockExplorerService.Track(sessions[0].CreateEscrowScript().Hash.ScriptPubKey);
+			if(!Services.BlockExplorerService.TrackPrunedTransaction(request.Transaction, request.MerkleProof))
+				return BadRequest("invalid-merkleproof");
+
 			var channelId = sessions[0].GetChannelId();
 			PuzzleSolution voucher;
-			var solverServerSession = sessions[0].ConfirmClientEscrow(transaction.Transaction, out voucher);
+			var solverServerSession = sessions[0].ConfirmClientEscrow(transaction, out voucher);
 			Repository.Save(channelId, sessions[0]);
 			Repository.Save(solverServerSession);
 			return Json(voucher);
@@ -156,7 +165,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 				if(tx == null)
 					return BadRequest("tumbler-insufficient-funds");
 				Services.BlockExplorerService.Track(txOut.ScriptPubKey);
-				Services.BroadcastService.Broadcast(tx);				
+				Services.BroadcastService.Broadcast(tx);
 				var promiseServerSession = session.SetSignedTransaction(tx);
 				Repository.Save(request.SignedVoucher.ToString(), session);
 				Repository.Save(promiseServerSession);

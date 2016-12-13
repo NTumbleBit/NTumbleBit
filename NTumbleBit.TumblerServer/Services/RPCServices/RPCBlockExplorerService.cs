@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using NBitcoin;
 using Newtonsoft.Json.Linq;
+using NBitcoin.DataEncoders;
 
 
 #if !CLIENT
@@ -35,7 +36,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			return RPCClient.GetBlockCount();
 		}
 
-		public TransactionInformation[] GetTransactions(Script scriptPubKey)
+		public TransactionInformation[] GetTransactions(Script scriptPubKey, bool withProof)
 		{
 			if(scriptPubKey == null)
 				throw new ArgumentNullException("scriptPubKey");
@@ -55,7 +56,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			foreach(var obj in transactions)
 			{
 				var txId = new uint256((string)obj["txid"]);
-				var tx = GetTransaction(txId);
+				var tx = GetTransaction(txId, withProof);
 				if((string)obj["address"] == address.ToString())
 				{
 					results.Add(tx);
@@ -78,7 +79,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			return results.ToArray();
 		}
 
-		public TransactionInformation GetTransaction(uint256 txId)
+		public TransactionInformation GetTransaction(uint256 txId, bool withProof)
 		{
 			try
 			{
@@ -87,10 +88,24 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 					return null;
 				var tx = new Transaction((string)result.Result["hex"]);
 				var confirmations = result.Result["confirmations"];
+				var confCount = confirmations == null ? 0 : (int)confirmations;
+
+				MerkleBlock proof = null;
+				if(withProof)
+				{
+					if(confCount == 0)
+						return null;
+					result = RPCClient.SendCommandNoThrows("gettxoutproof", new JArray(txId.ToString()));
+					if(result == null || result.Error != null)
+						return null;
+					proof = new MerkleBlock();
+					proof.ReadWrite(Encoders.Hex.DecodeData(result.ResultString));
+				}
 				return new TransactionInformation()
 				{
-					Confirmations = confirmations == null ? 0 : (int)confirmations,
-					Transaction = tx
+					Confirmations = confCount,
+					Transaction = tx,
+					MerkleProof = proof
 				};
 			}
 			catch(RPCException) { return null; }
@@ -101,6 +116,20 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			var address = scriptPubkey.GetDestinationAddress(RPCClient.Network);
 			if(address != null)
 				RPCClient.ImportAddress(address, "", false);
+		}
+
+		public int GetBlockConfirmations(uint256 blockId)
+		{
+			var result = RPCClient.SendCommandNoThrows("getblock", blockId.ToString(), true);
+			if(result == null || result.Error != null)
+				return 0;
+			return (int)result.Result["confirmations"];
+		}
+
+		public bool TrackPrunedTransaction(Transaction transaction, MerkleBlock merkleProof)
+		{
+			var result = RPCClient.SendCommandNoThrows("importprunedfunds", transaction.ToHex(), Encoders.Hex.EncodeData(merkleProof.ToBytes()));
+			return result != null && result.Error == null;
 		}
 	}
 }

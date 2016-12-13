@@ -33,135 +33,6 @@ namespace NTumbleBit.Tests
 		}
 
 		FeeRate FeeRate = new FeeRate(50, 1);
-		[Fact]
-		public void CanCompleteCycle()
-		{
-			using(var server = TumblerServerTester.Create())
-			{
-				var bobRPC = server.BobNode.CreateRPCClient();
-				server.BobNode.FindBlock(1);
-				server.SyncNodes();
-				server.TumblerNode.FindBlock(1);
-				server.SyncNodes();
-				server.AliceNode.FindBlock(103);
-				server.SyncNodes();
-
-				var bobClient = server.CreateTumblerClient();
-				var aliceClient = server.CreateTumblerClient();
-
-				//Client get fix tumbler parameters
-				var parameters = aliceClient.GetTumblerParameters();
-				///////////////////////////////////
-
-				/////////////////////////////<Registration>/////////////////////////
-				//Client asks for voucher
-				var voucherResponse = bobClient.AskUnsignedVoucher();
-				//Client ensures he is in the same cycle as the tumbler (would fail if one tumbler or client's chain isn't sync)
-				var cycle = parameters.CycleGenerator.GetCycle(voucherResponse.Cycle);
-				var expectedCycle = parameters.CycleGenerator.GetRegistratingCycle(bobRPC.GetBlockCount());
-				Assert.Equal(expectedCycle.Start, cycle.Start);
-
-				//Saving the voucher for later
-				var clientNegotiation = new ClientChannelNegotiation(parameters, cycle.Start);
-				clientNegotiation.ReceiveUnsignedVoucher(voucherResponse.UnsignedVoucher);
-				/////////////////////////////</Registration>/////////////////////////
-
-
-				//Client waits until client channel establishment phase
-				MineTo(server.AliceNode, cycle, CyclePhase.ClientChannelEstablishment);
-				server.SyncNodes();
-				///////////////
-
-				/////////////////////////////<ClientChannel>/////////////////////////
-				//Client asks the public key of the Tumbler and sends its own
-				var aliceEscrowInformation = clientNegotiation.GenerateClientTransactionKeys();
-				var key = aliceClient.RequestTumblerEscrowKey(aliceEscrowInformation);
-				clientNegotiation.ReceiveTumblerEscrowKey(key);
-				//Client create the escrow
-				var clientWallet = new RPCWalletService(bobRPC);
-				var clientBlockExplorer = new RPCBlockExplorerService(bobRPC);
-
-				var txout = clientNegotiation.BuildClientEscrowTxOut();
-				var clientEscrowTx = clientWallet.FundTransaction(txout, FeeRate);
-
-				var clientBroadcastLater = new RPCTrustedBroadcastService(bobRPC);
-				bobRPC.SendRawTransaction(clientEscrowTx);
-				server.BobNode.FindBlock(2);
-				server.SyncNodes();
-				var solverClientSession = clientNegotiation.SetClientSignedTransaction(clientEscrowTx);
-				clientBroadcastLater.Broadcast(solverClientSession.CreateRedeemTransaction(FeeRate, new Key().ScriptPubKey));
-
-				//Checking that the redeem transaction of the client escrow has proper validation time
-				var redeem = solverClientSession.CreateRedeemTransaction(FeeRate, new Key().ScriptPubKey);
-				var firstExpectedRedeemableBlock = clientNegotiation.GetCycle().GetPeriods().TumblerCashout.End + clientNegotiation.GetCycle().SafetyPeriodDuration;
-				Assert.True(redeem.Transaction.IsFinal(DateTimeOffset.UtcNow, firstExpectedRedeemableBlock));
-				Assert.True(redeem.Transaction.IsFinal(DateTimeOffset.UtcNow, firstExpectedRedeemableBlock + 1));
-				Assert.False(redeem.Transaction.IsFinal(DateTimeOffset.UtcNow, firstExpectedRedeemableBlock - 1));
-				//Server solves the puzzle
-				var voucher = aliceClient.ClientChannelConfirmed(clientEscrowTx.GetHash());
-				clientNegotiation.CheckVoucherSolution(voucher);
-				/////////////////////////////</ClientChannel>/////////////////////////
-
-				//Client waits until tumbler channel establishment phase
-				MineTo(server.AliceNode, cycle, CyclePhase.TumblerChannelEstablishment);
-				server.SyncNodes();
-				///////////////
-
-				/////////////////////////////<TumblerChannel>/////////////////////////
-				//Client asks the Tumbler to make a channel
-				var bobEscrowInformation = clientNegotiation.GetOpenChannelRequest();
-				var tumblerInformation = bobClient.OpenChannel(bobEscrowInformation);
-				var promiseClientSession = clientNegotiation.ReceiveTumblerEscrowedCoin(tumblerInformation);
-				//Channel is done, now need to run the promise protocol to get valid puzzle
-				var cashoutDestination = clientWallet.GenerateAddress();
-				var sigReq = promiseClientSession.CreateSignatureRequest(cashoutDestination, FeeRate);
-				var commiments = bobClient.SignHashes(promiseClientSession.Id, sigReq);
-				var revelation = promiseClientSession.Reveal(commiments);
-				var proof = bobClient.CheckRevelation(promiseClientSession.Id, revelation);
-				var puzzle = promiseClientSession.CheckCommitmentProof(proof);
-				solverClientSession.AcceptPuzzle(puzzle);
-				//Checking that the redeem transaction of the tumbler escrow has proper validation time
-				var tumblerPromiseSession = server.TumblerRepository.GetPromiseServerSession(promiseClientSession.Id);
-				redeem = tumblerPromiseSession.CreateRedeemTransaction(FeeRate, new Key().ScriptPubKey);
-				firstExpectedRedeemableBlock = clientNegotiation.GetCycle().GetPeriods().ClientCashout.End + clientNegotiation.GetCycle().SafetyPeriodDuration;
-				Assert.True(redeem.Transaction.IsFinal(DateTimeOffset.UtcNow, firstExpectedRedeemableBlock));
-				Assert.True(redeem.Transaction.IsFinal(DateTimeOffset.UtcNow, firstExpectedRedeemableBlock + 1));
-				Assert.False(redeem.Transaction.IsFinal(DateTimeOffset.UtcNow, firstExpectedRedeemableBlock - 1));
-				/////////////////////////////</TumblerChannel>/////////////////////////
-
-				//Client waits until payment phase
-				MineTo(server.AliceNode, cycle, CyclePhase.PaymentPhase);
-				server.SyncNodes();
-				///////////////
-
-				/////////////////////////////<Payment>/////////////////////////
-				//Client pays for the puzzle
-				var puzzles = solverClientSession.GeneratePuzzles();
-				var commmitments = aliceClient.SolvePuzzles(solverClientSession.Id, puzzles);
-				var revelation2 = solverClientSession.Reveal(commmitments);
-				var solutionKeys = aliceClient.CheckRevelation(solverClientSession.Id, revelation2);
-				var blindFactors = solverClientSession.GetBlindFactors(solutionKeys);
-				var offerInformation = aliceClient.CheckBlindFactors(solverClientSession.Id, blindFactors);
-				var offerSignature = solverClientSession.SignOffer(offerInformation);
-				var offerScriptPubKey = solverClientSession.GetOfferScriptPubKey();
-				clientBlockExplorer.Track(offerScriptPubKey);
-				solutionKeys = aliceClient.FullfillOffer(solverClientSession.Id, offerSignature);
-				/////////////////////////////</Payment>/////////////////////////
-
-				//Client waits until can cashout
-				MineTo(server.AliceNode, cycle, CyclePhase.ClientCashoutPhase);
-				server.SyncNodes();
-				///////////////
-
-				/////////////////////////////<ClientCashout>/////////////////////////
-				((RPCTrustedBroadcastService)server.ExtenalServices.TrustedBroadcastService).TryBroadcast();
-				solverClientSession.CheckSolutions(solutionKeys);
-				var tumblingSolution = solverClientSession.GetSolution();
-				var transaction = promiseClientSession.GetSignedTransaction(tumblingSolution);
-				Assert.True(transaction.Inputs.AsIndexedInputs().First().VerifyScript(promiseClientSession.EscrowedCoin));
-				/////////////////////////////</ClientCashout>/////////////////////////
-			}
-		}
 
 		[Fact]
 		public void CanCompleteCycleWithMachineState()
@@ -182,7 +53,7 @@ namespace NTumbleBit.Tests
 				var cycle = parameters.CycleGenerator.GetCycle(rpc.GetBlockCount());
 
 				var trustedServerBroadcaster = (TumblerServer.Services.RPCServices.RPCTrustedBroadcastService)server.ExtenalServices.TrustedBroadcastService;
-
+				var serverBlockExplorer = (TumblerServer.Services.RPCServices.RPCBlockExplorerService)server.ExtenalServices.BlockExplorerService;
 
 				var machine = new PaymentStateMachine(parameters, aliceClient, new NTumbleBit.Client.Tumbler.Services.ExternalServices()
 				{
@@ -206,7 +77,17 @@ namespace NTumbleBit.Tests
 				server.AliceNode.FindBlock(2);
 				server.SyncNodes();
 
+				//Server does not track anything until Alice gives proof of the escrow
+				Assert.Equal(0, serverBlockExplorer
+						.GetTransactions(machine.SolverClientSession.EscrowedCoin.ScriptPubKey, false)
+						.Count());
+
 				machine.Update();
+
+				//Server is now tracking Alice's escrow
+				Assert.Equal(1, serverBlockExplorer
+						.GetTransactions(machine.SolverClientSession.EscrowedCoin.ScriptPubKey, false)
+						.Count());
 
 				MineTo(server.AliceNode, cycle, CyclePhase.TumblerChannelEstablishment);
 				server.SyncNodes();

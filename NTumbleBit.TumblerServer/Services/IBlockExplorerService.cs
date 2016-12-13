@@ -16,6 +16,11 @@ namespace NTumbleBit.Client.Tumbler.Services
 		{
 			get; set;
 		}
+		public MerkleBlock MerkleProof
+		{
+			get;
+			set;
+		}
 		public Transaction Transaction
 		{
 			get; set;
@@ -24,8 +29,9 @@ namespace NTumbleBit.Client.Tumbler.Services
     public interface IBlockExplorerService
     {
 		int GetCurrentHeight();
-		TransactionInformation GetTransaction(uint256 txId);
-		TransactionInformation[] GetTransactions(Script scriptPubKey);
+		TransactionInformation[] GetTransactions(Script scriptPubKey, bool withProof);
 		void Track(Script scriptPubkey);
+		int GetBlockConfirmations(uint256 blockId);
+		bool TrackPrunedTransaction(Transaction transaction, MerkleBlock merkleProof);
 	}
 }

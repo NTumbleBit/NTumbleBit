@@ -71,13 +71,13 @@ namespace NTumbleBit.Client.Tumbler
 		}
 
 
-		public Task<PuzzleSolution> ClientChannelConfirmedAsync(uint256 txId)
+		public Task<PuzzleSolution> SignVoucherAsync(SignVoucherRequest signVoucherRequest)
 		{
-			return SendAsync<PuzzleSolution>(HttpMethod.Post, txId, "api/v1/tumblers/0/clientchannels/confirm");
+			return SendAsync<PuzzleSolution>(HttpMethod.Post, signVoucherRequest, "api/v1/tumblers/0/clientchannels/confirm");
 		}
-		public PuzzleSolution ClientChannelConfirmed(uint256 txId)
+		public PuzzleSolution SignVoucher(SignVoucherRequest signVoucherRequest)
 		{
-			return ClientChannelConfirmedAsync(txId).GetAwaiter().GetResult();
+			return SignVoucherAsync(signVoucherRequest).GetAwaiter().GetResult();
 		}
 
 		public Task<ScriptCoin> OpenChannelAsync(OpenChannelRequest request)
