@@ -45,36 +45,48 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			if(address == null)
 				return new TransactionInformation[0];
 
-
-			var result = RPCClient.SendCommandNoThrows("listtransactions", "", 100, 0, true);
-			if(result.Error != null)
-				return null;
-
-
-			var transactions = (JArray)result.Result;
 			List<TransactionInformation> results = new List<TransactionInformation>();
-			foreach(var obj in transactions)
+			int count = 10;
+			int skip = 0;
+			int highestConfirmation = 0;
+			while(true)
 			{
-				var txId = new uint256((string)obj["txid"]);
-				var tx = GetTransaction(txId, withProof);
-				if((string)obj["address"] == address.ToString())
+				var result = RPCClient.SendCommandNoThrows("listtransactions", "", count, skip, true);
+				skip += count;
+				if(result.Error != null)
+					return null;
+				var transactions = (JArray)result.Result;
+				foreach(var obj in transactions)
 				{
-					results.Add(tx);
-				}
-				else
-				{
-					foreach(var input in tx.Transaction.Inputs)
+					var txId = new uint256((string)obj["txid"]);
+
+					if(obj["confirmations"] != null)
 					{
-						var p2shSig = PayToScriptHashTemplate.Instance.ExtractScriptSigParameters(input.ScriptSig);
-						if(p2shSig != null)
+						highestConfirmation = Math.Max(highestConfirmation, (int)obj["confirmations"]);
+					}
+
+					var tx = GetTransaction(txId, withProof);
+					if((string)obj["address"] == address.ToString())
+					{
+						results.Add(tx);
+					}
+					else
+					{
+						foreach(var input in tx.Transaction.Inputs)
 						{
-							if(p2shSig.RedeemScript.Hash.ScriptPubKey == address.ScriptPubKey)
+							var p2shSig = PayToScriptHashTemplate.Instance.ExtractScriptSigParameters(input.ScriptSig);
+							if(p2shSig != null)
 							{
-								results.Add(tx);
+								if(p2shSig.RedeemScript.Hash.ScriptPubKey == address.ScriptPubKey)
+								{
+									results.Add(tx);
+								}
 							}
 						}
 					}
 				}
+				if(transactions.Count < count || highestConfirmation >= 1000)
+					break;
 			}
 			return results.ToArray();
 		}
@@ -88,7 +100,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 					return null;
 				var tx = new Transaction((string)result.Result["hex"]);
 				var confirmations = result.Result["confirmations"];
-				var confCount = confirmations == null ? 0 : (int)confirmations;
+				var confCount = confirmations == null ? 0 : Math.Max(0, (int)confirmations);
 
 				MerkleBlock proof = null;
 				if(withProof)
