@@ -18,7 +18,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 {
 	public class MainController : Controller
 	{
-		public MainController(TumblerConfiguration configuration, ClassicTumblerParameters parameters, ExternalServices services)
+		public MainController(TumblerConfiguration configuration, ClassicTumblerRepository repo, ClassicTumblerParameters parameters, ExternalServices services)
 		{
 			if(configuration == null)
 				throw new ArgumentNullException("configuration");
@@ -26,9 +26,10 @@ namespace NTumbleBit.TumblerServer.Controllers
 				throw new ArgumentNullException("parameters");
 			if(services == null)
 				throw new ArgumentNullException("services");
-
+			if(repo == null)
+				throw new ArgumentNullException("repo");
 			_Tumbler = configuration;
-			_Repository = configuration.Repository;
+			_Repository = repo;
 			_Parameters = parameters;
 			_Services = services;
 		}

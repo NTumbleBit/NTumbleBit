@@ -4,6 +4,7 @@ using NTumbleBit.Client.Tumbler;
 using NTumbleBit.Client.Tumbler.Models;
 using NTumbleBit.Client.Tumbler.Services;
 using NTumbleBit.PuzzlePromise;
+using NTumbleBit.TumblerServer.Services;
 using NTumbleBit.TumblerServer.Services.RPCServices;
 using System;
 using System.Collections.Generic;
@@ -35,6 +36,28 @@ namespace NTumbleBit.Tests
 		FeeRate FeeRate = new FeeRate(50, 1);
 
 		[Fact]
+		public void TestCRUDDBReeze()
+		{
+			using(var server = TumblerServerTester.Create())
+			{
+				var repo = server.GetService<IRepository>();
+				repo.Add("a", "b", "c");
+				var result = repo.Get<string>("a", "b");
+				Assert.Equal("c", result);
+				repo.Add("a", "b", "d");
+				result = repo.Get<string>("a", "b");
+				Assert.Equal("d", result);
+				repo.Add("a", "c", "c");
+				Assert.Equal(2, repo.List<string>("a").Length);
+				repo.Delete<string>("a", "c");
+				Assert.Equal(1, repo.List<string>("a").Length);
+				repo.Add("a", "c", "c");
+				repo.Delete("a");
+				Assert.Equal(0, repo.List<string>("a").Length);
+			}
+		}
+
+		[Fact]
 		public void CanCompleteCycleWithMachineState()
 		{
 			using(var server = TumblerServerTester.Create())
@@ -46,7 +69,7 @@ namespace NTumbleBit.Tests
 				server.SyncNodes();
 				server.BobNode.FindBlock(103);
 				server.SyncNodes();
-				
+
 
 				var aliceClient = server.CreateTumblerClient();
 				var parameters = aliceClient.GetTumblerParameters();

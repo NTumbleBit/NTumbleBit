@@ -6,18 +6,29 @@ using NTumbleBit.ClassicTumbler;
 using NBitcoin;
 using NTumbleBit.PuzzlePromise;
 using NTumbleBit.PuzzleSolver;
+using NTumbleBit.TumblerServer.Services;
 
 namespace NTumbleBit.TumblerServer
 {
 	public class ClassicTumblerRepository
 	{
-		public ClassicTumblerRepository(TumblerConfiguration config)
+		public ClassicTumblerRepository(TumblerConfiguration config, IRepository repository)
 		{
 			if(config == null)
 				throw new ArgumentNullException("config");
 			_Configuration = config;
+			_Repository = repository;
 		}
 
+
+		private readonly IRepository _Repository;
+		public IRepository Repository
+		{
+			get
+			{
+				return _Repository;
+			}
+		}
 
 		private readonly TumblerConfiguration _Configuration;
 		public TumblerConfiguration Configuration
@@ -28,67 +39,60 @@ namespace NTumbleBit.TumblerServer
 			}
 		}
 
-		static Dictionary<string, string> _BobSessions = new Dictionary<string, string>();
-		static Dictionary<string, string> _AliceSessions = new Dictionary<string, string>();
-		static Dictionary<string, string> _Promises = new Dictionary<string, string>();
 
 		public void Save(string sessionId, BobServerChannelNegotiation session)
 		{
-			_BobSessions.AddOrReplace(sessionId, Serializer.ToString(session.GetInternalState()));
+			Repository.Add("Negotiation", sessionId, session.GetInternalState());
 		}
 
 		public void Save(PromiseServerSession session)
 		{
-			_Promises.AddOrReplace(session.Id, Serializer.ToString(session.GetInternalState()));
+			Repository.Add("Sessions", session.Id, session.GetInternalState());
 		}
 
 		public void Save(SolverServerSession session)
 		{
-			_Promises.AddOrReplace(session.Id, Serializer.ToString(session.GetInternalState()));
+			Repository.Add("Sessions", session.Id, session.GetInternalState());
 		}
 
 		public PromiseServerSession GetPromiseServerSession(string id)
 		{
-			var session = _Promises.TryGet(id);
+			var session = Repository.Get<PromiseServerSession.State>("Sessions", id);
 			if(session == null)
 				return null;
-			return new PromiseServerSession(Serializer.ToObject<PromiseServerSession.State>(session),
+			return new PromiseServerSession(session,
 				_Configuration.CreateClassicTumblerParameters().CreatePromiseParamaters());
 		}
 
 		public SolverServerSession GetSolverServerSession(string id)
 		{
-			var session = _Promises.TryGet(id);
+			var session = Repository.Get<SolverServerSession.State>("Sessions", id);
 			if(session == null)
 				return null;
 			return new SolverServerSession(_Configuration.TumblerKey,
 				this._Configuration.CreateClassicTumblerParameters().CreateSolverParamaters(),
-				Serializer.ToObject<SolverServerSession.State>(session));
+				session);
 		}
 
 
 		public BobServerChannelNegotiation GetBobSession(string sessionId)
 		{
-			var data = _BobSessions.TryGet(sessionId);
-			if(data == null)
+			var state = Repository.Get<BobServerChannelNegotiation.State>("Negotiation", sessionId);
+			if(state == null)
 				return null;
-
-			BobServerChannelNegotiation.State state = Serializer.ToObject<BobServerChannelNegotiation.State>(data);
 			return new BobServerChannelNegotiation(_Configuration.CreateClassicTumblerParameters(), _Configuration.TumblerKey, _Configuration.VoucherKey, state);
 		}
 
 		public void Save(string sessionId, AliceServerChannelNegotiation session)
 		{
-			_AliceSessions.AddOrReplace(sessionId, Serializer.ToString(session.GetInternalState()));
+			Repository.Add("Negotiation", sessionId, session.GetInternalState());
 		}
 
 		public AliceServerChannelNegotiation GetAliceSession(string sessionId)
 		{
-			var data = _AliceSessions.TryGet(sessionId);
-			if(data == null)
-				return null;
-
-			AliceServerChannelNegotiation.State state = Serializer.ToObject<AliceServerChannelNegotiation.State>(data);
+			var state = Repository.Get<AliceServerChannelNegotiation.State>("Negotiation", sessionId);
+			if(state == null)
+				return null;			
 			return new AliceServerChannelNegotiation(_Configuration.CreateClassicTumblerParameters(), _Configuration.TumblerKey, _Configuration.VoucherKey, state);
 		}		
 	}

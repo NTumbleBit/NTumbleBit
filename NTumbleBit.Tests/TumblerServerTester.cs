@@ -58,6 +58,7 @@ namespace NTumbleBit.Tests
 			var rpc = _TumblerNode.CreateRPCClient();
 
 			var conf = new TumblerConfiguration();
+			conf.DataDirectory = directory;
 			conf.Network = Network.RegTest;
 			conf.RPCClient = rpc;
 			conf.ClassicTumblerParameters.FakePuzzleCount /= 4;
@@ -159,6 +160,11 @@ namespace NTumbleBit.Tests
 			{
 				return (TumblerConfiguration)_Host.Services.GetService(typeof(TumblerConfiguration));
 			}
+		}
+
+		public T GetService<T>()
+		{
+			return (T)_Host.Services.GetService(typeof(T));
 		}
 
 		public ExternalServices ExtenalServices

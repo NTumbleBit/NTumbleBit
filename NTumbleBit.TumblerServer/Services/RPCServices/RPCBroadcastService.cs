@@ -47,7 +47,6 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			try
 			{
 				RPCClient.SendRawTransaction(tx);
-				_Transactions.Remove(tx);
 				return true;
 			}
 			catch(RPCException ex)

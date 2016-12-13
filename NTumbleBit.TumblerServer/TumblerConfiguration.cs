@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using NBitcoin.RPC;
 using NTumbleBit.ClassicTumbler;
+using NTumbleBit.TumblerServer.Services;
 
 namespace NTumbleBit.TumblerServer
 {
@@ -14,17 +15,18 @@ namespace NTumbleBit.TumblerServer
 		{			
 			ClassicTumblerParameters = new ClassicTumblerParameters();
 		}
+
+		public string DataDirectory
+		{
+			get; set;
+		}
+
 		public RsaKey TumblerKey
 		{
 			get; set;
 		}
 
 		public RsaKey VoucherKey
-		{
-			get; set;
-		}
-
-		public ExtKey Seed
 		{
 			get; set;
 		}
@@ -36,10 +38,6 @@ namespace NTumbleBit.TumblerServer
 		{
 			get;
 			set;
-		}
-		public ClassicTumblerRepository Repository
-		{
-			get; set;
 		}
 
 		public ClassicTumblerParameters ClassicTumblerParameters

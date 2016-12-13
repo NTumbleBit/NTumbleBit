@@ -45,6 +45,20 @@ namespace NTumbleBit.TumblerServer
 		{
 			builder.ConfigureServices(services =>
 			{
+				services.AddSingleton<ClassicTumblerRepository>(provider =>
+				 {
+					 var conf = provider.GetRequiredService<TumblerConfiguration>();
+					 var repo = provider.GetRequiredService<IRepository>();
+					 return new ClassicTumblerRepository(conf, repo);
+				 });
+
+				services.AddSingleton<IRepository>(provider =>
+				{
+					var conf = provider.GetRequiredService<TumblerConfiguration>();
+					var dbreeze = new DBreezeRepository(Path.Combine(conf.DataDirectory, "db"));
+					return dbreeze;
+				});
+
 				services.AddSingleton<ExternalServices>((provider) =>
 				{
 					var conf = provider.GetRequiredService<TumblerConfiguration>();
@@ -62,17 +76,13 @@ namespace NTumbleBit.TumblerServer
 					var conf = provider.GetRequiredService<TumblerConfiguration>();
 					return conf.CreateClassicTumblerParameters();
 				});
-				services.AddSingleton<ClassicTumblerRepository>((provider) =>
-				{
-					var conf = provider.GetRequiredService<TumblerConfiguration>();
-					return conf.Repository;
-				});
 				services.AddSingleton<TumblerConfiguration>((provider) =>
 				{
 					var conf = configuration ?? new TumblerConfiguration();
 					var factory = provider.GetRequiredService<ILoggerFactory>();
 					var logger = factory.CreateLogger<TumblerConfiguration>();
-
+					conf.DataDirectory = conf.DataDirectory ?? GetDefaultDirectory(logger);
+					
 					var rsaFile = Path.Combine(Directory.GetCurrentDirectory(), "Tumbler.pem");
 
 					if(conf.TumblerKey == null)
@@ -88,25 +98,6 @@ namespace NTumbleBit.TumblerServer
 						{
 							logger.LogInformation("RSA private key found (" + rsaFile + ")");
 							conf.TumblerKey = new RsaKey(File.ReadAllBytes(rsaFile));
-						}
-					}
-
-					if(conf.Seed == null)
-					{
-						var seedFile = Path.Combine(Directory.GetCurrentDirectory(), "Seed.dat");
-						if(!File.Exists(seedFile))
-						{
-							logger.LogWarning("Bitcoin seed not found, please note the following backup phrase, it will not be shown twice. Creating...");
-							Mnemonic mnemo = new Mnemonic(Wordlist.English);
-							logger.LogWarning(mnemo.ToString());
-							conf.Seed = mnemo.DeriveExtKey();
-							File.WriteAllBytes(seedFile, conf.Seed.ToBytes());
-							logger.LogInformation("Seed saved (" + seedFile + ")");
-						}
-						else
-						{
-							logger.LogInformation("Seed found (" + seedFile + ")");
-							conf.Seed = new ExtKey(File.ReadAllBytes(seedFile));
 						}
 					}
 
@@ -127,7 +118,6 @@ namespace NTumbleBit.TumblerServer
 						}
 					}
 
-					Debug.Assert(conf.Seed != null);
 					Debug.Assert(conf.TumblerKey != null);
 					Debug.Assert(conf.VoucherKey != null);
 
@@ -150,11 +140,33 @@ namespace NTumbleBit.TumblerServer
 						throw;
 					}
 					logger.LogInformation("RPC connection successfull");
-					conf.Repository = conf.Repository ?? new ClassicTumblerRepository(conf);
 					return configuration;
 				});
 			});
 			return builder;
+		}
+
+		private static string GetDefaultDirectory(ILogger logger)
+		{
+			string directory = null;
+			var home = Environment.GetEnvironmentVariable("HOME");			if(!string.IsNullOrEmpty(home))
+			{
+				logger.LogInformation("Using HOME environment variable for initializing application data");
+				directory = home;
+			}			else
+			{				var localAppData = Environment.GetEnvironmentVariable("LOCALAPPDATA");
+				if(!string.IsNullOrEmpty(home))
+				{
+					logger.LogInformation("Using LOCALAPPDATA environment variable for initializing application data");
+					directory = localAppData;
+				}
+				else
+				{
+					throw new DirectoryNotFoundException("Could not find suitable datadir");
+				}
+			}			directory = Path.Combine(directory, ".ntumblebitserver");
+			logger.LogInformation("Data directory set to " + directory);
+			return directory;
 		}
 	}
 }
