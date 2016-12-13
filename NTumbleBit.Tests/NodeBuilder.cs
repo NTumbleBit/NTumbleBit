@@ -307,7 +307,7 @@ namespace NTumbleBit.Tests
 			config.Add("regtest", "1");
 			config.Add("rest", "1");
 			config.Add("server", "1");
-			config.Add("txindex", "1");
+			config.Add("txindex", "0");
 			config.Add("rpcuser", creds.UserName);
 			config.Add("rpcpassword", creds.Password);
 			config.Add("port", ports[0].ToString());
