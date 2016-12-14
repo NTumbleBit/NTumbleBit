@@ -1,4 +1,10 @@
-﻿using System;
+﻿using NBitcoin.RPC;
+#if !CLIENT
+using NTumbleBit.TumblerServer.Services.RPCServices;
+#else
+using NTumbleBit.Client.Tumbler.Services.RPCServices;
+#endif
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -11,6 +17,16 @@ namespace NTumbleBit.Client.Tumbler.Services
 {
 	public class ExternalServices
     {
+		public static ExternalServices CreateFromRPCClient(RPCClient rpc, IRepository repository)
+		{
+			ExternalServices service = new ExternalServices();
+			service.FeeService = new RPCFeeService(rpc);
+			service.WalletService = new RPCWalletService(rpc);
+			service.BroadcastService = new RPCBroadcastService(rpc, repository);
+			service.BlockExplorerService = new RPCBlockExplorerService(rpc);
+			service.TrustedBroadcastService = new RPCTrustedBroadcastService(rpc, service.BroadcastService, repository);
+			return service;
+		}
 		public IFeeService FeeService
 		{
 			get; set;

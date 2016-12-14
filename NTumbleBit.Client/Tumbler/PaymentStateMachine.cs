@@ -15,24 +15,25 @@ namespace NTumbleBit.Client.Tumbler
 		public PaymentStateMachine(
 			ClassicTumblerParameters parameters,
 			TumblerClient client,
+			ClientDestinationWallet destinationWallet,
 			ExternalServices services)
 		{
 			Parameters = parameters;
 			AliceClient = client;
 			BobClient = client;
 			Services = services;
+			DestinationWallet = destinationWallet;
 		}
 
 		public PaymentStateMachine(
 			ClassicTumblerParameters parameters,
 			TumblerClient client,
+			ClientDestinationWallet destinationWallet,
 			ExternalServices services,
-			State state)
+			State state) : this(parameters, client, destinationWallet, services)
 		{
-			BobClient = client;
-			AliceClient = client;
-			Parameters = parameters;
-			Services = services;
+			if(state == null)
+				return;
 			if(state.NegotiationClientState != null)
 			{
 				StartCycle = state.NegotiationClientState.CycleStart;
@@ -78,7 +79,11 @@ namespace NTumbleBit.Client.Tumbler
 			get;
 			private set;
 		}
-
+		public ClientDestinationWallet DestinationWallet
+		{
+			get;
+			private set;
+		}
 
 		public class State
 		{
@@ -127,7 +132,7 @@ namespace NTumbleBit.Client.Tumbler
 					CyclePhase.Registration,
 					CyclePhase.ClientChannelEstablishment,
 					CyclePhase.TumblerChannelEstablishment,
-					CyclePhase.PaymentPhase,					
+					CyclePhase.PaymentPhase,
 					CyclePhase.TumblerCashoutPhase,
 					CyclePhase.ClientCashoutPhase
 				};
@@ -187,7 +192,7 @@ namespace NTumbleBit.Client.Tumbler
 					//Tell to the block explorer we need to track that address (for checking if it is confirmed in payment phase)
 					Services.BlockExplorerService.Track(PromiseClientSession.EscrowedCoin.ScriptPubKey);
 					//Channel is done, now need to run the promise protocol to get valid puzzle
-					var cashoutDestination = Services.WalletService.GenerateAddress();
+					var cashoutDestination = DestinationWallet.GetNewDestination();
 					feeRate = GetFeeRate();
 					var sigReq = PromiseClientSession.CreateSignatureRequest(cashoutDestination, feeRate);
 					var commiments = BobClient.SignHashes(PromiseClientSession.Id, sigReq);

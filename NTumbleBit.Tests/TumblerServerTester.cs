@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Server.Kestrel;
 using Microsoft.Extensions.Configuration;
 using NBitcoin;
+using NBitcoin.RPC;
 using NTumbleBit.Client.Tumbler;
 using NTumbleBit.TumblerServer;
 using NTumbleBit.TumblerServer.Services;
@@ -18,6 +19,110 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit.Tests
 {
+	public class TumblerClientContext
+	{
+		public TumblerClientContext(TumblerClient tumblerClient, RPCClient rpcClient, NTumbleBit.Client.Tumbler.Services.IRepository clientRepository)
+		{
+			var parameters = tumblerClient.GetTumblerParameters();
+			PaymentMachineState = new PaymentStateMachine(
+				parameters,
+				tumblerClient,
+				new ClientDestinationWallet("", new ExtKey().Neuter().GetWif(rpcClient.Network), new KeyPath(), clientRepository),
+				Client.Tumbler.Services.ExternalServices.CreateFromRPCClient(rpcClient, clientRepository)
+				);
+		}
+		public PaymentStateMachine PaymentMachineState
+		{
+			get;
+			private set;
+		}
+
+		public Client.Tumbler.Services.RPCServices.RPCBlockExplorerService BlockExplorer
+		{
+			get
+			{
+				return (Client.Tumbler.Services.RPCServices.RPCBlockExplorerService)PaymentMachineState.Services.BlockExplorerService;
+			}
+		}
+
+		public Client.Tumbler.Services.RPCServices.RPCBroadcastService UntrustedBroadcaster
+		{
+			get
+			{
+				return (Client.Tumbler.Services.RPCServices.RPCBroadcastService)PaymentMachineState.Services.BroadcastService;
+			}
+		}
+
+		public Client.Tumbler.Services.RPCServices.RPCTrustedBroadcastService TrustedBroadcastService
+		{
+			get
+			{
+				return (Client.Tumbler.Services.RPCServices.RPCTrustedBroadcastService)PaymentMachineState.Services.TrustedBroadcastService;
+			}
+		}
+	}
+	public class TumblerServerContext
+	{
+		private IWebHost _Host;
+
+		public TumblerServerContext(IWebHost _Host)
+		{
+			this._Host = _Host;
+		}
+
+		public ClassicTumblerRepository TumblerRepository
+		{
+			get
+			{
+				return (ClassicTumblerRepository)_Host.Services.GetService(typeof(ClassicTumblerRepository));
+			}
+		}
+
+		public TumblerConfiguration TumblerConfiguration
+		{
+			get
+			{
+				return (TumblerConfiguration)_Host.Services.GetService(typeof(TumblerConfiguration));
+			}
+		}
+
+		public T GetService<T>()
+		{
+			return (T)_Host.Services.GetService(typeof(T));
+		}
+
+		public ExternalServices ExtenalServices
+		{
+			get
+			{
+				return (ExternalServices)_Host.Services.GetService(typeof(ExternalServices));
+			}
+		}
+
+		public TumblerServer.Services.RPCServices.RPCBroadcastService BroadcastService
+		{
+			get
+			{
+				return (TumblerServer.Services.RPCServices.RPCBroadcastService)ExtenalServices.BroadcastService;
+			}
+		}
+
+		public TumblerServer.Services.RPCServices.RPCBlockExplorerService BlockExplorer
+		{
+			get
+			{
+				return (TumblerServer.Services.RPCServices.RPCBlockExplorerService)ExtenalServices.BlockExplorerService;
+			}
+		}
+
+		public TumblerServer.Services.RPCServices.RPCTrustedBroadcastService TrustedBroadcastService
+		{
+			get
+			{
+				return (TumblerServer.Services.RPCServices.RPCTrustedBroadcastService)ExtenalServices.TrustedBroadcastService;
+			}
+		}
+	}
 	public class TumblerServerTester : IDisposable
 	{
 		public static TumblerServerTester Create([CallerMemberNameAttribute]string caller = null)
@@ -52,8 +157,6 @@ namespace NTumbleBit.Tests
 
 			Directory.CreateDirectory(directory);
 
-			ClientRepository = new NTumbleBit.Client.Tumbler.Services.DBreezeRepository(Path.Combine(directory, "client"));
-
 			_NodeBuilder.StartAll();
 
 			SyncNodes();
@@ -79,9 +182,18 @@ namespace NTumbleBit.Tests
 				.Build();
 
 			_Host.Start();
+
+			ServerContext = new TumblerServerContext(_Host);
+			var repo = new NTumbleBit.Client.Tumbler.Services.DBreezeRepository(Path.Combine(directory, "client"));
+			ClientContext = new TumblerClientContext(CreateTumblerClient(), AliceNode.CreateRPCClient(), repo);
 		}
 
-		public NTumbleBit.Client.Tumbler.Services.IRepository ClientRepository
+		public TumblerClientContext ClientContext
+		{
+			get; set;
+		}
+
+		public TumblerServerContext ServerContext
 		{
 			get; set;
 		}
@@ -154,38 +266,9 @@ namespace NTumbleBit.Tests
 			}
 		}
 
-		public ClassicTumblerRepository TumblerRepository
-		{
-			get
-			{
-				return (ClassicTumblerRepository)_Host.Services.GetService(typeof(ClassicTumblerRepository));
-			}
-		}
-
-		public TumblerConfiguration TumblerConfiguration
-		{
-			get
-			{
-				return (TumblerConfiguration)_Host.Services.GetService(typeof(TumblerConfiguration));
-			}
-		}
-
-		public T GetService<T>()
-		{
-			return (T)_Host.Services.GetService(typeof(T));
-		}
-
-		public ExternalServices ExtenalServices
-		{
-			get
-			{
-				return (ExternalServices)_Host.Services.GetService(typeof(ExternalServices));
-			}
-		}
-
 		public TumblerClient CreateTumblerClient()
 		{
-			return new TumblerClient(TumblerConfiguration.Network, Address);
+			return new TumblerClient(ServerContext.TumblerConfiguration.Network, Address);
 		}
 
 		private readonly string _Directory;
