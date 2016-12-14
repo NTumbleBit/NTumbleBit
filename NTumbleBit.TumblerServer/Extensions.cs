@@ -84,8 +84,8 @@ namespace NTumbleBit.TumblerServer
 					var factory = provider.GetRequiredService<ILoggerFactory>();
 					var logger = factory.CreateLogger<TumblerConfiguration>();
 					conf.DataDirectory = conf.DataDirectory ?? GetDefaultDirectory(logger);
-					
-					var rsaFile = Path.Combine(Directory.GetCurrentDirectory(), "Tumbler.pem");
+
+					var rsaFile = Path.Combine(conf.DataDirectory, "Tumbler.pem");
 
 					if(conf.TumblerKey == null)
 					{
@@ -105,24 +105,30 @@ namespace NTumbleBit.TumblerServer
 
 					if(conf.VoucherKey == null)
 					{
-						var voucherFile = Path.Combine(Directory.GetCurrentDirectory(), "Voucher.pem");
-						if(!File.Exists(rsaFile))
+						var voucherFile = Path.Combine(conf.DataDirectory, "Voucher.pem");
+						if(!File.Exists(voucherFile))
 						{
 							logger.LogWarning("Creation of Voucher Key");
 							conf.VoucherKey = new RsaKey();
-							File.WriteAllBytes(rsaFile, conf.VoucherKey.ToBytes());
+							File.WriteAllBytes(voucherFile, conf.VoucherKey.ToBytes());
 							logger.LogInformation("RSA key saved (" + voucherFile + ")");
 						}
 						else
 						{
 							logger.LogInformation("Voucher key found (" + voucherFile + ")");
-							conf.VoucherKey = new RsaKey(File.ReadAllBytes(rsaFile));
+							conf.VoucherKey = new RsaKey(File.ReadAllBytes(voucherFile));
 						}
 					}
 
 					Debug.Assert(conf.TumblerKey != null);
 					Debug.Assert(conf.VoucherKey != null);
 
+					if(conf.RPCClient == null)
+					{
+						var error = "RPC connection settings not configured";
+						logger.LogError(error);
+						throw new InvalidOperationException(error);
+					}
 					logger.LogInformation("Testing RPC connection to " + conf.RPCClient.Address.AbsoluteUri);
 					try
 					{
@@ -157,7 +163,7 @@ namespace NTumbleBit.TumblerServer
 				directory = home;
 			}			else
 			{				var localAppData = Environment.GetEnvironmentVariable("LOCALAPPDATA");
-				if(!string.IsNullOrEmpty(home))
+				if(!string.IsNullOrEmpty(localAppData))
 				{
 					logger.LogInformation("Using LOCALAPPDATA environment variable for initializing application data");
 					directory = localAppData;
@@ -168,6 +174,11 @@ namespace NTumbleBit.TumblerServer
 				}
 			}			directory = Path.Combine(directory, ".ntumblebitserver");
 			logger.LogInformation("Data directory set to " + directory);
+			if(!Directory.Exists(directory))
+			{
+				logger.LogInformation("Creating data directory");
+				Directory.CreateDirectory(directory);
+			}
 			return directory;
 		}
 	}
