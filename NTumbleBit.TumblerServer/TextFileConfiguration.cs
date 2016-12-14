@@ -41,7 +41,6 @@ namespace NTumbleBit.TumblerServer
 			builder.AppendLine("#rpc.url=http://localhost:"+network.RPCPort+ "/");
 			builder.AppendLine("#rpc.user=bitcoinuser");
 			builder.AppendLine("#rpc.password=bitcoinpassword");
-			builder.AppendLine("#network=main (accepted value: main, test, regtest)");
 			return builder.ToString();
 		}
     }

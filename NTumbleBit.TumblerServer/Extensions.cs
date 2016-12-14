@@ -144,9 +144,12 @@ namespace NTumbleBit.TumblerServer
 						var pass = configFile.TryGet("rpc.password");
 						if(url != null && usr != null && pass != null)
 							conf.RPCClient = new RPCClient(new System.Net.NetworkCredential(usr, pass), new Uri(url), conf.Network);
-						var error = "RPC connection settings not configured at " + conf.ConfigurationFile;
-						logger.LogError(error);
-						throw new InvalidOperationException(error);
+						if(conf.RPCClient == null)
+						{
+							var error = "RPC connection settings not configured at " + conf.ConfigurationFile;
+							logger.LogError(error);
+							throw new InvalidOperationException(error);
+						}
 					}
 					logger.LogInformation("Testing RPC connection to " + conf.RPCClient.Address.AbsoluteUri);
 					try
