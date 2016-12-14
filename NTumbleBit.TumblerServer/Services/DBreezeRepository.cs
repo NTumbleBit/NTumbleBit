@@ -21,6 +21,8 @@ namespace NTumbleBit.Client.Tumbler.Services
 		{
 			if(folder == null)
 				throw new ArgumentNullException("folder");
+			if(!Directory.Exists(folder))
+				Directory.CreateDirectory(folder);
 			_Folder = folder;
 		}
 

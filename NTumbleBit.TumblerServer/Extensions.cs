@@ -14,6 +14,7 @@ using NTumbleBit.ClassicTumbler;
 using NTumbleBit.TumblerServer.Services;
 using NTumbleBit.TumblerServer.Services.RPCServices;
 using Microsoft.AspNetCore.Mvc;
+using NTumbleBit.Common;
 
 namespace NTumbleBit.TumblerServer
 {
@@ -45,7 +46,7 @@ namespace NTumbleBit.TumblerServer
 		{
 			builder.ConfigureServices(services =>
 			{
-				services.AddSingleton<ClassicTumblerRepository>(provider =>
+				services.AddSingleton(provider =>
 				 {
 					 var conf = provider.GetRequiredService<TumblerConfiguration>();
 					 var repo = provider.GetRequiredService<IRepository>();
@@ -59,7 +60,7 @@ namespace NTumbleBit.TumblerServer
 					return dbreeze;
 				});
 
-				services.AddSingleton<ExternalServices>((provider) =>
+				services.AddSingleton((provider) =>
 				{
 					var conf = provider.GetRequiredService<TumblerConfiguration>();
 					var repo = provider.GetRequiredService<IRepository>();
@@ -73,18 +74,18 @@ namespace NTumbleBit.TumblerServer
 						TrustedBroadcastService = new RPCTrustedBroadcastService(conf.RPCClient, broadcast, repo)
 					};
 				});
-				services.AddSingleton<ClassicTumblerParameters>((provider) =>
+				services.AddSingleton((provider) =>
 				{
 					var conf = provider.GetRequiredService<TumblerConfiguration>();
 					return conf.CreateClassicTumblerParameters();
 				});
-				services.AddSingleton<TumblerConfiguration>((provider) =>
+				services.AddSingleton((provider) =>
 				{
 					var conf = configuration ?? new TumblerConfiguration();
 					var factory = provider.GetRequiredService<ILoggerFactory>();
 					var logger = factory.CreateLogger<TumblerConfiguration>();
 					conf.Network = conf.Network ?? Network.Main;
-					conf.DataDirectory = conf.DataDirectory ?? GetDefaultDirectory(logger, conf.Network);
+					conf.DataDirectory = conf.DataDirectory ?? DefaultDataDirectory.GetDefaultDirectory("NTumbleBitServer", logger, conf.Network);
 					conf.ConfigurationFile = conf.ConfigurationFile ?? GetDefaultConfigurationFile(logger, conf.DataDirectory, conf.Network);
 
 					var rsaFile = Path.Combine(conf.DataDirectory, "Tumbler.pem");
@@ -125,90 +126,15 @@ namespace NTumbleBit.TumblerServer
 					Debug.Assert(conf.TumblerKey != null);
 					Debug.Assert(conf.VoucherKey != null);
 
-					Dictionary<string, string> configFile = null;
 
-					try
-					{
-						configFile = TextFileConfiguration.Parse(File.ReadAllText(conf.ConfigurationFile));
-					}
-					catch(FormatException ex)
-					{
-						logger.LogError("Configuration file incorrectly formatted: " + ex.Message);
-						throw;
-					}
-
-					if(conf.RPCClient == null)
-					{
-						var url = configFile.TryGet("rpc.url") ?? "http://localhost:" + conf.Network.RPCPort + "/";
-						var usr = configFile.TryGet("rpc.user");
-						var pass = configFile.TryGet("rpc.password");
-						if(url != null && usr != null && pass != null)
-							conf.RPCClient = new RPCClient(new System.Net.NetworkCredential(usr, pass), new Uri(url), conf.Network);
-						if(conf.RPCClient == null)
-						{
-							var cookieFile = configFile.TryGet("rpc.cookiefile");
-							if(url != null && cookieFile != null)
-							{
-								try
-								{
-
-									conf.RPCClient = new RPCClient(File.ReadAllText(cookieFile), new Uri(url), conf.Network);
-								}
-								catch(IOException)
-								{
-									logger.LogWarning("RPC Cookie file not found at " + cookieFile);
-								}
-							}
-
-							if(conf.RPCClient == null)
-							{
-								try
-								{
-									conf.RPCClient = new RPCClient(conf.Network);
-								}
-								catch { }
-								if(conf.RPCClient == null)
-								{
-									var error = "RPC connection settings not configured at " + conf.ConfigurationFile;
-									logger.LogError(error);
-									throw new InvalidOperationException(error);
-								}
-							}
-						}
-					}
-					logger.LogInformation("Testing RPC connection to " + conf.RPCClient.Address.AbsoluteUri);
-					try
-					{
-						conf.RPCClient.SendCommand("whatever");
-					}
-					catch(RPCException ex)
-					{
-						if(ex.RPCCode != RPCErrorCode.RPC_METHOD_NOT_FOUND)
-						{
-							logger.LogError("Error connecting to RPC " + ex.Message);
-							throw;
-						}
-					}
-					catch(Exception ex)
-					{
-						logger.LogError("Error connecting to RPC " + ex.Message);
-						throw;
-					}
-					logger.LogInformation("RPC connection successfull");
-
-					if(conf.RPCClient.GetBlockHash(0) != conf.Network.GenesisHash)
-					{
-						var error = "The RPC server is not using the chain " + conf.Network.Name;
-						logger.LogError(error);
-						throw new InvalidOperationException(error);
-					}
+					conf.RPCClient = conf.RPCClient ?? RPCConfiguration.ConfigureRPCClient(logger, conf.ConfigurationFile, conf.Network);
 					return configuration;
 				});
 			});
 			return builder;
-		}
+		}		
 
-		private static string GetDefaultConfigurationFile(ILogger<TumblerConfiguration> logger, string dataDirectory, Network network)
+		public static string GetDefaultConfigurationFile(ILogger logger, string dataDirectory, Network network)
 		{
 			var config = Path.Combine(dataDirectory, "server.config");
 			logger.LogInformation("Configuration file set to " + config);
@@ -220,41 +146,6 @@ namespace NTumbleBit.TumblerServer
 				File.WriteAllText(config, data);
 			}
 			return config;
-		}
-
-		private static string GetDefaultDirectory(ILogger logger, Network network)
-		{
-			string directory = null;
-			var home = Environment.GetEnvironmentVariable("HOME");			if(!string.IsNullOrEmpty(home))
-			{
-				logger.LogInformation("Using HOME environment variable for initializing application data");
-				directory = home;
-				directory = Path.Combine(directory, ".ntumblebitserver");
-			}			else
-			{				var localAppData = Environment.GetEnvironmentVariable("APPDATA");
-				if(!string.IsNullOrEmpty(localAppData))
-				{
-					logger.LogInformation("Using APPDATA environment variable for initializing application data");
-					directory = localAppData;
-					directory = Path.Combine(directory, "NTumbleBitServer");
-				}
-				else
-				{
-					throw new DirectoryNotFoundException("Could not find suitable datadir");
-				}
-			}
-			if(!Directory.Exists(directory))
-			{
-				Directory.CreateDirectory(directory);
-			}
-			directory = Path.Combine(directory, network.Name);
-			logger.LogInformation("Data directory set to " + directory);
-			if(!Directory.Exists(directory))
-			{
-				logger.LogInformation("Creating data directory");
-				Directory.CreateDirectory(directory);
-			}
-			return directory;
 		}
 	}
 }

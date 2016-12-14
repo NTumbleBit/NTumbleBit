@@ -32,7 +32,14 @@ namespace NTumbleBit.TumblerServer
 		}
 		public Network Network
 		{
-			get; set;
+			get
+			{
+				return ClassicTumblerParameters.Network;
+			}
+			set
+			{
+				ClassicTumblerParameters.Network = value;
+			}
 		}
 		public RPCClient RPCClient
 		{

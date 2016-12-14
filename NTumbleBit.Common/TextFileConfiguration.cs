@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NTumbleBit.TumblerServer
+namespace NTumbleBit.Common
 {
     public class TextFileConfiguration
     {
@@ -45,5 +45,20 @@ namespace NTumbleBit.TumblerServer
 			builder.AppendLine("#rpc.cookiefile=yourbitcoinfolder/.cookie");
 			return builder.ToString();
 		}
-    }
+
+		public static String CreateClientDefaultConfiguration(Network network)
+		{
+			StringBuilder builder = new StringBuilder();
+			builder.AppendLine("#rpc.url=http://localhost:" + network.RPCPort + "/");
+			builder.AppendLine("#rpc.user=bitcoinuser");
+			builder.AppendLine("#rpc.password=bitcoinpassword");
+			builder.AppendLine("#rpc.cookiefile=yourbitcoinfolder/.cookie");
+			builder.AppendLine("#tumbler.server=http://server/");
+			builder.AppendLine("#tumbler.server=http://server/");
+			builder.AppendLine("#outputwallet.extpubkey=xpub661MyMwAqRbcFMJZyE2opu5nJd6QgyMewDXwxzTsEDuXdaB2HzV1rGEi6DyAXbtHS7H8C9o4c5g6hLsMinmfiVTFYV5TogCvJ7yhQoB4vVa");
+			builder.AppendLine("#outputwallet.keypath=0/0");
+
+			return builder.ToString();
+		}
+	}
 }

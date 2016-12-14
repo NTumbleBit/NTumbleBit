@@ -32,10 +32,7 @@ namespace NTumbleBit.Client.Tumbler
 				Name = walletName,
 				DerivationPath = derivationPath,
 				Key = extPubKey
-			}, (o, n) =>
-			{
-				throw new InvalidOperationException("Wallet already exist");
-			});
+			}, (o, n) => n);
 			_Repository = repository;
 			_WalletName = walletName;
 		}

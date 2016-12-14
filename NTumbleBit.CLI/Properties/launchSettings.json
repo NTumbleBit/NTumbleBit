@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "NTumbleBit.CLI": {
+      "commandName": "Project",
+      "commandLineArgs": "-testnet"
+    }
+  }
+}

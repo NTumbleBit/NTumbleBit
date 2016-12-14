@@ -66,6 +66,8 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 					}
 
 					var tx = GetTransaction(txId, withProof);
+					if(tx == null)
+						continue;
 					if((string)obj["address"] == address.ToString())
 					{
 						results.Add(tx);
@@ -95,9 +97,15 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		{
 			try
 			{
+				//check in the txindex
 				var result = RPCClient.SendCommandNoThrows("getrawtransaction", txId.ToString(), 1);
 				if(result == null || result.Error != null)
-					return null;
+				{
+					//check in the wallet tx
+					result = RPCClient.SendCommandNoThrows("gettransaction", txId.ToString(), true);
+					if(result == null || result.Error != null)
+						return null;
+				}
 				var tx = new Transaction((string)result.Result["hex"]);
 				var confirmations = result.Result["confirmations"];
 				var confCount = confirmations == null ? 0 : Math.Max(0, (int)confirmations);

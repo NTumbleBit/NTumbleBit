@@ -16,6 +16,10 @@ Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "NTumbleBit.TumblerServer", 
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "NTumbleBit.Client", "NTumbleBit.Client\NTumbleBit.Client.xproj", "{AF7E0974-5948-4BF9-8C20-E74DB15C0FE6}"
 EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "NTumbleBit.CLI", "NTumbleBit.CLI\NTumbleBit.CLI.xproj", "{9D3DDF92-1B04-49E1-B087-AE31780BA23B}"
+EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "NTumbleBit.Common", "NTumbleBit.Common\NTumbleBit.Common.xproj", "{53E1D0F4-A0E3-4FC6-820A-B8F0E923A0D5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -38,6 +42,14 @@ Global
 		{AF7E0974-5948-4BF9-8C20-E74DB15C0FE6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AF7E0974-5948-4BF9-8C20-E74DB15C0FE6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AF7E0974-5948-4BF9-8C20-E74DB15C0FE6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9D3DDF92-1B04-49E1-B087-AE31780BA23B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9D3DDF92-1B04-49E1-B087-AE31780BA23B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9D3DDF92-1B04-49E1-B087-AE31780BA23B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9D3DDF92-1B04-49E1-B087-AE31780BA23B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{53E1D0F4-A0E3-4FC6-820A-B8F0E923A0D5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{53E1D0F4-A0E3-4FC6-820A-B8F0E923A0D5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{53E1D0F4-A0E3-4FC6-820A-B8F0E923A0D5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{53E1D0F4-A0E3-4FC6-820A-B8F0E923A0D5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

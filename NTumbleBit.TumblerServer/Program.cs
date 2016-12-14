@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using NBitcoin;
+using NTumbleBit.Common;
+using Microsoft.Extensions.Logging.Console;
+using Microsoft.Extensions.Logging;
 
 namespace NTumbleBit.TumblerServer
 {
@@ -13,6 +16,7 @@ namespace NTumbleBit.TumblerServer
     {
         public static void Main(string[] args)
         {
+			var logger = new ConsoleLogger("Main", (a, b) => true, false);
 			var configuration = new TumblerConfiguration();
 			if(args.Contains("-testnet"))
 			{
@@ -30,9 +34,14 @@ namespace NTumbleBit.TumblerServer
 				.Build();
 				host.Run();
 			}
+			catch(ConfigException ex)
+			{
+				if(!string.IsNullOrEmpty(ex.Message))
+					logger.LogError(ex.Message);
+			}
 			catch(Exception exception)
 			{
-				Console.WriteLine("Exception thrown while running the server " + exception.Message);
+				logger.LogError("Exception thrown while running the server " + exception.Message);
 			}
 		}
 	}

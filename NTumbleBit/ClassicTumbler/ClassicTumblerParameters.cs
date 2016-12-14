@@ -25,14 +25,10 @@ namespace NTumbleBit.ClassicTumbler
 			Fee = Money.Coins(0.01m);
 			CycleGenerator = new OverlappedCycleGenerator();
 		}
-		public ClassicTumblerParameters(RsaPubKey rsaKey, RsaPubKey voucherKey) : this()
+
+		public Network Network
 		{
-			if(rsaKey == null)
-				throw new ArgumentNullException("rsaKey");
-			if(voucherKey == null)
-				throw new ArgumentNullException("voucherKey");
-			ServerKey = rsaKey;
-			VoucherKey = voucherKey;
+			get; set;
 		}
 
 		public OverlappedCycleGenerator CycleGenerator
