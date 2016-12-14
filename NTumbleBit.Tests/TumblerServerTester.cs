@@ -167,6 +167,8 @@ namespace NTumbleBit.Tests
 			conf.DataDirectory = directory;
 			conf.Network = Network.RegTest;
 			conf.RPCClient = rpc;
+			conf.TumblerKey = TestKeys.Default;
+			conf.VoucherKey = TestKeys.Default2;
 			conf.ClassicTumblerParameters.FakePuzzleCount /= 4;
 			conf.ClassicTumblerParameters.FakeTransactionCount /= 4;
 			conf.ClassicTumblerParameters.RealTransactionCount /= 4;
