@@ -39,20 +39,14 @@ namespace NTumbleBit.TumblerServer
 			}
 		}
 
-
-		public void Save(string sessionId, BobServerChannelNegotiation session)
-		{
-			Repository.Add("Negotiation", sessionId, session.GetInternalState());
-		}
-
 		public void Save(PromiseServerSession session)
 		{
-			Repository.Add("Sessions", session.Id, session.GetInternalState());
+			Repository.UpdateOrInsert("Sessions", session.Id, session.GetInternalState(), (o, n) => n);
 		}
 
 		public void Save(SolverServerSession session)
 		{
-			Repository.Add("Sessions", session.Id, session.GetInternalState());
+			Repository.UpdateOrInsert("Sessions", session.Id, session.GetInternalState(), (o, n) => n);
 		}
 
 		public PromiseServerSession GetPromiseServerSession(string id)
@@ -74,26 +68,28 @@ namespace NTumbleBit.TumblerServer
 				session);
 		}
 
-
-		public BobServerChannelNegotiation GetBobSession(string sessionId)
-		{
-			var state = Repository.Get<BobServerChannelNegotiation.State>("Negotiation", sessionId);
-			if(state == null)
-				return null;
-			return new BobServerChannelNegotiation(_Configuration.CreateClassicTumblerParameters(), _Configuration.TumblerKey, _Configuration.VoucherKey, state);
-		}
-
 		public void Save(string sessionId, AliceServerChannelNegotiation session)
 		{
-			Repository.Add("Negotiation", sessionId, session.GetInternalState());
+			Repository.UpdateOrInsert("Negotiation", sessionId, session.GetInternalState(), (o, n) => n);
 		}
 
 		public AliceServerChannelNegotiation GetAliceSession(string sessionId)
 		{
 			var state = Repository.Get<AliceServerChannelNegotiation.State>("Negotiation", sessionId);
 			if(state == null)
-				return null;			
+				return null;
 			return new AliceServerChannelNegotiation(_Configuration.CreateClassicTumblerParameters(), _Configuration.TumblerKey, _Configuration.VoucherKey, state);
-		}		
+		}
+
+		public bool MarkUsedNonce(int cycle, uint160 nonce)
+		{
+			bool used = false;
+			Repository.UpdateOrInsert("Nonces", cycle.ToString(), nonce, (o, n) =>
+			{
+				used = true;
+				return n;
+			});
+			return !used;
+		}
 	}
 }

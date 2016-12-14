@@ -56,7 +56,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 
 		private void AddBroadcast(TrustedBroadcastRequest broadcast)
 		{
-			_Repository.Add("TrustedBroadcasts", broadcast.Transaction.GetHash().ToString(), broadcast);
+			_Repository.UpdateOrInsert("TrustedBroadcasts", broadcast.Transaction.GetHash().ToString(), broadcast, (o, n) => n);
 		}
 
 		private readonly IRepository _Repository;

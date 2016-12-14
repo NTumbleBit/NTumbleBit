@@ -79,19 +79,12 @@ namespace NTumbleBit.TumblerServer.Controllers
 		}
 
 		[HttpGet("api/v1/tumblers/0/vouchers")]
-		public AskVoucherResponse AskUnsignedVoucher()
+		public UnsignedVoucherInformation AskUnsignedVoucher()
 		{
 			var height = Services.BlockExplorerService.GetCurrentHeight();
 			var cycleParameters = Parameters.CycleGenerator.GetRegistratingCycle(height);
-			var bobSession = new BobServerChannelNegotiation(Parameters, Tumbler.TumblerKey, Tumbler.VoucherKey, cycleParameters.Start);
-			PuzzleSolution solution = null;
-			var voucher = bobSession.GenerateUnsignedVoucher(ref solution);
-			Repository.Save(Hashes.Hash160(solution.ToBytes()).ToString(), bobSession);
-			return new AskVoucherResponse()
-			{
-				Cycle = cycleParameters.Start,
-				UnsignedVoucher = voucher
-			};
+			BobServerChannelNegotiation session = CreateBobServerChannelNegotiation(cycleParameters.Start);
+			return session.GenerateUnsignedVoucher();
 		}
 
 
@@ -152,15 +145,17 @@ namespace NTumbleBit.TumblerServer.Controllers
 		public IActionResult OpenChannel([FromBody] OpenChannelRequest request)
 		{
 			var height = Services.BlockExplorerService.GetCurrentHeight();
-			var session = Repository.GetBobSession(request.SignedVoucher.ToString());
-			if(session == null)
-				return NotFound("channel-not-found");
+			BobServerChannelNegotiation session = CreateBobServerChannelNegotiation(request.CycleStart);
 			if(!session.GetCycle().IsInPhase(CyclePhase.TumblerChannelEstablishment, height))
 				return BadRequest("incorrect-phase");
 			var fee = Services.FeeService.GetFeeRate();
 			try
 			{
 				session.ReceiveBobEscrowInformation(request);
+				if(!Repository.MarkUsedNonce(request.CycleStart, request.Nonce))
+				{
+					return BadRequest("nonce-already-used");
+				}
 				var txOut = session.BuildEscrowTxOut();
 				var tx = Services.WalletService.FundTransaction(txOut, fee);
 				if(tx == null)
@@ -168,7 +163,6 @@ namespace NTumbleBit.TumblerServer.Controllers
 				Services.BlockExplorerService.Track(txOut.ScriptPubKey);
 				Services.BroadcastService.Broadcast(tx);
 				var promiseServerSession = session.SetSignedTransaction(tx);
-				Repository.Save(request.SignedVoucher.ToString(), session);
 				Repository.Save(promiseServerSession);
 
 				var redeem = Services.WalletService.GenerateAddress();
@@ -181,6 +175,10 @@ namespace NTumbleBit.TumblerServer.Controllers
 			}
 		}
 
+		private BobServerChannelNegotiation CreateBobServerChannelNegotiation(int cycleStart)
+		{
+			return new BobServerChannelNegotiation(Parameters, Tumbler.TumblerKey, Tumbler.VoucherKey, cycleStart);
+		}
 
 		[HttpPost("api/v1/tumblers/0/channels/{channelId}/signhashes")]
 		public IActionResult SignHashes(string channelId, [FromBody]SignaturesRequest sigReq)

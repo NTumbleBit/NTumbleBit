@@ -41,17 +41,17 @@ namespace NTumbleBit.Tests
 			using(var server = TumblerServerTester.Create())
 			{
 				var repo = server.GetService<NTumbleBit.TumblerServer.Services.IRepository>();
-				repo.Add("a", "b", "c");
+				repo.UpdateOrInsert("a", "b", "c", (o, n) => n);
 				var result = repo.Get<string>("a", "b");
 				Assert.Equal("c", result);
-				repo.Add("a", "b", "d");
+				repo.UpdateOrInsert("a", "b", "d", (o, n) => n);
 				result = repo.Get<string>("a", "b");
 				Assert.Equal("d", result);
-				repo.Add("a", "c", "c");
+				repo.UpdateOrInsert("a", "c", "c", (o, n) => n);
 				Assert.Equal(2, repo.List<string>("a").Length);
 				repo.Delete<string>("a", "c");
 				Assert.Equal(1, repo.List<string>("a").Length);
-				repo.Add("a", "c", "c");
+				repo.UpdateOrInsert("a", "c", "c", (o, n) => n);
 				repo.Delete("a");
 				Assert.Equal(0, repo.List<string>("a").Length);
 			}

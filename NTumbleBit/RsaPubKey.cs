@@ -6,6 +6,7 @@ using NTumbleBit.BouncyCastle.Asn1.X509;
 using NTumbleBit.BouncyCastle.Crypto.Engines;
 using NTumbleBit.BouncyCastle.Crypto.Parameters;
 using NTumbleBit.BouncyCastle.Math;
+using NTumbleBit.PuzzlePromise;
 using Org.BouncyCastle.Asn1.Pkcs;
 using System;
 using System.Collections.Generic;
@@ -53,18 +54,23 @@ namespace NTumbleBit
 				_Key.Exponent);
 			var privInfo = new PrivateKeyInfo(RsaKey.algID, keyStruct.ToAsn1Object());
 			return privInfo.ToAsn1Object().GetEncoded();
-		}
+		}		
 
-		public bool Verify(byte[] data, byte[] signature)
+		public bool Verify(byte[] signature, byte[] data, uint160 nonce)
 		{
-			if(data == null)
-				throw new ArgumentNullException("data");
-			if(data.Length != RsaKey.KeySize / 8)
-				throw new ArgumentException("data should have a size of " + RsaKey.KeySize + " bits");
-
+			var msg = Utils.Combine(nonce.ToBytes(), data);
+			var hash = PromiseUtils.SHA512(msg, 0, msg.Length);
+			var input = new BigInteger(1, hash);
+			if(input.CompareTo(_Key.Modulus) >= 0)
+				return false;
+			if(signature.Length > 256)
+				return false;
+			var signatureInt = new BigInteger(1, signature);
+			if(signatureInt.CompareTo(_Key.Modulus) >= 0)
+				return false;
 			var engine = new RsaCoreEngine();
 			engine.Init(false, _Key);
-			return new BigInteger(1, data).Equals(engine.ProcessBlock(engine.ConvertInput(signature, 0, signature.Length)));
+			return input.Equals(engine.ProcessBlock(signatureInt));
 		}
 
 		public uint256 GetHash()

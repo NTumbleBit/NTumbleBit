@@ -1,4 +1,6 @@
-﻿using NTumbleBit.BouncyCastle.Asn1;
+﻿using NBitcoin;
+using NBitcoin.Crypto;
+using NTumbleBit.BouncyCastle.Asn1;
 using NTumbleBit.BouncyCastle.Asn1.Pkcs;
 using NTumbleBit.BouncyCastle.Asn1.X509;
 using NTumbleBit.BouncyCastle.Crypto;
@@ -6,6 +8,7 @@ using NTumbleBit.BouncyCastle.Crypto.Engines;
 using NTumbleBit.BouncyCastle.Crypto.Generators;
 using NTumbleBit.BouncyCastle.Crypto.Parameters;
 using NTumbleBit.BouncyCastle.Math;
+using NTumbleBit.PuzzlePromise;
 using Org.BouncyCastle.Asn1.Pkcs;
 using System;
 using System.Collections.Generic;
@@ -18,7 +21,7 @@ namespace NTumbleBit
 	public class RsaKey
 	{
 		static BigInteger RSA_F4 = BigInteger.ValueOf(65537);
-		internal readonly RsaPrivateCrtKeyParameters _Key;		
+		internal readonly RsaPrivateCrtKeyParameters _Key;
 
 		public RsaKey()
 		{
@@ -44,19 +47,7 @@ namespace NTumbleBit
 			{
 				throw new FormatException("Invalid RSA Key");
 			}
-		}
-
-		internal byte[] Sign(byte[] data)
-		{
-			if(data == null)
-				throw new ArgumentNullException("data");
-			if(data.Length != KeySize / 8)
-				throw new ArgumentException("data should have a size of " + KeySize + " bits");
-
-			var engine = new RsaCoreEngine();
-			engine.Init(true, _Key);
-			return engine.ConvertOutput(engine.ProcessBlock(engine.ConvertInput(data, 0, data.Length)));
-		}
+		}		
 
 		public PuzzleSolution SolvePuzzle(Puzzle puzzle)
 		{
@@ -71,6 +62,23 @@ namespace NTumbleBit
 				throw new ArgumentNullException("puzzle");
 
 			return new PuzzleSolution(Decrypt(puzzle._Value));
+		}
+
+
+		public byte[] Sign(byte[] data, out uint160 nonce)
+		{
+			while(true)
+			{
+				nonce = new uint160(RandomUtils.GetBytes(20));
+				var msg = Utils.Combine(nonce.ToBytes(), data);
+				var hash = PromiseUtils.SHA512(msg, 0, msg.Length);
+				var input = new BigInteger(1, hash);
+				if(input.CompareTo(_Key.Modulus) >= 0)
+					continue;
+				var engine = new RsaCoreEngine();
+				engine.Init(true, _Key);
+				return engine.ConvertOutput(engine.ProcessBlock(input));
+			}
 		}
 
 		internal BigInteger Decrypt(BigInteger encrypted)

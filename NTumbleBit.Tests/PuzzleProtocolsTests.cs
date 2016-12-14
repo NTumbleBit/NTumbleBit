@@ -57,18 +57,12 @@ namespace NTumbleBit.Tests
 		public void CanSignAndVerify()
 		{
 			RsaKey key = TestKeys.Default;
-
-			var data = Encoders.Hex.DecodeData("0015faef3ea3d54858c1e8d84c4438ddd29f20031dd5229297b0b0d3c2565077be09c4df12cdd7220fd0ff3d500c72cb03e4da6927bb56c41a6152993e9fbcfbf2dc7894a88ec75a6a289b05506d41d6822ecc3046e73c5a4452aff0867de0d4c5d828040cc390cca992591371deb4648052c49a8f7b697453dc70507ba4d438fbf4b3a811954ff68e8b5c04c42b70c35ef71cc577b57680b6b164cf4c54c96797f3da02f7e3e71d8857cd0d7c2ea525ffbc5e5077b5573a3da5e983224a99771e39c23e5c754d61a8ac37b73b7021e962924ecd044373dc52fe01a6170f3fbfa4d9d9dfe09a49c9da786a60f29753b6bc4bd0b4630711872f1ba7fcad698f61");
-
-			var signature = key.Sign(data);
-			Assert.True(key.PubKey.Verify(data, signature));
-
-
 			for(int i = 0; i < 100; i++)
 			{
-				data = GenerateEncryptableData(key._Key);
-				signature = key.Sign(data);
-				Assert.True(key.PubKey.Verify(data, signature));
+				var data = RandomUtils.GetBytes(234);
+				uint160 nonce;
+				var sig = key.Sign(data, out nonce);
+				Assert.True(key.PubKey.Verify(sig, data, nonce));
 			}
 
 
@@ -150,15 +144,6 @@ namespace NTumbleBit.Tests
 		}
 
 		[Fact]
-		public void CanRSASign()
-		{
-			RsaKey key = TestKeys.Default;
-			var data = GenerateEncryptableData(key._Key);
-			var sig = key.Sign(data);
-			Assert.True(key.PubKey.Verify(data, sig));
-		}
-
-		[Fact]
 		public void TestChacha()
 		{
 			byte[] msg = Encoding.UTF8.GetBytes("123123123123123123123123123123");
@@ -171,7 +156,7 @@ namespace NTumbleBit.Tests
 		}
 
 		FeeRate FeeRate = new FeeRate(Money.Satoshis(50), 1);
-	
+
 		[Fact]
 		public void TestPuzzlePromise()
 		{
@@ -243,11 +228,11 @@ namespace NTumbleBit.Tests
 				Assert.True(builder.Verify(tx));
 			}
 		}
-		
+
 		private ScriptCoin CreateEscrowCoin(PubKey escrow1, PubKey escrow2, PubKey redeemKey)
 		{
 			var redeem = EscrowScriptBuilder.CreateEscrow(new[] { escrow1, escrow2 }, redeemKey, new LockTime(0));
-			var scriptCoin = new Coin(new OutPoint(new uint256(RandomUtils.GetBytes(32)), 0), 
+			var scriptCoin = new Coin(new OutPoint(new uint256(RandomUtils.GetBytes(32)), 0),
 				new TxOut()
 				{
 					Value = Money.Coins(1.5m),
@@ -255,7 +240,7 @@ namespace NTumbleBit.Tests
 				}).ToScriptCoin(redeem);
 			return scriptCoin;
 		}
-		
+
 		[Fact]
 		public void TestPuzzleSolver()
 		{
@@ -309,7 +294,7 @@ namespace NTumbleBit.Tests
 
 			//Verify if the scripts are correctly created
 			var fullfill = server.FullfillOffer(clientOfferSig, new Key().ScriptPubKey, FeeRate);
-			
+
 			var offerTransaction = server.GetSignedOfferTransaction();
 			TransactionBuilder txBuilder = new TransactionBuilder();
 			txBuilder.AddCoins(client.EscrowedCoin);
@@ -335,7 +320,7 @@ namespace NTumbleBit.Tests
 			var solution = client.GetSolution();
 			RoundTrip(ref client, parameters);
 			Assert.True(solution == expectedSolution);
-		}		
+		}
 
 		private void RoundtripJson<T>(ref T result)
 		{
@@ -344,7 +329,7 @@ namespace NTumbleBit.Tests
 			var str = JsonConvert.SerializeObject(result, settings);
 			result = JsonConvert.DeserializeObject<T>(str, settings);
 		}
-		
+
 		private void RoundTrip<T>(ref T commitments)
 		{
 			RoundtripJson(ref commitments);

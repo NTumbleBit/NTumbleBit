@@ -191,7 +191,6 @@ namespace NTumbleBit.ClassicTumbler
 
 	public enum BobServerChannelNegotiationStates
 	{
-		WaitingVoucherRequest,
 		WaitingBobEscrowInformation,
 		WaitingSignedTransaction,
 		Completed
@@ -223,11 +222,6 @@ namespace NTumbleBit.ClassicTumbler
 			}			
 
 			public BobServerChannelNegotiationStates Status
-			{
-				get;
-				set;
-			}			
-			public uint160 VoucherHash
 			{
 				get;
 				set;
@@ -269,15 +263,6 @@ namespace NTumbleBit.ClassicTumbler
 		{
 			var state = Serializer.Clone(InternalState);
 			return state;
-		}
-		
-		public PuzzleValue GenerateUnsignedVoucher(ref PuzzleSolution solution)
-		{
-			AssertState(BobServerChannelNegotiationStates.WaitingVoucherRequest);
-			var puzzle = Parameters.VoucherKey.GeneratePuzzle(ref solution);
-			InternalState.VoucherHash = Hashes.Hash160(solution.ToBytes());
-			InternalState.Status = BobServerChannelNegotiationStates.WaitingBobEscrowInformation;
-			return puzzle.PuzzleValue;
 		}		
 
 		public void ReceiveBobEscrowInformation(OpenChannelRequest openChannelRequest)
@@ -285,15 +270,15 @@ namespace NTumbleBit.ClassicTumbler
 			if(openChannelRequest == null)
 				throw new ArgumentNullException("bobKey");
 			AssertState(BobServerChannelNegotiationStates.WaitingBobEscrowInformation);
-			if(openChannelRequest.SignedVoucher != InternalState.VoucherHash)
-				throw new PuzzleException("Incorrect voucher");
+
+			if(!VoucherKey.PubKey.Verify(openChannelRequest.Signature, NBitcoin.Utils.ToBytes((uint)openChannelRequest.CycleStart, true), openChannelRequest.Nonce))
+				throw new PuzzleException("Invalid voucher");
 
 			var escrow = new Key();
 			var redeem = new Key();
 			InternalState.EscrowKey = escrow;
 			InternalState.OtherEscrowKey = openChannelRequest.EscrowKey;
 			InternalState.RedeemKey = redeem;
-			InternalState.VoucherHash = null;
 			InternalState.Status = BobServerChannelNegotiationStates.WaitingSignedTransaction;
 		}
 
@@ -335,6 +320,22 @@ namespace NTumbleBit.ClassicTumbler
 		{
 			if(state != InternalState.Status)
 				throw new InvalidOperationException("Invalid state, actual " + InternalState.Status + " while expected is " + state);
+		}
+
+		public UnsignedVoucherInformation GenerateUnsignedVoucher()
+		{
+			PuzzleSolution solution = null;
+			var puzzle = Parameters.VoucherKey.GeneratePuzzle(ref solution);
+			uint160 nonce;
+			var cycle = GetCycle().Start;
+			var signature = VoucherKey.Sign(NBitcoin.Utils.ToBytes((uint)cycle, true), out nonce);
+			return new UnsignedVoucherInformation()
+			{
+				CycleStart = cycle,
+				Nonce = nonce,
+				Puzzle = puzzle.PuzzleValue,
+				EncryptedSignature = new XORKey(solution).XOR(signature)
+			};
 		}
 	}
 }

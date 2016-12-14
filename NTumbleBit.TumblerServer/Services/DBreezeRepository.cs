@@ -26,14 +26,18 @@ namespace NTumbleBit.Client.Tumbler.Services
 
 		Dictionary<string, DBreezeEngine> _EnginesByParitionKey = new Dictionary<string, DBreezeEngine>();
 
-		public void Add<T>(string partitionKey, string rowKey, T data)
+		public void UpdateOrInsert<T>(string partitionKey, string rowKey, T data, Func<T, T, T> update)
 		{
 			lock(_EnginesByParitionKey)
 			{
 				var engine = GetEngine(partitionKey);
 				using(var tx = engine.GetTransaction())
 				{
-					var bytes = Encoding.UTF8.GetBytes(Serializer.ToString(data));
+					var existing = Get<T>(rowKey, tx);
+					var newValue = data;
+					if(existing != null)
+						newValue = update(existing, newValue);
+					var bytes = Encoding.UTF8.GetBytes(Serializer.ToString(newValue));
 					tx.Insert(GetTableName<T>(), rowKey, bytes);
 					tx.Commit();
 				}
@@ -109,12 +113,17 @@ namespace NTumbleBit.Client.Tumbler.Services
 				var engine = GetEngine(partitionKey);
 				using(var tx = engine.GetTransaction())
 				{
-					var row = tx.Select<string, byte[]>(GetTableName<T>(), rowKey);
-					if(row == null || !row.Exists)
-						return default(T);
-					return Serializer.ToObject<T>(Encoding.UTF8.GetString(row.Value));
+					return Get<T>(rowKey, tx);
 				}
 			}
+		}
+
+		private T Get<T>(string rowKey, DBreeze.Transactions.Transaction tx)
+		{
+			var row = tx.Select<string, byte[]>(GetTableName<T>(), rowKey);
+			if(row == null || !row.Exists)
+				return default(T);
+			return Serializer.ToObject<T>(Encoding.UTF8.GetString(row.Value));
 		}
 
 		public void Delete<T>(string partitionKey, string rowKey)

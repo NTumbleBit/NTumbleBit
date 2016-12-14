@@ -93,7 +93,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 
 		public bool Broadcast(Transaction transaction)
 		{
-			Repository.Add<Transaction>("Broadcasts", transaction.GetHash().ToString(), transaction);
+			Repository.UpdateOrInsert<Transaction>("Broadcasts", transaction.GetHash().ToString(), transaction, (o, n) => n);
 			return TryBroadcastCore(transaction);
 		}
 	}

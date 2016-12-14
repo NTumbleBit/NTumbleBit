@@ -60,14 +60,14 @@ namespace NTumbleBit.Client.Tumbler
 			return SendAsync<T>(HttpMethod.Get, null, relativePath, parameters);
 		}
 
-		public AskVoucherResponse AskUnsignedVoucher()
+		public UnsignedVoucherInformation AskUnsignedVoucher()
 		{
 			return AskUnsignedVoucherAsync().GetAwaiter().GetResult();
 		}
 
-		public Task<AskVoucherResponse> AskUnsignedVoucherAsync()
+		public Task<UnsignedVoucherInformation> AskUnsignedVoucherAsync()
 		{
-			return GetAsync<AskVoucherResponse>("api/v1/tumblers/0/vouchers/");
+			return GetAsync<UnsignedVoucherInformation>("api/v1/tumblers/0/vouchers/");
 		}
 
 
