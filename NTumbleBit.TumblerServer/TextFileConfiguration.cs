@@ -36,13 +36,13 @@ namespace NTumbleBit.TumblerServer
 			return result;
 		}
 
-		public static String CreateDefaultConfiguration(string cookiePath, Network network)
+		public static String CreateDefaultConfiguration(Network network)
 		{
 			StringBuilder builder = new StringBuilder();
 			builder.AppendLine("#rpc.url=http://localhost:"+network.RPCPort+ "/");
 			builder.AppendLine("#rpc.user=bitcoinuser");
 			builder.AppendLine("#rpc.password=bitcoinpassword");
-			builder.AppendLine("#rpc.cookiefile="+ cookiePath);
+			builder.AppendLine("#rpc.cookiefile=yourbitcoinfolder/.cookie");
 			return builder.ToString();
 		}
     }

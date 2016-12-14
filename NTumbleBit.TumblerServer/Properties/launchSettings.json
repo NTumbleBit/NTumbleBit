@@ -18,6 +18,7 @@
     },
     "NTumbleBit.TumblerServer": {
       "commandName": "Project",
+      "commandLineArgs": "-testnet",
       "launchBrowser": true,
       "launchUrl": "http://localhost:5000",
       "environmentVariables": {

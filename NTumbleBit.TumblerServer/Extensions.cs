@@ -146,7 +146,7 @@ namespace NTumbleBit.TumblerServer
 							conf.RPCClient = new RPCClient(new System.Net.NetworkCredential(usr, pass), new Uri(url), conf.Network);
 						if(conf.RPCClient == null)
 						{
-							var cookieFile = configFile.TryGet("rpc.cookiefile") ?? GetCookiePath(conf.Network);
+							var cookieFile = configFile.TryGet("rpc.cookiefile");
 							if(url != null && cookieFile != null)
 							{
 								try
@@ -159,11 +159,20 @@ namespace NTumbleBit.TumblerServer
 									logger.LogWarning("RPC Cookie file not found at " + cookieFile);
 								}
 							}
+
 							if(conf.RPCClient == null)
 							{
-								var error = "RPC connection settings not configured at " + conf.ConfigurationFile;
-								logger.LogError(error);
-								throw new InvalidOperationException(error);
+								try
+								{
+									conf.RPCClient = new RPCClient(conf.Network);
+								}
+								catch { }
+								if(conf.RPCClient == null)
+								{
+									var error = "RPC connection settings not configured at " + conf.ConfigurationFile;
+									logger.LogError(error);
+									throw new InvalidOperationException(error);
+								}
 							}
 						}
 					}
@@ -207,37 +216,12 @@ namespace NTumbleBit.TumblerServer
 			{
 				logger.LogInformation("Creating configuration file");
 
-				var data = TextFileConfiguration.CreateDefaultConfiguration(GetCookiePath(network), network);
+				var data = TextFileConfiguration.CreateDefaultConfiguration(network);
 				File.WriteAllText(config, data);
 			}
 			return config;
 		}
 
-		private static string GetCookiePath(Network network)
-		{
-			var home = Environment.GetEnvironmentVariable("HOME");
-			var localAppData = Environment.GetEnvironmentVariable("APPDATA");
-			string bitcoinFolder = null;
-			if(string.IsNullOrEmpty(home))
-				bitcoinFolder = Path.Combine(localAppData, "Bitcoin");
-			else
-				bitcoinFolder = Path.Combine(home, ".bitcoin");
-
-			if(network == Network.TestNet)
-				bitcoinFolder = Path.Combine(bitcoinFolder, "testnet3");
-			if(network == Network.RegTest)
-				bitcoinFolder = Path.Combine(bitcoinFolder, "regtest");
-			return Path.Combine(bitcoinFolder, ".cookie");
-		}
-
-		static string GetAppFolder()
-		{
-			var home = Environment.GetEnvironmentVariable("HOME");
-			var localAppData = Environment.GetEnvironmentVariable("APPDATA");
-			if(string.IsNullOrEmpty(home))
-				return localAppData;
-			return home;
-		}
 		private static string GetDefaultDirectory(ILogger logger, Network network)
 		{
 			string directory = null;
