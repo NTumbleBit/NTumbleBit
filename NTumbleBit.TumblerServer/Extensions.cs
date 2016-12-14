@@ -139,16 +139,32 @@ namespace NTumbleBit.TumblerServer
 
 					if(conf.RPCClient == null)
 					{
-						var url = configFile.TryGet("rpc.url");
+						var url = configFile.TryGet("rpc.url") ?? "http://localhost:" + conf.Network.RPCPort + "/";
 						var usr = configFile.TryGet("rpc.user");
 						var pass = configFile.TryGet("rpc.password");
 						if(url != null && usr != null && pass != null)
 							conf.RPCClient = new RPCClient(new System.Net.NetworkCredential(usr, pass), new Uri(url), conf.Network);
 						if(conf.RPCClient == null)
 						{
-							var error = "RPC connection settings not configured at " + conf.ConfigurationFile;
-							logger.LogError(error);
-							throw new InvalidOperationException(error);
+							var cookieFile = configFile.TryGet("rpc.cookiefile") ?? GetCookiePath(conf.Network);
+							if(url != null && cookieFile != null)
+							{
+								try
+								{
+
+									conf.RPCClient = new RPCClient(File.ReadAllText(cookieFile), new Uri(url), conf.Network);
+								}
+								catch(IOException)
+								{
+									logger.LogWarning("RPC Cookie file not found at " + cookieFile);
+								}
+							}
+							if(conf.RPCClient == null)
+							{
+								var error = "RPC connection settings not configured at " + conf.ConfigurationFile;
+								logger.LogError(error);
+								throw new InvalidOperationException(error);
+							}
 						}
 					}
 					logger.LogInformation("Testing RPC connection to " + conf.RPCClient.Address.AbsoluteUri);
@@ -190,12 +206,38 @@ namespace NTumbleBit.TumblerServer
 			if(!File.Exists(config))
 			{
 				logger.LogInformation("Creating configuration file");
-				var data = TextFileConfiguration.CreateDefaultConfiguration(network);
+
+				var data = TextFileConfiguration.CreateDefaultConfiguration(GetCookiePath(network), network);
 				File.WriteAllText(config, data);
 			}
 			return config;
 		}
 
+		private static string GetCookiePath(Network network)
+		{
+			var home = Environment.GetEnvironmentVariable("HOME");
+			var localAppData = Environment.GetEnvironmentVariable("APPDATA");
+			string bitcoinFolder = null;
+			if(string.IsNullOrEmpty(home))
+				bitcoinFolder = Path.Combine(localAppData, "Bitcoin");
+			else
+				bitcoinFolder = Path.Combine(home, ".bitcoin");
+
+			if(network == Network.TestNet)
+				bitcoinFolder = Path.Combine(bitcoinFolder, "testnet3");
+			if(network == Network.RegTest)
+				bitcoinFolder = Path.Combine(bitcoinFolder, "regtest");
+			return Path.Combine(bitcoinFolder, ".cookie");
+		}
+
+		static string GetAppFolder()
+		{
+			var home = Environment.GetEnvironmentVariable("HOME");
+			var localAppData = Environment.GetEnvironmentVariable("APPDATA");
+			if(string.IsNullOrEmpty(home))
+				return localAppData;
+			return home;
+		}
 		private static string GetDefaultDirectory(ILogger logger, Network network)
 		{
 			string directory = null;
@@ -203,18 +245,20 @@ namespace NTumbleBit.TumblerServer
 			{
 				logger.LogInformation("Using HOME environment variable for initializing application data");
 				directory = home;
+				directory = Path.Combine(directory, ".ntumblebitserver");
 			}			else
-			{				var localAppData = Environment.GetEnvironmentVariable("LOCALAPPDATA");
+			{				var localAppData = Environment.GetEnvironmentVariable("APPDATA");
 				if(!string.IsNullOrEmpty(localAppData))
 				{
-					logger.LogInformation("Using LOCALAPPDATA environment variable for initializing application data");
+					logger.LogInformation("Using APPDATA environment variable for initializing application data");
 					directory = localAppData;
+					directory = Path.Combine(directory, "NTumbleBitServer");
 				}
 				else
 				{
 					throw new DirectoryNotFoundException("Could not find suitable datadir");
 				}
-			}			directory = Path.Combine(directory, ".ntumblebitserver");
+			}
 			if(!Directory.Exists(directory))
 			{
 				Directory.CreateDirectory(directory);

@@ -1,6 +1,7 @@
 ﻿using NBitcoin;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -35,12 +36,13 @@ namespace NTumbleBit.TumblerServer
 			return result;
 		}
 
-		public static String CreateDefaultConfiguration(Network network)
+		public static String CreateDefaultConfiguration(string cookiePath, Network network)
 		{
 			StringBuilder builder = new StringBuilder();
 			builder.AppendLine("#rpc.url=http://localhost:"+network.RPCPort+ "/");
 			builder.AppendLine("#rpc.user=bitcoinuser");
 			builder.AppendLine("#rpc.password=bitcoinpassword");
+			builder.AppendLine("#rpc.cookiefile="+ cookiePath);
 			return builder.ToString();
 		}
     }
