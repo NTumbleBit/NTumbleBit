@@ -83,7 +83,9 @@ namespace NTumbleBit.TumblerServer
 					var conf = configuration ?? new TumblerConfiguration();
 					var factory = provider.GetRequiredService<ILoggerFactory>();
 					var logger = factory.CreateLogger<TumblerConfiguration>();
-					conf.DataDirectory = conf.DataDirectory ?? GetDefaultDirectory(logger);
+					conf.Network = conf.Network ?? Network.Main;
+					conf.DataDirectory = conf.DataDirectory ?? GetDefaultDirectory(logger, conf.Network);
+					conf.ConfigurationFile = conf.ConfigurationFile ?? GetDefaultConfigurationFile(logger, conf.DataDirectory, conf.Network);
 
 					var rsaFile = Path.Combine(conf.DataDirectory, "Tumbler.pem");
 
@@ -123,9 +125,26 @@ namespace NTumbleBit.TumblerServer
 					Debug.Assert(conf.TumblerKey != null);
 					Debug.Assert(conf.VoucherKey != null);
 
+					Dictionary<string, string> configFile = null;
+
+					try
+					{
+						configFile = TextFileConfiguration.Parse(File.ReadAllText(conf.ConfigurationFile));
+					}
+					catch(FormatException ex)
+					{
+						logger.LogError("Configuration file incorrectly formatted: " + ex.Message);
+						throw;
+					}
+
 					if(conf.RPCClient == null)
 					{
-						var error = "RPC connection settings not configured";
+						var url = configFile.TryGet("rpc.url");
+						var usr = configFile.TryGet("rpc.user");
+						var pass = configFile.TryGet("rpc.password");
+						if(url != null && usr != null && pass != null)
+							conf.RPCClient = new RPCClient(new System.Net.NetworkCredential(usr, pass), new Uri(url), conf.Network);
+						var error = "RPC connection settings not configured at " + conf.ConfigurationFile;
 						logger.LogError(error);
 						throw new InvalidOperationException(error);
 					}
@@ -148,13 +167,33 @@ namespace NTumbleBit.TumblerServer
 						throw;
 					}
 					logger.LogInformation("RPC connection successfull");
+
+					if(conf.RPCClient.GetBlockHash(0) != conf.Network.GenesisHash)
+					{
+						var error = "The RPC server is not using the chain " + conf.Network.Name;
+						logger.LogError(error);
+						throw new InvalidOperationException(error);
+					}
 					return configuration;
 				});
 			});
 			return builder;
 		}
 
-		private static string GetDefaultDirectory(ILogger logger)
+		private static string GetDefaultConfigurationFile(ILogger<TumblerConfiguration> logger, string dataDirectory, Network network)
+		{
+			var config = Path.Combine(dataDirectory, "server.config");
+			logger.LogInformation("Configuration file set to " + config);
+			if(!File.Exists(config))
+			{
+				logger.LogInformation("Creating configuration file");
+				var data = TextFileConfiguration.CreateDefaultConfiguration(network);
+				File.WriteAllText(config, data);
+			}
+			return config;
+		}
+
+		private static string GetDefaultDirectory(ILogger logger, Network network)
 		{
 			string directory = null;
 			var home = Environment.GetEnvironmentVariable("HOME");			if(!string.IsNullOrEmpty(home))
@@ -173,6 +212,11 @@ namespace NTumbleBit.TumblerServer
 					throw new DirectoryNotFoundException("Could not find suitable datadir");
 				}
 			}			directory = Path.Combine(directory, ".ntumblebitserver");
+			if(!Directory.Exists(directory))
+			{
+				Directory.CreateDirectory(directory);
+			}
+			directory = Path.Combine(directory, network.Name);
 			logger.LogInformation("Data directory set to " + directory);
 			if(!Directory.Exists(directory))
 			{
