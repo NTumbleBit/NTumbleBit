@@ -50,47 +50,56 @@ namespace NTumbleBit.Client.Tumbler.Services
 			_Stop = cancellation;
 			new Thread(() =>
 			{
-				try
+				while(true)
 				{
-					int lastHeight = 0;
-					while(true)
-					{
-						_Stop.WaitHandle.WaitOne(5000);
-						_Stop.ThrowIfCancellationRequested();
 
-						var height = BlockExplorerService.GetCurrentHeight();
-						if(height == lastHeight)
-							continue;
-						lastHeight = height;
-						try
+					try
+					{
+						int lastHeight = 0;
+						while(true)
 						{
-							var transactions = BroadcasterService.TryBroadcast();
-							foreach(var tx in transactions)
+							_Stop.WaitHandle.WaitOne(5000);
+							_Stop.ThrowIfCancellationRequested();
+
+							var height = BlockExplorerService.GetCurrentHeight();
+							if(height == lastHeight)
+								continue;
+							lastHeight = height;
+							try
 							{
-								Logger.LogInformation("Broadcaster broadcasted  " + tx.GetHash());
+								var transactions = BroadcasterService.TryBroadcast();
+								foreach(var tx in transactions)
+								{
+									Logger.LogInformation("Broadcaster broadcasted  " + tx.GetHash());
+								}
 							}
-						}
-						catch(Exception ex)
-						{
-							Logger.LogError("Error while running Broadcaster: " + ex.Message);
-							Logger.LogDebug(ex.StackTrace);
-						}
-						try
-						{
-							var transactions = TrustedBroadcasterService.TryBroadcast();
-							foreach(var tx in transactions)
+							catch(Exception ex)
 							{
-								Logger.LogInformation("TrustedBroadcaster broadcasted " + tx.GetHash());
+								Logger.LogError("Error while running Broadcaster: " + ex.Message);
+								Logger.LogDebug(ex.StackTrace);
 							}
-						}
-						catch(Exception ex)
-						{
-							Logger.LogError("Error while running TrustedBroadcaster: " + ex.Message);
-							Logger.LogDebug(ex.StackTrace);
+							try
+							{
+								var transactions = TrustedBroadcasterService.TryBroadcast();
+								foreach(var tx in transactions)
+								{
+									Logger.LogInformation("TrustedBroadcaster broadcasted " + tx.GetHash());
+								}
+							}
+							catch(Exception ex)
+							{
+								Logger.LogError("Error while running TrustedBroadcaster: " + ex.Message);
+								Logger.LogDebug(ex.StackTrace);
+							}
 						}
 					}
+					catch(OperationCanceledException) { return; }
+					catch(Exception ex)
+					{
+						Logger.LogError("Uncatched exception in BroadcasterJob: " + ex.Message);
+						Logger.LogDebug(ex.StackTrace);
+					}
 				}
-				catch(OperationCanceledException) { }
 			}).Start();
 		}
 	}

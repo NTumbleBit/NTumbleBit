@@ -46,12 +46,12 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				return new TransactionInformation[0];
 
 			List<TransactionInformation> results = new List<TransactionInformation>();
-			int count = 10;
+			int count = 100;
 			int skip = 0;
 			int highestConfirmation = 0;
 			while(true)
 			{
-				var result = RPCClient.SendCommandNoThrows("listtransactions", "", count, skip, true);
+				var result = RPCClient.SendCommandNoThrows("listtransactions", "*", count, skip, true);
 				skip += count;
 				if(result.Error != null)
 					return null;
@@ -64,27 +64,13 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 					{
 						highestConfirmation = Math.Max(highestConfirmation, (int)obj["confirmations"]);
 					}
-
-					var tx = GetTransaction(txId);
-					if(tx == null || (withProof && tx.Confirmations == 0))
-						continue;
+					
 					if((string)obj["address"] == address.ToString())
 					{
+						var tx = GetTransaction(txId);
+						if(tx == null || (withProof && tx.Confirmations == 0))
+							continue;
 						results.Add(tx);
-					}
-					else
-					{
-						foreach(var input in tx.Transaction.Inputs)
-						{
-							var p2shSig = PayToScriptHashTemplate.Instance.ExtractScriptSigParameters(input.ScriptSig);
-							if(p2shSig != null)
-							{
-								if(p2shSig.RedeemScript.Hash.ScriptPubKey == address.ScriptPubKey)
-								{
-									results.Add(tx);
-								}
-							}
-						}
 					}
 				}
 				if(transactions.Count < count || highestConfirmation >= 1000)
@@ -136,11 +122,11 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			catch(RPCException) { return null; }
 		}
 
-		public void Track(Script scriptPubkey)
+		public void Track(string label, Script scriptPubkey)
 		{
 			var address = scriptPubkey.GetDestinationAddress(RPCClient.Network);
 			if(address != null)
-				RPCClient.ImportAddress(address, "", false);
+				RPCClient.ImportAddress(address, label, false);
 		}
 
 		public int GetBlockConfirmations(uint256 blockId)

@@ -20,7 +20,11 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			{
 				get; set;
 			}
-
+			public string Label
+			{
+				get;
+				set;
+			}
 			public TrustedBroadcastRequest Request
 			{
 				get; set;
@@ -51,7 +55,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			}
 		}
 
-		public void Broadcast(TrustedBroadcastRequest broadcast)
+		public void Broadcast(string label, TrustedBroadcastRequest broadcast)
 		{
 			if(broadcast == null)
 				throw new ArgumentNullException("broadcast");
@@ -62,13 +66,14 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 
 			var height = RPCClient.GetBlockCount();
 			var record = new Record();
+			record.Label = label;
 			//3 days expiration
 			record.Expiration = height + (int)(TimeSpan.FromDays(3).Ticks / Network.Main.Consensus.PowTargetSpacing.Ticks);
 			record.Request = broadcast;
 			AddBroadcast(record);
 			if(height < broadcast.BroadcastAt.Height)
 				return;
-			_Broadcaster.Broadcast(broadcast.Transaction);
+			_Broadcaster.Broadcast(record.Label, broadcast.Transaction);
 		}
 
 		private void AddBroadcast(Record broadcast)
@@ -108,7 +113,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 						if(coin.ScriptPubKey == broadcast.Request.PreviousScriptPubKey)
 						{
 							var transaction = broadcast.Request.ReSign(coin);
-							if(_Broadcaster.Broadcast(transaction))
+							if(_Broadcaster.Broadcast(broadcast.Label, transaction))
 								broadcasted.Add(transaction);
 						}
 					}

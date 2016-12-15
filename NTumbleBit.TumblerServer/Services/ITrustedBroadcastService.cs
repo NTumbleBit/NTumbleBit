@@ -12,7 +12,7 @@ namespace NTumbleBit.Client.Tumbler.Services
 {	
     public interface ITrustedBroadcastService
     {
-		void Broadcast(TrustedBroadcastRequest broadcast);
+		void Broadcast(string label, TrustedBroadcastRequest broadcast);
 		Transaction[] TryBroadcast();
 	}
 }

@@ -189,9 +189,11 @@ namespace NTumbleBit.Client.Tumbler
 						}
 						SolverClientSession = ClientChannelNegotiation.SetClientSignedTransaction(clientEscrowTx);
 						var redeem = SolverClientSession.CreateRedeemTransaction(feeRate, Services.WalletService.GenerateAddress().ScriptPubKey);
-						Services.BlockExplorerService.Track(SolverClientSession.EscrowedCoin.ScriptPubKey);
-						Services.BroadcastService.Broadcast(clientEscrowTx);
-						Services.TrustedBroadcastService.Broadcast(redeem);
+
+						var escrowLabel = $"Cycle {cycle.Start} Client Escrow";
+						Services.BlockExplorerService.Track(escrowLabel, SolverClientSession.EscrowedCoin.ScriptPubKey);
+						Services.BroadcastService.Broadcast(escrowLabel, clientEscrowTx);
+						Services.TrustedBroadcastService.Broadcast($"Cycle {cycle.Start} Client Redeem (locked until {redeem.Transaction.LockTime})", redeem);
 						logger.LogInformation("Client escrow broadcasted " + clientEscrowTx.GetHash());
 						logger.LogInformation("Client escrow redeem " + redeem.Transaction.GetHash() + " will be broadcast later if tumbler unresponsive");
 					}
@@ -218,7 +220,8 @@ namespace NTumbleBit.Client.Tumbler
 						var tumblerInformation = BobClient.OpenChannel(bobEscrowInformation);
 						PromiseClientSession = ClientChannelNegotiation.ReceiveTumblerEscrowedCoin(tumblerInformation);
 						//Tell to the block explorer we need to track that address (for checking if it is confirmed in payment phase)
-						Services.BlockExplorerService.Track(PromiseClientSession.EscrowedCoin.ScriptPubKey);
+						var escrowTumblerLabel = $"Cycle {cycle.Start} Tumbler Escrow";
+						Services.BlockExplorerService.Track(escrowTumblerLabel, PromiseClientSession.EscrowedCoin.ScriptPubKey);
 						//Channel is done, now need to run the promise protocol to get valid puzzle
 						var cashoutDestination = DestinationWallet.GetNewDestination();
 						feeRate = GetFeeRate();
@@ -238,7 +241,7 @@ namespace NTumbleBit.Client.Tumbler
 						//Ensure the tumbler coin is confirmed before paying anything
 						if(tumblerTx == null || tumblerTx.Confirmations < cycle.SafetyPeriodDuration)
 						{
-							if(tumblerTx == null)
+							if(tumblerTx != null)
 								logger.LogInformation("Tumbler escrow " + tumblerTx.Transaction.GetHash() + " expecting " + cycle.SafetyPeriodDuration + " current is " + tumblerTx.Confirmations);
 							else
 								logger.LogInformation("Tumbler escrow not found");
@@ -257,8 +260,9 @@ namespace NTumbleBit.Client.Tumbler
 							var offerSignature = SolverClientSession.SignOffer(offerInformation);
 							var offerRedeem = SolverClientSession.CreateOfferRedeemTransaction(feeRate, Services.WalletService.GenerateAddress().ScriptPubKey);
 							//May need to find solution in the fullfillment transaction
-							Services.BlockExplorerService.Track(SolverClientSession.GetOfferScriptPubKey());
-							Services.TrustedBroadcastService.Broadcast(offerRedeem);
+							var offerLabel = $"Cycle {cycle.Start} Client Offer Redeem (locked until {offerRedeem.Transaction.LockTime})";
+							Services.BlockExplorerService.Track(offerLabel, SolverClientSession.GetOfferScriptPubKey());
+							Services.TrustedBroadcastService.Broadcast(offerLabel, offerRedeem);
 							logger.LogInformation("Offer redeem " + offerRedeem.Transaction.GetHash() + " locked until " + offerRedeem.Transaction.LockTime.Height);
 							try
 							{
@@ -289,7 +293,7 @@ namespace NTumbleBit.Client.Tumbler
 						{
 							var tumblingSolution = SolverClientSession.GetSolution();
 							var transaction = PromiseClientSession.GetSignedTransaction(tumblingSolution);
-							Services.BroadcastService.Broadcast(transaction);
+							Services.BroadcastService.Broadcast($"Cycle {cycle.Start} Client Cashout", transaction);
 							logger.LogInformation("Client Cashout completed " + transaction.GetHash());
 						}
 					}
