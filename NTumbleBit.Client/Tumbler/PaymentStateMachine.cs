@@ -182,6 +182,11 @@ namespace NTumbleBit.Client.Tumbler
 						var txout = ClientChannelNegotiation.BuildClientEscrowTxOut();
 						feeRate = GetFeeRate();
 						var clientEscrowTx = Services.WalletService.FundTransaction(txout, feeRate);
+						if(clientEscrowTx == null)
+						{
+							logger.LogInformation("Not enough funds in the wallet to tumble");
+							break;
+						}
 						SolverClientSession = ClientChannelNegotiation.SetClientSignedTransaction(clientEscrowTx);
 						var redeem = SolverClientSession.CreateRedeemTransaction(feeRate, Services.WalletService.GenerateAddress().ScriptPubKey);
 						Services.BlockExplorerService.Track(SolverClientSession.EscrowedCoin.ScriptPubKey);
