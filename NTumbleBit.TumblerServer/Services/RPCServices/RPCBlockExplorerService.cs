@@ -65,8 +65,8 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 						highestConfirmation = Math.Max(highestConfirmation, (int)obj["confirmations"]);
 					}
 
-					var tx = GetTransaction(txId, withProof);
-					if(tx == null)
+					var tx = GetTransaction(txId);
+					if(tx == null || (withProof && tx.Confirmations == 0))
 						continue;
 					if((string)obj["address"] == address.ToString())
 					{
@@ -90,19 +90,36 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				if(transactions.Count < count || highestConfirmation >= 1000)
 					break;
 			}
+
+			if(withProof)
+			{
+				foreach(var tx in results.ToList())
+				{
+					MerkleBlock proof = null;
+					var result = RPCClient.SendCommandNoThrows("gettxoutproof", new JArray(tx.Transaction.GetHash().ToString()));
+					if(result == null || result.Error != null)
+					{
+						results.Remove(tx);
+						continue;
+					}
+					proof = new MerkleBlock();
+					proof.ReadWrite(Encoders.Hex.DecodeData(result.ResultString));
+					tx.MerkleProof = proof;
+				}
+			}
 			return results.ToArray();
 		}
 
-		public TransactionInformation GetTransaction(uint256 txId, bool withProof)
+		public TransactionInformation GetTransaction(uint256 txId)
 		{
 			try
 			{
-				//check in the txindex
-				var result = RPCClient.SendCommandNoThrows("getrawtransaction", txId.ToString(), 1);
+				//check in the wallet tx
+				var result = RPCClient.SendCommandNoThrows("gettransaction", txId.ToString(), true);
 				if(result == null || result.Error != null)
 				{
-					//check in the wallet tx
-					result = RPCClient.SendCommandNoThrows("gettransaction", txId.ToString(), true);
+					//check in the txindex
+					result = RPCClient.SendCommandNoThrows("getrawtransaction", txId.ToString(), 1);
 					if(result == null || result.Error != null)
 						return null;
 				}
@@ -110,22 +127,10 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				var confirmations = result.Result["confirmations"];
 				var confCount = confirmations == null ? 0 : Math.Max(0, (int)confirmations);
 
-				MerkleBlock proof = null;
-				if(withProof)
-				{
-					if(confCount == 0)
-						return null;
-					result = RPCClient.SendCommandNoThrows("gettxoutproof", new JArray(txId.ToString()));
-					if(result == null || result.Error != null)
-						return null;
-					proof = new MerkleBlock();
-					proof.ReadWrite(Encoders.Hex.DecodeData(result.ResultString));
-				}
 				return new TransactionInformation()
 				{
 					Confirmations = confCount,
-					Transaction = tx,
-					MerkleProof = proof
+					Transaction = tx
 				};
 			}
 			catch(RPCException) { return null; }

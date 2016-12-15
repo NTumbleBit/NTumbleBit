@@ -193,13 +193,13 @@ namespace NTumbleBit.Client.Tumbler
 						Services.BroadcastService.Broadcast(clientEscrowTx);
 						Services.TrustedBroadcastService.Broadcast(redeem);
 						logger.LogInformation("Client escrow broadcasted " + clientEscrowTx.GetHash());
+						logger.LogInformation("Client escrow redeem " + redeem.Transaction.GetHash() + " will be broadcast later if tumbler unresponsive");
 					}
 					else if(ClientChannelNegotiation.Status == TumblerClientSessionStates.WaitingSolvedVoucher)
 					{
 						TransactionInformation clientTx = GetTransactionInformation(SolverClientSession.EscrowedCoin, true);
-						if(clientTx.Confirmations >= cycle.SafetyPeriodDuration)
+						if(clientTx != null && clientTx.Confirmations >= cycle.SafetyPeriodDuration)
 						{
-
 							var voucher = AliceClient.SignVoucher(new Models.SignVoucherRequest()
 							{
 								MerkleProof = clientTx.MerkleProof,

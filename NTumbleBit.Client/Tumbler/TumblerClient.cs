@@ -124,22 +124,11 @@ namespace NTumbleBit.Client.Tumbler
 				return default(T);
 			if(!result.IsSuccessStatusCode)
 			{
-				//string error = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
-				//if(!string.IsNullOrEmpty(error))
-				//{
-				//	try
-				//	{
-				//		var errorObject = Serializer.ToObject<QBitNinjaError>(error, Network);
-				//		if(errorObject.StatusCode != 0)
-				//			throw new QBitNinjaException(errorObject);
-				//	}
-				//	catch(JsonSerializationException)
-				//	{
-				//	}
-				//	catch(JsonReaderException)
-				//	{
-				//	}
-				//}
+				string error = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
+				if(!string.IsNullOrEmpty(error))
+				{
+					throw new HttpRequestException(result.StatusCode + ": " + error);
+				}
 			}
 			result.EnsureSuccessStatusCode();
 			if(typeof(T) == typeof(byte[]))

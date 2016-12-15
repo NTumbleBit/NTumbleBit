@@ -25,79 +25,79 @@ namespace NTumbleBit.CLI
 				CommandLineParser parser = new CommandLineParser(args);
 				if(parser.GetBool("-testnet"))
 					network = Network.TestNet;
-
+				var onlymonitor = parser.GetBool("-onlymonitor");
 				var dataDir = DefaultDataDirectory.GetDefaultDirectory("NTumbleBit", logger, network);
 				var configurationFile = GetDefaultConfigurationFile(logger, dataDir, network);
-
 				var rpc = RPCConfiguration.ConfigureRPCClient(logger, configurationFile, network);
-
-				var config = TextFileConfiguration.Parse(File.ReadAllText(configurationFile));
-				var server = config.TryGet("tumbler.server");
-				if(server == null)
-				{
-					logger.LogError("tumbler.server not configured");
-					throw new ConfigException();
-				}
-				var client = new NTumbleBit.Client.Tumbler.TumblerClient(network, new Uri(server));
 				var dbreeze = new DBreezeRepository(Path.Combine(dataDir, "db"));
-
-				logger.LogInformation("Downloading tumbler information");
-				var parameters = client.GetTumblerParameters();
-				logger.LogInformation("Tumbler Server Connection successfull");
-				var existingConfig = dbreeze.Get<ClassicTumbler.ClassicTumblerParameters>("Configuration", client.Address.AbsoluteUri);
-
-				if(existingConfig != null)
-				{
-					if(Serializer.ToString(existingConfig) != Serializer.ToString(parameters))
-					{
-						logger.LogError("The configuration file of the tumbler changed since last connection, it should never happen");
-						throw new ConfigException();
-					}
-				}
-				else
-				{
-					dbreeze.UpdateOrInsert("Configuration", client.Address.AbsoluteUri, parameters, (o, n) => n);
-				}
-
-				if(parameters.Network != rpc.Network)
-				{
-					throw new ConfigException("The tumbler server run on a different network than the local rpc server");
-				}
-
-				BitcoinExtPubKey pubKey = null;
-				KeyPath keypath = new KeyPath("0");
-				try
-				{
-					pubKey = new BitcoinExtPubKey(config.TryGet("outputwallet.extpubkey"), rpc.Network);
-				}
-				catch
-				{
-					throw new ConfigException("outputwallet.extpubkey is not configured correctly");
-				}
-
-				string keyPathString = config.TryGet("outputwallet.keypath");
-				if(keyPathString != null)
-				{
-					try
-					{
-						keypath = new KeyPath(keyPathString);
-					}
-					catch
-					{
-						throw new ConfigException("outputwallet.keypath is not configured correctly");
-					}
-				}
+				var config = TextFileConfiguration.Parse(File.ReadAllText(configurationFile));
 
 
 				var services = ExternalServices.CreateFromRPCClient(rpc, dbreeze);
-				var destinationWallet = new ClientDestinationWallet("", pubKey, keypath, dbreeze);
-				var stateMachine = new StateMachinesExecutor(parameters, client, destinationWallet, services, dbreeze, logger);
-
-				var broadcaster = new BroadcasterJob(services, logger);
 				CancellationTokenSource source = new CancellationTokenSource();
-				stateMachine.Start(source.Token);
+				var broadcaster = new BroadcasterJob(services, logger);
 				broadcaster.Start(source.Token);
-				logger.LogInformation("State machines started");
+				logger.LogInformation("Monitor started");
+
+				if(!onlymonitor)
+				{
+					var server = config.TryGet("tumbler.server");
+					if(server == null)
+					{
+						logger.LogError("tumbler.server not configured");
+						throw new ConfigException();
+					}
+					var client = new NTumbleBit.Client.Tumbler.TumblerClient(network, new Uri(server));
+					logger.LogInformation("Downloading tumbler information");
+					var parameters = client.GetTumblerParameters();
+					logger.LogInformation("Tumbler Server Connection successfull");
+					var existingConfig = dbreeze.Get<ClassicTumbler.ClassicTumblerParameters>("Configuration", client.Address.AbsoluteUri);
+					if(existingConfig != null)
+					{
+						if(Serializer.ToString(existingConfig) != Serializer.ToString(parameters))
+						{
+							logger.LogError("The configuration file of the tumbler changed since last connection, it should never happen");
+							throw new ConfigException();
+						}
+					}
+					else
+					{
+						dbreeze.UpdateOrInsert("Configuration", client.Address.AbsoluteUri, parameters, (o, n) => n);
+					}
+
+					if(parameters.Network != rpc.Network)
+					{
+						throw new ConfigException("The tumbler server run on a different network than the local rpc server");
+					}
+
+					BitcoinExtPubKey pubKey = null;
+					KeyPath keypath = new KeyPath("0");
+					try
+					{
+						pubKey = new BitcoinExtPubKey(config.TryGet("outputwallet.extpubkey"), rpc.Network);
+					}
+					catch
+					{
+						throw new ConfigException("outputwallet.extpubkey is not configured correctly");
+					}
+
+					string keyPathString = config.TryGet("outputwallet.keypath");
+					if(keyPathString != null)
+					{
+						try
+						{
+							keypath = new KeyPath(keyPathString);
+						}
+						catch
+						{
+							throw new ConfigException("outputwallet.keypath is not configured correctly");
+						}
+					}
+					var destinationWallet = new ClientDestinationWallet("", pubKey, keypath, dbreeze);
+					var stateMachine = new StateMachinesExecutor(parameters, client, destinationWallet, services, dbreeze, logger);
+					stateMachine.Start(source.Token);
+					logger.LogInformation("State machines started");
+				}
 				logger.LogInformation("Press enter to stop");
 				Console.ReadLine();
 				source.Cancel();
