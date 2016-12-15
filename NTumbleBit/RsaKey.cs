@@ -4,6 +4,7 @@ using NTumbleBit.BouncyCastle.Asn1;
 using NTumbleBit.BouncyCastle.Asn1.Pkcs;
 using NTumbleBit.BouncyCastle.Asn1.X509;
 using NTumbleBit.BouncyCastle.Crypto;
+using NTumbleBit.BouncyCastle.Crypto.Digests;
 using NTumbleBit.BouncyCastle.Crypto.Engines;
 using NTumbleBit.BouncyCastle.Crypto.Generators;
 using NTumbleBit.BouncyCastle.Crypto.Parameters;
@@ -69,10 +70,14 @@ namespace NTumbleBit
 		{
 			while(true)
 			{
+				byte[] output = new byte[256];
 				nonce = new uint160(RandomUtils.GetBytes(20));
+				Sha512Digest sha512 = new Sha512Digest();
 				var msg = Utils.Combine(nonce.ToBytes(), data);
-				var hash = PromiseUtils.SHA512(msg, 0, msg.Length);
-				var input = new BigInteger(1, hash);
+				var generator = new Mgf1BytesGenerator(sha512);
+				generator.Init(new MgfParameters(msg));
+				generator.GenerateBytes(output, 0, output.Length);
+				var input = new BigInteger(1, output);
 				if(input.CompareTo(_Key.Modulus) >= 0)
 					continue;
 				var engine = new RsaCoreEngine();

@@ -14,7 +14,7 @@ namespace NTumbleBit.PuzzlePromise
 
 		public static byte[] SHA512(byte[] data, int offset, int count)
 		{
-			Sha256Digest sha512 = new Sha256Digest();
+			Sha512Digest sha512 = new Sha512Digest();
 			sha512.BlockUpdate(data, offset, count);
 			byte[] rv = new byte[64];
 			sha512.DoFinal(rv, 0);

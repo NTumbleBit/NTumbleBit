@@ -3,7 +3,9 @@ using NBitcoin.Crypto;
 using NTumbleBit.BouncyCastle.Asn1;
 using NTumbleBit.BouncyCastle.Asn1.Pkcs;
 using NTumbleBit.BouncyCastle.Asn1.X509;
+using NTumbleBit.BouncyCastle.Crypto.Digests;
 using NTumbleBit.BouncyCastle.Crypto.Engines;
+using NTumbleBit.BouncyCastle.Crypto.Generators;
 using NTumbleBit.BouncyCastle.Crypto.Parameters;
 using NTumbleBit.BouncyCastle.Math;
 using NTumbleBit.PuzzlePromise;
@@ -58,9 +60,13 @@ namespace NTumbleBit
 
 		public bool Verify(byte[] signature, byte[] data, uint160 nonce)
 		{
+			byte[] output = new byte[256];
 			var msg = Utils.Combine(nonce.ToBytes(), data);
-			var hash = PromiseUtils.SHA512(msg, 0, msg.Length);
-			var input = new BigInteger(1, hash);
+			Sha512Digest sha512 = new Sha512Digest();
+			var generator = new Mgf1BytesGenerator(sha512);
+			generator.Init(new MgfParameters(msg));
+			generator.GenerateBytes(output, 0, output.Length);
+			var input = new BigInteger(1, output);
 			if(input.CompareTo(_Key.Modulus) >= 0)
 				return false;
 			if(signature.Length > 256)
