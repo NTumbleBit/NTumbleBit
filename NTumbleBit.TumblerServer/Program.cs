@@ -23,6 +23,19 @@ namespace NTumbleBit.TumblerServer
 			if(args.Contains("-testnet"))
 			{
 				configuration.Network = Network.TestNet;
+				var cycle = configuration
+					.ClassicTumblerParameters
+					.CycleGenerator.FirstCycle;
+
+				cycle.RegistrationDuration = 3;
+				cycle.Start = 0;
+				cycle.RegistrationDuration = 3;
+				cycle.ClientChannelEstablishmentDuration = 3;
+				cycle.TumblerChannelEstablishmentDuration = 3;
+				cycle.SafetyPeriodDuration = 2;
+				cycle.PaymentPhaseDuration = 3;
+				cycle.TumblerCashoutDuration = 4;
+				cycle.ClientCashoutDuration = 3;
 			}
 			
 			try
