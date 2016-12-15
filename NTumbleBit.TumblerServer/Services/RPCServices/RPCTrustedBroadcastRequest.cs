@@ -14,6 +14,19 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 {
 	public class RPCTrustedBroadcastService : ITrustedBroadcastService
 	{
+		public class Record
+		{
+			public int Expiration
+			{
+				get; set;
+			}
+
+			public TrustedBroadcastRequest Request
+			{
+				get; set;
+			}
+		}
+
 		public RPCTrustedBroadcastService(RPCClient rpc, IBroadcastService innerBroadcast, IRepository repository)
 		{
 			if(rpc == null)
@@ -46,17 +59,21 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			if(address == null)
 				throw new NotSupportedException("ScriptPubKey to track not supported");
 			RPCClient.ImportAddress(address, "", false);
-			
-			AddBroadcast(broadcast);
+
 			var height = RPCClient.GetBlockCount();
+			var record = new Record();
+			//3 days expiration
+			record.Expiration = height + (int)(TimeSpan.FromDays(3).Ticks / Network.Main.Consensus.PowTargetSpacing.Ticks);
+			record.Request = broadcast;
+			AddBroadcast(record);
 			if(height < broadcast.BroadcastAt.Height)
 				return;
 			_Broadcaster.Broadcast(broadcast.Transaction);
 		}
 
-		private void AddBroadcast(TrustedBroadcastRequest broadcast)
+		private void AddBroadcast(Record broadcast)
 		{
-			_Repository.UpdateOrInsert("TrustedBroadcasts", broadcast.Transaction.GetHash().ToString(), broadcast, (o, n) => n);
+			Repository.UpdateOrInsert("TrustedBroadcasts", broadcast.Request.Transaction.GetHash().ToString(), broadcast, (o, n) => n);
 		}
 
 		private readonly IRepository _Repository;
@@ -68,11 +85,11 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			}
 		}
 
-		public TrustedBroadcastRequest[] GetRequests()
+		public Record[] GetRequests()
 		{
-			var requests = Repository.List<TrustedBroadcastRequest>("TrustedBroadcasts");
+			var requests = Repository.List<Record>("TrustedBroadcasts");
 			return Utils.TopologicalSort(requests, 
-				tx => requests.Where(tx2 => tx2.Transaction.Outputs.Any(o => o.ScriptPubKey == tx.PreviousScriptPubKey))).ToArray();
+				tx => requests.Where(tx2 => tx2.Request.Transaction.Outputs.Any(o => o.ScriptPubKey == tx.Request.PreviousScriptPubKey))).ToArray();
 		}
 
 		public Transaction[] TryBroadcast()
@@ -81,21 +98,25 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			List<Transaction> broadcasted = new List<Transaction>();
 			foreach(var broadcast in GetRequests())
 			{
-				if(height < broadcast.BroadcastAt.Height)
+				if(height < broadcast.Request.BroadcastAt.Height)
 					continue;
 
-				foreach(var tx in GetReceivedTransactions(broadcast.PreviousScriptPubKey))
+				foreach(var tx in GetReceivedTransactions(broadcast.Request.PreviousScriptPubKey))
 				{
 					foreach(var coin in tx.Outputs.AsCoins())
 					{
-						if(coin.ScriptPubKey == broadcast.PreviousScriptPubKey)
+						if(coin.ScriptPubKey == broadcast.Request.PreviousScriptPubKey)
 						{
-							var transaction = broadcast.ReSign(coin);
+							var transaction = broadcast.Request.ReSign(coin);
 							if(_Broadcaster.Broadcast(transaction))
 								broadcasted.Add(transaction);
 						}
 					}
 				}
+
+				var remove = height >= broadcast.Expiration;
+				if(remove)
+					Repository.Delete<Record>("TrustedBroadcasts", broadcast.Request.Transaction.GetHash().ToString());
 			}
 			return broadcasted.ToArray();
 		}

@@ -20,7 +20,8 @@
             "../NTumbleBit.TumblerServer/Models/*.cs",
             "../NTumbleBit.TumblerServer/JsonConverters/*.cs",
             "../NTumbleBit.TumblerServer/Serializer.cs",
-            "../NTumbleBit.TumblerServer/Services/**/*.cs"
+            "../NTumbleBit.TumblerServer/Services/**/*.cs",
+            "../NTumbleBit.Common/NullLogger.cs"
         ],
         "define": ["CLIENT"]
     }

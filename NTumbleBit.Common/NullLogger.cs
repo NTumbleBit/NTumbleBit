@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace NTumbleBit.Client.Tumbler
+namespace NTumbleBit.Common
 {
 	public class NullLogger : ILogger
 	{

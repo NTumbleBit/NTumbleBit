@@ -93,8 +93,10 @@ namespace NTumbleBit.CLI
 				var destinationWallet = new ClientDestinationWallet("", pubKey, keypath, dbreeze);
 				var stateMachine = new StateMachinesExecutor(parameters, client, destinationWallet, services, dbreeze, logger);
 
+				var broadcaster = new BroadcasterJob(services, logger);
 				CancellationTokenSource source = new CancellationTokenSource();
 				stateMachine.Start(source.Token);
+				broadcaster.Start(source.Token);
 				logger.LogInformation("State machines started");
 				logger.LogInformation("Press enter to stop");
 				Console.ReadLine();

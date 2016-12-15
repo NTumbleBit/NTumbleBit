@@ -12,7 +12,18 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 #endif
 {
 	public class RPCBroadcastService : IBroadcastService
-    {
+	{
+		public class Record
+		{
+			public int Expiration
+			{
+				get; set;
+			}
+			public Transaction Transaction
+			{
+				get; set;
+			}
+		}
 		public RPCBroadcastService(RPCClient rpc, IRepository repository)
 		{
 			if(rpc == null)
@@ -21,6 +32,17 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				throw new ArgumentNullException("repository");
 			_RPCClient = rpc;
 			_Repository = repository;
+			_BlockExplorerService = new RPCBlockExplorerService(rpc);
+		}
+
+
+		private readonly RPCBlockExplorerService _BlockExplorerService;
+		public RPCBlockExplorerService BlockExplorerService
+		{
+			get
+			{
+				return _BlockExplorerService;
+			}
 		}
 
 
@@ -42,33 +64,35 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			}
 		}
 
-		public Transaction[] GetTransactions()
+		public Record[] GetTransactions()
 		{
-			var transactions = Repository.List<Transaction>("Broadcasts");
+			var transactions = Repository.List<Record>("Broadcasts");
 			foreach(var tx in transactions)
-				tx.CacheHashes();
+				tx.Transaction.CacheHashes();
 			return Utils.TopologicalSort(transactions,
-				tx => transactions.Where(tx2 => tx.Inputs.Any(input => input.PrevOut.Hash == tx2.GetHash()))).ToArray();
+				tx => transactions.Where(tx2 => tx.Transaction.Inputs.Any(input => input.PrevOut.Hash == tx2.Transaction.GetHash()))).ToArray();
 		}
 
 		public Transaction[] TryBroadcast()
 		{
 			List<Transaction> broadcasted = new List<Transaction>();
+			int height = RPCClient.GetBlockCount();
 			foreach(var tx in GetTransactions())
 			{
-				if(TryBroadcastCore(tx))
+				if(TryBroadcastCore(tx, height))
 				{
-					broadcasted.Add(tx);
+					broadcasted.Add(tx.Transaction);
 				}
 			}
 			return broadcasted.ToArray();
 		}
 
-		bool TryBroadcastCore(Transaction tx)
+		bool TryBroadcastCore(Record tx, int currentHeight)
 		{
+			bool remove = currentHeight >= tx.Expiration;
 			try
 			{
-				RPCClient.SendRawTransaction(tx);
+				RPCClient.SendRawTransaction(tx.Transaction);
 				return true;
 			}
 			catch(RPCException ex)
@@ -78,23 +102,39 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 					return false;
 				}
 				var error = ex.RPCResult.Error.Message;
-				if(!error.EndsWith("non-final", StringComparison.OrdinalIgnoreCase))
+				if(error.EndsWith("non-final", StringComparison.OrdinalIgnoreCase))
+					remove = false;
+				else
 				{
+					if(ex.RPCResult.Error.Code == RPCErrorCode.RPC_TRANSACTION_ALREADY_IN_CHAIN)
+					{
+					}
 					if(error.EndsWith("bad-txns-inputs-spent", StringComparison.OrdinalIgnoreCase))
 					{
 					}
 					else if(!error.EndsWith("txn-mempool-conflict", StringComparison.OrdinalIgnoreCase))
 					{
+						remove = false;
 					}
 				}
+			}
+
+			if(remove)
+			{
+				Repository.Delete<Record>("Broadcasts", tx.Transaction.GetHash().ToString());
 			}
 			return false;
 		}
 
 		public bool Broadcast(Transaction transaction)
 		{
-			Repository.UpdateOrInsert<Transaction>("Broadcasts", transaction.GetHash().ToString(), transaction, (o, n) => n);
-			return TryBroadcastCore(transaction);
+			var record = new Record();
+			record.Transaction = transaction;
+			var height = _RPCClient.GetBlockCount();
+			//3 days expiration
+			record.Expiration = height + (int)(TimeSpan.FromDays(3).Ticks / Network.Main.Consensus.PowTargetSpacing.Ticks);
+			Repository.UpdateOrInsert<Record>("Broadcasts", transaction.GetHash().ToString(), record, (o, n) => o);
+			return TryBroadcastCore(record, height);
 		}
 	}
 }

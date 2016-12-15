@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using NBitcoin;
 using NTumbleBit.PuzzlePromise;
 using Microsoft.Extensions.Logging;
+using NTumbleBit.Common;
 
 namespace NTumbleBit.Client.Tumbler
 {
@@ -147,7 +148,7 @@ namespace NTumbleBit.Client.Tumbler
 				};
 				if(!phases.Any(p => cycle.IsInPhase(p, height)))
 					return;
-				phase = phases.First(p => cycle.IsInPhase(p, height));				
+				phase = phases.First(p => cycle.IsInPhase(p, height));
 			}
 
 			logger.LogInformation("Cycle " + cycle.Start + " in phase " + Enum.GetName(typeof(CyclePhase), phase) + ", ending in " + (cycle.GetPeriods().GetPeriod(phase).End - height) + " blocks");
@@ -260,20 +261,23 @@ namespace NTumbleBit.Client.Tumbler
 					}
 					break;
 				case CyclePhase.ClientCashoutPhase:
-					//If the tumbler is uncooperative, he published solutions on the blockchain
-					if(SolverClientSession.Status == SolverClientStates.WaitingPuzzleSolutions)
+					if(SolverClientSession != null)
 					{
-						var transactions = Services.BlockExplorerService.GetTransactions(SolverClientSession.GetOfferScriptPubKey(), false);
-						SolverClientSession.CheckSolutions(transactions.Select(t => t.Transaction).ToArray());
-						logger.LogInformation("Solution recovered from blockchain transaction");
-					}
+						//If the tumbler is uncooperative, he published solutions on the blockchain
+						if(SolverClientSession.Status == SolverClientStates.WaitingPuzzleSolutions)
+						{
+							var transactions = Services.BlockExplorerService.GetTransactions(SolverClientSession.GetOfferScriptPubKey(), false);
+							SolverClientSession.CheckSolutions(transactions.Select(t => t.Transaction).ToArray());
+							logger.LogInformation("Solution recovered from blockchain transaction");
+						}
 
-					if(SolverClientSession.Status == SolverClientStates.Completed)
-					{
-						var tumblingSolution = SolverClientSession.GetSolution();
-						var transaction = PromiseClientSession.GetSignedTransaction(tumblingSolution);
-						Services.BroadcastService.Broadcast(transaction);
-						logger.LogInformation("Client Cashout completed");
+						if(SolverClientSession.Status == SolverClientStates.Completed)
+						{
+							var tumblingSolution = SolverClientSession.GetSolution();
+							var transaction = PromiseClientSession.GetSignedTransaction(tumblingSolution);
+							Services.BroadcastService.Broadcast(transaction);
+							logger.LogInformation("Client Cashout completed");
+						}
 					}
 					break;
 			}

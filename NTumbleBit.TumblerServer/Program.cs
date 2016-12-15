@@ -9,6 +9,8 @@ using NBitcoin;
 using NTumbleBit.Common;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Logging;
+using NTumbleBit.TumblerServer.Services;
+using System.Threading;
 
 namespace NTumbleBit.TumblerServer
 {
@@ -32,7 +34,13 @@ namespace NTumbleBit.TumblerServer
 				.UseIISIntegration()
 				.UseStartup<Startup>()
 				.Build();
+
+				var services = (ExternalServices)host.Services.GetService(typeof(ExternalServices));
+				CancellationTokenSource cts = new CancellationTokenSource();
+				var job = new BroadcasterJob(services, logger);
+				job.Start(cts.Token);
 				host.Run();
+				cts.Cancel();
 			}
 			catch(ConfigException ex)
 			{
