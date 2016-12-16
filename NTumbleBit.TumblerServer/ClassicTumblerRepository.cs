@@ -41,12 +41,24 @@ namespace NTumbleBit.TumblerServer
 
 		public void Save(PromiseServerSession session)
 		{
-			Repository.UpdateOrInsert("Sessions", session.Id, session.GetInternalState(), (o, n) => n);
+			Repository.UpdateOrInsert("Sessions", session.Id, session.GetInternalState(), (o, n) =>
+			{
+				if(o.ETag != n.ETag)
+					throw new InvalidOperationException("Optimistic concurrency failure");
+				n.ETag++;
+				return n;
+			});
 		}
 
 		public void Save(SolverServerSession session)
 		{
-			Repository.UpdateOrInsert("Sessions", session.Id, session.GetInternalState(), (o, n) => n);
+			Repository.UpdateOrInsert("Sessions", session.Id, session.GetInternalState(), (o, n) =>
+			{
+				if(o.ETag != n.ETag)
+					throw new InvalidOperationException("Optimistic concurrency failure");
+				n.ETag++;
+				return n;
+			});
 		}
 
 		public PromiseServerSession GetPromiseServerSession(string id)

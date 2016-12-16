@@ -82,6 +82,11 @@ namespace NTumbleBit.PuzzleSolver
 				get;
 				set;
 			}
+			public int ETag
+			{
+				get;
+				set;
+			}
 
 			public PubKey GetClientEscrowPubKey()
 			{
