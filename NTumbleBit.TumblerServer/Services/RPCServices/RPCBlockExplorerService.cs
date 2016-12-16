@@ -64,7 +64,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 					{
 						highestConfirmation = Math.Max(highestConfirmation, (int)obj["confirmations"]);
 					}
-					
+
 					if((string)obj["address"] == address.ToString())
 					{
 						var tx = GetTransaction(txId);
@@ -126,7 +126,9 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		{
 			var address = scriptPubkey.GetDestinationAddress(RPCClient.Network);
 			if(address != null)
+			{
 				RPCClient.ImportAddress(address, label, false);
+			}
 		}
 
 		public int GetBlockConfirmations(uint256 blockId)

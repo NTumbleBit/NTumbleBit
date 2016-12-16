@@ -146,7 +146,8 @@ namespace NTumbleBit.TumblerServer.Controllers
 		{
 			var height = Services.BlockExplorerService.GetCurrentHeight();
 			BobServerChannelNegotiation session = CreateBobServerChannelNegotiation(request.CycleStart);
-			if(!session.GetCycle().IsInPhase(CyclePhase.TumblerChannelEstablishment, height))
+			var cycle = session.GetCycle();
+			if(!cycle.IsInPhase(CyclePhase.TumblerChannelEstablishment, height))
 				return BadRequest("incorrect-phase");
 			var fee = Services.FeeService.GetFeeRate();
 			try
@@ -167,7 +168,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 				var promiseServerSession = session.SetSignedTransaction(tx);
 				Repository.Save(promiseServerSession);
 
-				var redeem = Services.WalletService.GenerateAddress();
+				var redeem = Services.WalletService.GenerateAddress($"Cycle {cycle.Start} Tumbler Redeem");
 				var redeemTx = promiseServerSession.CreateRedeemTransaction(fee, redeem.ScriptPubKey);
 				Services.TrustedBroadcastService.Broadcast($"Cycle {session.GetCycle().Start} Tumbler Redeem (locked until: {redeemTx.Transaction.LockTime})", redeemTx);
 				return this.Json(promiseServerSession.EscrowedCoin);
@@ -269,14 +270,14 @@ namespace NTumbleBit.TumblerServer.Controllers
 		[HttpPost("api/v1/tumblers/0/clientchannels/{channelId}/offer")]
 		public IActionResult FullfillOffer(string channelId, [FromBody]TransactionSignature clientSignature)
 		{
-			var session = GetSolverServerSession(channelId, CyclePhase.TumblerCashoutPhase);
-			var cashout = Services.WalletService.GenerateAddress();
+			var session = GetSolverServerSession(channelId, CyclePhase.TumblerCashoutPhase);			
 			var feeRate = Services.FeeService.GetFeeRate();
 			if(session.Status != SolverServerStates.WaitingFullfillment)
 				return BadRequest("invalid-state");
 			try
 			{
 				var cycle = GetCycle(session);
+				var cashout = Services.WalletService.GenerateAddress($"Cycle {cycle.Start} Tumbler Cashout");
 				var fullfill = session.FullfillOffer(clientSignature, cashout.ScriptPubKey, feeRate);
 				fullfill.BroadcastAt = new LockTime(cycle.GetPeriods().Payment.End - 1);
 				Repository.Save(session);

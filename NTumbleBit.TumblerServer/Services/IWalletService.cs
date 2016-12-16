@@ -12,8 +12,7 @@ namespace NTumbleBit.Client.Tumbler.Services
 {
 	public interface IWalletService
     {
-		Key GenerateNewKey();
-		IDestination GenerateAddress();
+		IDestination GenerateAddress(string label);
 		Transaction FundTransaction(TxOut txOut, FeeRate feeRate);
 	}
 }

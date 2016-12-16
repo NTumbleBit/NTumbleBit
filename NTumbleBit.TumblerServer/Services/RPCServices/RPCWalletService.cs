@@ -31,17 +31,12 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			}
 		}
 
-		public IDestination GenerateAddress()
+		public IDestination GenerateAddress(string label)
 		{
-			return _RPCClient.GetNewAddress();
+			var result = _RPCClient.SendCommand("getnewaddress", label ?? "");
+			return BitcoinAddress.Create(result.ResultString, _RPCClient.Network);
 		}
-
-		public Key GenerateNewKey()
-		{
-			var address = _RPCClient.GetNewAddress();
-			return _RPCClient.DumpPrivKey(address).PrivateKey;
-		}
-
+		
 		public Coin AsCoin(UnspentCoin c)
 		{
 			var coin = new Coin(c.OutPoint, new TxOut(c.Amount, c.ScriptPubKey));

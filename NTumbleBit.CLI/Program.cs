@@ -49,7 +49,7 @@ namespace NTumbleBit.CLI
 					}
 					var client = new NTumbleBit.Client.Tumbler.TumblerClient(network, new Uri(server));
 					logger.LogInformation("Downloading tumbler information");
-					var parameters = client.GetTumblerParameters();
+					var parameters = Retry(3, () => client.GetTumblerParameters());
 					logger.LogInformation("Tumbler Server Connection successfull");
 					var existingConfig = dbreeze.Get<ClassicTumbler.ClassicTumblerParameters>("Configuration", client.Address.AbsoluteUri);
 					if(existingConfig != null)
@@ -112,6 +112,20 @@ namespace NTumbleBit.CLI
 				logger.LogError(ex.Message);
 				logger.LogDebug(ex.StackTrace);
 			}
+		}
+
+		static T Retry<T>(int count, Func<T> act)
+		{
+			Exception ex = null;
+			for(int i = 0; i < count; i++)
+			{
+				try
+				{
+					return act();
+				}
+				catch(Exception exx) { ex = exx; }
+			}
+			throw ex;
 		}
 
 		public static string GetDefaultConfigurationFile(ILogger logger, string dataDirectory, Network network)

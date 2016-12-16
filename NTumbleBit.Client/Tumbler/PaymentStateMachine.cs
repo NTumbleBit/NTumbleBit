@@ -188,7 +188,7 @@ namespace NTumbleBit.Client.Tumbler
 							break;
 						}
 						SolverClientSession = ClientChannelNegotiation.SetClientSignedTransaction(clientEscrowTx);
-						var redeem = SolverClientSession.CreateRedeemTransaction(feeRate, Services.WalletService.GenerateAddress().ScriptPubKey);
+						var redeem = SolverClientSession.CreateRedeemTransaction(feeRate, Services.WalletService.GenerateAddress($"Cycle {cycle.Start} Client Redeem").ScriptPubKey);
 
 						var escrowLabel = $"Cycle {cycle.Start} Client Escrow";
 						Services.BlockExplorerService.Track(escrowLabel, SolverClientSession.EscrowedCoin.ScriptPubKey);
@@ -258,7 +258,7 @@ namespace NTumbleBit.Client.Tumbler
 							var blindFactors = SolverClientSession.GetBlindFactors(solutionKeys);
 							var offerInformation = AliceClient.CheckBlindFactors(SolverClientSession.Id, blindFactors);
 							var offerSignature = SolverClientSession.SignOffer(offerInformation);
-							var offerRedeem = SolverClientSession.CreateOfferRedeemTransaction(feeRate, Services.WalletService.GenerateAddress().ScriptPubKey);
+							var offerRedeem = SolverClientSession.CreateOfferRedeemTransaction(feeRate, Services.WalletService.GenerateAddress($"Cycle {cycle.Start} Tumbler Redeem").ScriptPubKey);
 							//May need to find solution in the fullfillment transaction
 							var offerLabel = $"Cycle {cycle.Start} Client Offer Redeem (locked until {offerRedeem.Transaction.LockTime})";
 							Services.BlockExplorerService.Track(offerLabel, SolverClientSession.GetOfferScriptPubKey());
