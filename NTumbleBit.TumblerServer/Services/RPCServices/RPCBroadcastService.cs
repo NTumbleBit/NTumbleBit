@@ -95,10 +95,22 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		bool TryBroadcastCore(Record tx, int currentHeight)
 		{
 			bool remove = currentHeight >= tx.Expiration;
+
+			//Make the broadcast a bit faster
+			var isNonFinal =
+				tx.Transaction.LockTime.IsHeightLock &&
+				tx.Transaction.LockTime.Height > currentHeight &&
+				tx.Transaction.Inputs.Any(i => i.Sequence != Sequence.Final);
+
+			if(isNonFinal)
+				remove = false;
 			try
 			{
-				RPCClient.SendRawTransaction(tx.Transaction);
-				return true;
+				if(!isNonFinal)
+				{
+					RPCClient.SendRawTransaction(tx.Transaction);
+					return true;
+				}
 			}
 			catch(RPCException ex)
 			{
