@@ -370,6 +370,11 @@ namespace NTumbleBit.PuzzleSolver
 			});
 		}
 
+		public Script GetOfferScriptPubKey()
+		{
+			return GetOfferScript().Hash.ScriptPubKey;
+		}
+
 		public override LockTime GetLockTime(CycleParameters cycle)
 		{
 			return cycle.GetClientLockTime();

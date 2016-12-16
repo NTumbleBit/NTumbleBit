@@ -191,7 +191,7 @@ namespace NTumbleBit.Client.Tumbler
 						var redeem = SolverClientSession.CreateRedeemTransaction(feeRate, Services.WalletService.GenerateAddress($"Cycle {cycle.Start} Client Redeem").ScriptPubKey);
 
 						var escrowLabel = $"Cycle {cycle.Start} Client Escrow";
-						Services.BlockExplorerService.Track(escrowLabel, SolverClientSession.EscrowedCoin.ScriptPubKey);
+						Services.BlockExplorerService.Track(escrowLabel, redeem.PreviousScriptPubKey);
 						Services.BroadcastService.Broadcast(escrowLabel, clientEscrowTx);
 						Services.TrustedBroadcastService.Broadcast($"Cycle {cycle.Start} Client Redeem (locked until {redeem.Transaction.LockTime})", redeem);
 						logger.LogInformation("Client escrow broadcasted " + clientEscrowTx.GetHash());
@@ -261,7 +261,7 @@ namespace NTumbleBit.Client.Tumbler
 							var offerRedeem = SolverClientSession.CreateOfferRedeemTransaction(feeRate, Services.WalletService.GenerateAddress($"Cycle {cycle.Start} Tumbler Redeem").ScriptPubKey);
 							//May need to find solution in the fullfillment transaction
 							var offerLabel = $"Cycle {cycle.Start} Client Offer Redeem (locked until {offerRedeem.Transaction.LockTime})";
-							Services.BlockExplorerService.Track(offerLabel, SolverClientSession.GetOfferScriptPubKey());
+							Services.BlockExplorerService.Track(offerLabel, offerRedeem.PreviousScriptPubKey);
 							Services.TrustedBroadcastService.Broadcast(offerLabel, offerRedeem);
 							logger.LogInformation("Offer redeem " + offerRedeem.Transaction.GetHash() + " locked until " + offerRedeem.Transaction.LockTime.Height);
 							try

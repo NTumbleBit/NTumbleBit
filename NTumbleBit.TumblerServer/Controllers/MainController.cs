@@ -243,7 +243,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 		public IActionResult SolvePuzzles(string channelId, [FromBody]PuzzleValue[] puzzles)
 		{
 			var session = GetSolverServerSession(channelId, CyclePhase.PaymentPhase);
-			var commitments = session.SolvePuzzles(puzzles);
+			var commitments = session.SolvePuzzles(puzzles);			
 			Repository.Save(session);
 			return Json(commitments);
 		}
@@ -263,6 +263,9 @@ namespace NTumbleBit.TumblerServer.Controllers
 			var session = GetSolverServerSession(channelId, CyclePhase.PaymentPhase);
 			var feeRate = Services.FeeService.GetFeeRate();
 			var fullfillKey = session.CheckBlindedFactors(blindFactors, feeRate);
+			var cycle = GetCycle(session);
+			//later we will track it for fullfillment
+			Services.BlockExplorerService.Track($"Cycle {cycle.Start} Client Offer", session.GetOfferScriptPubKey());
 			Repository.Save(session);
 			return Json(fullfillKey);
 		}
@@ -284,8 +287,8 @@ namespace NTumbleBit.TumblerServer.Controllers
 
 				var signedOffer = session.GetSignedOfferTransaction();
 				signedOffer.BroadcastAt = fullfill.BroadcastAt - 1;
-				Services.TrustedBroadcastService.Broadcast($"Cycle {cycle.Start} Tumbler SignedOffer (planned for: {signedOffer.BroadcastAt})", signedOffer);
-				Services.TrustedBroadcastService.Broadcast($"Cycle {cycle.Start} Tumbler Fullfillment (planned for: {fullfill.BroadcastAt})", fullfill);
+				Services.TrustedBroadcastService.Broadcast($"Cycle {cycle.Start} Client Offer Transaction (planned for: {signedOffer.BroadcastAt})", signedOffer);				
+				Services.TrustedBroadcastService.Broadcast($"Cycle {cycle.Start} Tumbler Fullfillment Transaction (planned for: {fullfill.BroadcastAt})", fullfill);
 				return Json(session.GetSolutionKeys());
 			}
 			catch(PuzzleException)

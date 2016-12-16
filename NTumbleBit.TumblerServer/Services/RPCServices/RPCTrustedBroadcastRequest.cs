@@ -31,7 +31,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			}
 		}
 
-		public RPCTrustedBroadcastService(RPCClient rpc, IBroadcastService innerBroadcast, IRepository repository)
+		public RPCTrustedBroadcastService(RPCClient rpc, IBroadcastService innerBroadcast, IBlockExplorerService explorer, IRepository repository)
 		{
 			if(rpc == null)
 				throw new ArgumentNullException("rpc");
@@ -39,9 +39,13 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				throw new ArgumentNullException("innerBroadcast");
 			if(repository == null)
 				throw new ArgumentNullException("repository");
+			if(explorer == null)
+				throw new ArgumentNullException("explorer");
 			_Repository = repository;
 			_RPCClient = rpc;
 			_Broadcaster = innerBroadcast;
+			TrackPreviousScriptPubKey = true;
+			_BlockExplorer = explorer;
 		}
 
 		IBroadcastService _Broadcaster;
@@ -55,6 +59,11 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			}
 		}
 
+		public bool TrackPreviousScriptPubKey
+		{
+			get; set;
+		}
+
 		public void Broadcast(string label, TrustedBroadcastRequest broadcast)
 		{
 			if(broadcast == null)
@@ -62,8 +71,8 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			var address = broadcast.PreviousScriptPubKey.GetDestinationAddress(RPCClient.Network);
 			if(address == null)
 				throw new NotSupportedException("ScriptPubKey to track not supported");
-			RPCClient.ImportAddress(address, "", false);
-
+			if(TrackPreviousScriptPubKey)
+				RPCClient.ImportAddress(address, label + " (PreviousScriptPubKey)", false);
 			var height = RPCClient.GetBlockCount();
 			var record = new Record();
 			record.Label = label;
@@ -93,7 +102,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		public Record[] GetRequests()
 		{
 			var requests = Repository.List<Record>("TrustedBroadcasts");
-			return Utils.TopologicalSort(requests, 
+			return Utils.TopologicalSort(requests,
 				tx => requests.Where(tx2 => tx2.Request.Transaction.Outputs.Any(o => o.ScriptPubKey == tx.Request.PreviousScriptPubKey))).ToArray();
 		}
 
@@ -127,36 +136,25 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		}
 
 
+		private readonly IBlockExplorerService _BlockExplorer;
+		public IBlockExplorerService BlockExplorer
+		{
+			get
+			{
+				return _BlockExplorer;
+			}
+		}
+
+
 		public Transaction[] GetReceivedTransactions(Script scriptPubKey)
 		{
 			if(scriptPubKey == null)
 				throw new ArgumentNullException("scriptPubKey");
 
-			var address = scriptPubKey.GetDestinationAddress(RPCClient.Network);
-			if(address == null)
-				return new Transaction[0];
-
-
-			var result = RPCClient.SendCommandNoThrows("listtransactions", "", 100, 0, true);
-			if(result.Error != null)
-				return null;
-
-			var transactions = (Newtonsoft.Json.Linq.JArray)result.Result;
-			List<TransactionInformation> results = new List<TransactionInformation>();
-			foreach(var obj in transactions)
-			{
-				var txId = new uint256((string)obj["txid"]);
-				if((string)obj["address"] == address.ToString())
-				{
-					var tx = GetTransaction(txId);
-					if(tx != null)
-						if((string)obj["category"] == "receive")
-						{
-							results.Add(tx);
-						}
-				}
-			}
-			return results.Select(t => t.Transaction).ToArray();
+			return BlockExplorer.GetTransactions(scriptPubKey, false)
+				.Where(t => t.Transaction.Outputs.Any(o => o.ScriptPubKey == scriptPubKey))
+				.Select(t => t.Transaction)
+				.ToArray();
 		}
 
 		public TransactionInformation GetTransaction(uint256 txId)

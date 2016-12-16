@@ -46,6 +46,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				return new TransactionInformation[0];
 
 			List<TransactionInformation> results = new List<TransactionInformation>();
+			HashSet<uint256> resultsSet = new HashSet<uint256>();
 			int count = 100;
 			int skip = 0;
 			int highestConfirmation = 0;
@@ -67,10 +68,15 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 
 					if((string)obj["address"] == address.ToString())
 					{
-						var tx = GetTransaction(txId);
-						if(tx == null || (withProof && tx.Confirmations == 0))
-							continue;
-						results.Add(tx);
+						//May have duplicates
+						if(!resultsSet.Contains(txId))
+						{
+							var tx = GetTransaction(txId);
+							if(tx == null || (withProof && tx.Confirmations == 0))
+								continue;
+							resultsSet.Add(txId);
+							results.Add(tx);
+						}
 					}
 				}
 				if(transactions.Count < count || highestConfirmation >= 1000)
