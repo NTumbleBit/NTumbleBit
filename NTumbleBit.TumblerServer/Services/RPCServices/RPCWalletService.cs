@@ -36,7 +36,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			var result = _RPCClient.SendCommand("getnewaddress", label ?? "");
 			return BitcoinAddress.Create(result.ResultString, _RPCClient.Network);
 		}
-		
+
 		public Coin AsCoin(UnspentCoin c)
 		{
 			var coin = new Coin(c.OutPoint, new TxOut(c.Amount, c.ScriptPubKey));
@@ -49,11 +49,14 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		{
 			Transaction tx = new Transaction();
 			tx.Outputs.Add(txOut);
+
+			var changeAddress = BitcoinAddress.Create(_RPCClient.SendCommand("getrawchangeaddress").ResultString, _RPCClient.Network);
 			var result = _RPCClient.SendCommandNoThrows("fundrawtransaction", tx.ToHex(), new JObject()
 			{
 				new JProperty("lockUnspents", true),
-				new JProperty("feeRate", feeRate.GetFee(1000).ToDecimal(MoneyUnit.BTC)),				
-			});			
+				new JProperty("feeRate", feeRate.GetFee(1000).ToDecimal(MoneyUnit.BTC)),
+				new JProperty("changeAddress", changeAddress.ToString()),
+			});
 			if(result.Error != null)
 				return null;
 			var jobj = (JObject)result.Result;
