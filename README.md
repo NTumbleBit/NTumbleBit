@@ -1,5 +1,6 @@
 # NTumbleBit
 .NET implementation of TumbleBit primitives.
+Please check out our [wiki](https://github.com/NTumbleBit/NTumbleBit/wiki) for more details.
 
 ##Resources
 Cross-platform library, based on ["TumbleBit: An Untrusted Bitcoin-Compatible Anonymous Payment Hub"](https://eprint.iacr.org/2016/575). 
