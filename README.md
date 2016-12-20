@@ -1,7 +1,7 @@
 # NTumbleBit
 TumbleBit implementation in .NET Core.  
 
-##[You can find an in-depth guide on the Wiki.](https://github.com/NTumbleBit/NTumbleBit/wiki)
+##[Check out the in-depth user guide on the Wiki](https://github.com/NTumbleBit/NTumbleBit/wiki)
 
 ##Resources
 Cross-platform library, based on ["TumbleBit: An Untrusted Bitcoin-Compatible Anonymous Payment Hub"](https://eprint.iacr.org/2016/575). 
