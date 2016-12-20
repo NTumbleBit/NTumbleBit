@@ -1,6 +1,7 @@
 # NTumbleBit
-.NET implementation of TumbleBit primitives.
-Please check out our [wiki](https://github.com/NTumbleBit/NTumbleBit/wiki) for more details.
+TumbleBit implementation in .NET Core.  
+
+##[You can find an in-depth guide on the Wiki.](https://github.com/NTumbleBit/NTumbleBit/wiki)
 
 ##Resources
 Cross-platform library, based on ["TumbleBit: An Untrusted Bitcoin-Compatible Anonymous Payment Hub"](https://eprint.iacr.org/2016/575). 
@@ -14,21 +15,17 @@ You need to install dotnet core on your system as instructed on [.NET Core insta
 
 You will also need a synchronized Bitcoin Full node (pruned nodes also work), with the RPC server running.
 
-##Build and run
-
-Check out on the [wiki](https://github.com/NTumbleBit/NTumbleBit/wiki/How-to-Run).
-
 ##Project status
 The current version has an implementation of:
-* Puzzle Solver algorithm
-* Puzzle Promise algorithm
-* Tumbler mode server
+* Puzzle Solver Algorithm
+* Puzzle Promise Algorithm
+* TumbleBit: Classic Tumbler Mode
 
 ### What is next
 
 1. TOR integration for Tumbler server and client
 2. Localhost website as user interface for Tumbler server and Tumbler Client.
-3. Payment Hub
+3. TumbleBit: Uni-directional Paymen Hub Mode
 
 ## Developing on Linux or Mac
 
