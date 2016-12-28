@@ -139,70 +139,65 @@ namespace NTumbleBit.Client.Tumbler
 			return Serializer.ToObject<T>(str, Network);
 		}		
 
-		public ServerCommitmentsProof CheckRevelation(string channelId, PuzzlePromise.ClientRevelation revelation)
+		public ServerCommitmentsProof CheckRevelation(int cycleId, string channelId, PuzzlePromise.ClientRevelation revelation)
 		{
-			return CheckRevelationAsync(channelId, revelation).GetAwaiter().GetResult();
+			return CheckRevelationAsync(cycleId, channelId, revelation).GetAwaiter().GetResult();
 		}
 
-		private Task<ServerCommitmentsProof> CheckRevelationAsync(string channelId, PuzzlePromise.ClientRevelation revelation)
+		private Task<ServerCommitmentsProof> CheckRevelationAsync(int cycleId, string channelId, PuzzlePromise.ClientRevelation revelation)
 		{
-			return this.SendAsync<ServerCommitmentsProof>(HttpMethod.Post, revelation, "api/v1/tumblers/0/channels/{0}/checkrevelation", channelId);
+			return this.SendAsync<ServerCommitmentsProof>(HttpMethod.Post, revelation, "api/v1/tumblers/0/channels/{0}/{1}/checkrevelation", cycleId, channelId);
 		}
 
-		public Task<PuzzlePromise.ServerCommitment[]> SignHashesAsync(string channelId, SignaturesRequest sigReq)
+		public Task<PuzzlePromise.ServerCommitment[]> SignHashesAsync(int cycleId, string channelId, SignaturesRequest sigReq)
 		{
-			return this.SendAsync<PuzzlePromise.ServerCommitment[]>(HttpMethod.Post, sigReq, "api/v1/tumblers/0/channels/{0}/signhashes", channelId);
+			return this.SendAsync<PuzzlePromise.ServerCommitment[]>(HttpMethod.Post, sigReq, "api/v1/tumblers/0/channels/{0}/{1}/signhashes", cycleId, channelId);
+		}		
+
+		public PuzzleSolver.SolutionKey[] CheckRevelation(int cycleId, string channelId, PuzzleSolver.ClientRevelation revelation)
+		{
+			return CheckRevelationAsync(cycleId, channelId, revelation).GetAwaiter().GetResult();
+		}
+		public Task<PuzzleSolver.SolutionKey[]> CheckRevelationAsync(int cycleId, string channelId, PuzzleSolver.ClientRevelation revelation)
+		{
+			return this.SendAsync<PuzzleSolver.SolutionKey[]>(HttpMethod.Post, revelation, "api/v1/tumblers/0/clientschannels/{0}/{1}/checkrevelation", cycleId, channelId);
 		}
 
-		public object CheckRevelation(object id, PuzzleSolver.ClientRevelation revelation2)
+		public OfferInformation CheckBlindFactors(int cycleId, string channelId, BlindFactor[] blindFactors)
 		{
-			throw new NotImplementedException();
+			return CheckBlindFactorsAsync(cycleId, channelId, blindFactors).GetAwaiter().GetResult();
 		}
 
-		public PuzzleSolver.SolutionKey[] CheckRevelation(string channelId, PuzzleSolver.ClientRevelation revelation)
+		public Task<OfferInformation> CheckBlindFactorsAsync(int cycleId, string channelId, BlindFactor[] blindFactors)
 		{
-			return CheckRevelationAsync(channelId, revelation).GetAwaiter().GetResult();
-		}
-		public Task<PuzzleSolver.SolutionKey[]> CheckRevelationAsync(string channelId, PuzzleSolver.ClientRevelation revelation)
-		{
-			return this.SendAsync<PuzzleSolver.SolutionKey[]>(HttpMethod.Post, revelation, "api/v1/tumblers/0/clientschannels/{0}/checkrevelation", channelId);
+			return SendAsync<OfferInformation>(HttpMethod.Post, blindFactors, "api/v1/tumblers/0/clientschannels/{0}/{1}/checkblindfactors", cycleId, channelId);
 		}
 
-		public OfferInformation CheckBlindFactors(string channelId, BlindFactor[] blindFactors)
+		public PuzzleSolver.ServerCommitment[] SolvePuzzles(int cycleId, string channelId, PuzzleValue[] puzzles)
 		{
-			return CheckBlindFactorsAsync(channelId, blindFactors).GetAwaiter().GetResult();
+			return SolvePuzzlesAsync(cycleId, channelId, puzzles).GetAwaiter().GetResult();
 		}
 
-		public Task<OfferInformation> CheckBlindFactorsAsync(string channelId, BlindFactor[] blindFactors)
+		public Task<PuzzleSolver.ServerCommitment[]> SolvePuzzlesAsync(int cycleId, string channelId, PuzzleValue[] puzzles)
 		{
-			return SendAsync<OfferInformation>(HttpMethod.Post, blindFactors, "api/v1/tumblers/0/clientschannels/{0}/checkblindfactors", channelId);
-		}
-
-		public PuzzleSolver.ServerCommitment[] SolvePuzzles(string channelId, PuzzleValue[] puzzles)
-		{
-			return SolvePuzzlesAsync(channelId, puzzles).GetAwaiter().GetResult();
-		}
-
-		public Task<PuzzleSolver.ServerCommitment[]> SolvePuzzlesAsync(string channelId, PuzzleValue[] puzzles)
-		{
-			return SendAsync<PuzzleSolver.ServerCommitment[]>(HttpMethod.Post, puzzles, "api/v1/tumblers/0/clientchannels/{0}/solvepuzzles", channelId);
+			return SendAsync<PuzzleSolver.ServerCommitment[]>(HttpMethod.Post, puzzles, "api/v1/tumblers/0/clientchannels/{0}/{1}/solvepuzzles", cycleId, channelId);
 		}
 
 
 
-		public PuzzlePromise.ServerCommitment[] SignHashes(string channelId, SignaturesRequest sigReq)
+		public PuzzlePromise.ServerCommitment[] SignHashes(int cycleId, string channelId, SignaturesRequest sigReq)
 		{
-			return SignHashesAsync(channelId, sigReq).GetAwaiter().GetResult();
+			return SignHashesAsync(cycleId, channelId, sigReq).GetAwaiter().GetResult();
 		}
 
-		public SolutionKey[] FullfillOffer(string channelId, TransactionSignature clientSignature)
+		public SolutionKey[] FullfillOffer(int cycleId, string channelId, TransactionSignature clientSignature)
 		{
-			return FullfillOfferAsync(channelId, clientSignature).GetAwaiter().GetResult();
+			return FullfillOfferAsync(cycleId, channelId, clientSignature).GetAwaiter().GetResult();
 		}
 
-		public Task<SolutionKey[]> FullfillOfferAsync(string channelId, TransactionSignature clientSignature)
+		public Task<SolutionKey[]> FullfillOfferAsync(int cycleId, string channelId, TransactionSignature clientSignature)
 		{
-			return SendAsync<SolutionKey[]>(HttpMethod.Post, clientSignature, "api/v1/tumblers/0/clientchannels/{0}/offer", channelId);
+			return SendAsync<SolutionKey[]>(HttpMethod.Post, clientSignature, "api/v1/tumblers/0/clientchannels/{0}/{1}/offer", cycleId, channelId);
 		}
 	}
 }

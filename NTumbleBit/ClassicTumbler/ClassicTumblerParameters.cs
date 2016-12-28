@@ -108,6 +108,6 @@ namespace NTumbleBit.ClassicTumbler
 				RealTransactionCount = RealTransactionCount,
 				ServerKey = ServerKey
 			};
-		}
+		}		
 	}
 }

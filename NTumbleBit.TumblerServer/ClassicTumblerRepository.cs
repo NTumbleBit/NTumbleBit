@@ -39,9 +39,9 @@ namespace NTumbleBit.TumblerServer
 			}
 		}
 
-		public void Save(PromiseServerSession session)
+		public void Save(int cycleId, PromiseServerSession session)
 		{
-			Repository.UpdateOrInsert("Sessions", session.Id, session.GetInternalState(), (o, n) =>
+			Repository.UpdateOrInsert(GetCyclePartition(cycleId), session.Id, session.GetInternalState(), (o, n) =>
 			{
 				if(o.ETag != n.ETag)
 					throw new InvalidOperationException("Optimistic concurrency failure");
@@ -50,9 +50,9 @@ namespace NTumbleBit.TumblerServer
 			});
 		}
 
-		public void Save(SolverServerSession session)
+		public void Save(int cycleId, SolverServerSession session)
 		{
-			Repository.UpdateOrInsert("Sessions", session.Id, session.GetInternalState(), (o, n) =>
+			Repository.UpdateOrInsert(GetCyclePartition(cycleId), session.Id, session.GetInternalState(), (o, n) =>
 			{
 				if(o.ETag != n.ETag)
 					throw new InvalidOperationException("Optimistic concurrency failure");
@@ -61,18 +61,18 @@ namespace NTumbleBit.TumblerServer
 			});
 		}
 
-		public PromiseServerSession GetPromiseServerSession(string id)
+		public PromiseServerSession GetPromiseServerSession(int cycleId, string id)
 		{
-			var session = Repository.Get<PromiseServerSession.State>("Sessions", id);
+			var session = Repository.Get<PromiseServerSession.State>(GetCyclePartition(cycleId), id);
 			if(session == null)
 				return null;
 			return new PromiseServerSession(session,
 				_Configuration.CreateClassicTumblerParameters().CreatePromiseParamaters());
 		}
 
-		public SolverServerSession GetSolverServerSession(string id)
+		public SolverServerSession GetSolverServerSession(int cycleId, string id)
 		{
-			var session = Repository.Get<SolverServerSession.State>("Sessions", id);
+			var session = Repository.Get<SolverServerSession.State>(GetCyclePartition(cycleId), id);
 			if(session == null)
 				return null;
 			return new SolverServerSession(_Configuration.TumblerKey,
@@ -84,14 +84,14 @@ namespace NTumbleBit.TumblerServer
 		{
 			ExtKey key = GetExtKey();
 			var partition = GetCyclePartition(cycleId);
-			var index = Repository.Get<int>(partition, "KeyIndex");
-			Repository.UpdateOrInsert<int>(partition, "KeyIndex", index + 1, (o, n) =>
+			var nextIndex = Repository.Get<int>(partition, "KeyIndex") + 1;
+			Repository.UpdateOrInsert<int>(partition, "KeyIndex", nextIndex, (o, n) =>
 			{
-				index = Math.Max(o, n);
-				return index;
+				nextIndex = Math.Max(o, n);
+				return nextIndex;
 			});
-			keyIndex = index;
-			return key.Derive(cycleId, false).Derive((uint)index).PrivateKey;
+			keyIndex = nextIndex - 1;
+			return key.Derive(cycleId, false).Derive((uint)keyIndex).PrivateKey;
 		}
 
 		private ExtKey GetExtKey()

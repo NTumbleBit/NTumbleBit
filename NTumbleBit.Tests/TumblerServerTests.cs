@@ -76,6 +76,11 @@ namespace NTumbleBit.Tests
 				MineTo(server.AliceNode, cycle, CyclePhase.ClientChannelEstablishment);
 				server.SyncNodes();
 
+
+				var escrow1 = machine.AliceClient.RequestTumblerEscrowKey(machine.StartCycle);
+				var escrow2 = machine.AliceClient.RequestTumblerEscrowKey(machine.StartCycle);
+				Assert.Equal(0, escrow1.KeyIndex);
+				Assert.Equal(1, escrow2.KeyIndex);
 				machine.Update();
 
 				//Wait the client escrow is confirmed
