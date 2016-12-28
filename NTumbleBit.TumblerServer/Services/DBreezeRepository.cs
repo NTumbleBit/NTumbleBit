@@ -73,7 +73,7 @@ namespace NTumbleBit.Client.Tumbler.Services
 
 		private string GetDirectory(string partitionKey)
 		{
-			return Encoders.Hex.EncodeData(Hashes.SHA256(Encoding.UTF8.GetBytes(partitionKey)));
+			return partitionKey;
 		}
 
 		public void Delete(string partitionKey)
