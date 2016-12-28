@@ -89,15 +89,15 @@ namespace NTumbleBit.TumblerServer.Controllers
 
 
 		[HttpPost("api/v1/tumblers/0/clientchannels")]
-		public IActionResult RequestTumblerEscrowKey([FromBody]ClientEscrowInformation request)
+		public IActionResult RequestTumblerEscrowKey([FromBody]int cycleStart)
 		{
 			var height = Services.BlockExplorerService.GetCurrentHeight();
-			var aliceSession = new AliceServerChannelNegotiation(Parameters, Tumbler.TumblerKey, Tumbler.VoucherKey);
-			var pubKey = aliceSession.ReceiveClientEscrowInformation(request);
-			if(!aliceSession.GetCycle().IsInPhase(CyclePhase.ClientChannelEstablishment, height))
+			var cycle = Parameters.CycleGenerator.GetCycle(cycleStart);
+			int keyIndex;
+			var key = Repository.GetNextKey(cycle.Start, out keyIndex);
+			if(!cycle.IsInPhase(CyclePhase.ClientChannelEstablishment, height))
 				return BadRequest("incorrect-phase");
-			Repository.Save(aliceSession.GetChannelId(), aliceSession);
-			return Json(pubKey);
+			return Json(new TumblerEscrowKeyResponse() { PubKey = key.PubKey, KeyIndex = keyIndex });
 		}
 
 		[HttpPost("api/v1/tumblers/0/clientchannels/confirm")]
@@ -109,36 +109,44 @@ namespace NTumbleBit.TumblerServer.Controllers
 				return BadRequest("invalid-merkleproof");
 
 
-			var transaction = request.Transaction;			
+			var transaction = request.Transaction;
 			if(transaction.Outputs.Count > 2)
 				return BadRequest("invalid-transaction");
 
-			var sessions = transaction
-				.Outputs
-				.Select(o => Repository.GetAliceSession(o.ScriptPubKey.ToHex()))
-				.Where(o => o != null)
-				.ToList();
-			if(sessions.Count != 1)
-				return BadRequest("invalid-transaction");
-
-			var confirmations = Services.BlockExplorerService.GetBlockConfirmations(request.MerkleProof.Header.GetHash());
-			if((confirmations < Parameters.CycleGenerator.FirstCycle.SafetyPeriodDuration))
-				return BadRequest("not-enough-confirmation");
-
-			var cycle = sessions[0].GetCycle();
+			var cycle = Parameters.CycleGenerator.GetCycle(request.ClientEscrowInformation.Cycle);
 			var height = Services.BlockExplorerService.GetCurrentHeight();
 			if(!cycle.IsInPhase(CyclePhase.ClientChannelEstablishment, height))
 				return BadRequest("incorrect-phase");
 
-			Services.BlockExplorerService.Track($"Cycle {cycle.Start} Client Escrow", sessions[0].CreateEscrowScript().Hash.ScriptPubKey);
-			if(!Services.BlockExplorerService.TrackPrunedTransaction(request.Transaction, request.MerkleProof))
-				return BadRequest("invalid-merkleproof");
-			var channelId = sessions[0].GetChannelId();
-			PuzzleSolution voucher;
-			var solverServerSession = sessions[0].ConfirmClientEscrow(transaction, out voucher);
-			Repository.Save(channelId, sessions[0]);
-			Repository.Save(solverServerSession);
-			return Json(voucher);
+			AliceServerChannelNegotiation aliceNegotiation = new AliceServerChannelNegotiation(Parameters, Tumbler.TumblerKey, Tumbler.VoucherKey);
+			var key = Repository.GetKey(cycle.Start, request.KeyReference);
+			if(key.PubKey != request.TumblerEscrowPubKey)
+				return BadRequest("incorrect-escrowpubkey");
+			aliceNegotiation.ReceiveClientEscrowInformation(request.ClientEscrowInformation, key);
+
+			try
+			{
+				var expectedTxOut = aliceNegotiation.BuildEscrowTxOut();
+				PuzzleSolution voucher;
+				var solverServerSession = aliceNegotiation.ConfirmClientEscrow(transaction, out voucher);
+
+				var confirmations = Services.BlockExplorerService.GetBlockConfirmations(request.MerkleProof.Header.GetHash());
+				if((confirmations < Parameters.CycleGenerator.FirstCycle.SafetyPeriodDuration))
+					return BadRequest("not-enough-confirmation");
+
+				Services.BlockExplorerService.Track($"Cycle {cycle.Start} Client Escrow", expectedTxOut.ScriptPubKey);
+				if(!Services.BlockExplorerService.TrackPrunedTransaction(request.Transaction, request.MerkleProof))
+					return BadRequest("invalid-merkleproof");
+
+				if(!Repository.MarkUsedNonce(cycle.Start, new uint160(key.PubKey.Hash.ToBytes())))
+					return BadRequest("invalid-transaction");
+				Repository.Save(solverServerSession);
+				return Json(voucher);
+			}
+			catch(PuzzleException)
+			{
+				return BadRequest("invalid-transaction");
+			}
 		}
 
 		[HttpPost("api/v1/tumblers/0/channels")]
@@ -243,7 +251,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 		public IActionResult SolvePuzzles(string channelId, [FromBody]PuzzleValue[] puzzles)
 		{
 			var session = GetSolverServerSession(channelId, CyclePhase.PaymentPhase);
-			var commitments = session.SolvePuzzles(puzzles);			
+			var commitments = session.SolvePuzzles(puzzles);
 			Repository.Save(session);
 			return Json(commitments);
 		}
@@ -273,7 +281,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 		[HttpPost("api/v1/tumblers/0/clientchannels/{channelId}/offer")]
 		public IActionResult FullfillOffer(string channelId, [FromBody]TransactionSignature clientSignature)
 		{
-			var session = GetSolverServerSession(channelId, CyclePhase.TumblerCashoutPhase);			
+			var session = GetSolverServerSession(channelId, CyclePhase.TumblerCashoutPhase);
 			var feeRate = Services.FeeService.GetFeeRate();
 			if(session.Status != SolverServerStates.WaitingFullfillment)
 				return BadRequest("invalid-state");
@@ -287,7 +295,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 
 				var signedOffer = session.GetSignedOfferTransaction();
 				signedOffer.BroadcastAt = fullfill.BroadcastAt - 1;
-				Services.TrustedBroadcastService.Broadcast($"Cycle {cycle.Start} Client Offer Transaction (planned for: {signedOffer.BroadcastAt})", signedOffer);				
+				Services.TrustedBroadcastService.Broadcast($"Cycle {cycle.Start} Client Offer Transaction (planned for: {signedOffer.BroadcastAt})", signedOffer);
 				Services.TrustedBroadcastService.Broadcast($"Cycle {cycle.Start} Tumbler Fullfillment Transaction (planned for: {fullfill.BroadcastAt})", fullfill);
 				return Json(session.GetSolutionKeys());
 			}

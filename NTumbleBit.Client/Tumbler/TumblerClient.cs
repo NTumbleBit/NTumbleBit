@@ -92,13 +92,13 @@ namespace NTumbleBit.Client.Tumbler
 			return OpenChannelAsync(request).GetAwaiter().GetResult();
 		}
 
-		public Task<PubKey> RequestTumblerEscrowKeyAsync(ClientEscrowInformation clientEscrowInformation)
+		public Task<TumblerEscrowKeyResponse> RequestTumblerEscrowKeyAsync(int cycleStart)
 		{
-			return SendAsync<PubKey>(HttpMethod.Post, clientEscrowInformation, "api/v1/tumblers/0/clientchannels/");
+			return SendAsync<TumblerEscrowKeyResponse>(HttpMethod.Post, cycleStart, "api/v1/tumblers/0/clientchannels/");
 		}
-		public PubKey RequestTumblerEscrowKey(ClientEscrowInformation clientEscrowInformation)
+		public TumblerEscrowKeyResponse RequestTumblerEscrowKey(int cycleStart)
 		{
-			return RequestTumblerEscrowKeyAsync(clientEscrowInformation).GetAwaiter().GetResult();
+			return RequestTumblerEscrowKeyAsync(cycleStart).GetAwaiter().GetResult();
 		}
 
 		private string GetFullUri(string relativePath, params object[] parameters)

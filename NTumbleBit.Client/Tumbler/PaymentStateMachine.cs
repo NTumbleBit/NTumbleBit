@@ -172,12 +172,10 @@ namespace NTumbleBit.Client.Tumbler
 					}
 					break;
 				case CyclePhase.ClientChannelEstablishment:
-					if(ClientChannelNegotiation.Status == TumblerClientSessionStates.WaitingGenerateClientTransactionKeys)
-					{
-						//Client asks the public key of the Tumbler and sends its own
-						var aliceEscrowInformation = ClientChannelNegotiation.GenerateClientTransactionKeys();
-						var key = AliceClient.RequestTumblerEscrowKey(aliceEscrowInformation);
-						ClientChannelNegotiation.ReceiveTumblerEscrowKey(key);
+					if(ClientChannelNegotiation.Status == TumblerClientSessionStates.WaitingTumblerClientTransactionKey)
+					{						
+						var key = AliceClient.RequestTumblerEscrowKey(cycle.Start);
+						ClientChannelNegotiation.ReceiveTumblerEscrowKey(key.PubKey, key.KeyIndex);
 						//Client create the escrow
 						var txout = ClientChannelNegotiation.BuildClientEscrowTxOut();
 						feeRate = GetFeeRate();
@@ -200,12 +198,18 @@ namespace NTumbleBit.Client.Tumbler
 					else if(ClientChannelNegotiation.Status == TumblerClientSessionStates.WaitingSolvedVoucher)
 					{
 						TransactionInformation clientTx = GetTransactionInformation(SolverClientSession.EscrowedCoin, true);
+						var state = ClientChannelNegotiation.GetInternalState();
 						if(clientTx != null && clientTx.Confirmations >= cycle.SafetyPeriodDuration)
 						{
+							//Client asks the public key of the Tumbler and sends its own
+							var aliceEscrowInformation = ClientChannelNegotiation.GenerateClientTransactionKeys();
 							var voucher = AliceClient.SignVoucher(new Models.SignVoucherRequest()
 							{
 								MerkleProof = clientTx.MerkleProof,
-								Transaction = clientTx.Transaction
+								Transaction = clientTx.Transaction,
+								KeyReference = state.TumblerEscrowKeyReference,
+								ClientEscrowInformation = aliceEscrowInformation,
+								TumblerEscrowPubKey = state.ClientEscrowInformation.OtherEscrowKey
 							});
 							ClientChannelNegotiation.CheckVoucherSolution(voucher);
 							logger.LogInformation("Voucher solution obtained");
