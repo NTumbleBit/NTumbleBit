@@ -71,27 +71,28 @@ namespace NTumbleBit.Tests
 				return version;
 			}
 
+			string zip;
+			string bitcoind;
 			if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 			{
-				var bitcoind = String.Format("TestData/bitcoin-{0}/bin/bitcoind.exe", version);
+				bitcoind = String.Format("TestData/bitcoin-{0}/bin/bitcoind.exe", version);
 				if(File.Exists(bitcoind))
 					return bitcoind;
-				var zip = String.Format("TestData/bitcoin-{0}-win32.zip", version);
+				zip = String.Format("TestData/bitcoin-{0}-win32.zip", version);
 				string url = String.Format("https://bitcoin.org/bin/bitcoin-core-{0}/" + Path.GetFileName(zip), version);
 				HttpClient client = new HttpClient();
 				client.Timeout = TimeSpan.FromMinutes(10.0);
 				var data = client.GetByteArrayAsync(url).GetAwaiter().GetResult();
 				File.WriteAllBytes(zip, data);
 				ZipFile.ExtractToDirectory(zip, new FileInfo(zip).Directory.FullName);
-				return bitcoind;
 			}
 			else
 			{
-				string bitcoind = String.Format("TestData/bitcoin-{0}/bin/bitcoind", version);
+				bitcoind = String.Format("TestData/bitcoin-{0}/bin/bitcoind", version);
 				if(File.Exists(bitcoind))
 					return bitcoind;
 
-				var zip = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ?
+				zip = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ?
 					String.Format("TestData/bitcoin-{0}-x86_64-linux-gnu.tar.gz", version)
 					: String.Format("TestData/bitcoin-{0}-osx64.tar.gz", version);
 
@@ -101,8 +102,9 @@ namespace NTumbleBit.Tests
 				var data = client.GetByteArrayAsync(url).GetAwaiter().GetResult();
 				File.WriteAllBytes(zip, data);
 				Process.Start("tar", "-zxvf " + zip + " -C TestData").WaitForExit();
-				return bitcoind;
 			}
+			File.Delete(zip);
+			return bitcoind;
 		}
 
 		int last = 0;
