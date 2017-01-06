@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
@@ -123,6 +123,9 @@ namespace NTumbleBit.TumblerServer
 					return configuration;
 				});
 			});
+
+			builder.UseUrls("http://"+configuration.Listen+":"+configuration.Port);
+
 			return builder;
 		}		
 
@@ -141,3 +144,4 @@ namespace NTumbleBit.TumblerServer
 		}
 	}
 }
+

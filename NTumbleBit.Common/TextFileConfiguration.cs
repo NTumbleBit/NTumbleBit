@@ -1,4 +1,4 @@
-﻿using NBitcoin;
+using NBitcoin;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -8,8 +8,18 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit.Common
 {
+
+	public class ConfigurationException : Exception
+	{
+		public ConfigurationException(string message) : base(message)
+		{
+
+		}
+	}
+
     public class TextFileConfiguration
     {
+
 		public static Dictionary<string, string> Parse(string data)
 		{
 			Dictionary<string, string> result = new Dictionary<string, string>();
@@ -59,5 +69,9 @@ namespace NTumbleBit.Common
 
 			return builder.ToString();
 		}
+
+		
+		
 	}
 }
+
