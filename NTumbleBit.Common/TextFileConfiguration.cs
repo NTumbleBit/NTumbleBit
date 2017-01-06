@@ -53,8 +53,7 @@ namespace NTumbleBit.Common
 			builder.AppendLine("#rpc.user=bitcoinuser");
 			builder.AppendLine("#rpc.password=bitcoinpassword");
 			builder.AppendLine("#rpc.cookiefile=yourbitcoinfolder/.cookie");
-			builder.AppendLine("#tumbler.server=http://server/");
-			builder.AppendLine("#tumbler.server=http://server/");
+			builder.AppendLine("#tumbler.server=http://localhost:5000");
 			builder.AppendLine("#outputwallet.extpubkey=xpub661MyMwAqRbcFMJZyE2opu5nJd6QgyMewDXwxzTsEDuXdaB2HzV1rGEi6DyAXbtHS7H8C9o4c5g6hLsMinmfiVTFYV5TogCvJ7yhQoB4vVa");
 			builder.AppendLine("#outputwallet.keypath=0/0");
 
