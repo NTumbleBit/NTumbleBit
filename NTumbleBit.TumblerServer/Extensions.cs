@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Hosting;
+﻿using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
@@ -15,6 +15,7 @@ using NTumbleBit.TumblerServer.Services;
 using NTumbleBit.TumblerServer.Services.RPCServices;
 using Microsoft.AspNetCore.Mvc;
 using NTumbleBit.Common;
+using NTumbleBit.Common.Logging;
 
 namespace NTumbleBit.TumblerServer
 {
@@ -56,7 +57,7 @@ namespace NTumbleBit.TumblerServer
 				services.AddSingleton<IRepository>(provider =>
 				{
 					var conf = provider.GetRequiredService<TumblerConfiguration>();
-					var dbreeze = new DBreezeRepository(Path.Combine(conf.DataDirectory, "db"));
+					var dbreeze = new DBreezeRepository(Path.Combine(conf.DataDir, "db"));
 					return dbreeze;
 				});
 
@@ -73,44 +74,39 @@ namespace NTumbleBit.TumblerServer
 				});
 				services.AddSingleton((provider) =>
 				{
-					var conf = configuration ?? new TumblerConfiguration();
-					var factory = provider.GetRequiredService<ILoggerFactory>();
-					var logger = factory.CreateLogger<TumblerConfiguration>();
-					conf.Network = conf.Network ?? Network.Main;
-					conf.DataDirectory = conf.DataDirectory ?? DefaultDataDirectory.GetDefaultDirectory("NTumbleBitServer", logger, conf.Network);
-					conf.ConfigurationFile = conf.ConfigurationFile ?? GetDefaultConfigurationFile(logger, conf.DataDirectory, conf.Network);
+					var conf = configuration ?? new TumblerConfiguration().LoadArgs(new string[0]);
 
-					var rsaFile = Path.Combine(conf.DataDirectory, "Tumbler.pem");
+					var rsaFile = Path.Combine(conf.DataDir, "Tumbler.pem");
 
 					if(conf.TumblerKey == null)
 					{
 						if(!File.Exists(rsaFile))
 						{
-							logger.LogWarning("RSA private key not found, please backup it. Creating...");
+							Logs.Configuration.LogWarning("RSA private key not found, please backup it. Creating...");
 							conf.TumblerKey = new RsaKey();
 							File.WriteAllBytes(rsaFile, conf.TumblerKey.ToBytes());
-							logger.LogInformation("RSA key saved (" + rsaFile + ")");
+							Logs.Configuration.LogInformation("RSA key saved (" + rsaFile + ")");
 						}
 						else
 						{
-							logger.LogInformation("RSA private key found (" + rsaFile + ")");
+							Logs.Configuration.LogInformation("RSA private key found (" + rsaFile + ")");
 							conf.TumblerKey = new RsaKey(File.ReadAllBytes(rsaFile));
 						}
 					}
 
 					if(conf.VoucherKey == null)
 					{
-						var voucherFile = Path.Combine(conf.DataDirectory, "Voucher.pem");
+						var voucherFile = Path.Combine(conf.DataDir, "Voucher.pem");
 						if(!File.Exists(voucherFile))
 						{
-							logger.LogWarning("Creation of Voucher Key");
+							Logs.Configuration.LogWarning("Creation of Voucher Key");
 							conf.VoucherKey = new RsaKey();
 							File.WriteAllBytes(voucherFile, conf.VoucherKey.ToBytes());
-							logger.LogInformation("RSA key saved (" + voucherFile + ")");
+							Logs.Configuration.LogInformation("RSA key saved (" + voucherFile + ")");
 						}
 						else
 						{
-							logger.LogInformation("Voucher key found (" + voucherFile + ")");
+							Logs.Configuration.LogInformation("Voucher key found (" + voucherFile + ")");
 							conf.VoucherKey = new RsaKey(File.ReadAllBytes(voucherFile));
 						}
 					}
@@ -118,29 +114,22 @@ namespace NTumbleBit.TumblerServer
 					Debug.Assert(conf.TumblerKey != null);
 					Debug.Assert(conf.VoucherKey != null);
 
+					try
+					{
 
-					conf.RPCClient = conf.RPCClient ?? RPCConfiguration.ConfigureRPCClient(logger, conf.ConfigurationFile, conf.Network);
+						conf.RPCClient = conf.RPCClient ?? conf.RPC.ConfigureRPCClient(conf.Network);
+					}
+					catch
+					{
+						throw new ConfigException("Please, fix rpc settings in " + conf.ConfigurationFile);
+					}
 					return configuration;
 				});
 			});
 
-			builder.UseUrls("http://"+configuration.Listen+":"+configuration.Port);
+			builder.UseUrls(configuration.GetUrls());
 
 			return builder;
-		}		
-
-		public static string GetDefaultConfigurationFile(ILogger logger, string dataDirectory, Network network)
-		{
-			var config = Path.Combine(dataDirectory, "server.config");
-			logger.LogInformation("Configuration file set to " + config);
-			if(!File.Exists(config))
-			{
-				logger.LogInformation("Creating configuration file");
-
-				var data = TextFileConfiguration.CreateDefaultConfiguration(network);
-				File.WriteAllText(config, data);
-			}
-			return config;
 		}
 	}
 }

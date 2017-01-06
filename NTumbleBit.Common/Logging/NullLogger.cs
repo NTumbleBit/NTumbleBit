@@ -4,11 +4,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace NTumbleBit.Common
+namespace NTumbleBit.Common.Logging
 {
 	public class NullLogger : ILogger
 	{
-		class NullDisposable : IDisposable
+		class Dispo : IDisposable
 		{
 			public void Dispose()
 			{
@@ -17,16 +17,17 @@ namespace NTumbleBit.Common
 		}
 		public IDisposable BeginScope<TState>(TState state)
 		{
-			return new NullDisposable();
+			return new Dispo();
 		}
 
 		public bool IsEnabled(LogLevel logLevel)
 		{
-			return false;
+			return true;
 		}
 
 		public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
 		{
+			
 		}
 	}
 }

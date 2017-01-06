@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -11,6 +11,7 @@ using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Logging;
 using NTumbleBit.TumblerServer.Services;
 using System.Threading;
+using NTumbleBit.Common.Logging;
 
 namespace NTumbleBit.TumblerServer
 {
@@ -18,9 +19,10 @@ namespace NTumbleBit.TumblerServer
     {
         public static void Main(string[] args)
         {
+			Logs.Configure(new FuncLoggerFactory(i => new ConsoleLogger("Configuration", (a, b) => true, false)));
 			var logger = new ConsoleLogger("Main", (a, b) => true, false);
 			var configuration = new TumblerConfiguration();
-			configuration.GetArgs(args);
+			configuration.LoadArgs(args);
 			try
 			{
 				var host = new WebHostBuilder()
