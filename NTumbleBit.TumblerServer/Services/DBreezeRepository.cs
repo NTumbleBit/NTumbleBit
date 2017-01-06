@@ -35,10 +35,14 @@ namespace NTumbleBit.Client.Tumbler.Services
 				var engine = GetEngine(partitionKey);
 				using(var tx = engine.GetTransaction())
 				{
-					var existing = Get<T>(rowKey, tx);
-					var newValue = data;
-					if(existing != null)
-						newValue = update(existing, newValue);
+					T newValue = data;
+					var existingRow = tx.Select<string, byte[]>(GetTableName<T>(), rowKey);
+					if(existingRow != null && existingRow.Exists)
+					{
+						var existing = Serializer.ToObject<T>(Encoding.UTF8.GetString(existingRow.Value));
+						if(existing != null)
+							newValue = update(existing, newValue);
+					}
 					var bytes = Encoding.UTF8.GetBytes(Serializer.ToString(newValue));
 					tx.Insert(GetTableName<T>(), rowKey, bytes);
 					tx.Commit();
@@ -69,7 +73,7 @@ namespace NTumbleBit.Client.Tumbler.Services
 
 		private string GetDirectory(string partitionKey)
 		{
-			return Encoders.Hex.EncodeData(Hashes.SHA256(Encoding.UTF8.GetBytes(partitionKey)));
+			return partitionKey;
 		}
 
 		public void Delete(string partitionKey)

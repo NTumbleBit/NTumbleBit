@@ -82,6 +82,11 @@ namespace NTumbleBit.PuzzlePromise
 				get;
 				set;
 			}
+			public int ETag
+			{
+				get;
+				set;
+			}
 		}
 
 		public State GetInternalState()

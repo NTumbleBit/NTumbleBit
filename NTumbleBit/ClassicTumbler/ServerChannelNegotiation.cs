@@ -117,29 +117,23 @@ namespace NTumbleBit.ClassicTumbler
 			InternalState = Serializer.Clone(state);
 		}
 
-		public PubKey ReceiveClientEscrowInformation(ClientEscrowInformation escrowInformation)
+		public void ReceiveClientEscrowInformation(ClientEscrowInformation escrowInformation, Key escrowKey)
 		{
 			AssertState(AliceServerChannelNegotiationStates.WaitingClientEscrowInformation);
 			var cycle = Parameters.CycleGenerator.GetCycle(escrowInformation.Cycle);
 			InternalState.CycleStart = cycle.Start;
-			InternalState.EscrowKey = new Key();
+			InternalState.EscrowKey = escrowKey;
 			InternalState.OtherEscrowKey = escrowInformation.EscrowKey;
 			InternalState.RedeemKey = escrowInformation.RedeemKey;
 			InternalState.UnsignedVoucher = escrowInformation.UnsignedVoucher;
 			InternalState.Status = AliceServerChannelNegotiationStates.WaitingClientEscrow;
-			return InternalState.EscrowKey.PubKey;
 		}
 
 		public TxOut BuildEscrowTxOut()
 		{
 			return new TxOut(Parameters.Denomination + Parameters.Fee, CreateEscrowScript().Hash);
 		}
-
-		public string GetChannelId()
-		{
-			return CreateEscrowScript().Hash.ScriptPubKey.ToHex();
-		}
-
+		
 		public Script CreateEscrowScript()
 		{
 			return EscrowScriptBuilder.CreateEscrow(new[] { InternalState.EscrowKey.PubKey, InternalState.OtherEscrowKey }, InternalState.RedeemKey, GetCycle().GetClientLockTime());

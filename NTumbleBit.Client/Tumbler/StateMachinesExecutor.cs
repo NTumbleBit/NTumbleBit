@@ -86,7 +86,7 @@ namespace NTumbleBit.Client.Tumbler
 							lastCycle = cycle.Start;
 							Logger.LogInformation("New registring cycle " + cycle.Start);
 
-							var state = Repository.Get<PaymentStateMachine.State>("StateMachine", cycle.Start.ToString());
+							var state = Repository.Get<PaymentStateMachine.State>(GetPartitionKey(cycle.Start), cycle.Start.ToString());
 							if(state == null)
 							{
 								var stateMachine = CreateStateMachine(null);
@@ -94,7 +94,9 @@ namespace NTumbleBit.Client.Tumbler
 								Logger.LogInformation("New state machine created");
 							}
 						}
-						foreach(var state in Repository.List<PaymentStateMachine.State>("StateMachine"))
+
+						var cycles = Parameters.CycleGenerator.GetCycles(height);
+						foreach(var state in cycles.SelectMany(c => Repository.List<PaymentStateMachine.State>(GetPartitionKey(c.Start))))
 						{
 							var machine = CreateStateMachine(state);
 							try
@@ -114,9 +116,13 @@ namespace NTumbleBit.Client.Tumbler
 			}).Start();
 		}
 
+		string GetPartitionKey(int cycle)
+		{
+			return "Cycle_" + cycle;
+		}
 		private void Save(PaymentStateMachine stateMachine, int cycle)
 		{
-			Repository.UpdateOrInsert("StateMachine", cycle.ToString(), stateMachine.GetInternalState(), (o, n) => n);
+			Repository.UpdateOrInsert(GetPartitionKey(cycle), "", stateMachine.GetInternalState(), (o, n) => n);
 		}
 
 		private PaymentStateMachine CreateStateMachine(PaymentStateMachine.State state)

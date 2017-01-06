@@ -63,5 +63,24 @@ namespace NTumbleBit.ClassicTumbler
 			var registrationLength = FirstCycle.RegistrationDuration - RegistrationOverlap;
 			return GetCycle(cycle.Start + registrationLength);
 		}
+
+		public CycleParameters[] GetCycles(int height)
+		{
+			List<CycleParameters> cycles = new List<CycleParameters>();
+			var cycle = GetRegistratingCycle(height);
+			while(cycle.IsInside(height))
+			{
+				var prev = GetPreviousCycle(cycle);
+				if(prev == null)
+					break;
+				cycle = prev;
+			}
+			do
+			{
+				cycles.Add(cycle);
+				cycle = GetNextCycle(cycle);
+			} while(cycle.IsInside(height));
+			return cycles.ToArray();
+		}
 	}
 }

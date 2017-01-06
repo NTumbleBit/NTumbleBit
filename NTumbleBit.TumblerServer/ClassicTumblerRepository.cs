@@ -39,57 +39,96 @@ namespace NTumbleBit.TumblerServer
 			}
 		}
 
-		public void Save(PromiseServerSession session)
+		public void Save(int cycleId, PromiseServerSession session)
 		{
-			Repository.UpdateOrInsert("Sessions", session.Id, session.GetInternalState(), (o, n) => n);
+			Repository.UpdateOrInsert(GetCyclePartition(cycleId), session.Id, session.GetInternalState(), (o, n) =>
+			{
+				if(o.ETag != n.ETag)
+					throw new InvalidOperationException("Optimistic concurrency failure");
+				n.ETag++;
+				return n;
+			});
 		}
 
-		public void Save(SolverServerSession session)
+		public void Save(int cycleId, SolverServerSession session)
 		{
-			Repository.UpdateOrInsert("Sessions", session.Id, session.GetInternalState(), (o, n) => n);
+			Repository.UpdateOrInsert(GetCyclePartition(cycleId), session.Id, session.GetInternalState(), (o, n) =>
+			{
+				if(o.ETag != n.ETag)
+					throw new InvalidOperationException("Optimistic concurrency failure");
+				n.ETag++;
+				return n;
+			});
 		}
 
-		public PromiseServerSession GetPromiseServerSession(string id)
+		public PromiseServerSession GetPromiseServerSession(int cycleId, string id)
 		{
-			var session = Repository.Get<PromiseServerSession.State>("Sessions", id);
+			var session = Repository.Get<PromiseServerSession.State>(GetCyclePartition(cycleId), id);
 			if(session == null)
 				return null;
 			return new PromiseServerSession(session,
 				_Configuration.CreateClassicTumblerParameters().CreatePromiseParamaters());
 		}
 
-		public SolverServerSession GetSolverServerSession(string id)
+		public SolverServerSession GetSolverServerSession(int cycleId, string id)
 		{
-			var session = Repository.Get<SolverServerSession.State>("Sessions", id);
+			var session = Repository.Get<SolverServerSession.State>(GetCyclePartition(cycleId), id);
 			if(session == null)
 				return null;
 			return new SolverServerSession(_Configuration.TumblerKey,
 				this._Configuration.CreateClassicTumblerParameters().CreateSolverParamaters(),
 				session);
 		}
-
-		public void Save(string sessionId, AliceServerChannelNegotiation session)
+		
+		public Key GetNextKey(int cycleId, out int keyIndex)
 		{
-			Repository.UpdateOrInsert("Negotiation", sessionId, session.GetInternalState(), (o, n) => n);
+			ExtKey key = GetExtKey();
+			var partition = GetCyclePartition(cycleId);
+			var nextIndex = Repository.Get<int>(partition, "KeyIndex") + 1;
+			Repository.UpdateOrInsert<int>(partition, "KeyIndex", nextIndex, (o, n) =>
+			{
+				nextIndex = Math.Max(o, n);
+				return nextIndex;
+			});
+			keyIndex = nextIndex - 1;
+			return key.Derive(cycleId, false).Derive((uint)keyIndex).PrivateKey;
 		}
 
-		public AliceServerChannelNegotiation GetAliceSession(string sessionId)
+		private ExtKey GetExtKey()
 		{
-			var state = Repository.Get<AliceServerChannelNegotiation.State>("Negotiation", sessionId);
-			if(state == null)
-				return null;
-			return new AliceServerChannelNegotiation(_Configuration.CreateClassicTumblerParameters(), _Configuration.TumblerKey, _Configuration.VoucherKey, state);
+			var key = Repository.Get<ExtKey>("General", "EscrowHDKey");
+			if(key == null)
+			{
+				key = new ExtKey();
+				Repository.UpdateOrInsert<ExtKey>("General", "EscrowHDKey", key, (o, n) =>
+				{
+					key = o;
+					return o;
+				});
+			}
+			return key;
+		}
+
+		public Key GetKey(int cycleId, int keyIndex)
+		{
+			return GetExtKey().Derive(cycleId, false).Derive((uint)keyIndex).PrivateKey;
+		}
+
+		private static string GetCyclePartition(int cycleId)
+		{
+			return "Cycle_" + cycleId;
 		}
 
 		public bool MarkUsedNonce(int cycle, uint160 nonce)
 		{
 			bool used = false;
-			Repository.UpdateOrInsert("Nonces", cycle.ToString(), nonce, (o, n) =>
+			var partition = GetCyclePartition(cycle);
+			Repository.UpdateOrInsert<bool>(partition, "Nonces-" + nonce, true, (o, n) =>
 			{
 				used = true;
 				return n;
 			});
 			return !used;
-		}
+		}		
 	}
 }
