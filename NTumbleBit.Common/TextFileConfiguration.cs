@@ -29,9 +29,9 @@ namespace NTumbleBit.Common
 			{
 				var splitted = arg.Split('=');
 				if(splitted.Length == 2)
-					Add(splitted[0], splitted[1]);
+					Add(splitted[0].ToLowerInvariant(), splitted[1]);
 				if(splitted.Length == 1)
-					Add(splitted[0], "1");
+					Add(splitted[0].ToLowerInvariant(), "1");
 			}
 		}
 
@@ -82,7 +82,7 @@ namespace NTumbleBit.Common
 				if(!result.TryGetValue(key, out values))
 				{
 					values = new List<string>();
-					result.Add(key, values);
+					result.Add(key.ToLowerInvariant(), values);
 				}
 				var value = String.Join("=", split.Skip(1).ToArray());
 				values.Add(value);
@@ -105,8 +105,12 @@ namespace NTumbleBit.Common
 
 		public T GetOrDefault<T>(string key, T defaultValue)
 		{
+			if(!key.StartsWith("-"))
+				key = "-" + key;
+			key = key.ToLowerInvariant();
 			List<string> values;
-			if(!_Args.TryGetValue(key, out values) && !_Args.TryGetValue("-" + key, out values))
+			if(!_Args.TryGetValue(key, out values) && 
+				!_Args.TryGetValue(key.Replace(".", ""), out values))
 				return defaultValue;
 			if(values.Count != 1)
 				throw new ConfigurationException("Duplicate value for key " + key);
