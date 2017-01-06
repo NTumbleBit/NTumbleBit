@@ -75,23 +75,6 @@ namespace NTumbleBit.TumblerServer
 			get;
 			set;
 		} = new List<IPEndPoint>();
-		public void ConfigureTestnet()
-		{
-			this.Network = Network.TestNet;
-			var cycle = this
-				.ClassicTumblerParameters
-				.CycleGenerator.FirstCycle;
-
-			cycle.RegistrationDuration = 3;
-			cycle.Start = 0;
-			cycle.RegistrationDuration = 3;
-			cycle.ClientChannelEstablishmentDuration = 3;
-			cycle.TumblerChannelEstablishmentDuration = 3;
-			cycle.SafetyPeriodDuration = 2;
-			cycle.PaymentPhaseDuration = 3;
-			cycle.TumblerCashoutDuration = 4;
-			cycle.ClientCashoutDuration = 3;
-		}
 
 		public TumblerConfiguration LoadArgs(String[] args)
 		{
@@ -115,7 +98,7 @@ namespace NTumbleBit.TumblerServer
 				AssetConfigFileExists();
 				var configTemp = TextFileConfiguration.Parse(File.ReadAllText(ConfigurationFile));
 				Network = configTemp.GetOrDefault<bool>("testnet", false) ? Network.TestNet :
-						  configTemp.GetOrDefault<bool>("regtest", false) ? Network.RegTest : 
+						  configTemp.GetOrDefault<bool>("regtest", false) ? Network.RegTest :
 						  Network.Main;
 			}
 			if(DataDir == null)
@@ -126,6 +109,22 @@ namespace NTumbleBit.TumblerServer
 			if(ConfigurationFile == null)
 			{
 				ConfigurationFile = GetDefaultConfigurationFile();
+			}
+
+			if(Network == Network.TestNet)
+			{
+				var cycle = this
+							.ClassicTumblerParameters
+							.CycleGenerator.FirstCycle;
+				cycle.RegistrationDuration = 3;
+				cycle.Start = 0;
+				cycle.RegistrationDuration = 3;
+				cycle.ClientChannelEstablishmentDuration = 3;
+				cycle.TumblerChannelEstablishmentDuration = 3;
+				cycle.SafetyPeriodDuration = 2;
+				cycle.PaymentPhaseDuration = 3;
+				cycle.TumblerCashoutDuration = 4;
+				cycle.ClientCashoutDuration = 3;
 			}
 
 			Logs.Configuration.LogInformation("Data directory set to " + DataDir);
