@@ -110,7 +110,7 @@ namespace NTumbleBit.TumblerServer
 			{
 				ConfigurationFile = GetDefaultConfigurationFile();
 			}
-
+			Logs.Configuration.LogInformation("Network: " + Network);
 			if(Network == Network.TestNet)
 			{
 				var cycle = this
@@ -142,8 +142,12 @@ namespace NTumbleBit.TumblerServer
 						.GetAll("bind")
 						.Select(p => ConvertToEndpoint(p, defaultPort))
 						.ToList();
+			if(Listen.Count == 0)
+			{
+				Listen.Add(new IPEndPoint(IPAddress.Any, defaultPort));
+			}
 
-			RPC = RPCArgs.Parse(config);
+			RPC = RPCArgs.Parse(config, Network);
 			return this;
 		}
 

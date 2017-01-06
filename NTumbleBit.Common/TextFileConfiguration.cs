@@ -106,7 +106,7 @@ namespace NTumbleBit.Common
 		public T GetOrDefault<T>(string key, T defaultValue)
 		{
 			List<string> values;
-			if(!_Args.TryGetValue(key, out values))
+			if(!_Args.TryGetValue(key, out values) && !_Args.TryGetValue("-" + key, out values))
 				return defaultValue;
 			if(values.Count != 1)
 				throw new ConfigurationException("Duplicate value for key " + key);

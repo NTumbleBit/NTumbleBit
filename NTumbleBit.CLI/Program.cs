@@ -27,6 +27,7 @@ namespace NTumbleBit.CLI
 				var network = args.Contains("-testnet", StringComparer.CurrentCultureIgnoreCase) ? Network.TestNet :
 				args.Contains("-regtest", StringComparer.CurrentCultureIgnoreCase) ? Network.RegTest :
 				Network.Main;
+				Logs.Configuration.LogInformation("Network: " + network);
 
 				var dataDir = DefaultDataDirectory.GetDefaultDirectory("NTumbleBit", network);
 				var consoleArgs = new TextFileConfiguration(args);

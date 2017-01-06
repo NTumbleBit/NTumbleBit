@@ -96,15 +96,15 @@ namespace NTumbleBit.Common
 
 		public static RPCClient ConfigureRPCClient(TextFileConfiguration confArgs, Network network)
 		{
-			RPCArgs args = Parse(confArgs);
+			RPCArgs args = Parse(confArgs, network);
 			return args.ConfigureRPCClient(network);
 		}
 
-		public static RPCArgs Parse(TextFileConfiguration confArgs)
+		public static RPCArgs Parse(TextFileConfiguration confArgs, Network network)
 		{
 			try
 			{
-				var url = confArgs.GetOrDefault<string>("rpc.url", null);
+				var url = confArgs.GetOrDefault<string>("rpc.url", network == null ? null : "http://localhost:" + network.RPCPort + "/");
 				return new RPCArgs()
 				{
 					User = confArgs.GetOrDefault<string>("rpc.user", null),
