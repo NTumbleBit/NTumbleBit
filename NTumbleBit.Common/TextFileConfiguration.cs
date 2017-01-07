@@ -1,6 +1,7 @@
 ﻿using NBitcoin;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -8,11 +9,72 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit.Common
 {
-    public class TextFileConfiguration
-    {
-		public static Dictionary<string, string> Parse(string data)
+
+	public class ConfigurationException : Exception
+	{
+		public ConfigurationException(string message) : base(message)
 		{
-			Dictionary<string, string> result = new Dictionary<string, string>();
+
+		}
+	}
+
+	public class TextFileConfiguration
+	{
+		private Dictionary<string, List<string>> _Args;
+
+		public TextFileConfiguration(string[] args)
+		{
+			_Args = new Dictionary<string, List<string>>();
+			foreach(var arg in args)
+			{
+				var splitted = arg.Split('=');
+				if(splitted.Length == 2)
+					Add(splitted[0], splitted[1]);
+				if(splitted.Length == 1)
+					Add(splitted[0], "1");
+			}
+		}
+
+		private void Add(string key, string value)
+		{
+			key = NormalizeKey(key);
+			List<string> list;
+			if(!_Args.TryGetValue(key, out list))
+			{
+				list = new List<string>();
+				_Args.Add(key, list);
+			}
+			list.Add(value);
+		}
+
+		private static string NormalizeKey(string key)
+		{
+			key = key.ToLowerInvariant();
+			while(key.Length > 0 && key[0] == '-')
+			{
+				key = key.Substring(1);
+			}
+			key = key.Replace(".", "");
+			return key;
+		}
+
+		public void MergeInto(TextFileConfiguration destination)
+		{
+			foreach(var kv in _Args)
+			{
+				foreach(var v in kv.Value)
+					destination.Add(kv.Key, v);
+			}
+		}
+
+		public TextFileConfiguration(Dictionary<string, List<string>> args)
+		{
+			this._Args = args;
+		}
+
+		public static TextFileConfiguration Parse(string data)
+		{
+			Dictionary<string, List<string>> result = new Dictionary<string, List<string>>();
 			var lines = data.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
 			int lineCount = -1;
 			foreach(var l in lines)
@@ -28,36 +90,103 @@ namespace NTumbleBit.Common
 					throw new FormatException("Line " + lineCount + ": No value are set");
 
 				var key = split[0];
-				if(result.ContainsKey(key))
-					throw new FormatException("Line " + lineCount + ": Duplicate key " + key);
+				key = NormalizeKey(key);
+				List<string> values;
+				if(!result.TryGetValue(key, out values))
+				{
+					values = new List<string>();
+					result.Add(key, values);
+				}
 				var value = String.Join("=", split.Skip(1).ToArray());
-				result.Add(key, value);
+				values.Add(value);
 			}
-			return result;
+			return new TextFileConfiguration(result);
 		}
 
-		public static String CreateDefaultConfiguration(Network network)
+		public bool Contains(string key)
 		{
-			StringBuilder builder = new StringBuilder();
-			builder.AppendLine("#rpc.url=http://localhost:"+network.RPCPort+ "/");
-			builder.AppendLine("#rpc.user=bitcoinuser");
-			builder.AppendLine("#rpc.password=bitcoinpassword");
-			builder.AppendLine("#rpc.cookiefile=yourbitcoinfolder/.cookie");
-			return builder.ToString();
+			List<string> values;
+			return _Args.TryGetValue(key, out values);
 		}
-
-		public static String CreateClientDefaultConfiguration(Network network)
+		public string[] GetAll(string key)
 		{
-			StringBuilder builder = new StringBuilder();
-			builder.AppendLine("#rpc.url=http://localhost:" + network.RPCPort + "/");
-			builder.AppendLine("#rpc.user=bitcoinuser");
-			builder.AppendLine("#rpc.password=bitcoinpassword");
-			builder.AppendLine("#rpc.cookiefile=yourbitcoinfolder/.cookie");
-			builder.AppendLine("#tumbler.server=http://localhost:5000");
-			builder.AppendLine("#outputwallet.extpubkey=xpub661MyMwAqRbcFMJZyE2opu5nJd6QgyMewDXwxzTsEDuXdaB2HzV1rGEi6DyAXbtHS7H8C9o4c5g6hLsMinmfiVTFYV5TogCvJ7yhQoB4vVa");
-			builder.AppendLine("#outputwallet.keypath=0/0");
-
-			return builder.ToString();
+			List<string> values;
+			if(!_Args.TryGetValue(key, out values))
+				return new string[0];
+			return values.ToArray();
 		}
+
+		Dictionary<string, string> _Aliases = new Dictionary<string, string>();
+
+		public void AddAlias(string from, string to)
+		{
+			from = NormalizeKey(from);
+			to = NormalizeKey(to);
+			_Aliases.Add(from, to);
+		}
+		public T GetOrDefault<T>(string key, T defaultValue)
+		{
+			key = NormalizeKey(key);
+			string alias = null;
+			if(_Aliases.TryGetValue(key, out alias))
+			{
+				key = alias;
+			}
+			List<string> values;
+			if(!_Args.TryGetValue(key, out values))
+				return defaultValue;
+			if(values.Count != 1)
+				throw new ConfigurationException("Duplicate value for key " + key);
+			try
+			{
+				return ConvertValue<T>(values[0]);
+			}
+			catch(FormatException) { throw new ConfigurationException("Key " + key + " should be of type " + typeof(T).Name); }
+		}
+
+		private T ConvertValue<T>(string str)
+		{
+			if(typeof(T) == typeof(bool))
+			{
+				var trueValues = new[] { "1", "true" };
+				var falseValues = new[] { "0", "false" };
+				if(trueValues.Contains(str, StringComparer.OrdinalIgnoreCase))
+					return (T)(object)true;
+				if(falseValues.Contains(str, StringComparer.OrdinalIgnoreCase))
+					return (T)(object)false;
+				throw new FormatException();
+			}
+			else if(typeof(T) == typeof(string))
+				return (T)(object)str;
+			else if(typeof(T) == typeof(int))
+			{
+				return (T)(object)int.Parse(str, CultureInfo.InvariantCulture);
+			}
+			else
+			{
+				throw new NotSupportedException("Configuration value does not support time " + typeof(T).Name);
+			}
+		}
+
+		//public static String CreateDefaultConfiguration(Network network)
+		//{
+		//	StringBuilder builder = new StringBuilder();
+		//	builder.AppendLine("#rpc.url=http://localhost:" + network.RPCPort + "/");
+		//	builder.AppendLine("#rpc.user=bitcoinuser");
+		//	builder.AppendLine("#rpc.password=bitcoinpassword");
+		//	builder.AppendLine("#rpc.cookiefile=yourbitcoinfolder/.cookie");
+		//	return builder.ToString();
+		//}
+
+		//public static String CreateClientDefaultConfiguration(Network network)
+		//{
+		//	StringBuilder builder = new StringBuilder();
+		//	builder.AppendLine("#rpc.url=http://localhost:" + network.RPCPort + "/");
+		//	builder.AppendLine("#rpc.user=bitcoinuser");
+		//	builder.AppendLine("#rpc.password=bitcoinpassword");
+		//	builder.AppendLine("#rpc.cookiefile=yourbitcoinfolder/.cookie");
+		//	return builder.ToString();
+		//}
 	}
 }
+

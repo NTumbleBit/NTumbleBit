@@ -164,7 +164,7 @@ namespace NTumbleBit.Tests
 			var rpc = _TumblerNode.CreateRPCClient();
 
 			var conf = new TumblerConfiguration();
-			conf.DataDirectory = directory;
+			conf.DataDir = directory;
 			conf.Network = Network.RegTest;
 			conf.RPCClient = rpc;
 			conf.TumblerKey = TestKeys.Default;

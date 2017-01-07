@@ -11,6 +11,7 @@ using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Logging;
 using NTumbleBit.TumblerServer.Services;
 using System.Threading;
+using NTumbleBit.Common.Logging;
 
 namespace NTumbleBit.TumblerServer
 {
@@ -18,26 +19,10 @@ namespace NTumbleBit.TumblerServer
     {
         public static void Main(string[] args)
         {
+			Logs.Configure(new FuncLoggerFactory(i => new ConsoleLogger("Configuration", (a, b) => true, false)));
 			var logger = new ConsoleLogger("Main", (a, b) => true, false);
 			var configuration = new TumblerConfiguration();
-			if(args.Contains("-testnet"))
-			{
-				configuration.Network = Network.TestNet;
-				var cycle = configuration
-					.ClassicTumblerParameters
-					.CycleGenerator.FirstCycle;
-
-				cycle.RegistrationDuration = 3;
-				cycle.Start = 0;
-				cycle.RegistrationDuration = 3;
-				cycle.ClientChannelEstablishmentDuration = 3;
-				cycle.TumblerChannelEstablishmentDuration = 3;
-				cycle.SafetyPeriodDuration = 2;
-				cycle.PaymentPhaseDuration = 3;
-				cycle.TumblerCashoutDuration = 4;
-				cycle.ClientCashoutDuration = 3;
-			}
-			
+			configuration.LoadArgs(args);
 			try
 			{
 				var host = new WebHostBuilder()
@@ -67,3 +52,4 @@ namespace NTumbleBit.TumblerServer
 		}
 	}
 }
+

@@ -10,6 +10,9 @@ using System.IO;
 using NTumbleBit.Client.Tumbler.Services;
 using NTumbleBit.Client.Tumbler;
 using System.Threading;
+using NTumbleBit.Common.Logging;
+using System.Text;
+using NBitcoin.RPC;
 
 namespace NTumbleBit.CLI
 {
@@ -17,46 +20,60 @@ namespace NTumbleBit.CLI
 	{
 		public static void Main(string[] args)
 		{
-			ConsoleLogger logger = new ConsoleLogger("Configuration", (a, b) => true, false);
+			Logs.Configure(new FuncLoggerFactory(i => new ConsoleLogger("Configuration", (a, b) => true, false)));
+			var logger = new ConsoleLogger("Configuration", (a, b) => true, false);
 			try
 			{
+				var network = args.Contains("-testnet", StringComparer.CurrentCultureIgnoreCase) ? Network.TestNet :
+				args.Contains("-regtest", StringComparer.CurrentCultureIgnoreCase) ? Network.RegTest :
+				Network.Main;
+				Logs.Configuration.LogInformation("Network: " + network);
 
-				Network network = Network.Main;
-				CommandLineParser parser = new CommandLineParser(args);
-				if(parser.GetBool("-testnet"))
-					network = Network.TestNet;
-				var onlymonitor = parser.GetBool("-onlymonitor");
-				var dataDir = DefaultDataDirectory.GetDefaultDirectory("NTumbleBit", logger, network);
-				var configurationFile = GetDefaultConfigurationFile(logger, dataDir, network);
-				var rpc = RPCConfiguration.ConfigureRPCClient(logger, configurationFile, network);
+				var dataDir = DefaultDataDirectory.GetDefaultDirectory("NTumbleBit", network);
+				var consoleArgs = new TextFileConfiguration(args);
+				var configFile = GetDefaultConfigurationFile(dataDir, network);
+				var config = TextFileConfiguration.Parse(File.ReadAllText(configFile));
+				consoleArgs.MergeInto(config);
+				config.AddAlias("server", "tumbler.server");
+
+				var onlymonitor = config.GetOrDefault<bool>("onlymonitor", false);
+
+				RPCClient rpc = null;
+				try
+				{
+					rpc = RPCArgs.ConfigureRPCClient(config, network);
+				}
+				catch
+				{
+					throw new ConfigException("Please, fix rpc settings in " + configFile);
+				}
 				var dbreeze = new DBreezeRepository(Path.Combine(dataDir, "db"));
-				var config = TextFileConfiguration.Parse(File.ReadAllText(configurationFile));
 
 
 				var services = ExternalServices.CreateFromRPCClient(rpc, dbreeze);
 				CancellationTokenSource source = new CancellationTokenSource();
 				var broadcaster = new BroadcasterJob(services, logger);
 				broadcaster.Start(source.Token);
-				logger.LogInformation("Monitor started");
+				Logs.Configuration.LogInformation("Monitor started");
 
 				if(!onlymonitor)
 				{
-					var server = config.TryGet("tumbler.server");
+					var server = config.GetOrDefault("tumbler.server", null as string);
 					if(server == null)
 					{
-						logger.LogError("tumbler.server not configured");
+						Logs.Main.LogError("tumbler.server not configured");
 						throw new ConfigException();
 					}
 					var client = new NTumbleBit.Client.Tumbler.TumblerClient(network, new Uri(server));
-					logger.LogInformation("Downloading tumbler information");
+					Logs.Configuration.LogInformation("Downloading tumbler information");
 					var parameters = Retry(3, () => client.GetTumblerParameters());
-					logger.LogInformation("Tumbler Server Connection successfull");
+					Logs.Configuration.LogInformation("Tumbler Server Connection successfull");
 					var existingConfig = dbreeze.Get<ClassicTumbler.ClassicTumblerParameters>("Configuration", client.Address.AbsoluteUri);
 					if(existingConfig != null)
 					{
 						if(Serializer.ToString(existingConfig) != Serializer.ToString(parameters))
 						{
-							logger.LogError("The configuration file of the tumbler changed since last connection, it should never happen");
+							Logs.Configuration.LogError("The configuration file of the tumbler changed since last connection, it should never happen");
 							throw new ConfigException();
 						}
 					}
@@ -74,14 +91,14 @@ namespace NTumbleBit.CLI
 					KeyPath keypath = new KeyPath("0");
 					try
 					{
-						pubKey = new BitcoinExtPubKey(config.TryGet("outputwallet.extpubkey"), rpc.Network);
+						pubKey = new BitcoinExtPubKey(config.GetOrDefault("outputwallet.extpubkey", null as string), rpc.Network);
 					}
 					catch
 					{
 						throw new ConfigException("outputwallet.extpubkey is not configured correctly");
 					}
 
-					string keyPathString = config.TryGet("outputwallet.keypath");
+					string keyPathString = config.GetOrDefault("outputwallet.keypath", null as string);
 					if(keyPathString != null)
 					{
 						try
@@ -96,21 +113,21 @@ namespace NTumbleBit.CLI
 					var destinationWallet = new ClientDestinationWallet("", pubKey, keypath, dbreeze);
 					var stateMachine = new StateMachinesExecutor(parameters, client, destinationWallet, services, dbreeze, logger);
 					stateMachine.Start(source.Token);
-					logger.LogInformation("State machines started");
+					Logs.Configuration.LogInformation("State machines started");
 				}
-				logger.LogInformation("Press enter to stop");
+				Logs.Configuration.LogInformation("Press enter to stop");
 				Console.ReadLine();
 				source.Cancel();
 			}
 			catch(ConfigException ex)
 			{
 				if(!string.IsNullOrEmpty(ex.Message))
-					logger.LogError(ex.Message);
+					Logs.Configuration.LogError(ex.Message);
 			}
 			catch(Exception ex)
 			{
-				logger.LogError(ex.Message);
-				logger.LogDebug(ex.StackTrace);
+				Logs.Configuration.LogError(ex.Message);
+				Logs.Configuration.LogDebug(ex.StackTrace);
 			}
 		}
 
@@ -128,16 +145,19 @@ namespace NTumbleBit.CLI
 			throw ex;
 		}
 
-		public static string GetDefaultConfigurationFile(ILogger logger, string dataDirectory, Network network)
+		public static string GetDefaultConfigurationFile(string dataDirectory, Network network)
 		{
 			var config = Path.Combine(dataDirectory, "client.config");
-			logger.LogInformation("Configuration file set to " + config);
+			Logs.Configuration.LogInformation("Configuration file set to " + config);
 			if(!File.Exists(config))
 			{
-				logger.LogInformation("Creating configuration file");
-
-				var data = TextFileConfiguration.CreateClientDefaultConfiguration(network);
-				File.WriteAllText(config, data);
+				Logs.Configuration.LogInformation("Creating configuration file");
+				StringBuilder builder = new StringBuilder();
+				builder.AppendLine("#rpc.url=http://localhost:" + network.RPCPort + "/");
+				builder.AppendLine("#rpc.user=bitcoinuser");
+				builder.AppendLine("#rpc.password=bitcoinpassword");
+				builder.AppendLine("#rpc.cookiefile=yourbitcoinfolder/.cookie");
+				File.WriteAllText(config, builder.ToString());
 			}
 			return config;
 		}

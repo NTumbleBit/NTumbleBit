@@ -9,6 +9,7 @@ using NBitcoin;
 using NTumbleBit.PuzzlePromise;
 using Microsoft.Extensions.Logging;
 using NTumbleBit.Common;
+using NTumbleBit.Common.Logging;
 
 namespace NTumbleBit.Client.Tumbler
 {

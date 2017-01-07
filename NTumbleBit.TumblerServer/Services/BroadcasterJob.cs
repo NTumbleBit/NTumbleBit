@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using NTumbleBit.Common;
+using NTumbleBit.Common.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
