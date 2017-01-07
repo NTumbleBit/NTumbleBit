@@ -29,14 +29,15 @@ namespace NTumbleBit.Common
 			{
 				var splitted = arg.Split('=');
 				if(splitted.Length == 2)
-					Add(splitted[0].ToLowerInvariant(), splitted[1]);
+					Add(splitted[0], splitted[1]);
 				if(splitted.Length == 1)
-					Add(splitted[0].ToLowerInvariant(), "1");
+					Add(splitted[0], "1");
 			}
 		}
 
 		private void Add(string key, string value)
 		{
+			key = NormalizeKey(key);
 			List<string> list;
 			if(!_Args.TryGetValue(key, out list))
 			{
@@ -44,6 +45,17 @@ namespace NTumbleBit.Common
 				_Args.Add(key, list);
 			}
 			list.Add(value);
+		}
+
+		private static string NormalizeKey(string key)
+		{
+			key = key.ToLowerInvariant();
+			while(key.Length > 0 && key[0] == '-')
+			{
+				key = key.Substring(1);
+			}
+			key = key.Replace(".", "");
+			return key;
 		}
 
 		public void MergeInto(TextFileConfiguration destination)
@@ -78,11 +90,12 @@ namespace NTumbleBit.Common
 					throw new FormatException("Line " + lineCount + ": No value are set");
 
 				var key = split[0];
+				key = NormalizeKey(key);
 				List<string> values;
 				if(!result.TryGetValue(key, out values))
 				{
 					values = new List<string>();
-					result.Add(key.ToLowerInvariant(), values);
+					result.Add(key, values);
 				}
 				var value = String.Join("=", split.Skip(1).ToArray());
 				values.Add(value);
@@ -103,14 +116,24 @@ namespace NTumbleBit.Common
 			return values.ToArray();
 		}
 
+		Dictionary<string, string> _Aliases = new Dictionary<string, string>();
+
+		public void AddAlias(string from, string to)
+		{
+			from = NormalizeKey(from);
+			to = NormalizeKey(to);
+			_Aliases.Add(from, to);
+		}
 		public T GetOrDefault<T>(string key, T defaultValue)
 		{
-			if(!key.StartsWith("-"))
-				key = "-" + key;
-			key = key.ToLowerInvariant();
+			key = NormalizeKey(key);
+			string alias = null;
+			if(_Aliases.TryGetValue(key, out alias))
+			{
+				key = alias;
+			}
 			List<string> values;
-			if(!_Args.TryGetValue(key, out values) && 
-				!_Args.TryGetValue(key.Replace(".", ""), out values))
+			if(!_Args.TryGetValue(key, out values))
 				return defaultValue;
 			if(values.Count != 1)
 				throw new ConfigurationException("Duplicate value for key " + key);
