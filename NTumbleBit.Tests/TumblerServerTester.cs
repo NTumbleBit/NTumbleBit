@@ -216,7 +216,7 @@ namespace NTumbleBit.Tests
 		{
 			try
 			{
-				Directory.Delete(directory, true);
+				Utils.DeleteRecursivelyWithMagicDust(directory);
 				return true;
 			}
 			catch(DirectoryNotFoundException)

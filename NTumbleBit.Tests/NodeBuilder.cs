@@ -54,7 +54,7 @@ namespace NTumbleBit.Tests
 			var path = EnsureDownloaded(version);
 			try
 			{
-				Directory.Delete(caller, true);
+				Utils.DeleteRecursivelyWithMagicDust(caller);
 			}
 			catch(DirectoryNotFoundException)
 			{
@@ -150,7 +150,7 @@ namespace NTumbleBit.Tests
 			last++;
 			try
 			{
-				Directory.Delete(child, true);
+				Utils.DeleteRecursivelyWithMagicDust(child);
 			}
 			catch(DirectoryNotFoundException)
 			{
@@ -241,7 +241,7 @@ namespace NTumbleBit.Tests
 		{
 			try
 			{
-				Directory.Delete(_Folder, true);
+				Utils.DeleteRecursivelyWithMagicDust(_Folder);
 			}
 			catch(DirectoryNotFoundException) { }
 		}
