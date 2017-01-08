@@ -25,14 +25,44 @@ namespace NTumbleBit.Common
 		public TextFileConfiguration(string[] args)
 		{
 			_Args = new Dictionary<string, List<string>>();
+			string noValueParam = null;
+			Action flushNoValueParam = () =>
+			{
+				if(noValueParam != null)
+				{
+					Add(noValueParam, "1", false);
+					noValueParam = null;
+				}
+			};
+
 			foreach(var arg in args)
 			{
-				var splitted = arg.Split('=');
-				if(splitted.Length == 2)
-					Add(splitted[0], splitted[1], false);
-				if(splitted.Length == 1)
-					Add(splitted[0], "1", false);
+				bool isParamName = arg.StartsWith("-");
+				if(isParamName)
+				{
+					var splitted = arg.Split('=');
+					if(splitted.Length < 1)
+					{
+						var value = String.Join("=", splitted.Skip(1).ToArray());
+						flushNoValueParam();
+						Add(splitted[0], value, false);
+					}
+					else
+					{
+						flushNoValueParam();
+						noValueParam = splitted[0];
+					}
+				}
+				else
+				{
+					if(noValueParam != null)
+					{
+						Add(noValueParam, arg, false);
+						noValueParam = null;
+					}
+				}
 			}
+			flushNoValueParam();
 		}
 
 		private void Add(string key, string value, bool sourcePriority)
