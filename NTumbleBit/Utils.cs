@@ -135,6 +135,10 @@ namespace NTumbleBit
 					Thread.Sleep(100);
 					continue;
 				}
+				catch (Exception)
+				{
+					throw;
+				}
 				return;
 			}
 			// depending on your use case, consider throwing an exception here
