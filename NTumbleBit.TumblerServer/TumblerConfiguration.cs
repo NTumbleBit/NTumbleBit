@@ -136,7 +136,14 @@ namespace NTumbleBit.TumblerServer
 			var config = TextFileConfiguration.Parse(File.ReadAllText(ConfigurationFile));
 			consoleConfig.MergeInto(config, true);
 
+			if (config.Contains("help"))
+			{
+				Console.WriteLine("Usage : dotnet run [-testnet] [-port port] [-listen address] [-datadir=datadir -conf=configuration] More details on the wiki :  https://github.com/NTumbleBit/NTumbleBit/wiki");
+				 System.Environment.Exit(0);
+			}
+
 			var defaultPort = config.GetOrDefault<int>("port", 5000);
+
 			Listen = config
 						.GetAll("bind")
 						.Select(p => ConvertToEndpoint(p, defaultPort))
