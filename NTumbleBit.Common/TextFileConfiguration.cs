@@ -189,6 +189,8 @@ namespace NTumbleBit.Common
 					return (T)(object)false;
 				throw new FormatException();
 			}
+			else if(typeof(T) == typeof(Uri))
+				return (T)(object)new Uri(str, UriKind.Absolute);
 			else if(typeof(T) == typeof(string))
 				return (T)(object)str;
 			else if(typeof(T) == typeof(int))

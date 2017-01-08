@@ -8,7 +8,6 @@ using NBitcoin.RPC;
 using NTumbleBit.ClassicTumbler;
 using NTumbleBit.TumblerServer.Services;
 using NTumbleBit.Common;
-using System;
 using System.Net;
 using NTumbleBit.Common.Logging;
 using Microsoft.Extensions.Logging;

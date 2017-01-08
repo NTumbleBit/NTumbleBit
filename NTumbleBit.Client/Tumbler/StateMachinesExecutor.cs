@@ -84,7 +84,7 @@ namespace NTumbleBit.Client.Tumbler
 						if(lastCycle != cycle.Start)
 						{
 							lastCycle = cycle.Start;
-							Logger.LogInformation("New registring cycle " + cycle.Start);
+							Logger.LogInformation("New registering cycle " + cycle.Start);
 
 							var state = Repository.Get<PaymentStateMachine.State>(GetPartitionKey(cycle.Start), cycle.Start.ToString());
 							if(state == null)

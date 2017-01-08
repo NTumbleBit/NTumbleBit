@@ -58,14 +58,14 @@ namespace NTumbleBit.CLI
 
 				if(!onlymonitor)
 				{
-					var server = config.GetOrDefault("tumbler.server", null as string);
+					var server = config.GetOrDefault("tumbler.server", null as Uri);
 					if(server == null)
 					{
 						Logs.Main.LogError("tumbler.server not configured");
 						throw new ConfigException();
 					}
-					var client = new NTumbleBit.Client.Tumbler.TumblerClient(network, new Uri(server));
-					Logs.Configuration.LogInformation("Downloading tumbler information");
+					var client = new NTumbleBit.Client.Tumbler.TumblerClient(network, server);
+					Logs.Configuration.LogInformation("Downloading tumbler information of " + server.AbsoluteUri);
 					var parameters = Retry(3, () => client.GetTumblerParameters());
 					Logs.Configuration.LogInformation("Tumbler Server Connection successfull");
 					var existingConfig = dbreeze.Get<ClassicTumbler.ClassicTumblerParameters>("Configuration", client.Address.AbsoluteUri);
