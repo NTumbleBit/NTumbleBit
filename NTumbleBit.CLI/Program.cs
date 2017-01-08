@@ -33,7 +33,7 @@ namespace NTumbleBit.CLI
 				var consoleArgs = new TextFileConfiguration(args);
 				var configFile = GetDefaultConfigurationFile(dataDir, network);
 				var config = TextFileConfiguration.Parse(File.ReadAllText(configFile));
-				consoleArgs.MergeInto(config);
+				consoleArgs.MergeInto(config, true);
 				config.AddAlias("server", "tumbler.server");
 
 				var onlymonitor = config.GetOrDefault<bool>("onlymonitor", false);

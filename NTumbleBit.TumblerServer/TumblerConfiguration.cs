@@ -135,7 +135,7 @@ namespace NTumbleBit.TumblerServer
 
 			var consoleConfig = new TextFileConfiguration(args);
 			var config = TextFileConfiguration.Parse(File.ReadAllText(ConfigurationFile));
-			consoleConfig.MergeInto(config);
+			consoleConfig.MergeInto(config, true);
 
 			var defaultPort = config.GetOrDefault<int>("port", 5000);
 			Listen = config
