@@ -86,7 +86,7 @@ namespace NTumbleBit.Client.Tumbler.Services
 				var engine = GetEngine(partitionKey);
 				engine.Dispose();
 				_EnginesByParitionKey.Remove(partitionKey);
-				Directory.Delete(GetPartitionPath(partitionKey), true);
+				Utils.DeleteRecursivelyWithMagicDust(GetPartitionPath(partitionKey));
 			}
 		}
 

@@ -70,7 +70,6 @@ namespace NTumbleBit.Client.Tumbler
 		{
 			while(true)
 			{
-
 				var walletDescription = GetWalletDescription();
 				var index = Repository.Get<int>(GetPartition(WalletName), "");
 				var address = walletDescription.Key.ExtPubKey.Derive(walletDescription.DerivationPath).Derive((uint)index).PubKey.Hash.ScriptPubKey;
