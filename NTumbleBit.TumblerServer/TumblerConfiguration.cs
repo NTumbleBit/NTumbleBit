@@ -12,6 +12,8 @@ using System.Net;
 using NTumbleBit.Common.Logging;
 using Microsoft.Extensions.Logging;
 using System.Text;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace NTumbleBit.TumblerServer
 {
@@ -138,8 +140,9 @@ namespace NTumbleBit.TumblerServer
 
 			if (config.Contains("help"))
 			{
-				Console.WriteLine("Usage : dotnet run [-testnet] [-port port] [-listen address] [-datadir=datadir -conf=configuration] More details on the wiki :  https://github.com/NTumbleBit/NTumbleBit/wiki");
-				 System.Environment.Exit(0);
+				Console.WriteLine("Details on the wiki page :  https://github.com/NTumbleBit/NTumbleBit/wiki/Server-Config");
+				OpenBrowser("https://github.com/NTumbleBit/NTumbleBit/wiki/Server-Config");
+				System.Environment.Exit(0);
 			}
 
 			var defaultPort = config.GetOrDefault<int>("port", 5000);
@@ -216,6 +219,29 @@ namespace NTumbleBit.TumblerServer
 			clone.ServerKey = TumblerKey.PubKey;
 			clone.VoucherKey = VoucherKey.PubKey;
 			return clone;
+		}
+
+		public void OpenBrowser(string url)
+		{
+			try 
+			{
+				if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+				{
+					Process.Start(new ProcessStartInfo("cmd", $"/c start {url}")); // Works ok on windows
+				}
+				else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+				{
+					Process.Start("xdg-open", url);  // Works ok on linux
+				}
+				else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+				{
+					Process.Start("open", url); // Not tested
+				}
+			} 
+			catch(Exception)
+			{
+				// nothing happens 
+			}
 		}
 	}
 }
