@@ -25,17 +25,47 @@ namespace NTumbleBit.Common
 		public TextFileConfiguration(string[] args)
 		{
 			_Args = new Dictionary<string, List<string>>();
+			string noValueParam = null;
+			Action flushNoValueParam = () =>
+			{
+				if(noValueParam != null)
+				{
+					Add(noValueParam, "1", false);
+					noValueParam = null;
+				}
+			};
+
 			foreach(var arg in args)
 			{
-				var splitted = arg.Split('=');
-				if(splitted.Length == 2)
-					Add(splitted[0], splitted[1]);
-				if(splitted.Length == 1)
-					Add(splitted[0], "1");
+				bool isParamName = arg.StartsWith("-");
+				if(isParamName)
+				{
+					var splitted = arg.Split('=');
+					if(splitted.Length < 1)
+					{
+						var value = String.Join("=", splitted.Skip(1).ToArray());
+						flushNoValueParam();
+						Add(splitted[0], value, false);
+					}
+					else
+					{
+						flushNoValueParam();
+						noValueParam = splitted[0];
+					}
+				}
+				else
+				{
+					if(noValueParam != null)
+					{
+						Add(noValueParam, arg, false);
+						noValueParam = null;
+					}
+				}
 			}
+			flushNoValueParam();
 		}
 
-		private void Add(string key, string value)
+		private void Add(string key, string value, bool sourcePriority)
 		{
 			key = NormalizeKey(key);
 			List<string> list;
@@ -44,7 +74,10 @@ namespace NTumbleBit.Common
 				list = new List<string>();
 				_Args.Add(key, list);
 			}
-			list.Add(value);
+			if(sourcePriority)
+				list.Insert(0, value);
+			else
+				list.Add(value);
 		}
 
 		private static string NormalizeKey(string key)
@@ -58,12 +91,12 @@ namespace NTumbleBit.Common
 			return key;
 		}
 
-		public void MergeInto(TextFileConfiguration destination)
+		public void MergeInto(TextFileConfiguration destination, bool sourcePriority)
 		{
 			foreach(var kv in _Args)
 			{
 				foreach(var v in kv.Value)
-					destination.Add(kv.Key, v);
+					destination.Add(kv.Key, v, sourcePriority);
 			}
 		}
 
@@ -135,8 +168,8 @@ namespace NTumbleBit.Common
 			List<string> values;
 			if(!_Args.TryGetValue(key, out values))
 				return defaultValue;
-			if(values.Count != 1)
-				throw new ConfigurationException("Duplicate value for key " + key);
+			if(values.Count == 0)
+				return defaultValue;
 			try
 			{
 				return ConvertValue<T>(values[0]);
@@ -156,6 +189,8 @@ namespace NTumbleBit.Common
 					return (T)(object)false;
 				throw new FormatException();
 			}
+			else if(typeof(T) == typeof(Uri))
+				return (T)(object)new Uri(str, UriKind.Absolute);
 			else if(typeof(T) == typeof(string))
 				return (T)(object)str;
 			else if(typeof(T) == typeof(int))

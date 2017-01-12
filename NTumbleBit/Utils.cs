@@ -118,7 +118,9 @@ namespace NTumbleBit
 					return;  // good!
 				}
 				catch (IOException)
-				{ 
+				{
+					if (gnomes == magicDust)
+						throw;
 					// System.IO.IOException: The directory is not empty
 					System.Diagnostics.Debug.WriteLine("Gnomes prevent deletion of {0}! Applying magic dust, attempt #{1}.", destinationDir, gnomes);
 
@@ -128,6 +130,8 @@ namespace NTumbleBit
 				}
 				catch (UnauthorizedAccessException)
 				{
+					if (gnomes == magicDust)
+						throw;
 					// Wait, maybe another software make us authorized a little later
 					System.Diagnostics.Debug.WriteLine("Gnomes prevent deletion of {0}! Applying magic dust, attempt #{1}.", destinationDir, gnomes);
 
