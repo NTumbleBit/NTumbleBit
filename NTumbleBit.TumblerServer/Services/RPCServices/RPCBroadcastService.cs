@@ -74,8 +74,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			var transactions = Repository.List<Record>("Broadcasts");
 			foreach(var tx in transactions)
 				tx.Transaction.CacheHashes();
-			return Utils.TopologicalSort(transactions,
-				tx => transactions.Where(tx2 => tx.Transaction.Inputs.Any(input => input.PrevOut.Hash == tx2.Transaction.GetHash()))).ToArray();
+			return transactions.TopologicalSort(tx => transactions.Where(tx2 => tx.Transaction.Inputs.Any<TxIn>(input => input.PrevOut.Hash == tx2.Transaction.GetHash()))).ToArray();
 		}
 
 		public Transaction[] TryBroadcast()

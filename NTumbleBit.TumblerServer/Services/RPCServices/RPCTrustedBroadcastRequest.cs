@@ -102,8 +102,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		public Record[] GetRequests()
 		{
 			var requests = Repository.List<Record>("TrustedBroadcasts");
-			return Utils.TopologicalSort(requests,
-				tx => requests.Where(tx2 => tx2.Request.Transaction.Outputs.Any(o => o.ScriptPubKey == tx.Request.PreviousScriptPubKey))).ToArray();
+			return requests.TopologicalSort(tx => requests.Where(tx2 => tx2.Request.Transaction.Outputs.Any(o => o.ScriptPubKey == tx.Request.PreviousScriptPubKey))).ToArray();
 		}
 
 		public Transaction[] TryBroadcast()
