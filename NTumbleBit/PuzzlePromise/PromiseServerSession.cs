@@ -61,8 +61,6 @@ namespace NTumbleBit.PuzzlePromise
 		{
 			if(state == null)
 				throw new ArgumentNullException(nameof(state));
-			if(state == null)
-				return;
 			InternalState = state;
 		}
 
