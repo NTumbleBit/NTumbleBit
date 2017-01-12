@@ -109,7 +109,7 @@ namespace NTumbleBit.Client.Tumbler.Services
 
 		private string GetTableName<T>()
 		{
-			return typeof(T).Name;
+			return typeof(T).FullName;
 		}
 
 		public T Get<T>(string partitionKey, string rowKey)
