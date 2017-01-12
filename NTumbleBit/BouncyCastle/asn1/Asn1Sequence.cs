@@ -49,7 +49,7 @@ namespace NTumbleBit.BouncyCastle.Asn1
 				}
 			}
 
-			throw new ArgumentException("Unknown object in GetInstance: " + Platform.GetTypeName(obj), "obj");
+			throw new ArgumentException("Unknown object in GetInstance: " + Platform.GetTypeName(obj), nameof(obj));
 		}
 
 		protected internal Asn1Sequence(

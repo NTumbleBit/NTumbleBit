@@ -18,9 +18,9 @@ namespace NTumbleBit.Client.Tumbler
 		public TumblerClient(Network network, Uri serverAddress)
 		{
 			if(serverAddress == null)
-				throw new ArgumentNullException("serverAddress");
+				throw new ArgumentNullException(nameof(serverAddress));
 			if(network == null)
-				throw new ArgumentNullException("network");
+				throw new ArgumentNullException(nameof(network));
 			_Address = serverAddress;
 			_Network = network;
 		}
@@ -83,7 +83,7 @@ namespace NTumbleBit.Client.Tumbler
 		public Task<ScriptCoin> OpenChannelAsync(OpenChannelRequest request)
 		{
 			if(request == null)
-				throw new ArgumentNullException("request");
+				throw new ArgumentNullException(nameof(request));
 			return SendAsync<ScriptCoin>(HttpMethod.Post, request, "api/v1/tumblers/0/channels/");
 		}
 

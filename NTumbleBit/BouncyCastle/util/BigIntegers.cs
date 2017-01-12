@@ -36,7 +36,7 @@ namespace NTumbleBit.BouncyCastle.Utilities
 			byte[] bytes = n.ToByteArrayUnsigned();
 
 			if(bytes.Length > length)
-				throw new ArgumentException("standard length exceeded", "n");
+				throw new ArgumentException("standard length exceeded", nameof(n));
 
 			if(bytes.Length == length)
 				return bytes;

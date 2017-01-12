@@ -80,7 +80,7 @@ namespace NTumbleBit.BouncyCastle.Crypto.Engines
 
 			ParametersWithIV ivParams = parameters as ParametersWithIV;
 			if(ivParams == null)
-				throw new ArgumentException(AlgorithmName + " Init requires an IV", "parameters");
+				throw new ArgumentException(AlgorithmName + " Init requires an IV", nameof(parameters));
 
 			byte[] iv = ivParams.GetIV();
 			if(iv == null || iv.Length != NonceSize)

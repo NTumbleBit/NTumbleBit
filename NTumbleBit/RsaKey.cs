@@ -36,7 +36,7 @@ namespace NTumbleBit
 		public RsaKey(byte[] bytes)
 		{
 			if(bytes == null)
-				throw new ArgumentNullException("bytes");
+				throw new ArgumentNullException(nameof(bytes));
 			try
 			{
 				DerSequence seq2 = GetRSASequence(bytes);
@@ -53,14 +53,14 @@ namespace NTumbleBit
 		public PuzzleSolution SolvePuzzle(Puzzle puzzle)
 		{
 			if(puzzle == null)
-				throw new ArgumentNullException("puzzle");
+				throw new ArgumentNullException(nameof(puzzle));
 			return SolvePuzzle(puzzle.PuzzleValue);
 		}
 
 		public PuzzleSolution SolvePuzzle(PuzzleValue puzzle)
 		{
 			if(puzzle == null)
-				throw new ArgumentNullException("puzzle");
+				throw new ArgumentNullException(nameof(puzzle));
 
 			return new PuzzleSolution(Decrypt(puzzle._Value));
 		}
@@ -89,7 +89,7 @@ namespace NTumbleBit
 		internal BigInteger Decrypt(BigInteger encrypted)
 		{
 			if(encrypted == null)
-				throw new ArgumentNullException("encrypted");
+				throw new ArgumentNullException(nameof(encrypted));
 			if(encrypted.CompareTo(_Key.Modulus) >= 0)
 				throw new DataLengthException("input too large for RSA cipher.");
 

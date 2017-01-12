@@ -20,7 +20,7 @@ namespace NTumbleBit.Client.Tumbler.Services
 		public DBreezeRepository(string folder)
 		{
 			if(folder == null)
-				throw new ArgumentNullException("folder");
+				throw new ArgumentNullException(nameof(folder));
 			if(!Directory.Exists(folder))
 				Directory.CreateDirectory(folder);
 			_Folder = folder;

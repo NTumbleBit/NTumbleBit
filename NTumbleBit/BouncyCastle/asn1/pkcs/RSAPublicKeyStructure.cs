@@ -34,13 +34,13 @@ namespace NTumbleBit.BouncyCastle.Asn1.X509
 			BigInteger publicExponent)
 		{
 			if(modulus == null)
-				throw new ArgumentNullException("modulus");
+				throw new ArgumentNullException(nameof(modulus));
 			if(publicExponent == null)
-				throw new ArgumentNullException("publicExponent");
+				throw new ArgumentNullException(nameof(publicExponent));
 			if(modulus.SignValue <= 0)
-				throw new ArgumentException("Not a valid RSA modulus", "modulus");
+				throw new ArgumentException("Not a valid RSA modulus", nameof(modulus));
 			if(publicExponent.SignValue <= 0)
-				throw new ArgumentException("Not a valid RSA public exponent", "publicExponent");
+				throw new ArgumentException("Not a valid RSA public exponent", nameof(publicExponent));
 
 			this.modulus = modulus;
 			this.publicExponent = publicExponent;

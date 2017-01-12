@@ -14,7 +14,7 @@ namespace NTumbleBit.BouncyCastle.Math.Raw
 		{
 			int len = p.Length;
 			if(Nat.IsZero(len, x))
-				throw new ArgumentException("cannot be 0", "x");
+				throw new ArgumentException("cannot be 0", nameof(x));
 			if(Nat.IsOne(len, x))
 			{
 				Array.Copy(x, 0, z, 0, len);

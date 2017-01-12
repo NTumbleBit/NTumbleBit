@@ -24,9 +24,9 @@ namespace NTumbleBit.BouncyCastle.Crypto
 			int strength)
 		{
 			if(random == null)
-				throw new ArgumentNullException("random");
+				throw new ArgumentNullException(nameof(random));
 			if(strength < 1)
-				throw new ArgumentException("strength must be a positive value", "strength");
+				throw new ArgumentException("strength must be a positive value", nameof(strength));
 
 			this.random = random;
 			this.strength = strength;

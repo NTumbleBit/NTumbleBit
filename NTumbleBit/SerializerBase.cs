@@ -16,7 +16,7 @@ namespace NTumbleBit
 		public SerializerBase(Stream inner)
 		{
 			if(inner == null)
-				throw new ArgumentNullException("inner");
+				throw new ArgumentNullException(nameof(inner));
 			_Inner = inner;
 		}
 		

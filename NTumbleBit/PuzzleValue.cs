@@ -17,13 +17,13 @@ namespace NTumbleBit
 		public PuzzleValue(byte[] z)
 		{
 			if(z == null)
-				throw new ArgumentNullException("z");
+				throw new ArgumentNullException(nameof(z));
 			_Value = new BigInteger(1, z);
 		}
 		internal PuzzleValue(BigInteger z)
 		{
 			if(z == null)
-				throw new ArgumentNullException("z");
+				throw new ArgumentNullException(nameof(z));
 			_Value = z;
 		}
 
@@ -51,7 +51,7 @@ namespace NTumbleBit
 		public PuzzleSolution Solve(RsaKey key)
 		{
 			if(key == null)
-				throw new ArgumentNullException("key");
+				throw new ArgumentNullException(nameof(key));
 			return key.SolvePuzzle(this);
 		}
 

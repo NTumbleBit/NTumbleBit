@@ -19,7 +19,7 @@ namespace NTumbleBit.BouncyCastle.Asn1
 			: base(inStream, length)
 		{
 			if(length < 0)
-				throw new ArgumentException("negative lengths not allowed", "length");
+				throw new ArgumentException("negative lengths not allowed", nameof(length));
 
 			_originalLength = length;
 			_remaining = length;

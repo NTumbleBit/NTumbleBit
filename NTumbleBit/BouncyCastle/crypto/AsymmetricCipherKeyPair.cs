@@ -22,9 +22,9 @@ namespace NTumbleBit.BouncyCastle.Crypto
 			AsymmetricKeyParameter privateParameter)
 		{
 			if(publicParameter.IsPrivate)
-				throw new ArgumentException("Expected a public key", "publicParameter");
+				throw new ArgumentException("Expected a public key", nameof(publicParameter));
 			if(!privateParameter.IsPrivate)
-				throw new ArgumentException("Expected a private key", "privateParameter");
+				throw new ArgumentException("Expected a private key", nameof(privateParameter));
 
 			this.publicParameter = publicParameter;
 			this.privateParameter = privateParameter;

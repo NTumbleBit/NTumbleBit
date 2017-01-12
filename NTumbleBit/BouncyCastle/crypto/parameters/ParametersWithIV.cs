@@ -23,7 +23,7 @@ namespace NTumbleBit.BouncyCastle.Crypto.Parameters
 		{
 			// NOTE: 'parameters' may be null to imply key re-use
 			if(iv == null)
-				throw new ArgumentNullException("iv");
+				throw new ArgumentNullException(nameof(iv));
 
 			this.parameters = parameters;
 			this.iv = new byte[ivLen];

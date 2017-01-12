@@ -19,7 +19,7 @@ namespace NTumbleBit.Common
 		public CommandLineParser(string[] args)
 		{
 			if(args == null)
-				throw new ArgumentNullException("args");
+				throw new ArgumentNullException(nameof(args));
 			_Args = args;
 		}
 

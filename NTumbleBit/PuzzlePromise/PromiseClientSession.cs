@@ -70,7 +70,7 @@ namespace NTumbleBit.PuzzlePromise
 			public FakeHash(PromiseParameters parameters)
 			{
 				if(parameters == null)
-					throw new ArgumentNullException("parameters");
+					throw new ArgumentNullException(nameof(parameters));
 				Parameters = parameters;
 			}
 			public uint256 Salt
@@ -231,15 +231,15 @@ namespace NTumbleBit.PuzzlePromise
 		public SignaturesRequest CreateSignatureRequest(IDestination cashoutDestination, FeeRate feeRate)
 		{
 			if(cashoutDestination == null)
-				throw new ArgumentNullException("cashoutDestination");
+				throw new ArgumentNullException(nameof(cashoutDestination));
 			return CreateSignatureRequest(cashoutDestination.ScriptPubKey, feeRate);
 		}
 		public SignaturesRequest CreateSignatureRequest(Script cashoutDestination, FeeRate feeRate)
 		{
 			if(cashoutDestination == null)
-				throw new ArgumentNullException("cashoutDestination");
+				throw new ArgumentNullException(nameof(cashoutDestination));
 			if(feeRate == null)
-				throw new ArgumentNullException("feeRate");
+				throw new ArgumentNullException(nameof(feeRate));
 			AssertState(PromiseClientStates.WaitingSignatureRequest);
 
 			Transaction cashout = new Transaction();
@@ -297,7 +297,7 @@ namespace NTumbleBit.PuzzlePromise
 		public ClientRevelation Reveal(ServerCommitment[] commitments)
 		{
 			if(commitments == null)
-				throw new ArgumentNullException("commitments");
+				throw new ArgumentNullException(nameof(commitments));
 			if(commitments.Length != Parameters.GetTotalTransactionsCount())
 				throw new ArgumentException("Expecting " + Parameters.GetTotalTransactionsCount() + " commitments");
 			AssertState(PromiseClientStates.WaitingCommitments);
@@ -321,7 +321,7 @@ namespace NTumbleBit.PuzzlePromise
 		public PuzzleValue CheckCommitmentProof(ServerCommitmentsProof proof)
 		{
 			if(proof == null)
-				throw new ArgumentNullException("proof");
+				throw new ArgumentNullException(nameof(proof));
 			if(proof.FakeSolutions.Length != Parameters.FakeTransactionCount)
 				throw new ArgumentException("Expecting " + Parameters.FakeTransactionCount + " solutions");
 			if(proof.Quotients.Length != Parameters.RealTransactionCount - 1)
@@ -398,7 +398,7 @@ namespace NTumbleBit.PuzzlePromise
 		internal IEnumerable<Transaction> GetSignedTransactions(PuzzleSolution solution)
 		{
 			if(solution == null)
-				throw new ArgumentNullException("solution");
+				throw new ArgumentNullException(nameof(solution));
 			AssertState(PromiseClientStates.Completed);
 			solution = solution.Unblind(Parameters.ServerKey, InternalState.BlindFactor);
 			BigInteger cumul = solution._Value;

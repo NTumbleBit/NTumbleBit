@@ -18,7 +18,7 @@ namespace NTumbleBit.BouncyCastle.Asn1
 			string identifier)
 		{
 			if(identifier == null)
-				throw new ArgumentNullException("identifier");
+				throw new ArgumentNullException(nameof(identifier));
 			if(!IsValidIdentifier(identifier))
 				throw new FormatException("string " + identifier + " not an OID");
 
@@ -28,7 +28,7 @@ namespace NTumbleBit.BouncyCastle.Asn1
 		internal DerObjectIdentifier(DerObjectIdentifier oid, string branchID)
 		{
 			if(!IsValidBranchID(branchID, 0))
-				throw new ArgumentException("string " + branchID + " not a valid OID branch", "branchID");
+				throw new ArgumentException("string " + branchID + " not a valid OID branch", nameof(branchID));
 
 			identifier = oid.Id + "." + branchID;
 		}

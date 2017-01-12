@@ -11,9 +11,9 @@ namespace NTumbleBit
 		public Puzzle(RsaPubKey rsaPubKey, PuzzleValue puzzleValue)
 		{
 			if(rsaPubKey == null)
-				throw new ArgumentNullException("rsaPubKey");
+				throw new ArgumentNullException(nameof(rsaPubKey));
 			if(puzzleValue == null)
-				throw new ArgumentNullException("puzzleValue");
+				throw new ArgumentNullException(nameof(puzzleValue));
 			_RsaPubKey = rsaPubKey;
 			_PuzzleValue = puzzleValue;
 		}
@@ -26,21 +26,21 @@ namespace NTumbleBit
 		public Puzzle Unblind(BlindFactor blind)
 		{
 			if(blind == null)
-				throw new ArgumentNullException("blind");
+				throw new ArgumentNullException(nameof(blind));
 			return new Puzzle(_RsaPubKey, new PuzzleValue(RsaPubKey.RevertBlind(PuzzleValue._Value, blind)));
 		}
 
 		public PuzzleSolution Solve(RsaKey key)
 		{
 			if(key == null)
-				throw new ArgumentNullException("key");
+				throw new ArgumentNullException(nameof(key));
 			return PuzzleValue.Solve(key);
 		}
 
 		public bool Verify(PuzzleSolution solution)
 		{
 			if(solution == null)
-				throw new ArgumentNullException("solution");
+				throw new ArgumentNullException(nameof(solution));
 			return _RsaPubKey.Encrypt(solution._Value).Equals(PuzzleValue._Value);
 		}
 

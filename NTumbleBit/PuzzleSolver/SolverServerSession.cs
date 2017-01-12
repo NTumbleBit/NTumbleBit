@@ -123,7 +123,7 @@ namespace NTumbleBit.PuzzleSolver
 		{
 			parameters = parameters ?? new SolverParameters(serverKey.PubKey);
 			if(serverKey == null)
-				throw new ArgumentNullException("serverKey");
+				throw new ArgumentNullException(nameof(serverKey));
 			if(serverKey.PubKey != parameters.ServerKey)
 				throw new ArgumentNullException("Private key not matching expected public key");
 			InternalState = new State();
@@ -176,7 +176,7 @@ namespace NTumbleBit.PuzzleSolver
 		public ServerCommitment[] SolvePuzzles(PuzzleValue[] puzzles)
 		{
 			if(puzzles == null)
-				throw new ArgumentNullException("puzzles");
+				throw new ArgumentNullException(nameof(puzzles));
 			if(puzzles.Length != Parameters.GetTotalCount())
 				throw new ArgumentException("Expecting " + Parameters.GetTotalCount() + " puzzles");
 			AssertState(SolverServerStates.WaitingPuzzles);
@@ -235,7 +235,7 @@ namespace NTumbleBit.PuzzleSolver
 		public OfferInformation CheckBlindedFactors(BlindFactor[] blindFactors, FeeRate feeRate)
 		{
 			if(blindFactors == null)
-				throw new ArgumentNullException("blindFactors");
+				throw new ArgumentNullException(nameof(blindFactors));
 			if(blindFactors.Length != Parameters.RealPuzzleCount)
 				throw new ArgumentException("Expecting " + Parameters.RealPuzzleCount + " blind factors");
 			AssertState(SolverServerStates.WaitingBlindFactor);
@@ -324,9 +324,9 @@ namespace NTumbleBit.PuzzleSolver
 			FeeRate feeRate)
 		{
 			if(clientSignature == null)
-				throw new ArgumentNullException("clientSignature");
+				throw new ArgumentNullException(nameof(clientSignature));
 			if(feeRate == null)
-				throw new ArgumentNullException("feeRate");
+				throw new ArgumentNullException(nameof(feeRate));
 			AssertState(SolverServerStates.WaitingFullfillment);
 			Script offerScript = GetOfferScript();
 

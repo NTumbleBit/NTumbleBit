@@ -28,7 +28,7 @@ namespace NTumbleBit
 		public RsaPubKey(byte[] bytes)
 		{
 			if(bytes == null)
-				throw new ArgumentNullException("bytes");
+				throw new ArgumentNullException(nameof(bytes));
 			try
 			{
 				DerSequence seq2 = RsaKey.GetRSASequence(bytes);
@@ -45,7 +45,7 @@ namespace NTumbleBit
 		internal RsaPubKey(RsaKeyParameters key)
 		{
 			if(key == null)
-				throw new ArgumentNullException("key");
+				throw new ArgumentNullException(nameof(key));
 			_Key = key;
 		}
 
@@ -93,7 +93,7 @@ namespace NTumbleBit
 		internal BigInteger Encrypt(BigInteger data)
 		{
 			if(data == null)
-				throw new ArgumentNullException("data");
+				throw new ArgumentNullException(nameof(data));
 			if(data.CompareTo(_Key.Modulus) >= 0)
 				throw new ArgumentException("input too large for RSA cipher.");
 			RsaCoreEngine engine = new RsaCoreEngine();
@@ -104,7 +104,7 @@ namespace NTumbleBit
 		internal BigInteger Blind(BigInteger data, ref BlindFactor blindFactor)
 		{
 			if(data == null)
-				throw new ArgumentNullException("data");
+				throw new ArgumentNullException(nameof(data));
 			EnsureInitializeBlindFactor(ref blindFactor);
 			return Blind(blindFactor._Value.ModPow(_Key.Exponent, _Key.Modulus), data);
 		}
@@ -117,9 +117,9 @@ namespace NTumbleBit
 		internal BigInteger RevertBlind(BigInteger data, BlindFactor blindFactor)
 		{
 			if(data == null)
-				throw new ArgumentNullException("data");
+				throw new ArgumentNullException(nameof(data));
 			if(blindFactor == null)
-				throw new ArgumentNullException("blindFactor");
+				throw new ArgumentNullException(nameof(blindFactor));
 			EnsureInitializeBlindFactor(ref blindFactor);
 			var ai = blindFactor._Value.ModInverse(_Key.Modulus);
 			return Blind(ai.ModPow(_Key.Exponent, _Key.Modulus), data);
@@ -128,9 +128,9 @@ namespace NTumbleBit
 		internal BigInteger Unblind(BigInteger data, BlindFactor blindFactor)
 		{
 			if(data == null)
-				throw new ArgumentNullException("data");
+				throw new ArgumentNullException(nameof(data));
 			if(blindFactor == null)
-				throw new ArgumentNullException("blindFactor");
+				throw new ArgumentNullException(nameof(blindFactor));
 			EnsureInitializeBlindFactor(ref blindFactor);
 			return Blind(blindFactor._Value.ModInverse(_Key.Modulus), data);
 		}

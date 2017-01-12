@@ -12,14 +12,14 @@ namespace NTumbleBit
 		public BlindFactor(byte[] v)
 		{
 			if(v == null)
-				throw new ArgumentNullException("v");
+				throw new ArgumentNullException(nameof(v));
 			_Value = new BigInteger(1, v);
 		}
 
 		internal BlindFactor(BigInteger v)
 		{
 			if(v == null)
-				throw new ArgumentNullException("v");
+				throw new ArgumentNullException(nameof(v));
 			_Value = v;
 		}
 

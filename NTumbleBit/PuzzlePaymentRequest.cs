@@ -12,9 +12,9 @@ namespace NTumbleBit
 		public PuzzlePaymentRequest(Puzzle puzzle, Money amount, LockTime escrowDate)
 		{
 			if(puzzle == null)
-				throw new ArgumentNullException("puzzle");
+				throw new ArgumentNullException(nameof(puzzle));
 			if(amount == null)
-				throw new ArgumentNullException("amount");
+				throw new ArgumentNullException(nameof(amount));
 			Amount = amount;
 			EscrowDate = escrowDate;
 			RsaPubKeyHash = puzzle.RsaPubKey.GetHash();
