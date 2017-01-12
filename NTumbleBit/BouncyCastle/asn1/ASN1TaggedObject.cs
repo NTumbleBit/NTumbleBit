@@ -18,7 +18,7 @@ namespace NTumbleBit.BouncyCastle.Asn1
 		internal bool explicitly = true;
 		internal Asn1Encodable obj;
 
-		static public Asn1TaggedObject GetInstance(
+		public static Asn1TaggedObject GetInstance(
 			Asn1TaggedObject obj,
 			bool explicitly)
 		{
@@ -30,7 +30,7 @@ namespace NTumbleBit.BouncyCastle.Asn1
 			throw new ArgumentException("implicitly tagged tagged object");
 		}
 
-		static public Asn1TaggedObject GetInstance(
+		public static Asn1TaggedObject GetInstance(
 			object obj)
 		{
 			if(obj == null || obj is Asn1TaggedObject)

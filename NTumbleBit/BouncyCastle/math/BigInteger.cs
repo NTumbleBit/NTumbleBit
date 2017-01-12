@@ -153,7 +153,7 @@ namespace NTumbleBit.BouncyCastle.Math
 		//    4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8
 		//};
 
-		private readonly static byte[] BitLengthTable =
+		private static readonly byte[] BitLengthTable =
 		{
 			0, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4,
 			5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
