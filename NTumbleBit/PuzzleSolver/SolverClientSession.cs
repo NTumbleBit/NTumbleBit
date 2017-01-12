@@ -52,7 +52,7 @@ namespace NTumbleBit.PuzzleSolver
 			if(serverKey == null)
 				throw new ArgumentNullException("serverKey");
 			_Parameters = new SolverParameters(serverKey);
-			InternalState = new SolverClientSession.State();
+			InternalState = new State();
 		}
 
 
@@ -64,7 +64,7 @@ namespace NTumbleBit.PuzzleSolver
 			if(parameters == null)
 				throw new ArgumentNullException("parameters");
 			_Parameters = parameters;
-			InternalState = new SolverClientSession.State();
+			InternalState = new State();
 		}
 
 		public SolverClientSession(SolverParameters parameters, State state) : this(parameters)

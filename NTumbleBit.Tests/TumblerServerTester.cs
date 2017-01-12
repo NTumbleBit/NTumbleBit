@@ -21,7 +21,7 @@ namespace NTumbleBit.Tests
 {
 	public class TumblerClientContext
 	{
-		public TumblerClientContext(TumblerClient tumblerClient, RPCClient rpcClient, NTumbleBit.Client.Tumbler.Services.IRepository clientRepository)
+		public TumblerClientContext(TumblerClient tumblerClient, RPCClient rpcClient, Client.Tumbler.Services.IRepository clientRepository)
 		{
 			var parameters = tumblerClient.GetTumblerParameters();
 			PaymentMachineState = new PaymentStateMachine(
@@ -186,7 +186,7 @@ namespace NTumbleBit.Tests
 			_Host.Start();
 
 			ServerContext = new TumblerServerContext(_Host);
-			var repo = new NTumbleBit.Client.Tumbler.Services.DBreezeRepository(Path.Combine(directory, "client"));
+			var repo = new Client.Tumbler.Services.DBreezeRepository(Path.Combine(directory, "client"));
 			ClientContext = new TumblerClientContext(CreateTumblerClient(), AliceNode.CreateRPCClient(), repo);
 		}
 

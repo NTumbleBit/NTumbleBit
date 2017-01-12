@@ -94,7 +94,7 @@ namespace NTumbleBit
 				throw new DataLengthException("input too large for RSA cipher.");
 
 			RsaCoreEngine engine = new RsaCoreEngine();
-			engine.Init(false, this._Key);
+			engine.Init(false, _Key);
 			return engine.ProcessBlock(encrypted);
 		}
 

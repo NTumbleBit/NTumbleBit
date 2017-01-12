@@ -28,7 +28,7 @@ namespace NTumbleBit.BouncyCastle.Crypto.Parameters
 			ValidateValue(dQ, "dQ", "DQ value");
 			ValidateValue(qInv, "qInv", "InverseQ value");
 
-			this.e = publicExponent;
+			e = publicExponent;
 			this.p = p;
 			this.q = q;
 			this.dP = dP;
@@ -97,8 +97,8 @@ namespace NTumbleBit.BouncyCastle.Crypto.Parameters
 
 			return kp.DP.Equals(dP)
 				&& kp.DQ.Equals(dQ)
-				&& kp.Exponent.Equals(this.Exponent)
-				&& kp.Modulus.Equals(this.Modulus)
+				&& kp.Exponent.Equals(Exponent)
+				&& kp.Modulus.Equals(Modulus)
 				&& kp.P.Equals(p)
 				&& kp.Q.Equals(q)
 				&& kp.PublicExponent.Equals(e)

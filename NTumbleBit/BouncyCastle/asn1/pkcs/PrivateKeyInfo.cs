@@ -17,7 +17,7 @@ namespace NTumbleBit.BouncyCastle.Asn1.Pkcs
 			AlgorithmIdentifier algID,
 			Asn1Object privateKey)
 		{
-			this.privKey = privateKey;
+			privKey = privateKey;
 			this.algID = algID;
 		}
 		

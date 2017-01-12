@@ -76,7 +76,7 @@ namespace NTumbleBit.TumblerServer
 			if(session == null)
 				return null;
 			return new SolverServerSession(_Configuration.TumblerKey,
-				this._Configuration.CreateClassicTumblerParameters().CreateSolverParamaters(),
+				_Configuration.CreateClassicTumblerParameters().CreateSolverParamaters(),
 				session);
 		}
 		

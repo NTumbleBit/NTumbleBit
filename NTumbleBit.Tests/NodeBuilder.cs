@@ -112,8 +112,8 @@ namespace NTumbleBit.Tests
 		private string _Bitcoind;
 		public NodeBuilder(string root, string bitcoindPath)
 		{
-			this._Root = root;
-			this._Bitcoind = bitcoindPath;
+			_Root = root;
+			_Bitcoind = bitcoindPath;
 		}
 
 		public string BitcoinD
@@ -222,8 +222,8 @@ namespace NTumbleBit.Tests
 
 		public CoreNode(string folder, NodeBuilder builder)
 		{
-			this._Builder = builder;
-			this._Folder = folder;
+			_Builder = builder;
+			_Folder = folder;
 			_State = CoreNodeState.Stopped;
 			CleanFolder();
 			Directory.CreateDirectory(folder);
@@ -320,7 +320,7 @@ namespace NTumbleBit.Tests
 			File.WriteAllText(_Config, config.ToString());
 			lock(l)
 			{
-				_Process = Process.Start(new FileInfo(this._Builder.BitcoinD).FullName, "-conf=bitcoin.conf" + " -datadir=" + dataDir + " -debug=net");
+				_Process = Process.Start(new FileInfo(_Builder.BitcoinD).FullName, "-conf=bitcoin.conf" + " -datadir=" + dataDir + " -debug=net");
 				_State = CoreNodeState.Starting;
 			}
 			while(true)

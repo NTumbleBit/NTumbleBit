@@ -41,7 +41,7 @@ namespace NTumbleBit
 		}
 		public static bool operator ==(PuzzleValue a, PuzzleValue b)
 		{
-			if(System.Object.ReferenceEquals(a, b))
+			if(ReferenceEquals(a, b))
 				return true;
 			if(((object)a == null) || ((object)b == null))
 				return false;

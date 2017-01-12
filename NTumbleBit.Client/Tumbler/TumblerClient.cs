@@ -146,21 +146,21 @@ namespace NTumbleBit.Client.Tumbler
 
 		private Task<ServerCommitmentsProof> CheckRevelationAsync(int cycleId, string channelId, PuzzlePromise.ClientRevelation revelation)
 		{
-			return this.SendAsync<ServerCommitmentsProof>(HttpMethod.Post, revelation, "api/v1/tumblers/0/channels/{0}/{1}/checkrevelation", cycleId, channelId);
+			return SendAsync<ServerCommitmentsProof>(HttpMethod.Post, revelation, "api/v1/tumblers/0/channels/{0}/{1}/checkrevelation", cycleId, channelId);
 		}
 
 		public Task<PuzzlePromise.ServerCommitment[]> SignHashesAsync(int cycleId, string channelId, SignaturesRequest sigReq)
 		{
-			return this.SendAsync<PuzzlePromise.ServerCommitment[]>(HttpMethod.Post, sigReq, "api/v1/tumblers/0/channels/{0}/{1}/signhashes", cycleId, channelId);
+			return SendAsync<PuzzlePromise.ServerCommitment[]>(HttpMethod.Post, sigReq, "api/v1/tumblers/0/channels/{0}/{1}/signhashes", cycleId, channelId);
 		}		
 
-		public PuzzleSolver.SolutionKey[] CheckRevelation(int cycleId, string channelId, PuzzleSolver.ClientRevelation revelation)
+		public SolutionKey[] CheckRevelation(int cycleId, string channelId, PuzzleSolver.ClientRevelation revelation)
 		{
 			return CheckRevelationAsync(cycleId, channelId, revelation).GetAwaiter().GetResult();
 		}
-		public Task<PuzzleSolver.SolutionKey[]> CheckRevelationAsync(int cycleId, string channelId, PuzzleSolver.ClientRevelation revelation)
+		public Task<SolutionKey[]> CheckRevelationAsync(int cycleId, string channelId, PuzzleSolver.ClientRevelation revelation)
 		{
-			return this.SendAsync<PuzzleSolver.SolutionKey[]>(HttpMethod.Post, revelation, "api/v1/tumblers/0/clientschannels/{0}/{1}/checkrevelation", cycleId, channelId);
+			return SendAsync<SolutionKey[]>(HttpMethod.Post, revelation, "api/v1/tumblers/0/clientschannels/{0}/{1}/checkrevelation", cycleId, channelId);
 		}
 
 		public OfferInformation CheckBlindFactors(int cycleId, string channelId, BlindFactor[] blindFactors)

@@ -63,7 +63,7 @@ namespace NTumbleBit.PuzzleSolver
 		public override int EstimateScriptSigSize(Script scriptPubKey)
 		{
 			var offer = SolverScriptBuilder.ExtractOfferScriptParameters(scriptPubKey);
-			return BuilderExtension.DummySignature.ToBytes().Length + offer.Hashes.Length * (int)SolutionKey.KeySize;
+			return DummySignature.ToBytes().Length + offer.Hashes.Length * (int)SolutionKey.KeySize;
 		}
 
 		public override Script GenerateScriptSig(Script scriptPubKey, IKeyRepository keyRepo, ISigner signer)

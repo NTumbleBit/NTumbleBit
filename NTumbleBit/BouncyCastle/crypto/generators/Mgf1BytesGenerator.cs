@@ -22,7 +22,7 @@ namespace NTumbleBit.BouncyCastle.Crypto.Generators
 			IDigest digest)
 		{
 			this.digest = digest;
-			this.hLen = digest.GetDigestSize();
+			hLen = digest.GetDigestSize();
 		}
 
 		public void Init(MgfParameters parameters)

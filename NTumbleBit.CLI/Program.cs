@@ -64,7 +64,7 @@ namespace NTumbleBit.CLI
 						Logs.Main.LogError("tumbler.server not configured");
 						throw new ConfigException();
 					}
-					var client = new NTumbleBit.Client.Tumbler.TumblerClient(network, server);
+					var client = new TumblerClient(network, server);
 					Logs.Configuration.LogInformation("Downloading tumbler information of " + server.AbsoluteUri);
 					var parameters = Retry(3, () => client.GetTumblerParameters());
 					Logs.Configuration.LogInformation("Tumbler Server Connection successfull");

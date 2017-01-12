@@ -126,7 +126,7 @@ namespace NTumbleBit.PuzzleSolver
 				throw new ArgumentNullException("serverKey");
 			if(serverKey.PubKey != parameters.ServerKey)
 				throw new ArgumentNullException("Private key not matching expected public key");
-			InternalState = new SolverServerSession.State();
+			InternalState = new State();
 			_ServerKey = serverKey;
 			_Parameters = parameters;
 		}

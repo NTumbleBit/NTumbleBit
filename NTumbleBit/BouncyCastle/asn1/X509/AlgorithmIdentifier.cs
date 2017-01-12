@@ -27,7 +27,7 @@ namespace NTumbleBit.BouncyCastle.Asn1.X509
 		{
 			this.objectID = objectID;
 			this.parameters = parameters;
-			this.parametersDefined = true;
+			parametersDefined = true;
 		}
 
 		public virtual DerObjectIdentifier ObjectID

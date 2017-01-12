@@ -28,9 +28,9 @@ namespace NTumbleBit.BouncyCastle.Crypto.Engines
 			if(!(parameters is RsaKeyParameters))
 				throw new InvalidKeyException("Not an RSA key");
 
-			this.key = (RsaKeyParameters)parameters;
+			key = (RsaKeyParameters)parameters;
 			this.forEncryption = forEncryption;
-			this.bitSize = key.Modulus.BitLength;
+			bitSize = key.Modulus.BitLength;
 		}
 
 		/**

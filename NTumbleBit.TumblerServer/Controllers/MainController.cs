@@ -179,7 +179,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 				var redeem = Services.WalletService.GenerateAddress($"Cycle {cycle.Start} Tumbler Redeem");
 				var redeemTx = promiseServerSession.CreateRedeemTransaction(fee, redeem.ScriptPubKey);
 				Services.TrustedBroadcastService.Broadcast($"Cycle {session.GetCycle().Start} Tumbler Redeem (locked until: {redeemTx.Transaction.LockTime})", redeemTx);
-				return this.Json(promiseServerSession.EscrowedCoin);
+				return Json(promiseServerSession.EscrowedCoin);
 			}
 			catch(PuzzleException)
 			{

@@ -30,7 +30,7 @@ namespace NTumbleBit.BouncyCastle.Asn1
 			if(!IsValidBranchID(branchID, 0))
 				throw new ArgumentException("string " + branchID + " not a valid OID branch", "branchID");
 
-			this.identifier = oid.Id + "." + branchID;
+			identifier = oid.Id + "." + branchID;
 		}
 
 		// TODO Change to ID?
@@ -60,8 +60,8 @@ namespace NTumbleBit.BouncyCastle.Asn1
 
 		internal DerObjectIdentifier(byte[] bytes)
 		{
-			this.identifier = MakeOidStringFromBytes(bytes);
-			this.body = Arrays.Clone(bytes);
+			identifier = MakeOidStringFromBytes(bytes);
+			body = Arrays.Clone(bytes);
 		}
 
 		private void WriteField(
@@ -115,7 +115,7 @@ namespace NTumbleBit.BouncyCastle.Asn1
 			if(other == null)
 				return false;
 
-			return this.identifier.Equals(other.identifier);
+			return identifier.Equals(other.identifier);
 		}
 
 		public override string ToString()

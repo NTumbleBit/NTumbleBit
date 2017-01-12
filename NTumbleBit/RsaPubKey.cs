@@ -87,7 +87,7 @@ namespace NTumbleBit
 		public Puzzle GeneratePuzzle(ref PuzzleSolution solution)
 		{
 			solution = solution ?? new PuzzleSolution(Utils.GenerateEncryptableInteger(_Key));
-			return new Puzzle(this, new PuzzleValue(this.Encrypt(solution._Value)));
+			return new Puzzle(this, new PuzzleValue(Encrypt(solution._Value)));
 		}
 
 		internal BigInteger Encrypt(BigInteger data)
@@ -97,7 +97,7 @@ namespace NTumbleBit
 			if(data.CompareTo(_Key.Modulus) >= 0)
 				throw new ArgumentException("input too large for RSA cipher.");
 			RsaCoreEngine engine = new RsaCoreEngine();
-			engine.Init(true, this._Key);
+			engine.Init(true, _Key);
 			return engine.ProcessBlock(data);
 		}
 
@@ -150,7 +150,7 @@ namespace NTumbleBit
 		}
 		public static bool operator ==(RsaPubKey a, RsaPubKey b)
 		{
-			if(System.Object.ReferenceEquals(a, b))
+			if(ReferenceEquals(a, b))
 				return true;
 			if(((object)a == null) || ((object)b == null))
 				return false;

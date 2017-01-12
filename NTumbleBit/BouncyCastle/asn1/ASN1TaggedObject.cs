@@ -48,7 +48,7 @@ namespace NTumbleBit.BouncyCastle.Asn1
 			int tagNo,
 			Asn1Encodable obj)
 		{
-			this.explicitly = true;
+			explicitly = true;
 			this.tagNo = tagNo;
 			this.obj = obj;
 		}
@@ -61,9 +61,9 @@ namespace NTumbleBit.BouncyCastle.Asn1
 			if(other == null)
 				return false;
 
-			return this.tagNo == other.tagNo
+			return tagNo == other.tagNo
 				//				&& this.empty == other.empty
-				&& this.explicitly == other.explicitly   // TODO Should this be part of equality?
+				&& explicitly == other.explicitly   // TODO Should this be part of equality?
 				&& Platform.Equals(GetObject(), other.GetObject());
 		}
 

@@ -30,9 +30,9 @@ namespace NTumbleBit.PuzzlePromise
 			}
 			public EncryptedSignature(ECDSASignature ecdsa, uint256 signedHash, PuzzleSolution solution)
 			{
-				this.Signature = ecdsa;
-				this.PuzzleSolution = solution;
-				this.SignedHash = signedHash;
+				Signature = ecdsa;
+				PuzzleSolution = solution;
+				SignedHash = signedHash;
 			}
 
 			public uint256 SignedHash
@@ -63,7 +63,7 @@ namespace NTumbleBit.PuzzlePromise
 				throw new ArgumentNullException("state");
 			if(state == null)
 				return;
-			this.InternalState = state;
+			InternalState = state;
 		}
 
 		public new class State : EscrowInitiator.State

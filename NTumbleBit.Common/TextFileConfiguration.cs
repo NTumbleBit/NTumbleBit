@@ -102,7 +102,7 @@ namespace NTumbleBit.Common
 
 		public TextFileConfiguration(Dictionary<string, List<string>> args)
 		{
-			this._Args = args;
+			_Args = args;
 		}
 
 		public static TextFileConfiguration Parse(string data)

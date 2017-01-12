@@ -152,7 +152,7 @@ namespace NTumbleBit.ClassicTumbler
 			var voucher = InternalState.UnsignedVoucher;			
 			var escrowedCoin = coin.ToScriptCoin(escrow);
 
-			var session = new SolverServerSession(this.TumblerKey, this.Parameters.CreateSolverParamaters());				
+			var session = new SolverServerSession(TumblerKey, Parameters.CreateSolverParamaters());				
 			session.ConfigureEscrowedCoin(escrowedCoin, InternalState.EscrowKey);
 			InternalState.UnsignedVoucher = null;
 			InternalState.OtherEscrowKey = null;

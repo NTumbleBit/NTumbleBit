@@ -67,7 +67,7 @@ namespace NTumbleBit.TumblerServer
 
 		private static MvcJsonOptions GetMVCOptions(IServiceProvider serviceProvider)
 		{
-			return serviceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<MvcJsonOptions>>().Value;
+			return serviceProvider.GetRequiredService<IOptions<MvcJsonOptions>>().Value;
 		}
 	}
 

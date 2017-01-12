@@ -56,9 +56,9 @@ namespace NTumbleBit.BouncyCastle.Crypto.Parameters
 				return false;
 			}
 
-			return kp.IsPrivate == this.IsPrivate
-				&& kp.Modulus.Equals(this.modulus)
-				&& kp.Exponent.Equals(this.exponent);
+			return kp.IsPrivate == IsPrivate
+				&& kp.Modulus.Equals(modulus)
+				&& kp.Exponent.Equals(exponent);
 		}
 
 		public override int GetHashCode()

@@ -30,7 +30,7 @@ namespace NTumbleBit.PuzzlePromise
 
 		static byte[] HMACSHA256(byte[] key, byte[] data)
 		{
-			var mac = new NTumbleBit.BouncyCastle.Crypto.Macs.HMac(new Sha256Digest());
+			var mac = new BouncyCastle.Crypto.Macs.HMac(new Sha256Digest());
 			mac.Init(new KeyParameter(key));
 			mac.BlockUpdate(data, 0, data.Length);
 			byte[] result = new byte[mac.GetMacSize()];
