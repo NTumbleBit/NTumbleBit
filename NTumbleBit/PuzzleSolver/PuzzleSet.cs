@@ -45,7 +45,7 @@ namespace NTumbleBit.PuzzleSolver
 
 		public override string ToString()
 		{
-			return "+Real " + Puzzle.ToString();
+			return "+Real " + Puzzle;
 		}
 	}
 
@@ -65,7 +65,7 @@ namespace NTumbleBit.PuzzleSolver
 
 		public override string ToString()
 		{
-			return "-Fake " + Puzzle.ToString();
+			return "-Fake " + Puzzle;
 		}
 	}
 }

@@ -286,21 +286,21 @@ namespace NTumbleBit.Tests
 		private readonly NetworkCredential creds;
 		public RPCClient CreateRPCClient()
 		{
-			return new RPCClient(creds, new Uri("http://127.0.0.1:" + ports[1].ToString() + "/"), Network.RegTest);
+			return new RPCClient(creds, new Uri("http://127.0.0.1:" + ports[1] + "/"), Network.RegTest);
 		}
 
 		public RestClient CreateRESTClient()
 		{
-			return new RestClient(new Uri("http://127.0.0.1:" + ports[1].ToString() + "/"));
+			return new RestClient(new Uri("http://127.0.0.1:" + ports[1] + "/"));
 		}
 #if !NOSOCKET
 		public Node CreateNodeClient()
 		{
-			return Node.Connect(Network.RegTest, "127.0.0.1:" + ports[0].ToString());
+			return Node.Connect(Network.RegTest, "127.0.0.1:" + ports[0]);
 		}
 		public Node CreateNodeClient(NodeConnectionParameters parameters)
 		{
-			return Node.Connect(Network.RegTest, "127.0.0.1:" + ports[0].ToString(), parameters);
+			return Node.Connect(Network.RegTest, "127.0.0.1:" + ports[0], parameters);
 		}
 #endif
 
