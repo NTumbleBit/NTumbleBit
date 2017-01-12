@@ -1,0 +1,16 @@
+﻿body {
+  font-family: monospace;
+}
+
+.client {
+        margin: 0 10px 0 10px;
+
+}
+
+.console {
+    height: 100px;
+    overflow-y: scroll;
+    box-sizing: border-box;
+    padding: 20px;
+    border: 1px solid #ccc;
+}

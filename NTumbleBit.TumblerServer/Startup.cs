@@ -50,7 +50,8 @@ namespace NTumbleBit.TumblerServer
 			}
 
 			app.UseMvc();
-
+            app.UseDefaultFiles();
+            app.UseStaticFiles();
 
 			var builder = serviceProvider.GetService<ConfigurationBuilder>() ?? new ConfigurationBuilder();
 			Configuration = builder.Build();
