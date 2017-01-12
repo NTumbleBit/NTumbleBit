@@ -149,7 +149,7 @@ namespace NTumbleBit.Common
 			return values.ToArray();
 		}
 
-		Dictionary<string, string> _Aliases = new Dictionary<string, string>();
+		private Dictionary<string, string> _Aliases = new Dictionary<string, string>();
 
 		public void AddAlias(string from, string to)
 		{

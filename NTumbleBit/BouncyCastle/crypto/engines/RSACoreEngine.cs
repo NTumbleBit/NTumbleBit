@@ -9,7 +9,8 @@ namespace NTumbleBit.BouncyCastle.Crypto.Engines
 	/**
 	* this does your basic RSA algorithm.
 	*/
-	class RsaCoreEngine
+
+	internal class RsaCoreEngine
 	{
 		private RsaKeyParameters key;
 		private bool forEncryption;

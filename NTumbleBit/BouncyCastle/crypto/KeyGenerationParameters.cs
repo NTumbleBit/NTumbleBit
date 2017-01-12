@@ -6,7 +6,8 @@ namespace NTumbleBit.BouncyCastle.Crypto
 	/**
      * The base class for parameters to key generators.
      */
-	class KeyGenerationParameters
+
+	internal class KeyGenerationParameters
 	{
 		private SecureRandom random;
 		private int strength;

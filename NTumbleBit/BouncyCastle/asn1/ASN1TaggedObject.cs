@@ -9,7 +9,8 @@ namespace NTumbleBit.BouncyCastle.Asn1
      * a [n] where n is some number - these are assumed to follow the construction
      * rules (as with sequences).
      */
-	abstract class Asn1TaggedObject
+
+	internal abstract class Asn1TaggedObject
 		: Asn1Object
 	{
 		internal int tagNo;

@@ -43,9 +43,9 @@ namespace NTumbleBit.Client.Tumbler
 			{
 				return _Address;
 			}
-		}	
+		}
 
-		readonly static HttpClient Client = new HttpClient();
+	    private readonly static HttpClient Client = new HttpClient();
 		public Task<ClassicTumblerParameters> GetTumblerParametersAsync()
 		{
 			return GetAsync<ClassicTumblerParameters>("api/v1/tumblers/0/parameters");
@@ -55,7 +55,7 @@ namespace NTumbleBit.Client.Tumbler
 			return GetTumblerParametersAsync().GetAwaiter().GetResult();
 		}
 
-		Task<T> GetAsync<T>(string relativePath, params object[] parameters)
+	    private Task<T> GetAsync<T>(string relativePath, params object[] parameters)
 		{
 			return SendAsync<T>(HttpMethod.Get, null, relativePath, parameters);
 		}
@@ -110,8 +110,8 @@ namespace NTumbleBit.Client.Tumbler
 			uri += relativePath;
 			return uri;
 		}
-		
-		async Task<T> SendAsync<T>(HttpMethod method, object body, string relativePath, params object[] parameters)
+
+	    private async Task<T> SendAsync<T>(HttpMethod method, object body, string relativePath, params object[] parameters)
 		{
 			var uri = GetFullUri(relativePath, parameters);
 			var message = new HttpRequestMessage(method, uri);

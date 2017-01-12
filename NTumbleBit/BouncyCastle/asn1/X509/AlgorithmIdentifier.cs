@@ -2,7 +2,7 @@
 
 namespace NTumbleBit.BouncyCastle.Asn1.X509
 {
-	class AlgorithmIdentifier
+	internal class AlgorithmIdentifier
 		: Asn1Encodable
 	{
 		private readonly DerObjectIdentifier objectID;

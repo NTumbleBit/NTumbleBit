@@ -149,7 +149,7 @@ namespace NTumbleBit.PuzzleSolver
 			}
 		}
 
-		SolverParameters _Parameters;
+		private SolverParameters _Parameters;
 		public SolverParameters Parameters
 		{
 			get

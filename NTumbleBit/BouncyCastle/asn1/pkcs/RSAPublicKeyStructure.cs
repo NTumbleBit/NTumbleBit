@@ -6,7 +6,7 @@ using System.Collections;
 
 namespace NTumbleBit.BouncyCastle.Asn1.X509
 {
-	class RsaPublicKeyStructure
+	internal class RsaPublicKeyStructure
 		: Asn1Encodable
 	{
 		private BigInteger modulus;

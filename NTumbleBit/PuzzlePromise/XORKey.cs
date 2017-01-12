@@ -33,7 +33,7 @@ namespace NTumbleBit.PuzzlePromise
 			_Value = value;
 		}
 
-		BigInteger _Value;
+		private BigInteger _Value;
 
 		public byte[] XOR(byte[] data)
 		{
@@ -49,7 +49,7 @@ namespace NTumbleBit.PuzzlePromise
 		}
 
 
-		const int KeySize = 256;
+		private const int KeySize = 256;
 		public byte[] ToBytes()
 		{
 			byte[] keyBytes = _Value.ToByteArrayUnsigned();

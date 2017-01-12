@@ -5,7 +5,7 @@ using NTumbleBit.BouncyCastle.Math;
 
 namespace NTumbleBit.BouncyCastle.Crypto.Parameters
 {
-	class RsaPrivateCrtKeyParameters
+	internal class RsaPrivateCrtKeyParameters
 		: RsaKeyParameters
 	{
 		private readonly BigInteger e, p, q, dP, dQ, qInv;

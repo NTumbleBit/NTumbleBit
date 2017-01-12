@@ -5,7 +5,8 @@ namespace NTumbleBit.BouncyCastle.Crypto
 	/**
      * a holding class for public/private parameter pairs.
      */
-	class AsymmetricCipherKeyPair
+
+	internal class AsymmetricCipherKeyPair
 	{
 		private readonly AsymmetricKeyParameter publicParameter;
 		private readonly AsymmetricKeyParameter privateParameter;

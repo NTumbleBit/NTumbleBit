@@ -29,7 +29,8 @@ namespace NTumbleBit.PuzzleSolver
 			set;
 		}
 	}
-	class RealPuzzle : PuzzleSetElement
+
+	internal class RealPuzzle : PuzzleSetElement
 	{
 		public RealPuzzle(Puzzle puzzle, BlindFactor blindFactory)
 		{
@@ -48,7 +49,7 @@ namespace NTumbleBit.PuzzleSolver
 		}
 	}
 
-	class FakePuzzle : PuzzleSetElement
+	internal class FakePuzzle : PuzzleSetElement
 	{
 		public FakePuzzle(Puzzle puzzle, PuzzleSolution solution)
 		{

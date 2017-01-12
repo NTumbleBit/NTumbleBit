@@ -53,7 +53,7 @@ namespace NTumbleBit.ClassicTumbler
 
 	public class AliceServerChannelNegotiation : ServerChannelNegotiation
 	{
-		State InternalState
+		private State InternalState
 		{
 			get; set;
 		}
@@ -191,7 +191,7 @@ namespace NTumbleBit.ClassicTumbler
 	}
 	public class BobServerChannelNegotiation : ServerChannelNegotiation
 	{
-		State InternalState
+		private State InternalState
 		{
 			get; set;
 		}

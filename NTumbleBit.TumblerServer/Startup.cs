@@ -71,7 +71,7 @@ namespace NTumbleBit.TumblerServer
 		}
 	}
 
-	class NoObjectModelValidator : IObjectModelValidator
+	internal class NoObjectModelValidator : IObjectModelValidator
 	{
 		public void Validate(ActionContext actionContext, ValidationStateDictionary validationState, string prefix, object model)
 		{

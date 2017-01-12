@@ -131,7 +131,7 @@ namespace NTumbleBit.CLI
 			}
 		}
 
-		static T Retry<T>(int count, Func<T> act)
+		private static T Retry<T>(int count, Func<T> act)
 		{
 			Exception ex = null;
 			for(int i = 0; i < count; i++)

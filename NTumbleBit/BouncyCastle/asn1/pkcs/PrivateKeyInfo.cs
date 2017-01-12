@@ -7,7 +7,7 @@ using NTumbleBit.BouncyCastle.Math;
 
 namespace NTumbleBit.BouncyCastle.Asn1.Pkcs
 {
-	class PrivateKeyInfo
+	internal class PrivateKeyInfo
 		: Asn1Encodable
 	{
 		private readonly Asn1Object privKey;

@@ -19,7 +19,7 @@ namespace NTumbleBit.PuzzleSolver
 			_Bytes = key.ToArray();
 		}
 
-		byte[] _Bytes;
+		private byte[] _Bytes;
 		public readonly static long KeySize = 16;
 
 		public byte[] ToBytes(bool @unsafe)

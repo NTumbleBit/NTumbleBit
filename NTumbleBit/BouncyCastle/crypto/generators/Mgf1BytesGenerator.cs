@@ -9,7 +9,8 @@ namespace NTumbleBit.BouncyCastle.Crypto.Generators
 	/**
     * Generator for MGF1 as defined in Pkcs 1v2
     */
-	class Mgf1BytesGenerator
+
+	internal class Mgf1BytesGenerator
 	{
 		private IDigest digest;
 		private byte[] seed;

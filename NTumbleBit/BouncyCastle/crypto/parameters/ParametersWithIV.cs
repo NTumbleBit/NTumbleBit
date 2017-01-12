@@ -2,7 +2,7 @@
 
 namespace NTumbleBit.BouncyCastle.Crypto.Parameters
 {
-	class ParametersWithIV
+	internal class ParametersWithIV
 		: ICipherParameters
 	{
 		private readonly ICipherParameters parameters;

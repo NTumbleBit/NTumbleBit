@@ -47,7 +47,7 @@ namespace NTumbleBit.Client.Tumbler
 			}
 		}
 
-		WalletDescription GetWalletDescription()
+		private WalletDescription GetWalletDescription()
 		{
 			return Repository.Get<WalletDescription>(GetPartition(_WalletName), "");
 		}

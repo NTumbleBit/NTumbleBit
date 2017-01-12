@@ -108,8 +108,7 @@ namespace NTumbleBit.PuzzlePromise
 		}
 
 
-
-		readonly PromiseParameters _Parameters;
+		private readonly PromiseParameters _Parameters;
 		public PromiseParameters Parameters
 		{
 			get

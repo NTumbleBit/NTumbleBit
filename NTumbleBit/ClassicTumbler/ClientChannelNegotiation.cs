@@ -96,8 +96,8 @@ namespace NTumbleBit.ClassicTumbler
 			Parameters = parameters;
 			InternalState = Serializer.Clone(state);
 		}
-		
-		State InternalState
+
+		private State InternalState
 		{
 			get; set;
 		}

@@ -48,7 +48,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			_BlockExplorer = explorer;
 		}
 
-		IBroadcastService _Broadcaster;
+		private IBroadcastService _Broadcaster;
 
 		private readonly RPCClient _RPCClient;
 		public RPCClient RPCClient

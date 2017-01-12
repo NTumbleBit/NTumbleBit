@@ -24,7 +24,7 @@ namespace NTumbleBit.PuzzlePromise
 
 	public class PromiseClientSession : EscrowReceiver
 	{
-		abstract class HashBase
+		private abstract class HashBase
 		{
 			public ServerCommitment Commitment
 			{
@@ -37,7 +37,8 @@ namespace NTumbleBit.PuzzlePromise
 				get; set;
 			}
 		}
-		class RealHash : HashBase
+
+		private class RealHash : HashBase
 		{
 			public RealHash(Transaction tx, ScriptCoin coin)
 			{
@@ -64,7 +65,7 @@ namespace NTumbleBit.PuzzlePromise
 			}
 		}
 
-		class FakeHash : HashBase
+		private class FakeHash : HashBase
 		{
 			public FakeHash(PromiseParameters parameters)
 			{
@@ -285,7 +286,7 @@ namespace NTumbleBit.PuzzlePromise
 			return request;
 		}
 
-		PubKey[] GetExpectedSigners()
+		private PubKey[] GetExpectedSigners()
 		{
 			var parameters = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(InternalState.EscrowedCoin.GetScriptCode());
 			if(parameters == null)

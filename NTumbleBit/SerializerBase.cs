@@ -11,7 +11,7 @@ using NBitcoin;
 
 namespace NTumbleBit
 {
-	class SerializerBase
+	internal class SerializerBase
 	{
 		public SerializerBase(Stream inner)
 		{

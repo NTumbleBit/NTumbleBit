@@ -107,7 +107,7 @@ namespace NTumbleBit.Tests
 			return bitcoind;
 		}
 
-		int last = 0;
+		private int last = 0;
 		private string _Root;
 		private string _Bitcoind;
 		public NodeBuilder(string root, string bitcoindPath)
@@ -174,7 +174,8 @@ namespace NTumbleBit.Tests
 			foreach(var disposable in _Disposables)
 				disposable.Dispose();
 		}
-		List<IDisposable> _Disposables = new List<IDisposable>();
+
+		private List<IDisposable> _Disposables = new List<IDisposable>();
 		internal void AddDisposable(IDisposable group)
 		{
 			_Disposables.Add(group);
@@ -268,7 +269,7 @@ namespace NTumbleBit.Tests
 			}
 		}
 
-		int[] ports;
+		private int[] ports;
 
 		public int ProtocolPort
 		{
@@ -282,7 +283,7 @@ namespace NTumbleBit.Tests
 			StartAsync().Wait();
 		}
 
-		readonly NetworkCredential creds;
+		private readonly NetworkCredential creds;
 		public RPCClient CreateRPCClient()
 		{
 			return new RPCClient(creds, new Uri("http://127.0.0.1:" + ports[1].ToString() + "/"), Network.RegTest);
@@ -338,8 +339,7 @@ namespace NTumbleBit.Tests
 		}
 
 
-
-		Process _Process;
+		private Process _Process;
 		private readonly string dataDir;
 
 		private void FindPorts(int[] ports)
@@ -363,9 +363,9 @@ namespace NTumbleBit.Tests
 			}
 		}
 
-		List<Transaction> transactions = new List<Transaction>();
-		HashSet<OutPoint> locked = new HashSet<OutPoint>();
-		Money fee = Money.Coins(0.0001m);
+		private List<Transaction> transactions = new List<Transaction>();
+		private HashSet<OutPoint> locked = new HashSet<OutPoint>();
+		private Money fee = Money.Coins(0.0001m);
 		public Transaction GiveMoney(Script destination, Money amount, bool broadcast = true)
 		{
 			var rpc = CreateRPCClient();
@@ -447,7 +447,7 @@ namespace NTumbleBit.Tests
 			Broadcast(tx);
 		}
 
-		object l = new object();
+		private object l = new object();
 		public void Kill(bool cleanFolder = true)
 		{
 			lock(l)
@@ -538,13 +538,13 @@ namespace NTumbleBit.Tests
 #endif
 		}
 
-		List<uint256> _ToMalleate = new List<uint256>();
+		private List<uint256> _ToMalleate = new List<uint256>();
 		public void Malleate(uint256 txId)
 		{
 			_ToMalleate.Add(txId);
 		}
 
-		Transaction DoMalleate(Transaction transaction)
+		private Transaction DoMalleate(Transaction transaction)
 		{
 			transaction = transaction.Clone();
 			if(!transaction.IsCoinBase)
@@ -602,7 +602,7 @@ namespace NTumbleBit.Tests
 			return Generate(blockCount, includeMempool);
 		}
 
-		class TransactionNode
+		private class TransactionNode
 		{
 			public TransactionNode(Transaction tx)
 			{

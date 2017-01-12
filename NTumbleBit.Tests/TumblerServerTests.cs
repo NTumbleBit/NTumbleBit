@@ -33,7 +33,7 @@ namespace NTumbleBit.Tests
 			}
 		}
 
-		FeeRate FeeRate = new FeeRate(50, 1);
+		private FeeRate FeeRate = new FeeRate(50, 1);
 
 		[Fact]
 		public void TestCRUDDBReeze()

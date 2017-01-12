@@ -6,7 +6,7 @@ using NTumbleBit.BouncyCastle.Math;
 
 namespace Org.BouncyCastle.Asn1.Pkcs
 {
-	class RsaPrivateKeyStructure
+	internal class RsaPrivateKeyStructure
 		: Asn1Encodable
 	{
 		private readonly BigInteger modulus;

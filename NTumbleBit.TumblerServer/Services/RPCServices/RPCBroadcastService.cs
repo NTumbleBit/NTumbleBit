@@ -92,7 +92,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			return broadcasted.ToArray();
 		}
 
-		bool TryBroadcastCore(Record tx, int currentHeight)
+		private bool TryBroadcastCore(Record tx, int currentHeight)
 		{
 			bool remove = currentHeight >= tx.Expiration;
 

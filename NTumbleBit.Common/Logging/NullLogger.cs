@@ -8,7 +8,7 @@ namespace NTumbleBit.Common.Logging
 {
 	public class NullLogger : ILogger
 	{
-		class Dispo : IDisposable
+		private class Dispo : IDisposable
 		{
 			public void Dispose()
 			{

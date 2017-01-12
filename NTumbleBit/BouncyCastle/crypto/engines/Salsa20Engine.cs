@@ -11,7 +11,7 @@ namespace NTumbleBit.BouncyCastle.Crypto.Engines
 	/// <summary>
 	/// Implementation of Daniel J. Bernstein's Salsa20 stream cipher, Snuffle 2005
 	/// </summary>
-	class Salsa20Engine
+	internal class Salsa20Engine
 	{
 		public static readonly int DEFAULT_ROUNDS = 20;
 
