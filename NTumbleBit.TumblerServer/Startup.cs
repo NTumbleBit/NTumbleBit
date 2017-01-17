@@ -49,12 +49,24 @@ namespace NTumbleBit.TumblerServer
 				app.UseDeveloperExceptionPage();
 			}
 
-			app.UseMvc();
-            app.UseDefaultFiles();
-            app.UseStaticFiles();
-
 			var builder = serviceProvider.GetService<ConfigurationBuilder>() ?? new ConfigurationBuilder();
+			builder.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+			builder.AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true);
 			Configuration = builder.Build();
+
+			app.UseMvc();
+			app.UseDefaultFiles();
+			app.UseStaticFiles(new StaticFileOptions()
+			{
+				OnPrepareResponse = (context) =>
+				{
+					context.Context.Response.Headers["Cache-Control"] = Configuration["StaticFiles:Headers:Cache-Control"];
+					context.Context.Response.Headers["Pragma"] = Configuration["StaticFiles:Headers:Pragma"];
+					context.Context.Response.Headers["Expires"] = Configuration["StaticFiles:Headers:Expires"];
+				}
+			});
+
+			
 
 			var config = serviceProvider.GetService<TumblerConfiguration>();
 			var options = GetMVCOptions(serviceProvider);

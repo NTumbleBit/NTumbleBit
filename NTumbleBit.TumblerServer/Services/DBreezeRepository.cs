@@ -107,7 +107,19 @@ namespace NTumbleBit.Client.Tumbler.Services
 			}
 		}
 
-		private string GetTableName<T>()
+        public List<string> ListPartitionKeys()
+        {
+            List<string> paths = Directory.GetDirectories(_Folder, "*.*").ToList();
+            for (var i = 0; i < paths.Count; i++)
+            {
+                int pos = paths[i].LastIndexOf("\\") + 1; // may need to check / for unix systems
+                paths[i] = paths[i].Substring(pos, paths[i].Length - pos);
+            }
+
+            return paths;
+        }
+
+        private string GetTableName<T>()
 		{
 			return typeof(T).FullName;
 		}
