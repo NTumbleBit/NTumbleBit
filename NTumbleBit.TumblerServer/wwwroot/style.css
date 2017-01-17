@@ -17,9 +17,12 @@ body {
   font-family: monospace;
   font-size: 16px;
 }
+.wrap {
+  padding: 0 3%;
+}
 
 header {
-  padding: 16px 3%;
+  padding: 16px 0;
 }
 h1, h2, h3, h4, h5, h6,
 p, ul {
@@ -27,17 +30,20 @@ p, ul {
 }
 
 .content {
-  margin: 0 auto;
-  padding-top: 64px;
-  width: 94%;
-  flex: 1;
-  display: flex;
+  padding-top: 32px;
 }
 
+.channels {
+  margin: 0 auto;
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+}
+/* spacebetween possible */
 .inputs,
 .outputs {
   flex-grow: 1;
-  padding: 4px;
+  justify-content: space-between;
 }
 
 ul {
@@ -50,6 +56,7 @@ ul {
   padding: 8px;
   margin-bottom: 8px;
   background: #efefef;
+  max-width: 94%;
 }
 
 footer {

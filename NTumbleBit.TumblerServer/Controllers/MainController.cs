@@ -71,34 +71,46 @@ namespace NTumbleBit.TumblerServer.Controllers
 				return _Parameters;
 			}
 		}
+		/*
+		[HttpGet("api/v1/tumblers/0/Fee")]
+		public double getFee()
+		{
 
-        [HttpGet("api/v1/tumblers/0/SolverServerSessionStates")]
-        public List<SolverServerSession.State> GetSolverServerSessionStates()
-        {
-            List<SolverServerSession.State> states = new List<SolverServerSession.State> { };
-            IRepository repo = Repository.Repository;
-            List<string> keys = repo.ListPartitionKeys();
-            foreach (var key in keys)
-            {
-                states.AddRange(repo.List<SolverServerSession.State>(key));
-            }
-            return states;
-        }
+		}
+		*/
+		[HttpGet("api/v1/tumblers/0/BlockHeight")]
+		public int GetBlockHeight()
+		{
+			return Services.BlockExplorerService.GetCurrentHeight();
+		}
 
-        [HttpGet("api/v1/tumblers/0/PromiseServerSessionStates")]
-        public List<PromiseServerSession.State> GetPromiseServerSessionStates()
-        {
-            List<PromiseServerSession.State> states = new List<PromiseServerSession.State> { };
-            IRepository repo = Repository.Repository;
-            List<string> keys = repo.ListPartitionKeys();
-            foreach (var key in keys)
-            {
-                states.AddRange(repo.List<PromiseServerSession.State>(key));
-            }
-            return states;
-        }
+		[HttpGet("api/v1/tumblers/0/SolverServerSessionStates")]
+		public List<SolverServerSession.State> GetSolverServerSessionStates()
+		{
+			List<SolverServerSession.State> states = new List<SolverServerSession.State> { };
+			IRepository repo = Repository.Repository;
+			List<string> keys = repo.ListPartitionKeys();
+			foreach (var key in keys)
+			{
+				states.AddRange(repo.List<SolverServerSession.State>(key));
+			}
+			return states;
+		}
 
-        [HttpGet("api/v1/tumblers/0/parameters")]
+		[HttpGet("api/v1/tumblers/0/PromiseServerSessionStates")]
+		public List<PromiseServerSession.State> GetPromiseServerSessionStates()
+		{
+			List<PromiseServerSession.State> states = new List<PromiseServerSession.State> { };
+			IRepository repo = Repository.Repository;
+			List<string> keys = repo.ListPartitionKeys();
+			foreach (var key in keys)
+			{
+				states.AddRange(repo.List<PromiseServerSession.State>(key));
+			}
+			return states;
+		}
+
+		[HttpGet("api/v1/tumblers/0/parameters")]
 		public ClassicTumblerParameters GetSolverParameters()
 		{
 			return Parameters;

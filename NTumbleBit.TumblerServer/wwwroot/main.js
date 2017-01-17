@@ -1,6 +1,7 @@
 ﻿// global onload // global onload function
 const solverServerSessionStatesUri = "http://localhost:5000/api/v1/tumblers/0/SolverServerSessionStates";
 const promiseServerSessionStatesUri = "http://localhost:5000/api/v1/tumblers/0/PromiseServerSessionStates";
+const blockHeightUri = "http://localhost:5000/api/v1/tumblers/0/BlockHeight";
 
 const solverServerSessionStates = {
   "WaitingEscrow": 1,
@@ -21,8 +22,6 @@ const promiseServerSessionStates = {
 let solvers = [];
 let promises = [];
 
-const inputsDiv = document.querySelector('.inputs ul');
-const outputsDiv = document.querySelector('.outputs ul');
 
 (function poll() {
   fetchEndpoints();
@@ -37,6 +36,8 @@ function handleErrors(response) {
 }
 
 function fetchEndpoints() {
+  fetchBlockHeight();
+
   fetch(solverServerSessionStatesUri)
     .then(handleErrors)
     .then((res) => res.json())
@@ -49,13 +50,30 @@ function fetchEndpoints() {
 
 }
 
+function fetchBlockHeight() {
+  fetch(blockHeightUri)
+    .then(handleErrors)
+    .then((res) => res.json())
+    .then((height) => updateBlockHeight(height));
+}
+
+function updateBlockHeight(height) {
+  const blockHeightDiv = document.querySelector('.block-height');
+  blockHeightDiv.textContent = height;
+}
+
 function updateInputs(solvers) {
+  const inputsDiv = document.querySelector('.inputs ul');
+
   inputsDiv.innerHTML = solvers.map(solver =>
     genSolverComponent(solver)
   ).join('');
 }
 
 function updateOutputs(promises) {
+
+  const outputsDiv = document.querySelector('.outputs ul');
+
   outputsDiv.innerHTML = promises.map(promise =>
     genPromiseComponent(promise)
   ).join('');
