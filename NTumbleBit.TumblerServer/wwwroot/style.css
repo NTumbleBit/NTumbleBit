@@ -16,36 +16,28 @@ body {
   min-height: 100%;
   font-family: monospace;
   font-size: 16px;
- 
 }
 
 header {
-  padding: 20px 3%;
+  padding: 16px 3%;
 }
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  margin-top: 0;
+h1, h2, h3, h4, h5, h6,
+p, ul {
+  margin: 0;
 }
 
 .content {
   margin: 0 auto;
-  padding-top: 60px;
+  padding-top: 64px;
   width: 94%;
   flex: 1;
   display: flex;
 }
 
-.solvers,
-.promises {
+.inputs,
+.outputs {
   flex-grow: 1;
-}
-
-.escrow {
-  border: solid 1px #ccc;
+  padding: 4px;
 }
 
 ul {
@@ -53,12 +45,19 @@ ul {
   list-style-type: none;
 }
 
+.solver,
+.promise {
+  padding: 8px;
+  margin-bottom: 8px;
+  background: #efefef;
+}
+
 footer {
   position: absolute;
   right: 0;
   bottom: 0;
   left: 0;
-  padding: 1rem;
+  padding: 8px;
   background-color: #efefef;
   text-align: center;
 }
