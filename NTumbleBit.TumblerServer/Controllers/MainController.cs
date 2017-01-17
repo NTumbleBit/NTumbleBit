@@ -71,6 +71,8 @@ namespace NTumbleBit.TumblerServer.Controllers
 				return _Parameters;
 			}
 		}
+		
+		/* Front End endpoints */
 		[HttpGet("api/v1/tumblers/0/Denomination")]
 		public Money GetDenomination()
 		{
@@ -114,6 +116,9 @@ namespace NTumbleBit.TumblerServer.Controllers
 			}
 			return states;
 		}
+
+		// END Front End Endpoints
+
 
 		[HttpGet("api/v1/tumblers/0/parameters")]
 		public ClassicTumblerParameters GetSolverParameters()
