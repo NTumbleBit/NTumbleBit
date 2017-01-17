@@ -112,7 +112,7 @@ namespace NTumbleBit.Tests
 				MineTo(server.TumblerNode, cycle, CyclePhase.PaymentPhase, true);
 				server.SyncNodes();
 				
-				//Offer + Fullfill should be broadcasted
+				//Offer + fulfill should be broadcasted
 				var transactions = server.ServerContext.TrustedBroadcastService.TryBroadcast();
 				Assert.Equal(2, transactions.Length);
 
@@ -122,11 +122,11 @@ namespace NTumbleBit.Tests
 				Assert.Equal(2, block.Transactions.Count); //Offer get mined
 				server.SyncNodes();
 
-				//Fullfill get resigned and broadcasted
+				//fulfill get resigned and broadcasted
 				transactions = server.ServerContext.TrustedBroadcastService.TryBroadcast();
 				Assert.Equal(1, transactions.Length);
 				block = server.TumblerNode.FindBlock(1).First();
-				Assert.Equal(2, block.Transactions.Count); //Fullfill get mined		
+				Assert.Equal(2, block.Transactions.Count); //fulfill get mined		
 
 				MineTo(server.TumblerNode, cycle, CyclePhase.ClientCashoutPhase);
 				server.SyncNodes();

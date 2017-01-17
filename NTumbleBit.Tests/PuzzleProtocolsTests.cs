@@ -293,7 +293,7 @@ namespace NTumbleBit.Tests
 			var clientOfferSig = client.SignOffer(offerInformation);
 
 			//Verify if the scripts are correctly created
-			var fullfill = server.FullfillOffer(clientOfferSig, new Key().ScriptPubKey, FeeRate);
+			var fulfill = server.fulfillOffer(clientOfferSig, new Key().ScriptPubKey, FeeRate);
 
 			var offerTransaction = server.GetSignedOfferTransaction();
 			TransactionBuilder txBuilder = new TransactionBuilder();
@@ -302,20 +302,20 @@ namespace NTumbleBit.Tests
 
 			txBuilder = new TransactionBuilder();
 			txBuilder.AddCoins(offerTransaction.Transaction.Outputs.AsCoins().ToArray());
-			Assert.True(txBuilder.Verify(fullfill.Transaction));
+			Assert.True(txBuilder.Verify(fulfill.Transaction));
 
-			//Check if can resign fullfill in case offer get malleated
+			//Check if can resign fulfill in case offer get malleated
 			offerTransaction.Transaction.LockTime = new LockTime(1);
-			fullfill.Transaction.Inputs[0].PrevOut = offerTransaction.Transaction.Outputs.AsCoins().First().Outpoint;
+			fulfill.Transaction.Inputs[0].PrevOut = offerTransaction.Transaction.Outputs.AsCoins().First().Outpoint;
 			txBuilder = new TransactionBuilder();
 			txBuilder.Extensions.Add(new OfferBuilderExtension());
-			txBuilder.AddKeys(server.GetInternalState().FullfillKey);
+			txBuilder.AddKeys(server.GetInternalState().fulfillKey);
 			txBuilder.AddCoins(offerTransaction.Transaction.Outputs.AsCoins().ToArray());
-			txBuilder.SignTransactionInPlace(fullfill.Transaction);
-			Assert.True(txBuilder.Verify(fullfill.Transaction));
+			txBuilder.SignTransactionInPlace(fulfill.Transaction);
+			Assert.True(txBuilder.Verify(fulfill.Transaction));
 			////////////////////////////////////////////////
 
-			client.CheckSolutions(fullfill.Transaction);
+			client.CheckSolutions(fulfill.Transaction);
 			RoundTrip(ref client, parameters);
 			var solution = client.GetSolution();
 			RoundTrip(ref client, parameters);

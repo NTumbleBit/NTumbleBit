@@ -190,12 +190,12 @@ namespace NTumbleBit.Client.Tumbler
 			return SignHashesAsync(cycleId, channelId, sigReq).GetAwaiter().GetResult();
 		}
 
-		public SolutionKey[] FullfillOffer(int cycleId, string channelId, TransactionSignature clientSignature)
+		public SolutionKey[] fulfillOffer(int cycleId, string channelId, TransactionSignature clientSignature)
 		{
-			return FullfillOfferAsync(cycleId, channelId, clientSignature).GetAwaiter().GetResult();
+			return fulfillOfferAsync(cycleId, channelId, clientSignature).GetAwaiter().GetResult();
 		}
 
-		public Task<SolutionKey[]> FullfillOfferAsync(int cycleId, string channelId, TransactionSignature clientSignature)
+		public Task<SolutionKey[]> fulfillOfferAsync(int cycleId, string channelId, TransactionSignature clientSignature)
 		{
 			return SendAsync<SolutionKey[]>(HttpMethod.Post, clientSignature, "api/v1/tumblers/0/clientchannels/{0}/{1}/offer", cycleId, channelId);
 		}

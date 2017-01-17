@@ -19,7 +19,7 @@ namespace NTumbleBit.PuzzleSolver
 		WaitingPuzzles,
 		WaitingRevelation,
 		WaitingBlindFactor,
-		WaitingFullfillment,
+		WaitingFulfillment,
 		Completed
 	}
 	public class SolverServerSession : EscrowReceiver
@@ -265,7 +265,7 @@ namespace NTumbleBit.PuzzleSolver
 			TransactionSignature signature = SignEscrow(tx);
 
 			InternalState.OfferSignature = signature;
-			InternalState.Status = SolverServerStates.WaitingFullfillment;
+			InternalState.Status = SolverServerStates.WaitingFulfillment;
 			return new OfferInformation()
 			{
 				FullfillKey = InternalState.FullfillKey.PubKey,
@@ -327,7 +327,7 @@ namespace NTumbleBit.PuzzleSolver
 				throw new ArgumentNullException("clientSignature");
 			if(feeRate == null)
 				throw new ArgumentNullException("feeRate");
-			AssertState(SolverServerStates.WaitingFullfillment);
+			AssertState(SolverServerStates.WaitingFulfillment);
 			Script offerScript = GetOfferScript();
 
 			var offer = GetUnsignedOfferTransaction();
