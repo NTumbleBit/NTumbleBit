@@ -13,7 +13,7 @@ namespace NTumbleBit.PuzzleSolver
 		{
 			get; set;
 		}
-		public PubKey FullfillKey
+		public PubKey fulfillKey
 		{
 			get; set;
 		}
@@ -44,7 +44,7 @@ namespace NTumbleBit.PuzzleSolver
 				ops.Add(Op.GetPushOp(hash.ToBytes()));
 				ops.Add(OpcodeType.OP_EQUALVERIFY);
 			}
-			ops.Add(Op.GetPushOp(parameters.FullfillKey.ToBytes()));
+			ops.Add(Op.GetPushOp(parameters.fulfillKey.ToBytes()));
 			ops.Add(OpcodeType.OP_ELSE);
 			ops.Add(Op.GetPushOp(parameters.Expiration));
 			ops.Add(OpcodeType.OP_CHECKLOCKTIMEVERIFY);
@@ -84,7 +84,7 @@ namespace NTumbleBit.PuzzleSolver
 					if(ops[i++].Code != OpcodeType.OP_EQUALVERIFY)
 						return null;
 				}
-				result.FullfillKey = new PubKey(ops[i++].PushData);
+				result.fulfillKey = new PubKey(ops[i++].PushData);
 				if(ops[i++].Code != OpcodeType.OP_ELSE)
 					return null;
 				result.Expiration = new LockTime(checked((uint)ops[i++].GetLong()));
