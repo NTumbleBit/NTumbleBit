@@ -17,7 +17,7 @@ namespace NTumbleBit.PuzzleSolver
 		{
 			get; set;
 		}
-		public PubKey FullfillKey
+		public PubKey FulfillKey
 		{
 			get; set;
 		}
