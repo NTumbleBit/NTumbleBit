@@ -21,6 +21,8 @@ body {
   padding: 0 3%;
 }
 
+.btc { height:1em; position:relative; top:0.17em; cursor:text; }
+
 header {
   padding: 16px 0;
 }

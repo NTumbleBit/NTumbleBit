@@ -71,13 +71,18 @@ namespace NTumbleBit.TumblerServer.Controllers
 				return _Parameters;
 			}
 		}
-		/*
-		[HttpGet("api/v1/tumblers/0/Fee")]
-		public double getFee()
+		[HttpGet("api/v1/tumblers/0/Denomination")]
+		public Money GetDenomination()
 		{
-
+			return Parameters.Denomination;
 		}
-		*/
+
+		[HttpGet("api/v1/tumblers/0/Fee")]
+		public Money GetFee()
+		{
+			return Parameters.Fee;
+		}
+
 		[HttpGet("api/v1/tumblers/0/BlockHeight")]
 		public int GetBlockHeight()
 		{

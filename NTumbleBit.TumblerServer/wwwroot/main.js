@@ -2,6 +2,10 @@
 const solverServerSessionStatesUri = "http://localhost:5000/api/v1/tumblers/0/SolverServerSessionStates";
 const promiseServerSessionStatesUri = "http://localhost:5000/api/v1/tumblers/0/PromiseServerSessionStates";
 const blockHeightUri = "http://localhost:5000/api/v1/tumblers/0/BlockHeight";
+const feeUri = "http://localhost:5000/api/v1/tumblers/0/Fee";
+const denominationUri = "./api/v1/tumblers/0/Denomination";
+
+const SATOSHI_TO_BTC = 100000000;
 
 const solverServerSessionStates = {
   "WaitingEscrow": 1,
@@ -37,6 +41,7 @@ function handleErrors(response) {
 
 function fetchEndpoints() {
   fetchBlockHeight();
+  
 
   fetch(solverServerSessionStatesUri)
     .then(handleErrors)
@@ -50,6 +55,20 @@ function fetchEndpoints() {
 
 }
 
+(function fetchDenomination() {
+  fetch(denominationUri)
+  .then(handleErrors)
+    .then((res) => res.json())
+    .then((denom) => updateDenomination(denom));
+})();
+
+(function fetchFee() {
+  fetch(feeUri)
+    .then(handleErrors)
+    .then((res) => res.json())
+    .then((fee) => updateFee(fee));
+})();
+
 function fetchBlockHeight() {
   fetch(blockHeightUri)
     .then(handleErrors)
@@ -57,6 +76,15 @@ function fetchBlockHeight() {
     .then((height) => updateBlockHeight(height));
 }
 
+function updateDenomination(denom) {
+  const denomDiv = document.querySelector('.denomination');
+  // BTC = 1000000 satoshi
+  denomDiv.textContent = (denom / SATOSHI_TO_BTC);
+}
+function updateFee(fee) {
+  const feeDiv = document.querySelector('.fee');
+  feeDiv.textContent = (fee / SATOSHI_TO_BTC);
+}
 function updateBlockHeight(height) {
   const blockHeightDiv = document.querySelector('.block-height');
   blockHeightDiv.textContent = height;
