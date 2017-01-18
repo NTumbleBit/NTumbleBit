@@ -166,7 +166,7 @@ namespace NTumbleBit.PuzzleSolver
 				get;
 				set;
 			}
-			public PubKey FullfillKey
+			public PubKey FulfillKey
 			{
 				get;
 				internal set;
@@ -310,7 +310,7 @@ namespace NTumbleBit.PuzzleSolver
 			if(offerInformation == null)
 				throw new ArgumentNullException("offerInformation");
 			AssertState(SolverClientStates.WaitingOffer);
-			InternalState.FullfillKey = offerInformation.FullfillKey;
+			InternalState.FulfillKey = offerInformation.FulfillKey;
 			InternalState.OfferTransactionFee = offerInformation.Fee;		
 			Transaction tx = CreateUnsignedOfferTransaction();
 			var signature = tx.Inputs.AsIndexedInputs().First().Sign(InternalState.EscrowKey, InternalState.EscrowedCoin, SigHash.All);
@@ -364,7 +364,7 @@ namespace NTumbleBit.PuzzleSolver
 			return new OfferScriptPubKeyParameters()
 			{
 				Hashes = _PuzzleElements.OfType<RealPuzzle>().Select(p => p.Commitment.KeyHash).ToArray(),
-				FullfillKey = InternalState.FullfillKey,
+				FulfillKey = InternalState.FulfillKey,
 				RedeemKey = InternalState.RedeemKey.PubKey,
 				Expiration = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(InternalState.EscrowedCoin.Redeem).LockTime
 			};
@@ -394,12 +394,12 @@ namespace NTumbleBit.PuzzleSolver
 			throw new PuzzleException("Impossible to find solution to the puzzle");
 		}
 
-		public void CheckSolutions(Transaction fullfillTx)
+		public void CheckSolutions(Transaction fulfillTx)
 		{
-			if(fullfillTx == null)
-				throw new ArgumentNullException("fullfillTx");
+			if(fulfillTx == null)
+				throw new ArgumentNullException("fulfillTx");
 			AssertState(SolverClientStates.WaitingPuzzleSolutions);
-			foreach(var input in fullfillTx.Inputs)
+			foreach(var input in fulfillTx.Inputs)
 			{
 				var solutions = SolverScriptBuilder.ExtractSolutions(input.ScriptSig, Parameters.RealPuzzleCount);
 				if(solutions == null)

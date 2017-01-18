@@ -19,7 +19,7 @@ namespace NTumbleBit.PuzzleSolver
 		WaitingPuzzles,
 		WaitingRevelation,
 		WaitingBlindFactor,
-		WaitingFullfillment,
+		WaitingFulfillment,
 		Completed
 	}
 	public class SolverServerSession : EscrowReceiver
@@ -62,7 +62,7 @@ namespace NTumbleBit.PuzzleSolver
 			{
 				get; set;
 			}
-			public Key FullfillKey
+			public Key FulfillKey
 			{
 				get;
 				set;
@@ -253,7 +253,7 @@ namespace NTumbleBit.PuzzleSolver
 				y++;
 			}
 
-			InternalState.FullfillKey = new Key();
+			InternalState.FulfillKey = new Key();
 
 			var offerScript = GetOfferScript();
 
@@ -265,10 +265,10 @@ namespace NTumbleBit.PuzzleSolver
 			TransactionSignature signature = SignEscrow(tx);
 
 			InternalState.OfferSignature = signature;
-			InternalState.Status = SolverServerStates.WaitingFullfillment;
+			InternalState.Status = SolverServerStates.WaitingFulfillment;
 			return new OfferInformation()
 			{
-				FullfillKey = InternalState.FullfillKey.PubKey,
+				FulfillKey = InternalState.FulfillKey.PubKey,
 				Signature = signature,
 				Fee = InternalState.OfferTransactionFee
 			};
@@ -318,7 +318,7 @@ namespace NTumbleBit.PuzzleSolver
 				throw new InvalidOperationException("Invalid state, actual " + InternalState.Status + " while expected is " + state);
 		}
 
-		public TrustedBroadcastRequest FullfillOffer(
+		public TrustedBroadcastRequest FulfillOffer(
 			TransactionSignature clientSignature,
 			Script cashout, 
 			FeeRate feeRate)
@@ -327,7 +327,7 @@ namespace NTumbleBit.PuzzleSolver
 				throw new ArgumentNullException("clientSignature");
 			if(feeRate == null)
 				throw new ArgumentNullException("feeRate");
-			AssertState(SolverServerStates.WaitingFullfillment);
+			AssertState(SolverServerStates.WaitingFulfillment);
 			Script offerScript = GetOfferScript();
 
 			var offer = GetUnsignedOfferTransaction();
@@ -343,23 +343,23 @@ namespace NTumbleBit.PuzzleSolver
 			var offerCoin = offer.Outputs.AsCoins().First().ToScriptCoin(offerScript);
 
 			var solutions = InternalState.SolvedPuzzles.Select(s => s.SolutionKey).ToArray();
-			Transaction fullfill = new Transaction();
-			fullfill.Inputs.Add(new TxIn(offerCoin.Outpoint));
-			fullfill.Outputs.Add(new TxOut(offerCoin.Amount, cashout));
+			Transaction fulfill = new Transaction();
+			fulfill.Inputs.Add(new TxIn(offerCoin.Outpoint));
+			fulfill.Outputs.Add(new TxOut(offerCoin.Amount, cashout));
 			var size = new OfferBuilderExtension().EstimateScriptSigSize(offerCoin.Redeem);
-			fullfill.Outputs[0].Value -= feeRate.GetFee(size);
+			fulfill.Outputs[0].Value -= feeRate.GetFee(size);
 
-			var signature = fullfill.Inputs.AsIndexedInputs().First().Sign(InternalState.FullfillKey, offerCoin, SigHash.All);
-			var fullfillScript = SolverScriptBuilder.CreateFulfillScript(signature, solutions);
-			fullfill.Inputs[0].ScriptSig = fullfillScript + Op.GetPushOp(offerCoin.Redeem.ToBytes());
+			var signature = fulfill.Inputs.AsIndexedInputs().First().Sign(InternalState.FulfillKey, offerCoin, SigHash.All);
+			var fulfillScript = SolverScriptBuilder.CreateFulfillScript(signature, solutions);
+			fulfill.Inputs[0].ScriptSig = fulfillScript + Op.GetPushOp(offerCoin.Redeem.ToBytes());
 
 			InternalState.OfferClientSignature = clientSignature;
 			InternalState.Status = SolverServerStates.Completed;
 			return new TrustedBroadcastRequest()
 			{
-				Key = InternalState.FullfillKey,
+				Key = InternalState.FulfillKey,
 				PreviousScriptPubKey = offerCoin.ScriptPubKey,
-				Transaction = fullfill
+				Transaction = fulfill
 			};
 		}
 
@@ -369,7 +369,7 @@ namespace NTumbleBit.PuzzleSolver
 			return SolverScriptBuilder.CreateOfferScript(new OfferScriptPubKeyParameters()
 			{
 				Hashes = InternalState.SolvedPuzzles.Select(p => p.SolutionKey.GetHash()).ToArray(),
-				FullfillKey = InternalState.FullfillKey.PubKey,
+				FulfillKey = InternalState.FulfillKey.PubKey,
 				RedeemKey = escrow.RedeemKey,
 				Expiration = escrow.LockTime
 			});

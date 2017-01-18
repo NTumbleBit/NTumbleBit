@@ -264,14 +264,14 @@ namespace NTumbleBit.Client.Tumbler
 							var offerInformation = AliceClient.CheckBlindFactors(cycle.Start, SolverClientSession.Id, blindFactors);
 							var offerSignature = SolverClientSession.SignOffer(offerInformation);
 							var offerRedeem = SolverClientSession.CreateOfferRedeemTransaction(feeRate, Services.WalletService.GenerateAddress($"Cycle {cycle.Start} Tumbler Redeem").ScriptPubKey);
-							//May need to find solution in the fullfillment transaction
+							//May need to find solution in the fulfillment transaction
 							var offerLabel = $"Cycle {cycle.Start} Client Offer Redeem (locked until {offerRedeem.Transaction.LockTime})";
 							Services.BlockExplorerService.Track(offerLabel, offerRedeem.PreviousScriptPubKey);
 							Services.TrustedBroadcastService.Broadcast(offerLabel, offerRedeem);
 							logger.LogInformation("Offer redeem " + offerRedeem.Transaction.GetHash() + " locked until " + offerRedeem.Transaction.LockTime.Height);
 							try
 							{
-								solutionKeys = AliceClient.FullfillOffer(cycle.Start, SolverClientSession.Id, offerSignature);
+								solutionKeys = AliceClient.FulfillOffer(cycle.Start, SolverClientSession.Id, offerSignature);
 								SolverClientSession.CheckSolutions(solutionKeys);
 								logger.LogInformation("Solution recovered from cooperative tumbler");
 							}
