@@ -141,7 +141,7 @@ namespace NTumbleBit.ClassicTumbler
 			AssertState(TumblerClientSessionStates.WaitingSolvedVoucher);			
 			var blindedVoucher = InternalState.BlindedVoucher;
 			InternalState.BlindedVoucher = null;			
-			return new ClientEscrowInformation()
+			return new ClientEscrowInformation
 			{
 				Cycle = InternalState.CycleStart,
 				EscrowKey = InternalState.ClientEscrowKey.PubKey,
@@ -208,7 +208,7 @@ namespace NTumbleBit.ClassicTumbler
 			var escrow = new Key();
 			InternalState.TumblerEscrowKey = escrow;
 			InternalState.Status = TumblerClientSessionStates.WaitingTumblerEscrow;
-			var result = new OpenChannelRequest()
+			var result = new OpenChannelRequest
 			{
 				EscrowKey = escrow.PubKey,
 				Signature = InternalState.SignedVoucher,

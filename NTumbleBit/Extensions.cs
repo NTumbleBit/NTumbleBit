@@ -10,7 +10,7 @@ namespace NTumbleBit
 	{
 		public static RPCResponse SendCommandNoThrows(this RPCClient client, string commandName, params object[] parameters)
 		{
-			return client.SendCommand(new RPCRequest()
+			return client.SendCommand(new RPCRequest
 			{
 				Method = commandName,
 				Params = parameters

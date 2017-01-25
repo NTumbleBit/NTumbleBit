@@ -204,7 +204,7 @@ namespace NTumbleBit.Client.Tumbler
 						{
 							//Client asks the public key of the Tumbler and sends its own
 							var aliceEscrowInformation = ClientChannelNegotiation.GenerateClientTransactionKeys();
-							var voucher = AliceClient.SignVoucher(new Models.SignVoucherRequest()
+							var voucher = AliceClient.SignVoucher(new Models.SignVoucherRequest
 							{
 								MerkleProof = clientTx.MerkleProof,
 								Transaction = clientTx.Transaction,

@@ -91,7 +91,7 @@ namespace NTumbleBit.ClassicTumbler
 
 		public SolverParameters CreateSolverParamaters()
 		{
-			return new SolverParameters()
+			return new SolverParameters
 			{
 				FakePuzzleCount = FakePuzzleCount,
 				RealPuzzleCount = RealPuzzleCount,
@@ -101,7 +101,7 @@ namespace NTumbleBit.ClassicTumbler
 
 		public PromiseParameters CreatePromiseParamaters()
 		{
-			return new PromiseParameters()
+			return new PromiseParameters
 			{
 				FakeFormat = FakeFormat,
 				FakeTransactionCount = FakeTransactionCount,

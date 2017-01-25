@@ -97,7 +97,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 			var key = Repository.GetNextKey(cycle.Start, out keyIndex);
 			if(!cycle.IsInPhase(CyclePhase.ClientChannelEstablishment, height))
 				return BadRequest("incorrect-phase");
-			return Json(new TumblerEscrowKeyResponse() { PubKey = key.PubKey, KeyIndex = keyIndex });
+			return Json(new TumblerEscrowKeyResponse { PubKey = key.PubKey, KeyIndex = keyIndex });
 		}
 
 		[HttpPost("api/v1/tumblers/0/clientchannels/confirm")]

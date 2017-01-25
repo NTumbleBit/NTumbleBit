@@ -75,7 +75,7 @@ namespace NTumbleBit
 			tx.Outputs[0].Value -= feeRate.GetFee(vSize);
 			tx.Inputs[0].ScriptSig = EscrowScriptBuilder.GenerateScriptSig(new TransactionSignature[] { null }) + Op.GetPushOp(coin.Redeem.ToBytes());
 
-			var redeemTransaction =  new TrustedBroadcastRequest()
+			var redeemTransaction =  new TrustedBroadcastRequest
 			{
 				Key = InternalState.RedeemKey,
 				PreviousScriptPubKey = coin.Redeem.Hash.ScriptPubKey,

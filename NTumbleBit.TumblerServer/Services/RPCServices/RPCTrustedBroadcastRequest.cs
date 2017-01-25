@@ -163,7 +163,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				return null;
 			var tx = new Transaction((string)result.Result["hex"]);
 			var confirmations = result.Result["confirmations"];
-			return new TransactionInformation()
+			return new TransactionInformation
 			{
 				Confirmations = confirmations == null ? 0 : (int)confirmations,
 				Transaction = tx

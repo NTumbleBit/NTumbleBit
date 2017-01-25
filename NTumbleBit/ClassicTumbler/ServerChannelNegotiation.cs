@@ -323,7 +323,7 @@ namespace NTumbleBit.ClassicTumbler
 			uint160 nonce;
 			var cycle = GetCycle().Start;
 			var signature = VoucherKey.Sign(NBitcoin.Utils.ToBytes((uint)cycle, true), out nonce);
-			return new UnsignedVoucherInformation()
+			return new UnsignedVoucherInformation
 			{
 				CycleStart = cycle,
 				Nonce = nonce,

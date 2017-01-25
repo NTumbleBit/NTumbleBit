@@ -266,7 +266,7 @@ namespace NTumbleBit.PuzzleSolver
 
 			InternalState.OfferSignature = signature;
 			InternalState.Status = SolverServerStates.WaitingFulfillment;
-			return new OfferInformation()
+			return new OfferInformation
 			{
 				FulfillKey = InternalState.FulfillKey.PubKey,
 				Signature = signature,
@@ -298,7 +298,7 @@ namespace NTumbleBit.PuzzleSolver
 			txBuilder.AddKnownSignature(InternalState.EscrowKey.PubKey, InternalState.OfferSignature);
 			txBuilder.AddKnownSignature(InternalState.GetClientEscrowPubKey(), InternalState.OfferClientSignature);
 			txBuilder.SignTransactionInPlace(offerTransaction);
-			return new TrustedBroadcastRequest()
+			return new TrustedBroadcastRequest
 			{
 				Key = InternalState.EscrowKey,
 				Transaction = offerTransaction,
@@ -355,7 +355,7 @@ namespace NTumbleBit.PuzzleSolver
 
 			InternalState.OfferClientSignature = clientSignature;
 			InternalState.Status = SolverServerStates.Completed;
-			return new TrustedBroadcastRequest()
+			return new TrustedBroadcastRequest
 			{
 				Key = InternalState.FulfillKey,
 				PreviousScriptPubKey = offerCoin.ScriptPubKey,
@@ -366,7 +366,7 @@ namespace NTumbleBit.PuzzleSolver
 		private Script GetOfferScript()
 		{
 			var escrow = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(InternalState.EscrowedCoin.Redeem);
-			return SolverScriptBuilder.CreateOfferScript(new OfferScriptPubKeyParameters()
+			return SolverScriptBuilder.CreateOfferScript(new OfferScriptPubKeyParameters
 			{
 				Hashes = InternalState.SolvedPuzzles.Select(p => p.SolutionKey.GetHash()).ToArray(),
 				FulfillKey = InternalState.FulfillKey.PubKey,
