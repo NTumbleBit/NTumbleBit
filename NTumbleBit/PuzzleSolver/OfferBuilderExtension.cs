@@ -69,7 +69,7 @@ namespace NTumbleBit.PuzzleSolver
 		public override Script GenerateScriptSig(Script scriptPubKey, IKeyRepository keyRepo, ISigner signer)
 		{
 			var offer = SolverScriptBuilder.ExtractOfferScriptParameters(scriptPubKey);
-			var key = keyRepo.FindKey(offer.FullfillKey.ScriptPubKey);
+			var key = keyRepo.FindKey(offer.FulfillKey.ScriptPubKey);
 			if(key == null)
 				return null;
 			var sig = signer.Sign(key);

@@ -260,33 +260,33 @@ namespace NTumbleBit.TumblerServer.Controllers
 		{
 			var session = GetSolverServerSession(cycleId, channelId, CyclePhase.PaymentPhase);
 			var feeRate = Services.FeeService.GetFeeRate();
-			var fullfillKey = session.CheckBlindedFactors(blindFactors, feeRate);
+			var fulfillKey = session.CheckBlindedFactors(blindFactors, feeRate);
 			var cycle = Parameters.CycleGenerator.GetCycle(cycleId);
-			//later we will track it for fullfillment
+			//later we will track it for fulfillment
 			Services.BlockExplorerService.Track($"Cycle {cycle.Start} Client Offer", session.GetOfferScriptPubKey());
 			Repository.Save(cycleId, session);
-			return Json(fullfillKey);
+			return Json(fulfillKey);
 		}
 
 		[HttpPost("api/v1/tumblers/0/clientchannels/{cycleId}/{channelId}/offer")]
-		public IActionResult FullfillOffer(int cycleId, string channelId, [FromBody]TransactionSignature clientSignature)
+		public IActionResult FulfillOffer(int cycleId, string channelId, [FromBody]TransactionSignature clientSignature)
 		{
 			var session = GetSolverServerSession(cycleId, channelId, CyclePhase.TumblerCashoutPhase);
 			var feeRate = Services.FeeService.GetFeeRate();
-			if(session.Status != SolverServerStates.WaitingFullfillment)
+			if(session.Status != SolverServerStates.WaitingFulfillment)
 				return BadRequest("invalid-state");
 			try
 			{
 				var cycle = Parameters.CycleGenerator.GetCycle(cycleId);
 				var cashout = Services.WalletService.GenerateAddress($"Cycle {cycle.Start} Tumbler Cashout");
-				var fullfill = session.FullfillOffer(clientSignature, cashout.ScriptPubKey, feeRate);
-				fullfill.BroadcastAt = new LockTime(cycle.GetPeriods().Payment.End - 1);
+				var fulfill = session.FulfillOffer(clientSignature, cashout.ScriptPubKey, feeRate);
+				fulfill.BroadcastAt = new LockTime(cycle.GetPeriods().Payment.End - 1);
 				Repository.Save(cycle.Start, session);
 
 				var signedOffer = session.GetSignedOfferTransaction();
-				signedOffer.BroadcastAt = fullfill.BroadcastAt - 1;
+				signedOffer.BroadcastAt = fulfill.BroadcastAt - 1;
 				Services.TrustedBroadcastService.Broadcast($"Cycle {cycle.Start} Client Offer Transaction (planned for: {signedOffer.BroadcastAt})", signedOffer);
-				Services.TrustedBroadcastService.Broadcast($"Cycle {cycle.Start} Tumbler Fullfillment Transaction (planned for: {fullfill.BroadcastAt})", fullfill);
+				Services.TrustedBroadcastService.Broadcast($"Cycle {cycle.Start} Tumbler Fulfillment Transaction (planned for: {fulfill.BroadcastAt})", fulfill);
 				return Json(session.GetSolutionKeys());
 			}
 			catch(PuzzleException)
