@@ -23,7 +23,7 @@ namespace NTumbleBit
 		{
 
 		}
-		
+
 		public override void NextBytes(byte[] buffer)
 		{
 			RandomUtils.GetBytes(buffer);

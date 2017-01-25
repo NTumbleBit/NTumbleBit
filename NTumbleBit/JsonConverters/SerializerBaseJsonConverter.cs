@@ -27,7 +27,7 @@ namespace NTumbleBit.JsonConverters
 		internal void Support<T>(Action<SerializerBase, T> serialize, Func<SerializerBase, T> deserialize)
 		{
 			_Supports.Add(typeof(T), Tuple.Create<Action<SerializerBase, object>, Func<SerializerBase, object>>((a, b) => serialize(a, (T)b), a => deserialize(a)));
-		}		
+		}
 
 
 		public override bool CanConvert(Type objectType)

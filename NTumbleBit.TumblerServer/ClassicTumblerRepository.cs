@@ -79,7 +79,7 @@ namespace NTumbleBit.TumblerServer
 				_Configuration.CreateClassicTumblerParameters().CreateSolverParamaters(),
 				session);
 		}
-		
+
 		public Key GetNextKey(int cycleId, out int keyIndex)
 		{
 			ExtKey key = GetExtKey();
@@ -129,6 +129,6 @@ namespace NTumbleBit.TumblerServer
 				return n;
 			});
 			return !used;
-		}		
+		}
 	}
 }

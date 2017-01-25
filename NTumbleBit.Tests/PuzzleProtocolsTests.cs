@@ -84,7 +84,7 @@ namespace NTumbleBit.Tests
 		//https://medium.com/@nicolasdorier/tumblebit-tumbler-mode-ea44e9a2a2ec#.a4wgwa86u
 		public void CanCalculatePhase()
 		{
-			var parameter = new CycleParameters()
+			var parameter = new CycleParameters
 			{
 				Start = 100,
 				RegistrationDuration = 10,
@@ -233,7 +233,7 @@ namespace NTumbleBit.Tests
 		{
 			var redeem = EscrowScriptBuilder.CreateEscrow(new[] { escrow1, escrow2 }, redeemKey, new LockTime(0));
 			var scriptCoin = new Coin(new OutPoint(new uint256(RandomUtils.GetBytes(32)), 0),
-				new TxOut()
+				new TxOut
 				{
 					Value = Money.Coins(1.5m),
 					ScriptPubKey = redeem.Hash.ScriptPubKey
@@ -248,7 +248,7 @@ namespace NTumbleBit.Tests
 			PuzzleSolution expectedSolution = null;
 			Puzzle puzzle = key.PubKey.GeneratePuzzle(ref expectedSolution);
 
-			var parameters = new SolverParameters()
+			var parameters = new SolverParameters
 			{
 				FakePuzzleCount = 50,
 				RealPuzzleCount = 10,

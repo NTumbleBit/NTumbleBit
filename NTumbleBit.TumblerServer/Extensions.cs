@@ -111,9 +111,6 @@ namespace NTumbleBit.TumblerServer
 						}
 					}
 
-					Debug.Assert(conf.TumblerKey != null);
-					Debug.Assert(conf.VoucherKey != null);
-
 					try
 					{
 

@@ -119,7 +119,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				var confirmations = result.Result["confirmations"];
 				var confCount = confirmations == null ? 0 : Math.Max(0, (int)confirmations);
 
-				return new TransactionInformation()
+				return new TransactionInformation
 				{
 					Confirmations = confCount,
 					Transaction = tx

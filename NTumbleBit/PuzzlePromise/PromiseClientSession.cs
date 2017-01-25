@@ -158,7 +158,7 @@ namespace NTumbleBit.PuzzlePromise
 		{
 			if(state == null)
 				return;
-			InternalState = Serializer.Clone(state);			
+			InternalState = Serializer.Clone(state);
 			if(InternalState.Commitments != null)
 			{
 				_Hashes = new HashBase[InternalState.Commitments.Length];
@@ -274,7 +274,7 @@ namespace NTumbleBit.PuzzlePromise
 			}
 			var fakeIndices = _Hashes.OfType<FakeHash>().Select(h => h.Index).ToArray();
 			uint256 indexSalt = null;
-			var request = new SignaturesRequest()
+			var request = new SignaturesRequest
 			{
 				Hashes = _Hashes.Select(h => h.GetHash()).ToArray(),
 				FakeIndexesHash = PromiseUtils.HashIndexes(ref indexSalt, fakeIndices),
@@ -366,7 +366,7 @@ namespace NTumbleBit.PuzzlePromise
 			var blindedPuzzle = new Puzzle(Parameters.ServerKey, puzzleToSolve).Blind(ref blind);
 
 			InternalState.BlindFactor = blind;
-			InternalState.Status = PromiseClientStates.Completed;			
+			InternalState.Status = PromiseClientStates.Completed;
 			return blindedPuzzle.PuzzleValue;
 		}
 

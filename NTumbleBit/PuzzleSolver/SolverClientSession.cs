@@ -311,7 +311,7 @@ namespace NTumbleBit.PuzzleSolver
 				throw new ArgumentNullException(nameof(offerInformation));
 			AssertState(SolverClientStates.WaitingOffer);
 			InternalState.FulfillKey = offerInformation.FulfillKey;
-			InternalState.OfferTransactionFee = offerInformation.Fee;		
+			InternalState.OfferTransactionFee = offerInformation.Fee;
 			Transaction tx = CreateUnsignedOfferTransaction();
 			var signature = tx.Inputs.AsIndexedInputs().First().Sign(InternalState.EscrowKey, InternalState.EscrowedCoin, SigHash.All);
 			InternalState.Status = SolverClientStates.WaitingPuzzleSolutions;
@@ -342,7 +342,7 @@ namespace NTumbleBit.PuzzleSolver
 			tx.Outputs[0].Value -= feeRate.GetFee(vSize);
 			tx.Inputs[0].ScriptSig = new Script(OpcodeType.OP_0) + Op.GetPushOp(coin.Redeem.ToBytes());
 
-			var redeemTransaction = new TrustedBroadcastRequest()
+			var redeemTransaction = new TrustedBroadcastRequest
 			{
 				Key = InternalState.RedeemKey,
 				PreviousScriptPubKey = coin.Redeem.Hash.ScriptPubKey,
@@ -361,7 +361,7 @@ namespace NTumbleBit.PuzzleSolver
 
 		private OfferScriptPubKeyParameters CreateOfferScriptParameters()
 		{
-			return new OfferScriptPubKeyParameters()
+			return new OfferScriptPubKeyParameters
 			{
 				Hashes = _PuzzleElements.OfType<RealPuzzle>().Select(p => p.Commitment.KeyHash).ToArray(),
 				FulfillKey = InternalState.FulfillKey,
@@ -374,7 +374,7 @@ namespace NTumbleBit.PuzzleSolver
 		{
 			return CreateOfferScript().Hash.ScriptPubKey;
 		}
-		
+
 		public void CheckSolutions(Transaction[] transactions)
 		{
 			if(transactions == null)
@@ -398,7 +398,7 @@ namespace NTumbleBit.PuzzleSolver
 		{
 			if(fulfillTx == null)
 				throw new ArgumentNullException(nameof(fulfillTx));
-        
+
 			AssertState(SolverClientStates.WaitingPuzzleSolutions);
 			foreach(var input in fulfillTx.Inputs)
 			{

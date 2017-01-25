@@ -133,16 +133,19 @@ namespace NTumbleBit.CLI
 
 		private static T Retry<T>(int count, Func<T> act)
 		{
-			Exception ex = null;
+			var exceptions = new List<Exception>();
 			for(int i = 0; i < count; i++)
 			{
 				try
 				{
 					return act();
 				}
-				catch(Exception exx) { ex = exx; }
+				catch(Exception ex)
+				{
+					exceptions.Add(ex);
+				}
 			}
-			throw ex;
+			throw new AggregateException(exceptions);
 		}
 
 		public static string GetDefaultConfigurationFile(string dataDirectory, Network network)

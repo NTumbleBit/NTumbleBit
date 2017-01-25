@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace NTumbleBit.PuzzleSolver
-{	
+{
 	internal class PuzzleSetElement
 	{
 		public Puzzle Puzzle
@@ -16,7 +16,7 @@ namespace NTumbleBit.PuzzleSolver
 			get;
 			set;
 		}
-		
+
 		public int Index
 		{
 			get;
@@ -56,7 +56,7 @@ namespace NTumbleBit.PuzzleSolver
 			Puzzle = puzzle;
 			Solution = solution;
 		}
-	
+
 		public PuzzleSolution Solution
 		{
 			get;

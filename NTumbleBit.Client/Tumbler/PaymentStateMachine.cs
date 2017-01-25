@@ -174,7 +174,7 @@ namespace NTumbleBit.Client.Tumbler
 					break;
 				case CyclePhase.ClientChannelEstablishment:
 					if(ClientChannelNegotiation.Status == TumblerClientSessionStates.WaitingTumblerClientTransactionKey)
-					{						
+					{
 						var key = AliceClient.RequestTumblerEscrowKey(cycle.Start);
 						ClientChannelNegotiation.ReceiveTumblerEscrowKey(key.PubKey, key.KeyIndex);
 						//Client create the escrow
@@ -204,7 +204,7 @@ namespace NTumbleBit.Client.Tumbler
 						{
 							//Client asks the public key of the Tumbler and sends its own
 							var aliceEscrowInformation = ClientChannelNegotiation.GenerateClientTransactionKeys();
-							var voucher = AliceClient.SignVoucher(new Models.SignVoucherRequest()
+							var voucher = AliceClient.SignVoucher(new Models.SignVoucherRequest
 							{
 								MerkleProof = clientTx.MerkleProof,
 								Transaction = clientTx.Transaction,

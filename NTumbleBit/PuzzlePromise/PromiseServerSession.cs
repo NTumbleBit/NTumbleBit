@@ -199,7 +199,7 @@ namespace NTumbleBit.PuzzlePromise
 			{
 				return InternalState.Status;
 			}
-		}		
+		}
 
 		private void AssertState(PromiseServerStates state)
 		{
