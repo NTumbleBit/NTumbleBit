@@ -141,7 +141,7 @@ namespace NTumbleBit.Tests
 			{
 				foreach(var process in Process.GetProcessesByName("bitcoind"))
 				{
-					if(process.MainModule.FileName.Replace("\\", "/").StartsWith(Path.GetFullPath(rootTestData).Replace("\\", "/")))
+					if(process.MainModule.FileName.Replace("\\", "/").StartsWith(Path.GetFullPath(rootTestData).Replace("\\", "/"), StringComparison.Ordinal))
 					{
 						process.Kill();
 						process.WaitForExit();

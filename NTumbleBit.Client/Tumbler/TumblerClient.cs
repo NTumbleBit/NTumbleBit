@@ -105,7 +105,7 @@ namespace NTumbleBit.Client.Tumbler
 		{
 			relativePath = String.Format(relativePath, parameters ?? new object[0]);
 			var uri = Address.AbsoluteUri;
-			if(!uri.EndsWith("/"))
+			if(!uri.EndsWith("/", StringComparison.Ordinal))
 				uri += "/";
 			uri += relativePath;
 			return uri;

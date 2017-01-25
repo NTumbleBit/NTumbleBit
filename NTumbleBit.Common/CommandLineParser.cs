@@ -33,7 +33,7 @@ namespace NTumbleBit.Common
 			var start = key + "=";
 			foreach(var arg in Args)
 			{
-				if(arg.StartsWith(start))
+				if(arg.StartsWith(start, StringComparison.Ordinal))
 				{
 					return arg.Substring(start.Length);
 				}

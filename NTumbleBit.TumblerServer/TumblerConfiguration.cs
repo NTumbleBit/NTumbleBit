@@ -79,8 +79,8 @@ namespace NTumbleBit.TumblerServer
 
 		public TumblerConfiguration LoadArgs(String[] args)
 		{
-			ConfigurationFile = args.Where(a => a.StartsWith("-conf=")).Select(a => a.Substring("-conf=".Length).Replace("\"", "")).FirstOrDefault();
-			DataDir = args.Where(a => a.StartsWith("-datadir=")).Select(a => a.Substring("-datadir=".Length).Replace("\"", "")).FirstOrDefault();
+			ConfigurationFile = args.Where(a => a.StartsWith("-conf=", StringComparison.Ordinal)).Select(a => a.Substring("-conf=".Length).Replace("\"", "")).FirstOrDefault();
+			DataDir = args.Where(a => a.StartsWith("-datadir=", StringComparison.Ordinal)).Select(a => a.Substring("-datadir=".Length).Replace("\"", "")).FirstOrDefault();
 			if(DataDir != null && ConfigurationFile != null)
 			{
 				var isRelativePath = Path.GetFullPath(ConfigurationFile).Length > ConfigurationFile.Length;
