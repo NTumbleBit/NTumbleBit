@@ -16,17 +16,17 @@ namespace NTumbleBit.Client.Tumbler.Services
 {
 	public class DBreezeRepository : IRepository, IDisposable
 	{
-		string _Folder;
+		private string _Folder;
 		public DBreezeRepository(string folder)
 		{
 			if(folder == null)
-				throw new ArgumentNullException("folder");
+				throw new ArgumentNullException(nameof(folder));
 			if(!Directory.Exists(folder))
 				Directory.CreateDirectory(folder);
 			_Folder = folder;
 		}
 
-		Dictionary<string, DBreezeEngine> _EnginesByParitionKey = new Dictionary<string, DBreezeEngine>();
+		private Dictionary<string, DBreezeEngine> _EnginesByParitionKey = new Dictionary<string, DBreezeEngine>();
 
 		public void UpdateOrInsert<T>(string partitionKey, string rowKey, T data, Func<T, T, T> update)
 		{

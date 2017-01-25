@@ -9,7 +9,7 @@ namespace NTumbleBit.Tests
 {
 	public class TestKeys
 	{
-		static RsaKey _Default;
+		private static RsaKey _Default;
 		public static RsaKey Default
 		{
 			get
@@ -22,7 +22,7 @@ namespace NTumbleBit.Tests
 			}
 		}
 
-		static RsaKey _Default2;
+		private static RsaKey _Default2;
 		public static RsaKey Default2
 		{
 			get

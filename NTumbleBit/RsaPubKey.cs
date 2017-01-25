@@ -28,7 +28,7 @@ namespace NTumbleBit
 		public RsaPubKey(byte[] bytes)
 		{
 			if(bytes == null)
-				throw new ArgumentNullException("bytes");
+				throw new ArgumentNullException(nameof(bytes));
 			try
 			{
 				DerSequence seq2 = RsaKey.GetRSASequence(bytes);
@@ -45,7 +45,7 @@ namespace NTumbleBit
 		internal RsaPubKey(RsaKeyParameters key)
 		{
 			if(key == null)
-				throw new ArgumentNullException("key");
+				throw new ArgumentNullException(nameof(key));
 			_Key = key;
 		}
 
@@ -87,24 +87,24 @@ namespace NTumbleBit
 		public Puzzle GeneratePuzzle(ref PuzzleSolution solution)
 		{
 			solution = solution ?? new PuzzleSolution(Utils.GenerateEncryptableInteger(_Key));
-			return new Puzzle(this, new PuzzleValue(this.Encrypt(solution._Value)));
+			return new Puzzle(this, new PuzzleValue(Encrypt(solution._Value)));
 		}
 
 		internal BigInteger Encrypt(BigInteger data)
 		{
 			if(data == null)
-				throw new ArgumentNullException("data");
+				throw new ArgumentNullException(nameof(data));
 			if(data.CompareTo(_Key.Modulus) >= 0)
 				throw new ArgumentException("input too large for RSA cipher.");
 			RsaCoreEngine engine = new RsaCoreEngine();
-			engine.Init(true, this._Key);
+			engine.Init(true, _Key);
 			return engine.ProcessBlock(data);
 		}
 
 		internal BigInteger Blind(BigInteger data, ref BlindFactor blindFactor)
 		{
 			if(data == null)
-				throw new ArgumentNullException("data");
+				throw new ArgumentNullException(nameof(data));
 			EnsureInitializeBlindFactor(ref blindFactor);
 			return Blind(blindFactor._Value.ModPow(_Key.Exponent, _Key.Modulus), data);
 		}
@@ -117,9 +117,9 @@ namespace NTumbleBit
 		internal BigInteger RevertBlind(BigInteger data, BlindFactor blindFactor)
 		{
 			if(data == null)
-				throw new ArgumentNullException("data");
+				throw new ArgumentNullException(nameof(data));
 			if(blindFactor == null)
-				throw new ArgumentNullException("blindFactor");
+				throw new ArgumentNullException(nameof(blindFactor));
 			EnsureInitializeBlindFactor(ref blindFactor);
 			var ai = blindFactor._Value.ModInverse(_Key.Modulus);
 			return Blind(ai.ModPow(_Key.Exponent, _Key.Modulus), data);
@@ -128,9 +128,9 @@ namespace NTumbleBit
 		internal BigInteger Unblind(BigInteger data, BlindFactor blindFactor)
 		{
 			if(data == null)
-				throw new ArgumentNullException("data");
+				throw new ArgumentNullException(nameof(data));
 			if(blindFactor == null)
-				throw new ArgumentNullException("blindFactor");
+				throw new ArgumentNullException(nameof(blindFactor));
 			EnsureInitializeBlindFactor(ref blindFactor);
 			return Blind(blindFactor._Value.ModInverse(_Key.Modulus), data);
 		}
@@ -150,7 +150,7 @@ namespace NTumbleBit
 		}
 		public static bool operator ==(RsaPubKey a, RsaPubKey b)
 		{
-			if(System.Object.ReferenceEquals(a, b))
+			if(ReferenceEquals(a, b))
 				return true;
 			if(((object)a == null) || ((object)b == null))
 				return false;

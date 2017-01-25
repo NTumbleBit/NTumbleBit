@@ -17,7 +17,7 @@ namespace NTumbleBit.BouncyCastle.Asn1
 			byte[] str)
 		{
 			if(str == null)
-				throw new ArgumentNullException("str");
+				throw new ArgumentNullException(nameof(str));
 
 			this.str = str;
 		}

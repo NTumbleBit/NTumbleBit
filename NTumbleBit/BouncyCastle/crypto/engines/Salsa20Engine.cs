@@ -11,14 +11,14 @@ namespace NTumbleBit.BouncyCastle.Crypto.Engines
 	/// <summary>
 	/// Implementation of Daniel J. Bernstein's Salsa20 stream cipher, Snuffle 2005
 	/// </summary>
-	class Salsa20Engine
+	internal class Salsa20Engine
 	{
 		public static readonly int DEFAULT_ROUNDS = 20;
 
 		/** Constants */
 		private const int StateSize = 16; // 16, 32 bit ints = 64 bytes
 
-		private readonly static uint[] TAU_SIGMA = Pack.LE_To_UInt32(Encoders.ASCII.DecodeData("expand 16-byte k" + "expand 32-byte k"), 0, 8);
+		private static readonly uint[] TAU_SIGMA = Pack.LE_To_UInt32(Encoders.ASCII.DecodeData("expand 16-byte k" + "expand 32-byte k"), 0, 8);
 
 		internal void PackTauOrSigma(int keyLength, uint[] state, int stateOffset)
 		{
@@ -80,7 +80,7 @@ namespace NTumbleBit.BouncyCastle.Crypto.Engines
 
 			ParametersWithIV ivParams = parameters as ParametersWithIV;
 			if(ivParams == null)
-				throw new ArgumentException(AlgorithmName + " Init requires an IV", "parameters");
+				throw new ArgumentException(AlgorithmName + " Init requires an IV", nameof(parameters));
 
 			byte[] iv = ivParams.GetIV();
 			if(iv == null || iv.Length != NonceSize)

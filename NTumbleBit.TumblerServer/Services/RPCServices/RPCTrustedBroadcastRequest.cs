@@ -34,13 +34,13 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		public RPCTrustedBroadcastService(RPCClient rpc, IBroadcastService innerBroadcast, IBlockExplorerService explorer, IRepository repository)
 		{
 			if(rpc == null)
-				throw new ArgumentNullException("rpc");
+				throw new ArgumentNullException(nameof(rpc));
 			if(innerBroadcast == null)
-				throw new ArgumentNullException("innerBroadcast");
+				throw new ArgumentNullException(nameof(innerBroadcast));
 			if(repository == null)
-				throw new ArgumentNullException("repository");
+				throw new ArgumentNullException(nameof(repository));
 			if(explorer == null)
-				throw new ArgumentNullException("explorer");
+				throw new ArgumentNullException(nameof(explorer));
 			_Repository = repository;
 			_RPCClient = rpc;
 			_Broadcaster = innerBroadcast;
@@ -48,7 +48,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			_BlockExplorer = explorer;
 		}
 
-		IBroadcastService _Broadcaster;
+		private IBroadcastService _Broadcaster;
 
 		private readonly RPCClient _RPCClient;
 		public RPCClient RPCClient
@@ -67,7 +67,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		public void Broadcast(string label, TrustedBroadcastRequest broadcast)
 		{
 			if(broadcast == null)
-				throw new ArgumentNullException("broadcast");
+				throw new ArgumentNullException(nameof(broadcast));
 			var address = broadcast.PreviousScriptPubKey.GetDestinationAddress(RPCClient.Network);
 			if(address == null)
 				throw new NotSupportedException("ScriptPubKey to track not supported");
@@ -102,8 +102,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		public Record[] GetRequests()
 		{
 			var requests = Repository.List<Record>("TrustedBroadcasts");
-			return Utils.TopologicalSort(requests,
-				tx => requests.Where(tx2 => tx2.Request.Transaction.Outputs.Any(o => o.ScriptPubKey == tx.Request.PreviousScriptPubKey))).ToArray();
+			return requests.TopologicalSort(tx => requests.Where(tx2 => tx2.Request.Transaction.Outputs.Any(o => o.ScriptPubKey == tx.Request.PreviousScriptPubKey))).ToArray();
 		}
 
 		public Transaction[] TryBroadcast()
@@ -149,7 +148,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		public Transaction[] GetReceivedTransactions(Script scriptPubKey)
 		{
 			if(scriptPubKey == null)
-				throw new ArgumentNullException("scriptPubKey");
+				throw new ArgumentNullException(nameof(scriptPubKey));
 
 			return BlockExplorer.GetTransactions(scriptPubKey, false)
 				.Where(t => t.Transaction.Outputs.Any(o => o.ScriptPubKey == scriptPubKey))

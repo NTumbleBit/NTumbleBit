@@ -24,7 +24,7 @@ namespace NTumbleBit.TumblerServer
 		public ActionResultException(IActionResult result)
 		{
 			if(result == null)
-				throw new ArgumentNullException("result");
+				throw new ArgumentNullException(nameof(result));
 			_Result = result;
 		}
 

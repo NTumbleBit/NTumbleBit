@@ -13,14 +13,14 @@ namespace NTumbleBit.PuzzleSolver
 		public SolutionKey(byte[] key)
 		{
 			if(key == null)
-				throw new ArgumentNullException("key");
+				throw new ArgumentNullException(nameof(key));
 			if((key.Length != KeySize))
 				throw new ArgumentException("Chacha requires 128 bit key");
 			_Bytes = key.ToArray();
 		}
 
-		byte[] _Bytes;
-		public readonly static long KeySize = 16;
+		private byte[] _Bytes;
+		public static readonly long KeySize = 16;
 
 		public byte[] ToBytes(bool @unsafe)
 		{

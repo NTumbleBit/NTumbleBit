@@ -33,14 +33,14 @@ namespace NTumbleBit.Tests
 			}
 		}
 
-		FeeRate FeeRate = new FeeRate(50, 1);
+		private FeeRate FeeRate = new FeeRate(50, 1);
 
 		[Fact]
 		public void TestCRUDDBReeze()
 		{
 			using(var server = TumblerServerTester.Create())
 			{
-				var repo = server.ServerContext.GetService<NTumbleBit.TumblerServer.Services.IRepository>();
+				var repo = server.ServerContext.GetService<TumblerServer.Services.IRepository>();
 				repo.UpdateOrInsert("a", "b", "c", (o, n) => n);
 				var result = repo.Get<string>("a", "b");
 				Assert.Equal("c", result);

@@ -13,14 +13,14 @@ namespace NTumbleBit
 		public PuzzleSolution(byte[] solution)
 		{
 			if(solution == null)
-				throw new ArgumentNullException("solution");
+				throw new ArgumentNullException(nameof(solution));
 			_Value = new BigInteger(1, solution);
 		}
 
 		internal PuzzleSolution(BigInteger value)
 		{
 			if(value == null)
-				throw new ArgumentNullException("value");
+				throw new ArgumentNullException(nameof(value));
 			_Value = value;
 		}
 
@@ -40,7 +40,7 @@ namespace NTumbleBit
 		}
 		public static bool operator ==(PuzzleSolution a, PuzzleSolution b)
 		{
-			if(System.Object.ReferenceEquals(a, b))
+			if(ReferenceEquals(a, b))
 				return true;
 			if(((object)a == null) || ((object)b == null))
 				return false;
@@ -60,9 +60,9 @@ namespace NTumbleBit
 		public PuzzleSolution Unblind(RsaPubKey rsaPubKey, BlindFactor blind)
 		{
 			if(rsaPubKey == null)
-				throw new ArgumentNullException("rsaPubKey");
+				throw new ArgumentNullException(nameof(rsaPubKey));
 			if(blind == null)
-				throw new ArgumentNullException("blind");
+				throw new ArgumentNullException(nameof(blind));
 			return new PuzzleSolution(rsaPubKey.Unblind(_Value, blind));
 		}
 

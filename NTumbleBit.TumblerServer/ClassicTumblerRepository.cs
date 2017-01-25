@@ -15,7 +15,7 @@ namespace NTumbleBit.TumblerServer
 		public ClassicTumblerRepository(TumblerConfiguration config, IRepository repository)
 		{
 			if(config == null)
-				throw new ArgumentNullException("config");
+				throw new ArgumentNullException(nameof(config));
 			_Configuration = config;
 			_Repository = repository;
 		}
@@ -76,7 +76,7 @@ namespace NTumbleBit.TumblerServer
 			if(session == null)
 				return null;
 			return new SolverServerSession(_Configuration.TumblerKey,
-				this._Configuration.CreateClassicTumblerParameters().CreateSolverParamaters(),
+				_Configuration.CreateClassicTumblerParameters().CreateSolverParamaters(),
 				session);
 		}
 		

@@ -114,8 +114,7 @@ namespace NTumbleBit.TumblerServer
 			Logs.Configuration.LogInformation("Network: " + Network);
 			if(Network == Network.TestNet)
 			{
-				var cycle = this
-							.ClassicTumblerParameters
+				var cycle = ClassicTumblerParameters
 							.CycleGenerator.FirstCycle;
 				cycle.RegistrationDuration = 3;
 				cycle.Start = 0;
@@ -142,7 +141,7 @@ namespace NTumbleBit.TumblerServer
 			{
 				Console.WriteLine("Details on the wiki page :  https://github.com/NTumbleBit/NTumbleBit/wiki/Server-Config");
 				OpenBrowser("https://github.com/NTumbleBit/NTumbleBit/wiki/Server-Config");
-				System.Environment.Exit(0);
+				Environment.Exit(0);
 			}
 
 			var defaultPort = config.GetOrDefault<int>("port", 5000);

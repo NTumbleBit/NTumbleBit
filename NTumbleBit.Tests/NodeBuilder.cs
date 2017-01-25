@@ -107,13 +107,13 @@ namespace NTumbleBit.Tests
 			return bitcoind;
 		}
 
-		int last = 0;
+		private int last = 0;
 		private string _Root;
 		private string _Bitcoind;
 		public NodeBuilder(string root, string bitcoindPath)
 		{
-			this._Root = root;
-			this._Bitcoind = bitcoindPath;
+			_Root = root;
+			_Bitcoind = bitcoindPath;
 		}
 
 		public string BitcoinD
@@ -174,7 +174,8 @@ namespace NTumbleBit.Tests
 			foreach(var disposable in _Disposables)
 				disposable.Dispose();
 		}
-		List<IDisposable> _Disposables = new List<IDisposable>();
+
+		private List<IDisposable> _Disposables = new List<IDisposable>();
 		internal void AddDisposable(IDisposable group)
 		{
 			_Disposables.Add(group);
@@ -222,8 +223,8 @@ namespace NTumbleBit.Tests
 
 		public CoreNode(string folder, NodeBuilder builder)
 		{
-			this._Builder = builder;
-			this._Folder = folder;
+			_Builder = builder;
+			_Folder = folder;
 			_State = CoreNodeState.Stopped;
 			CleanFolder();
 			Directory.CreateDirectory(folder);
@@ -268,7 +269,7 @@ namespace NTumbleBit.Tests
 			}
 		}
 
-		int[] ports;
+		private int[] ports;
 
 		public int ProtocolPort
 		{
@@ -282,24 +283,24 @@ namespace NTumbleBit.Tests
 			StartAsync().Wait();
 		}
 
-		readonly NetworkCredential creds;
+		private readonly NetworkCredential creds;
 		public RPCClient CreateRPCClient()
 		{
-			return new RPCClient(creds, new Uri("http://127.0.0.1:" + ports[1].ToString() + "/"), Network.RegTest);
+			return new RPCClient(creds, new Uri("http://127.0.0.1:" + ports[1] + "/"), Network.RegTest);
 		}
 
 		public RestClient CreateRESTClient()
 		{
-			return new RestClient(new Uri("http://127.0.0.1:" + ports[1].ToString() + "/"));
+			return new RestClient(new Uri("http://127.0.0.1:" + ports[1] + "/"));
 		}
 #if !NOSOCKET
 		public Node CreateNodeClient()
 		{
-			return Node.Connect(Network.RegTest, "127.0.0.1:" + ports[0].ToString());
+			return Node.Connect(Network.RegTest, "127.0.0.1:" + ports[0]);
 		}
 		public Node CreateNodeClient(NodeConnectionParameters parameters)
 		{
-			return Node.Connect(Network.RegTest, "127.0.0.1:" + ports[0].ToString(), parameters);
+			return Node.Connect(Network.RegTest, "127.0.0.1:" + ports[0], parameters);
 		}
 #endif
 
@@ -320,7 +321,7 @@ namespace NTumbleBit.Tests
 			File.WriteAllText(_Config, config.ToString());
 			lock(l)
 			{
-				_Process = Process.Start(new FileInfo(this._Builder.BitcoinD).FullName, "-conf=bitcoin.conf" + " -datadir=" + dataDir + " -debug=net");
+				_Process = Process.Start(new FileInfo(_Builder.BitcoinD).FullName, "-conf=bitcoin.conf" + " -datadir=" + dataDir + " -debug=net");
 				_State = CoreNodeState.Starting;
 			}
 			while(true)
@@ -338,8 +339,7 @@ namespace NTumbleBit.Tests
 		}
 
 
-
-		Process _Process;
+		private Process _Process;
 		private readonly string dataDir;
 
 		private void FindPorts(int[] ports)
@@ -363,9 +363,9 @@ namespace NTumbleBit.Tests
 			}
 		}
 
-		List<Transaction> transactions = new List<Transaction>();
-		HashSet<OutPoint> locked = new HashSet<OutPoint>();
-		Money fee = Money.Coins(0.0001m);
+		private List<Transaction> transactions = new List<Transaction>();
+		private HashSet<OutPoint> locked = new HashSet<OutPoint>();
+		private Money fee = Money.Coins(0.0001m);
 		public Transaction GiveMoney(Script destination, Money amount, bool broadcast = true)
 		{
 			var rpc = CreateRPCClient();
@@ -447,7 +447,7 @@ namespace NTumbleBit.Tests
 			Broadcast(tx);
 		}
 
-		object l = new object();
+		private object l = new object();
 		public void Kill(bool cleanFolder = true)
 		{
 			lock(l)
@@ -538,13 +538,13 @@ namespace NTumbleBit.Tests
 #endif
 		}
 
-		List<uint256> _ToMalleate = new List<uint256>();
+		private List<uint256> _ToMalleate = new List<uint256>();
 		public void Malleate(uint256 txId)
 		{
 			_ToMalleate.Add(txId);
 		}
 
-		Transaction DoMalleate(Transaction transaction)
+		private Transaction DoMalleate(Transaction transaction)
 		{
 			transaction = transaction.Clone();
 			if(!transaction.IsCoinBase)
@@ -602,7 +602,7 @@ namespace NTumbleBit.Tests
 			return Generate(blockCount, includeMempool);
 		}
 
-		class TransactionNode
+		private class TransactionNode
 		{
 			public TransactionNode(Transaction tx)
 			{

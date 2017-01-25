@@ -29,7 +29,8 @@ namespace NTumbleBit.PuzzleSolver
 			set;
 		}
 	}
-	class RealPuzzle : PuzzleSetElement
+
+	internal class RealPuzzle : PuzzleSetElement
 	{
 		public RealPuzzle(Puzzle puzzle, BlindFactor blindFactory)
 		{
@@ -44,11 +45,11 @@ namespace NTumbleBit.PuzzleSolver
 
 		public override string ToString()
 		{
-			return "+Real " + Puzzle.ToString();
+			return "+Real " + Puzzle;
 		}
 	}
 
-	class FakePuzzle : PuzzleSetElement
+	internal class FakePuzzle : PuzzleSetElement
 	{
 		public FakePuzzle(Puzzle puzzle, PuzzleSolution solution)
 		{
@@ -64,7 +65,7 @@ namespace NTumbleBit.PuzzleSolver
 
 		public override string ToString()
 		{
-			return "-Fake " + Puzzle.ToString();
+			return "-Fake " + Puzzle;
 		}
 	}
 }

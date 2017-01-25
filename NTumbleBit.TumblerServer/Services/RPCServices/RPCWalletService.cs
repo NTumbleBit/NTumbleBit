@@ -18,7 +18,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		public RPCWalletService(RPCClient rpc)
 		{
 			if(rpc == null)
-				throw new ArgumentNullException("rpc");
+				throw new ArgumentNullException(nameof(rpc));
 			_RPCClient = rpc;
 		}
 

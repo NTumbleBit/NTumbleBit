@@ -18,7 +18,7 @@ namespace NTumbleBit.PuzzleSolver
 		public SolverParameters(RsaPubKey serverKey) : this()
 		{
 			if(serverKey == null)
-				throw new ArgumentNullException("serverKey");
+				throw new ArgumentNullException(nameof(serverKey));
 			ServerKey = serverKey;
 		}
 

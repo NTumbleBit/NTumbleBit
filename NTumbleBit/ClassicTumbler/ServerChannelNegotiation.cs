@@ -15,9 +15,9 @@ namespace NTumbleBit.ClassicTumbler
 		public ServerChannelNegotiation(ClassicTumblerParameters parameters, RsaKey tumblerKey, RsaKey voucherKey)
 		{
 			if(tumblerKey == null)
-				throw new ArgumentNullException("tumblerKey");
+				throw new ArgumentNullException(nameof(tumblerKey));
 			if(voucherKey == null)
-				throw new ArgumentNullException("voucherKey");
+				throw new ArgumentNullException(nameof(voucherKey));
 			if(parameters.VoucherKey != voucherKey.PubKey)
 				throw new ArgumentException("Voucher key does not match");
 			if(parameters.ServerKey != tumblerKey.PubKey)
@@ -53,7 +53,7 @@ namespace NTumbleBit.ClassicTumbler
 
 	public class AliceServerChannelNegotiation : ServerChannelNegotiation
 	{
-		State InternalState
+		private State InternalState
 		{
 			get; set;
 		}
@@ -103,7 +103,7 @@ namespace NTumbleBit.ClassicTumbler
 										RsaKey voucherKey) : base(parameters, tumblerKey, voucherKey)
 		{
 			if(parameters == null)
-				throw new ArgumentNullException("parameters");
+				throw new ArgumentNullException(nameof(parameters));
 			InternalState = new State();
 		}
 
@@ -113,7 +113,7 @@ namespace NTumbleBit.ClassicTumbler
 										State state) : base(parameters, tumblerKey, voucherKey)
 		{
 			if(parameters == null)
-				throw new ArgumentNullException("parameters");
+				throw new ArgumentNullException(nameof(parameters));
 			InternalState = Serializer.Clone(state);
 		}
 
@@ -152,7 +152,7 @@ namespace NTumbleBit.ClassicTumbler
 			var voucher = InternalState.UnsignedVoucher;			
 			var escrowedCoin = coin.ToScriptCoin(escrow);
 
-			var session = new SolverServerSession(this.TumblerKey, this.Parameters.CreateSolverParamaters());				
+			var session = new SolverServerSession(TumblerKey, Parameters.CreateSolverParamaters());				
 			session.ConfigureEscrowedCoin(escrowedCoin, InternalState.EscrowKey);
 			InternalState.UnsignedVoucher = null;
 			InternalState.OtherEscrowKey = null;
@@ -191,7 +191,7 @@ namespace NTumbleBit.ClassicTumbler
 	}
 	public class BobServerChannelNegotiation : ServerChannelNegotiation
 	{
-		State InternalState
+		private State InternalState
 		{
 			get; set;
 		}
@@ -238,7 +238,7 @@ namespace NTumbleBit.ClassicTumbler
 										int cycleStart) : base(parameters, tumblerKey, voucherKey)
 		{
 			if(parameters == null)
-				throw new ArgumentNullException("parameters");
+				throw new ArgumentNullException(nameof(parameters));
 			InternalState = new State();
 			InternalState.CycleStart = cycleStart;
 		}
@@ -249,7 +249,7 @@ namespace NTumbleBit.ClassicTumbler
 										State state) : base(parameters, tumblerKey, voucherKey)
 		{
 			if(parameters == null)
-				throw new ArgumentNullException("parameters");
+				throw new ArgumentNullException(nameof(parameters));
 			InternalState = Serializer.Clone(state);
 		}
 		

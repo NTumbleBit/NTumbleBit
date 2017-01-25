@@ -68,7 +68,7 @@ namespace NTumbleBit.Tests
 
 		}
 
-		static byte[] GenerateEncryptableData(RsaKeyParameters key)
+		private static byte[] GenerateEncryptableData(RsaKeyParameters key)
 		{
 			while(true)
 			{
@@ -155,7 +155,7 @@ namespace NTumbleBit.Tests
 			Assert.True(decrypted.SequenceEqual(msg));
 		}
 
-		FeeRate FeeRate = new FeeRate(Money.Satoshis(50), 1);
+		private FeeRate FeeRate = new FeeRate(Money.Satoshis(50), 1);
 
 		[Fact]
 		public void TestPuzzlePromise()
@@ -359,8 +359,8 @@ namespace NTumbleBit.Tests
 			client = new PromiseClientSession(parameters, clone);
 		}
 
-		LockTime EscrowDate = new LockTime(new DateTimeOffset(1988, 07, 18, 0, 0, 0, TimeSpan.Zero));
-		Money Amount = Money.Coins(1.0m);
+		private LockTime EscrowDate = new LockTime(new DateTimeOffset(1988, 07, 18, 0, 0, 0, TimeSpan.Zero));
+		private Money Amount = Money.Coins(1.0m);
 
 		[Fact]
 		public void CanBlind()

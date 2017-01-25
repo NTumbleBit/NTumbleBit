@@ -8,7 +8,7 @@ namespace NTumbleBit.Common.Logging
 {
 	public class FuncLoggerFactory : ILoggerFactory
 	{
-		Func<string, ILogger> createLogger;
+		private Func<string, ILogger> createLogger;
 		public FuncLoggerFactory(Func<string, ILogger> createLogger)
 		{
 			this.createLogger = createLogger;
