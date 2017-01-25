@@ -56,7 +56,7 @@ namespace NTumbleBit
 				_Key.Exponent);
 			var privInfo = new PrivateKeyInfo(RsaKey.algID, keyStruct.ToAsn1Object());
 			return privInfo.ToAsn1Object().GetEncoded();
-		}		
+		}
 
 		public bool Verify(byte[] signature, byte[] data, uint160 nonce)
 		{

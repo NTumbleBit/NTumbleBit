@@ -68,7 +68,7 @@ namespace NTumbleBit.Tests
 				server.SyncNodes();
 				server.BobNode.FindBlock(103);
 				server.SyncNodes();
-				
+
 				var machine = server.ClientContext.PaymentMachineState;
 				machine.Update();
 				var cycle = machine.ClientChannelNegotiation.GetCycle();
@@ -111,7 +111,7 @@ namespace NTumbleBit.Tests
 
 				MineTo(server.TumblerNode, cycle, CyclePhase.PaymentPhase, true);
 				server.SyncNodes();
-				
+
 				//Offer + Fulfill should be broadcasted
 				var transactions = server.ServerContext.TrustedBroadcastService.TryBroadcast();
 				Assert.Equal(2, transactions.Length);
@@ -126,7 +126,7 @@ namespace NTumbleBit.Tests
 				transactions = server.ServerContext.TrustedBroadcastService.TryBroadcast();
 				Assert.Equal(1, transactions.Length);
 				block = server.TumblerNode.FindBlock(1).First();
-				Assert.Equal(2, block.Transactions.Count); //Fulfill get mined		
+				Assert.Equal(2, block.Transactions.Count); //Fulfill get mined
 
 				MineTo(server.TumblerNode, cycle, CyclePhase.ClientCashoutPhase);
 				server.SyncNodes();
@@ -191,7 +191,7 @@ namespace NTumbleBit.Tests
 				MineTo(server.AliceNode, cycle, CyclePhase.ClientCashoutPhase, offset: cycle.SafetyPeriodDuration - 1);
 				var broadcasted = server.ClientContext.TrustedBroadcastService.TryBroadcast();
 				Assert.Equal(0, broadcasted.Length);
-				MineTo(server.AliceNode, cycle, CyclePhase.ClientCashoutPhase, offset: cycle.SafetyPeriodDuration);				
+				MineTo(server.AliceNode, cycle, CyclePhase.ClientCashoutPhase, offset: cycle.SafetyPeriodDuration);
 				broadcasted = server.ClientContext.TrustedBroadcastService.TryBroadcast();
 				Assert.Equal(1, broadcasted.Length);
 				////////////////////////////////////////////////////////////////////////////////

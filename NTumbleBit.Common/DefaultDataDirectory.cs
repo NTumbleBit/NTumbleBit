@@ -46,6 +46,6 @@ namespace NTumbleBit.Common
 				Directory.CreateDirectory(directory);
 			}
 			return directory;
-		}		
+		}
 	}
 }

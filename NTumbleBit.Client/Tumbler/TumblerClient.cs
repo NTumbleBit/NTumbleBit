@@ -137,7 +137,7 @@ namespace NTumbleBit.Client.Tumbler
 			if(typeof(T) == typeof(string))
 				return (T)(object)str;
 			return Serializer.ToObject<T>(str, Network);
-		}		
+		}
 
 		public ServerCommitmentsProof CheckRevelation(int cycleId, string channelId, PuzzlePromise.ClientRevelation revelation)
 		{
@@ -152,7 +152,7 @@ namespace NTumbleBit.Client.Tumbler
 		public Task<PuzzlePromise.ServerCommitment[]> SignHashesAsync(int cycleId, string channelId, SignaturesRequest sigReq)
 		{
 			return SendAsync<PuzzlePromise.ServerCommitment[]>(HttpMethod.Post, sigReq, "api/v1/tumblers/0/channels/{0}/{1}/signhashes", cycleId, channelId);
-		}		
+		}
 
 		public SolutionKey[] CheckRevelation(int cycleId, string channelId, PuzzleSolver.ClientRevelation revelation)
 		{

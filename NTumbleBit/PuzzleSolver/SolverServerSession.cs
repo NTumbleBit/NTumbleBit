@@ -320,7 +320,7 @@ namespace NTumbleBit.PuzzleSolver
 
 		public TrustedBroadcastRequest FulfillOffer(
 			TransactionSignature clientSignature,
-			Script cashout, 
+			Script cashout,
 			FeeRate feeRate)
 		{
 			if(clientSignature == null)

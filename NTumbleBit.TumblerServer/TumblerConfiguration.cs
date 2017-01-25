@@ -222,7 +222,7 @@ namespace NTumbleBit.TumblerServer
 
 		public void OpenBrowser(string url)
 		{
-			try 
+			try
 			{
 				if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 				{
@@ -236,10 +236,10 @@ namespace NTumbleBit.TumblerServer
 				{
 					Process.Start("open", url); // Not tested
 				}
-			} 
+			}
 			catch(Exception)
 			{
-				// nothing happens 
+				// nothing happens
 			}
 		}
 	}

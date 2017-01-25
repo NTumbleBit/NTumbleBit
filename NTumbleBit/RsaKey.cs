@@ -48,7 +48,7 @@ namespace NTumbleBit
 			{
 				throw new FormatException("Invalid RSA Key");
 			}
-		}		
+		}
 
 		public PuzzleSolution SolvePuzzle(Puzzle puzzle)
 		{

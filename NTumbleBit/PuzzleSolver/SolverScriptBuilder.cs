@@ -27,7 +27,7 @@ namespace NTumbleBit.PuzzleSolver
 		}
 	}
 	public static class SolverScriptBuilder
-	{		
+	{
 
 		public static Script CreateOfferScript(OfferScriptPubKeyParameters parameters)
 		{
@@ -93,7 +93,7 @@ namespace NTumbleBit.PuzzleSolver
 					return null;
 				if(ops[i++].Code != OpcodeType.OP_DROP)
 					return null;
-				result.RedeemKey = new PubKey(ops[i++].PushData);				
+				result.RedeemKey = new PubKey(ops[i++].PushData);
 				if(ops[i++].Code != OpcodeType.OP_ENDIF)
 					return null;
 				if(ops[i++].Code != OpcodeType.OP_CHECKSIG)
@@ -122,7 +122,7 @@ namespace NTumbleBit.PuzzleSolver
 		}
 
 		public static Script CreateFulfillScript(TransactionSignature signature, SolutionKey[] keys)
-		{			
+		{
 			if(keys == null)
 				throw new ArgumentNullException(nameof(keys));
 			List<Op> ops = new List<Op>();

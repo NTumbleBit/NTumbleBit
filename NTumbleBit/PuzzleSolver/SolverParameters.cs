@@ -39,6 +39,6 @@ namespace NTumbleBit.PuzzleSolver
 		public int GetTotalCount()
 		{
 			return RealPuzzleCount + FakePuzzleCount;
-		}		
+		}
 	}
 }

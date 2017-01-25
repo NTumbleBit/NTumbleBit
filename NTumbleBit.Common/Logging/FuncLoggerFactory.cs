@@ -15,7 +15,7 @@ namespace NTumbleBit.Common.Logging
 		}
 		public void AddProvider(ILoggerProvider provider)
 		{
-			
+
 		}
 
 		public ILogger CreateLogger(string categoryName)
@@ -25,7 +25,7 @@ namespace NTumbleBit.Common.Logging
 
 		public void Dispose()
 		{
-			
+
 		}
 	}
 }

@@ -27,7 +27,7 @@ namespace NTumbleBit.BouncyCastle.Crypto.Engines
 			state[stateOffset + 1] = TAU_SIGMA[tsOff + 1];
 			state[stateOffset + 2] = TAU_SIGMA[tsOff + 2];
 			state[stateOffset + 3] = TAU_SIGMA[tsOff + 3];
-		}		
+		}
 
 		protected int rounds;
 

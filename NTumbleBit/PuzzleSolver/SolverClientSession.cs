@@ -311,7 +311,7 @@ namespace NTumbleBit.PuzzleSolver
 				throw new ArgumentNullException(nameof(offerInformation));
 			AssertState(SolverClientStates.WaitingOffer);
 			InternalState.FulfillKey = offerInformation.FulfillKey;
-			InternalState.OfferTransactionFee = offerInformation.Fee;		
+			InternalState.OfferTransactionFee = offerInformation.Fee;
 			Transaction tx = CreateUnsignedOfferTransaction();
 			var signature = tx.Inputs.AsIndexedInputs().First().Sign(InternalState.EscrowKey, InternalState.EscrowedCoin, SigHash.All);
 			InternalState.Status = SolverClientStates.WaitingPuzzleSolutions;
@@ -374,7 +374,7 @@ namespace NTumbleBit.PuzzleSolver
 		{
 			return CreateOfferScript().Hash.ScriptPubKey;
 		}
-		
+
 		public void CheckSolutions(Transaction[] transactions)
 		{
 			if(transactions == null)
@@ -398,7 +398,7 @@ namespace NTumbleBit.PuzzleSolver
 		{
 			if(fulfillTx == null)
 				throw new ArgumentNullException(nameof(fulfillTx));
-        
+
 			AssertState(SolverClientStates.WaitingPuzzleSolutions);
 			foreach(var input in fulfillTx.Inputs)
 			{

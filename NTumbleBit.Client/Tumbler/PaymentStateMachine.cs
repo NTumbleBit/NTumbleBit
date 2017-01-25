@@ -174,7 +174,7 @@ namespace NTumbleBit.Client.Tumbler
 					break;
 				case CyclePhase.ClientChannelEstablishment:
 					if(ClientChannelNegotiation.Status == TumblerClientSessionStates.WaitingTumblerClientTransactionKey)
-					{						
+					{
 						var key = AliceClient.RequestTumblerEscrowKey(cycle.Start);
 						ClientChannelNegotiation.ReceiveTumblerEscrowKey(key.PubKey, key.KeyIndex);
 						//Client create the escrow

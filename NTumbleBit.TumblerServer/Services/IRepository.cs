@@ -8,7 +8,7 @@ namespace NTumbleBit.TumblerServer.Services
 #else
 namespace NTumbleBit.Client.Tumbler.Services
 #endif
-{	
+{
 	public interface IRepository
 	{
 		void UpdateOrInsert<T>(string partitionKey, string rowKey, T data, Func<T, T, T> update);

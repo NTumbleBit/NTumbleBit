@@ -235,7 +235,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 			CycleParameters cycle = Parameters.CycleGenerator.GetCycle(cycleId);
 			if(!cycle.IsInPhase(expectedPhase, height))
 				throw BadRequest("invalid-phase").AsException();
-		}		
+		}
 
 		[HttpPost("api/v1/tumblers/0/clientchannels/{cycleId}/{channelId}/solvepuzzles")]
 		public IActionResult SolvePuzzles(int cycleId, string channelId, [FromBody]PuzzleValue[] puzzles)

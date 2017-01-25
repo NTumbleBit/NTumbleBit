@@ -55,7 +55,7 @@ namespace NTumbleBit
 				throw new PuzzleException("Invalid escrow");
 			InternalState.EscrowedCoin = escrowedCoin;
 			InternalState.EscrowKey = escrowKey;
-			InternalState.RedeemKey = redeemKey;			
+			InternalState.RedeemKey = redeemKey;
 		}
 
 		public TrustedBroadcastRequest CreateRedeemTransaction(FeeRate feeRate, Script redeemDestination)

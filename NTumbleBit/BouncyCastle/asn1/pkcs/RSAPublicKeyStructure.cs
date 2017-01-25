@@ -11,7 +11,7 @@ namespace NTumbleBit.BouncyCastle.Asn1.X509
 	{
 		private BigInteger modulus;
 		private BigInteger publicExponent;
-		
+
 
 		public static RsaPublicKeyStructure GetInstance(
 			object obj)
