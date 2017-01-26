@@ -308,7 +308,6 @@ namespace NTumbleBit.Client.Tumbler
 
 		private TransactionInformation GetTransactionInformation(ICoin coin, bool withProof)
 		{
-			var expectedTxout = coin.TxOut;
 			var tx = Services.BlockExplorerService
 				.GetTransactions(coin.TxOut.ScriptPubKey, withProof)
 				.FirstOrDefault(t => t.Transaction.GetHash() == coin.Outpoint.Hash);
