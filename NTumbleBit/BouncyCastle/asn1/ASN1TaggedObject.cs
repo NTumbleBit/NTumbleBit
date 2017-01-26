@@ -15,7 +15,7 @@ namespace NTumbleBit.BouncyCastle.Asn1
 	{
 		internal int tagNo;
 		//        internal bool           empty;
-		internal bool explicitly = true;
+		internal bool explicitly;
 		internal Asn1Encodable obj;
 
 		public static Asn1TaggedObject GetInstance(
