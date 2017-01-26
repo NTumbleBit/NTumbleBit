@@ -262,7 +262,7 @@ namespace NTumbleBit.ClassicTumbler
 		public void ReceiveBobEscrowInformation(OpenChannelRequest openChannelRequest)
 		{
 			if(openChannelRequest == null)
-				throw new ArgumentNullException("bobKey");
+				throw new ArgumentNullException($"{nameof(openChannelRequest)}");
 			AssertState(BobServerChannelNegotiationStates.WaitingBobEscrowInformation);
 
 			if(!VoucherKey.PubKey.Verify(openChannelRequest.Signature, NBitcoin.Utils.ToBytes((uint)openChannelRequest.CycleStart, true), openChannelRequest.Nonce))

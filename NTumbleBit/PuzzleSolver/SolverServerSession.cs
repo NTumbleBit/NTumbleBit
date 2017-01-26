@@ -125,7 +125,7 @@ namespace NTumbleBit.PuzzleSolver
 			if(serverKey == null)
 				throw new ArgumentNullException(nameof(serverKey));
 			if(serverKey.PubKey != parameters.ServerKey)
-				throw new ArgumentNullException("Private key not matching expected public key");
+				throw new ArgumentNullException($"Private key not matching expected public key: {nameof(serverKey.PubKey)} != {nameof(parameters.ServerKey)}");
 			InternalState = new State();
 			_ServerKey = serverKey;
 			_Parameters = parameters;
@@ -200,7 +200,7 @@ namespace NTumbleBit.PuzzleSolver
 		public SolutionKey[] CheckRevelation(ClientRevelation revelation)
 		{
 			if(revelation == null)
-				throw new ArgumentNullException("puzzleSolutions");
+				throw new ArgumentNullException($"{nameof(revelation)}");
 			if(revelation.FakeIndexes.Length != Parameters.FakePuzzleCount || revelation.Solutions.Length != Parameters.FakePuzzleCount)
 				throw new ArgumentException("Expecting " + Parameters.FakePuzzleCount + " puzzle solutions");
 			AssertState(SolverServerStates.WaitingRevelation);
