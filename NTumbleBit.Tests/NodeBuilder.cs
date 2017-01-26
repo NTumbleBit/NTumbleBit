@@ -306,17 +306,19 @@ namespace NTumbleBit.Tests
 
 		public async Task StartAsync()
 		{
-			NodeConfigParameters config = new NodeConfigParameters();
-			config.Add("regtest", "1");
-			config.Add("rest", "1");
-			config.Add("server", "1");
-			config.Add("txindex", "0");
-			config.Add("rpcuser", creds.UserName);
-			config.Add("rpcpassword", creds.Password);
-			config.Add("port", ports[0].ToString());
-			config.Add("rpcport", ports[1].ToString());
-			config.Add("printtoconsole", "1");
-			config.Add("keypool", "10");
+			NodeConfigParameters config = new NodeConfigParameters
+			{
+				{"regtest", "1"},
+				{"rest", "1"},
+				{"server", "1"},
+				{"txindex", "0"},
+				{"rpcuser", creds.UserName},
+				{"rpcpassword", creds.Password},
+				{"port", ports[0].ToString()},
+				{"rpcport", ports[1].ToString()},
+				{"printtoconsole", "1"},
+				{"keypool", "10"}
+			};
 			config.Import(ConfigParameters);
 			File.WriteAllText(_Config, config.ToString());
 			lock(l)
@@ -342,21 +344,21 @@ namespace NTumbleBit.Tests
 		private Process _Process;
 		private readonly string dataDir;
 
-		private void FindPorts(int[] ports)
+		private void FindPorts(int[] portArray)
 		{
 			int i = 0;
-			while(i < ports.Length)
+			while(i < portArray.Length)
 			{
 				var port = RandomUtils.GetUInt32() % 4000;
 				port = port + 10000;
-				if(ports.Any(p => p == port))
+				if(portArray.Any(p => p == port))
 					continue;
 				try
 				{
-					TcpListener l = new TcpListener(IPAddress.Loopback, (int)port);
-					l.Start();
-					l.Stop();
-					ports[i] = (int)port;
+					TcpListener listener = new TcpListener(IPAddress.Loopback, (int)port);
+					listener.Start();
+					listener.Stop();
+					portArray[i] = (int)port;
 					i++;
 				}
 				catch(SocketException) { }
@@ -419,14 +421,15 @@ namespace NTumbleBit.Tests
 		{
 			var rpc = CreateRPCClient();
 			var txs = rpc.GetRawMempool();
+
 			var tasks = txs.Select(t => rpc.GetRawTransactionAsync(t)).ToArray();
 			Task.WaitAll(tasks);
 			transactions.AddRange(tasks.Select(t => t.Result).ToArray());
 		}
 
-		public void Broadcast(Transaction[] transactions)
+		public void Broadcast(Transaction[] txs)
 		{
-			foreach(var tx in transactions)
+			foreach(var tx in txs)
 				Broadcast(tx);
 		}
 
@@ -586,12 +589,10 @@ namespace NTumbleBit.Tests
 
 		public void BroadcastBlocks(Block[] blocks, Node node)
 		{
-			Block lastSent = null;
 			foreach(var block in blocks)
 			{
 				node.SendMessageAsync(new InvPayload(block));
 				node.SendMessageAsync(new BlockPayload(block));
-				lastSent = block;
 			}
 			node.PingPong();
 		}
@@ -614,12 +615,12 @@ namespace NTumbleBit.Tests
 			public List<TransactionNode> DependsOn = new List<TransactionNode>();
 		}
 
-		private List<Transaction> Reorder(List<Transaction> transactions)
+		private List<Transaction> Reorder(List<Transaction> txs)
 		{
-			if(transactions.Count == 0)
-				return transactions;
+			if(txs.Count == 0)
+				return txs;
 			var result = new List<Transaction>();
-			var dictionary = transactions.ToDictionary(t => t.GetHash(), t => new TransactionNode(t));
+			var dictionary = txs.ToDictionary(t => t.GetHash(), t => new TransactionNode(t));
 			foreach(var transaction in dictionary.Select(d => d.Value))
 			{
 				foreach(var input in transaction.Transaction.Inputs)

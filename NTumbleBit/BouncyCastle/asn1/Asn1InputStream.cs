@@ -143,8 +143,6 @@ namespace NTumbleBit.BouncyCastle.Asn1
 			//
 			int tagNo = ReadTagNumber(s, tag);
 
-			bool isConstructed = (tag & Asn1Tags.Constructed) != 0;
-
 			//
 			// calculate length
 			//

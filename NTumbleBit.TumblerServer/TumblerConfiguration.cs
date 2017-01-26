@@ -203,7 +203,7 @@ namespace NTumbleBit.TumblerServer
 				hostOut = str.Substring(1, str.Length - 2);
 			else
 				hostOut = str;
-			return new IPEndPoint(IPAddress.Parse(str), portOut);
+			return new IPEndPoint(IPAddress.Parse(hostOut), portOut);
 		}
 
 		private void AssetConfigFileExists()

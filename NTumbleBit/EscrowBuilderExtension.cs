@@ -38,7 +38,6 @@ namespace NTumbleBit
 
 		public override Script CombineScriptSig(Script scriptPubKey, Script a, Script b)
 		{
-			var para = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(scriptPubKey);
 			// Combine all the signatures we've got:
 			var aSigs = EscrowScriptBuilder.ExtractScriptSigParameters(a);
 			if(aSigs == null)
@@ -79,7 +78,6 @@ namespace NTumbleBit
 
 		public override int EstimateScriptSigSize(Script scriptPubKey)
 		{
-			var p2mk = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(scriptPubKey);
 			return EscrowScriptBuilder.GenerateScriptSig(Enumerable.Range(0, 2).Select(o => DummySignature).ToArray()).Length;
 		}
 

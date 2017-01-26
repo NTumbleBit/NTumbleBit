@@ -146,7 +146,7 @@ namespace NTumbleBit.Tests
 
 
 		[Fact]
-		public void EscrowGetReddemedIfTimeout()
+		public void EscrowGetRedeemedIfTimeout()
 		{
 			using(var server = TumblerServerTester.Create())
 			{
