@@ -239,7 +239,6 @@ namespace NTumbleBit.PuzzleSolver
 			if(blindFactors.Length != Parameters.RealPuzzleCount)
 				throw new ArgumentException("Expecting " + Parameters.RealPuzzleCount + " blind factors");
 			AssertState(SolverServerStates.WaitingBlindFactor);
-			List<SolutionKey> keys = new List<SolutionKey>();
 			Puzzle unblindedPuzzle = null;
 			int y = 0;
 			for(int i = 0; i < Parameters.RealPuzzleCount; i++)
