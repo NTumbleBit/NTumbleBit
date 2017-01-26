@@ -13,8 +13,7 @@ namespace NTumbleBit.BouncyCastle.Crypto.Paddings
         *
         * @param random - a SecureRandom if available.
         */
-		public void Init(
-			SecureRandom random)
+		public void Init()
 		{
 			// nothing to do.
 		}
