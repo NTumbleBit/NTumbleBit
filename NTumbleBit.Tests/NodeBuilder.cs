@@ -342,21 +342,21 @@ namespace NTumbleBit.Tests
 		private Process _Process;
 		private readonly string dataDir;
 
-		private void FindPorts(int[] ports)
+		private void FindPorts(int[] portArray)
 		{
 			int i = 0;
-			while(i < ports.Length)
+			while(i < portArray.Length)
 			{
 				var port = RandomUtils.GetUInt32() % 4000;
 				port = port + 10000;
-				if(ports.Any(p => p == port))
+				if(portArray.Any(p => p == port))
 					continue;
 				try
 				{
-					TcpListener l = new TcpListener(IPAddress.Loopback, (int)port);
-					l.Start();
-					l.Stop();
-					ports[i] = (int)port;
+					TcpListener listener = new TcpListener(IPAddress.Loopback, (int)port);
+					listener.Start();
+					listener.Stop();
+					portArray[i] = (int)port;
 					i++;
 				}
 				catch(SocketException) { }
@@ -419,14 +419,15 @@ namespace NTumbleBit.Tests
 		{
 			var rpc = CreateRPCClient();
 			var txs = rpc.GetRawMempool();
+
 			var tasks = txs.Select(t => rpc.GetRawTransactionAsync(t)).ToArray();
 			Task.WaitAll(tasks);
 			transactions.AddRange(tasks.Select(t => t.Result).ToArray());
 		}
 
-		public void Broadcast(Transaction[] transactions)
+		public void Broadcast(Transaction[] txs)
 		{
-			foreach(var tx in transactions)
+			foreach(var tx in txs)
 				Broadcast(tx);
 		}
 
@@ -614,12 +615,12 @@ namespace NTumbleBit.Tests
 			public List<TransactionNode> DependsOn = new List<TransactionNode>();
 		}
 
-		private List<Transaction> Reorder(List<Transaction> transactions)
+		private List<Transaction> Reorder(List<Transaction> txs)
 		{
-			if(transactions.Count == 0)
-				return transactions;
+			if(txs.Count == 0)
+				return txs;
 			var result = new List<Transaction>();
-			var dictionary = transactions.ToDictionary(t => t.GetHash(), t => new TransactionNode(t));
+			var dictionary = txs.ToDictionary(t => t.GetHash(), t => new TransactionNode(t));
 			foreach(var transaction in dictionary.Select(d => d.Value))
 			{
 				foreach(var input in transaction.Transaction.Inputs)
