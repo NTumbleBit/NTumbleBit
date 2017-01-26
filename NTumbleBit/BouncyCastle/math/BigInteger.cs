@@ -2454,7 +2454,7 @@ namespace NTumbleBit.BouncyCastle.Math
 		public BigInteger Multiply(
 			BigInteger val)
 		{
-			if(val == this)
+			if(Equals(val, this))
 				return Square();
 
 			if((sign & val.sign) == 0)
