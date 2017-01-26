@@ -587,12 +587,10 @@ namespace NTumbleBit.Tests
 
 		public void BroadcastBlocks(Block[] blocks, Node node)
 		{
-			Block lastSent = null;
 			foreach(var block in blocks)
 			{
 				node.SendMessageAsync(new InvPayload(block));
 				node.SendMessageAsync(new BlockPayload(block));
-				lastSent = block;
 			}
 			node.PingPong();
 		}
