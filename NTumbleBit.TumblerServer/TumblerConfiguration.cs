@@ -90,8 +90,8 @@ namespace NTumbleBit.TumblerServer
 				}
 			}
 
-			Network = args.Contains("-testnet", StringComparer.CurrentCultureIgnoreCase) ? Network.TestNet :
-				args.Contains("-regtest", StringComparer.CurrentCultureIgnoreCase) ? Network.RegTest :
+			Network = args.Contains("-testnet", StringComparer.OrdinalIgnoreCase) ? Network.TestNet :
+				args.Contains("-regtest", StringComparer.OrdinalIgnoreCase) ? Network.RegTest :
 				Network.Main;
 
 			if(ConfigurationFile != null)

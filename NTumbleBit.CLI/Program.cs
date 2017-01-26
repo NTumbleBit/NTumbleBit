@@ -24,8 +24,8 @@ namespace NTumbleBit.CLI
 			var logger = new ConsoleLogger("Configuration", (a, b) => true, false);
 			try
 			{
-				var network = args.Contains("-testnet", StringComparer.CurrentCultureIgnoreCase) ? Network.TestNet :
-				args.Contains("-regtest", StringComparer.CurrentCultureIgnoreCase) ? Network.RegTest :
+				var network = args.Contains("-testnet", StringComparer.OrdinalIgnoreCase) ? Network.TestNet :
+				args.Contains("-regtest", StringComparer.OrdinalIgnoreCase) ? Network.RegTest :
 				Network.Main;
 				Logs.Configuration.LogInformation("Network: " + network);
 
