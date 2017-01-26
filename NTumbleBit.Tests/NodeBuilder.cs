@@ -306,17 +306,19 @@ namespace NTumbleBit.Tests
 
 		public async Task StartAsync()
 		{
-			NodeConfigParameters config = new NodeConfigParameters();
-			config.Add("regtest", "1");
-			config.Add("rest", "1");
-			config.Add("server", "1");
-			config.Add("txindex", "0");
-			config.Add("rpcuser", creds.UserName);
-			config.Add("rpcpassword", creds.Password);
-			config.Add("port", ports[0].ToString());
-			config.Add("rpcport", ports[1].ToString());
-			config.Add("printtoconsole", "1");
-			config.Add("keypool", "10");
+			NodeConfigParameters config = new NodeConfigParameters
+			{
+				{"regtest", "1"},
+				{"rest", "1"},
+				{"server", "1"},
+				{"txindex", "0"},
+				{"rpcuser", creds.UserName},
+				{"rpcpassword", creds.Password},
+				{"port", ports[0].ToString()},
+				{"rpcport", ports[1].ToString()},
+				{"printtoconsole", "1"},
+				{"keypool", "10"}
+			};
 			config.Import(ConfigParameters);
 			File.WriteAllText(_Config, config.ToString());
 			lock(l)
