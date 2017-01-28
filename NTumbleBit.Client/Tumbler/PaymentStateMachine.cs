@@ -26,6 +26,7 @@ namespace NTumbleBit.Client.Tumbler
 			BobClient = client;
 			Services = services;
 			DestinationWallet = destinationWallet;
+			WhoAmI = TumbleBitIdentity.Alice;
 		}
 
 		public PaymentStateMachine(
@@ -46,6 +47,11 @@ namespace NTumbleBit.Client.Tumbler
 				PromiseClientSession = new PromiseClientSession(parameters.CreatePromiseParamaters(), state.PromiseClientState);
 			if(state.SolverClientState != null)
 				SolverClientSession = new SolverClientSession(parameters.CreateSolverParamaters(), state.SolverClientState);
+		}
+
+		private TumbleBitIdentity WhoAmI
+		{
+			get; set;
 		}
 
 		public ExternalServices Services
@@ -158,7 +164,12 @@ namespace NTumbleBit.Client.Tumbler
 			switch(phase)
 			{
 				case CyclePhase.Registration:
-					if(ClientChannelNegotiation == null)
+					if (!WhoAmI.Equals(TumbleBitIdentity.Bob))
+					{
+						BobClient.ChangeIpIfTorAsync().Wait();
+						logger.LogInformation("Changing identity to Bob...");
+					}
+					if (ClientChannelNegotiation == null)
 					{
 						//Client asks for voucher
 						var voucherResponse = BobClient.AskUnsignedVoucher();
@@ -173,7 +184,12 @@ namespace NTumbleBit.Client.Tumbler
 					}
 					break;
 				case CyclePhase.ClientChannelEstablishment:
-					if(ClientChannelNegotiation.Status == TumblerClientSessionStates.WaitingTumblerClientTransactionKey)
+					if (!WhoAmI.Equals(TumbleBitIdentity.Alice))
+					{
+						AliceClient.ChangeIpIfTorAsync().Wait();
+						logger.LogInformation("Changing identity to Alice...");
+					}
+					if (ClientChannelNegotiation.Status == TumblerClientSessionStates.WaitingTumblerClientTransactionKey)
 					{
 						var key = AliceClient.RequestTumblerEscrowKey(cycle.Start);
 						ClientChannelNegotiation.ReceiveTumblerEscrowKey(key.PubKey, key.KeyIndex);
@@ -218,7 +234,12 @@ namespace NTumbleBit.Client.Tumbler
 					}
 					break;
 				case CyclePhase.TumblerChannelEstablishment:
-					if(ClientChannelNegotiation != null && ClientChannelNegotiation.Status == TumblerClientSessionStates.WaitingGenerateTumblerTransactionKey)
+					if (!WhoAmI.Equals(TumbleBitIdentity.Bob))
+					{
+						BobClient.ChangeIpIfTorAsync().Wait();
+						logger.LogInformation("Changing identity to Bob...");
+					}
+					if (ClientChannelNegotiation != null && ClientChannelNegotiation.Status == TumblerClientSessionStates.WaitingGenerateTumblerTransactionKey)
 					{
 						//Client asks the Tumbler to make a channel
 						var bobEscrowInformation = ClientChannelNegotiation.GetOpenChannelRequest();
@@ -254,6 +275,11 @@ namespace NTumbleBit.Client.Tumbler
 						}
 						if(SolverClientSession.Status == SolverClientStates.WaitingGeneratePuzzles)
 						{
+							if (!WhoAmI.Equals(TumbleBitIdentity.Alice))
+							{
+								AliceClient.ChangeIpIfTorAsync().Wait();
+								logger.LogInformation("Changing identity to Alice...");
+							}
 							logger.LogInformation("Tumbler escrow confirmed " + tumblerTx.Transaction.GetHash());
 							feeRate = GetFeeRate();
 							var puzzles = SolverClientSession.GeneratePuzzles();
@@ -324,5 +350,11 @@ namespace NTumbleBit.Client.Tumbler
 			if(!test)
 				throw new PuzzleException(error);
 		}
+	}
+
+	internal enum TumbleBitIdentity
+	{
+		Alice,
+		Bob
 	}
 }

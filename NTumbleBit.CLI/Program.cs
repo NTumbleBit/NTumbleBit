@@ -74,8 +74,9 @@ namespace NTumbleBit.CLI
 					{
 						// If the server is on the same machine TOR would refuse the connection, so don't even try
 						if(server.DnsSafeHost.Equals("10.0.2.2", StringComparison.Ordinal) || // VM host
-							server.DnsSafeHost.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
-							server.DnsSafeHost.Equals("127.0.0.1", StringComparison.Ordinal)) // localhost
+							server.DnsSafeHost.Equals("localhost", StringComparison.OrdinalIgnoreCase) || // localhost
+							server.DnsSafeHost.Equals("127.0.0.1", StringComparison.Ordinal) || // localhost
+							server.DnsSafeHost.Equals("0.0.0.0", StringComparison.Ordinal)) // localhost
 						{
 							Logs.Configuration.LogInformation("Not using TOR. Reason: The server is running on the same machine.");
 							useTor = false;

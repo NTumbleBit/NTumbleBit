@@ -28,13 +28,25 @@ namespace NTumbleBit.Client.Tumbler
 			if(torParameters != null)
 			{
 				Client = new HttpClient(new SocksPortHandler(torParameters.Host, torParameters.SocksPort));
+				TorControl = new DotNetTor.ControlPort.Client(
+					torParameters.Host,
+					torParameters.ControlPort,
+					torParameters.ControlPortPassword);
 			}
 			else
 			{
+				TorControl = null;
 				Client = new HttpClient();
 			}
-
 		}
+
+	    public readonly DotNetTor.ControlPort.Client TorControl;
+
+	    public async Task ChangeIpIfTorAsync()
+	    {
+			if(TorControl != null)
+				await TorControl.ChangeCircuitAsync().ConfigureAwait(false);
+	    }
 
 	    private readonly Network _Network;
 		public Network Network
