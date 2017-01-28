@@ -10,12 +10,13 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using DotNetTor.SocksPort;
 
 namespace NTumbleBit.Client.Tumbler
 {
     public class TumblerClient
     {
-		public TumblerClient(Network network, Uri serverAddress)
+		public TumblerClient(Network network, Uri serverAddress, TorParameters torParameters = null)
 		{
 			if(serverAddress == null)
 				throw new ArgumentNullException(nameof(serverAddress));
@@ -23,10 +24,19 @@ namespace NTumbleBit.Client.Tumbler
 				throw new ArgumentNullException(nameof(network));
 			_Address = serverAddress;
 			_Network = network;
+
+			if(torParameters != null)
+			{
+				Client = new HttpClient(new SocksPortHandler(torParameters.Host, torParameters.SocksPort));
+			}
+			else
+			{
+				Client = new HttpClient();
+			}
+
 		}
 
-
-		private readonly Network _Network;
+	    private readonly Network _Network;
 		public Network Network
 		{
 			get
@@ -45,7 +55,7 @@ namespace NTumbleBit.Client.Tumbler
 			}
 		}
 
-	    private static readonly HttpClient Client = new HttpClient();
+	    private static HttpClient Client;
 		public Task<ClassicTumblerParameters> GetTumblerParametersAsync()
 		{
 			return GetAsync<ClassicTumblerParameters>("api/v1/tumblers/0/parameters");
