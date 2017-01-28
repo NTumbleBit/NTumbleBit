@@ -78,7 +78,7 @@ namespace NTumbleBit.CLI
 							server.DnsSafeHost.Equals("127.0.0.1", StringComparison.Ordinal) || // localhost
 							server.DnsSafeHost.Equals("0.0.0.0", StringComparison.Ordinal)) // localhost
 						{
-							Logs.Configuration.LogInformation("Not using TOR. Reason: The server is running on the same machine.");
+							Logs.Configuration.LogInformation("Not using Tor. Reason: The server is running on the same machine.");
 							useTor = false;
 							client = new TumblerClient(network, server);
 						}
@@ -167,8 +167,14 @@ namespace NTumbleBit.CLI
 			}
 			catch (AggregateException ex) when (ex.InnerException is TorException)
 			{
-				Logs.Configuration.LogError("Your TOR is not running or not configured correctly" + Environment.NewLine +
+				Logs.Configuration.LogError("You are not running Tor or not configured it correctly" + Environment.NewLine +
 					$"Details: {ex.InnerException.Message}");
+				Logs.Configuration.LogDebug(ex.StackTrace);
+			}
+			catch (AggregateException ex)
+			{
+				Logs.Configuration.LogError(ex.InnerException.Message);
+				Logs.Configuration.LogDebug(ex.StackTrace);
 			}
 			catch (Exception ex)
 			{
