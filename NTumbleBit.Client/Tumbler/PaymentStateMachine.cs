@@ -166,8 +166,9 @@ namespace NTumbleBit.Client.Tumbler
 				case CyclePhase.Registration:
 					if (!WhoAmI.Equals(TumbleBitIdentity.Bob))
 					{
-						BobClient.ChangeIpIfTorAsync().Wait();
-						logger.LogInformation("Changing identity to Bob...");
+						WhoAmI = TumbleBitIdentity.Bob;
+						if(BobClient.ChangeIpIfTorAsync().Result)
+							logger.LogInformation("Changing identity to Bob...");
 					}
 					if (ClientChannelNegotiation == null)
 					{
@@ -186,8 +187,9 @@ namespace NTumbleBit.Client.Tumbler
 				case CyclePhase.ClientChannelEstablishment:
 					if (!WhoAmI.Equals(TumbleBitIdentity.Alice))
 					{
-						AliceClient.ChangeIpIfTorAsync().Wait();
-						logger.LogInformation("Changing identity to Alice...");
+						WhoAmI = TumbleBitIdentity.Alice;
+						if(AliceClient.ChangeIpIfTorAsync().Result)
+							logger.LogInformation("Changing identity to Alice...");
 					}
 					if (ClientChannelNegotiation.Status == TumblerClientSessionStates.WaitingTumblerClientTransactionKey)
 					{
@@ -236,8 +238,9 @@ namespace NTumbleBit.Client.Tumbler
 				case CyclePhase.TumblerChannelEstablishment:
 					if (!WhoAmI.Equals(TumbleBitIdentity.Bob))
 					{
-						BobClient.ChangeIpIfTorAsync().Wait();
-						logger.LogInformation("Changing identity to Bob...");
+						WhoAmI = TumbleBitIdentity.Bob;
+						if(BobClient.ChangeIpIfTorAsync().Result)
+							logger.LogInformation("Changing identity to Bob...");
 					}
 					if (ClientChannelNegotiation != null && ClientChannelNegotiation.Status == TumblerClientSessionStates.WaitingGenerateTumblerTransactionKey)
 					{
@@ -277,8 +280,9 @@ namespace NTumbleBit.Client.Tumbler
 						{
 							if (!WhoAmI.Equals(TumbleBitIdentity.Alice))
 							{
-								AliceClient.ChangeIpIfTorAsync().Wait();
-								logger.LogInformation("Changing identity to Alice...");
+								WhoAmI = TumbleBitIdentity.Alice;
+								if(AliceClient.ChangeIpIfTorAsync().Result)
+									logger.LogInformation("Changing identity to Alice...");
 							}
 							logger.LogInformation("Tumbler escrow confirmed " + tumblerTx.Transaction.GetHash());
 							feeRate = GetFeeRate();
