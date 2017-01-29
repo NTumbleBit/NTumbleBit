@@ -26,7 +26,6 @@ namespace NTumbleBit.Client.Tumbler
 			BobClient = client;
 			Services = services;
 			DestinationWallet = destinationWallet;
-			WhoAmI = TumbleBitIdentity.Alice;
 		}
 
 		public PaymentStateMachine(
@@ -49,7 +48,7 @@ namespace NTumbleBit.Client.Tumbler
 				SolverClientSession = new SolverClientSession(parameters.CreateSolverParamaters(), state.SolverClientState);
 		}
 
-		private TumbleBitIdentity WhoAmI
+		private static TumbleBitIdentity WhoAmI
 		{
 			get; set;
 		}
