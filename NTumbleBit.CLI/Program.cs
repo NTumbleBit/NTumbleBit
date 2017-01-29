@@ -167,14 +167,17 @@ namespace NTumbleBit.CLI
 			}
 			catch (Exception ex)
 			{
-				if(ex is TorException || (ex is AggregateException && ((AggregateException)ex).InnerExceptions.Any(x => x is TorException)))
+				if(ex is TorException ||
+					(ex is AggregateException && ((AggregateException) ex).InnerExceptions.Any(x => x is TorException)))
 				{
 					Logs.Configuration.LogError("You are not running Tor or not configured it correctly" + Environment.NewLine +
-					   $"Details: {ex.Message}");
-					Logs.Configuration.LogDebug(ex.StackTrace);
+												$"Details: {ex.Message}");
 
 				}
-				Logs.Configuration.LogError(ex.Message);
+				else
+				{
+					Logs.Configuration.LogError(ex.Message);
+				}
 				Logs.Configuration.LogDebug(ex.StackTrace);
 			}
 		}
