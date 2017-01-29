@@ -41,7 +41,7 @@ namespace NTumbleBit.Client.Tumbler
 		}
 
 	    public readonly DotNetTor.ControlPort.Client TorControl;
-		
+
 	    public async Task<bool> ChangeIpIfTorAsync()
 	    {
 		    if(TorControl != null)

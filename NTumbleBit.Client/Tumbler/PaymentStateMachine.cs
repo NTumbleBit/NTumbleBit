@@ -176,7 +176,7 @@ namespace NTumbleBit.Client.Tumbler
 						var voucherResponse = BobClient.AskUnsignedVoucher();
 						//Client ensures he is in the same cycle as the tumbler (would fail if one tumbler or client's chain isn't sync)
 						var tumblerCycle = Parameters.CycleGenerator.GetCycle(voucherResponse.CycleStart);
-						Assert(tumblerCycle.Start == cycle.Start, "invalid-phase");
+						Assert(tumblerCycle.Start == cycle.Start, "Invalid phase. The Tumbler's or the Client's chain may not be fully synced yet.");
 						//Saving the voucher for later
 						StartCycle = cycle.Start;
 						ClientChannelNegotiation = new ClientChannelNegotiation(Parameters, cycle.Start);

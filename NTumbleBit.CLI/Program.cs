@@ -90,7 +90,7 @@ namespace NTumbleBit.CLI
 							int? TorControlPort = config.GetOrDefault("tor.controlport", null as int?);
 							string TorControlPortPassword = config.GetOrDefault("tor.controlportpassword", null as string);
 							if(TorHost == null || TorSocksPort == null || TorControlPort == null || TorControlPortPassword == null)
-								throw new ConfigException("TOR is not configured correctly in your config file.");
+								throw new ConfigException("Tor is not configured correctly in your config file.");
 							else
 							{
 								torParameters.Host = TorHost;
@@ -165,19 +165,15 @@ namespace NTumbleBit.CLI
 				if(!string.IsNullOrEmpty(ex.Message))
 					Logs.Configuration.LogError(ex.Message);
 			}
-			catch (AggregateException ex) when (ex.InnerException is TorException)
-			{
-				Logs.Configuration.LogError("You are not running Tor or not configured it correctly" + Environment.NewLine +
-					$"Details: {ex.InnerException.Message}");
-				Logs.Configuration.LogDebug(ex.StackTrace);
-			}
-			catch (AggregateException ex)
-			{
-				Logs.Configuration.LogError(ex.InnerException.Message);
-				Logs.Configuration.LogDebug(ex.StackTrace);
-			}
 			catch (Exception ex)
 			{
+				if(ex is TorException || (ex is AggregateException && ex.InnerException is TorException))
+				{
+					Logs.Configuration.LogError("You are not running Tor or not configured it correctly" + Environment.NewLine +
+					   $"Details: {ex.Message}");
+					Logs.Configuration.LogDebug(ex.StackTrace);
+
+				}
 				Logs.Configuration.LogError(ex.Message);
 				Logs.Configuration.LogDebug(ex.StackTrace);
 			}
@@ -185,7 +181,7 @@ namespace NTumbleBit.CLI
 
 		private static T Retry<T>(int count, Func<T> act)
 		{
-			var exceptions = new List<Exception>();
+			var exceptions = new HashSet<Exception>();
 			for(int i = 0; i < count; i++)
 			{
 				try
@@ -194,10 +190,20 @@ namespace NTumbleBit.CLI
 				}
 				catch(Exception ex)
 				{
-					exceptions.Add(ex);
+					bool contains = false;
+					foreach(var e in exceptions)
+					{
+						if (ex.Message.Equals(e.Message, StringComparison.Ordinal))
+							contains = true;
+					}
+
+					if(!contains) exceptions.Add(ex);
 				}
 			}
-			throw new AggregateException(exceptions);
+
+			Exception finalException;
+			finalException = exceptions.Count == 1 ? exceptions.FirstOrDefault() : new AggregateException(exceptions);
+			throw finalException;
 		}
 
 		public static string GetDefaultConfigurationFile(string dataDirectory, Network network)
