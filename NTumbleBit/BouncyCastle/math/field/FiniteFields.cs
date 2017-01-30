@@ -11,13 +11,13 @@ namespace NTumbleBit.BouncyCastle.Math.Field
 		{
 			if(exponents[0] != 0)
 			{
-				throw new ArgumentException("Irreducible polynomials in GF(2) must have constant term", "exponents");
+				throw new ArgumentException("Irreducible polynomials in GF(2) must have constant term", nameof(exponents));
 			}
 			for(int i = 1; i < exponents.Length; ++i)
 			{
 				if(exponents[i] <= exponents[i - 1])
 				{
-					throw new ArgumentException("Polynomial exponents must be montonically increasing", "exponents");
+					throw new ArgumentException("Polynomial exponents must be montonically increasing", nameof(exponents));
 				}
 			}
 
@@ -34,7 +34,7 @@ namespace NTumbleBit.BouncyCastle.Math.Field
 			int bitLength = characteristic.BitLength;
 			if(characteristic.SignValue <= 0 || bitLength < 2)
 			{
-				throw new ArgumentException("Must be >= 2", "characteristic");
+				throw new ArgumentException("Must be >= 2", nameof(characteristic));
 			}
 
 			if(bitLength < 3)

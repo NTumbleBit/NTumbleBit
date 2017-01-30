@@ -11,15 +11,15 @@ using NBitcoin;
 
 namespace NTumbleBit
 {
-	class SerializerBase
+	internal class SerializerBase
 	{
 		public SerializerBase(Stream inner)
 		{
 			if(inner == null)
-				throw new ArgumentNullException("inner");
+				throw new ArgumentNullException(nameof(inner));
 			_Inner = inner;
 		}
-		
+
 		protected bool littleEndian = true;
 
 		public void WriteBytes(byte[] bytes, bool fixSize)
@@ -37,7 +37,7 @@ namespace NTumbleBit
 		public void WritePuzzleSolution(PuzzleSolution index)
 		{
 			WriteBigInteger(index._Value, KeySize);
-		}		
+		}
 
 		public PuzzleSolution ReadPuzzleSolution()
 		{
@@ -55,12 +55,12 @@ namespace NTumbleBit
 		{
 			WriteBigInteger(puzzle._Value, KeySize);
 		}
-		
+
 		public void WritePuzzleSolutionKey(SolutionKey key)
 		{
 			WriteBytes(key.ToBytes(true), true);
 		}
-		
+
 		public void WriteQuotient(Quotient q)
 		{
 			WriteBigInteger(q._Value, KeySize);

@@ -19,7 +19,7 @@ namespace NTumbleBit.PuzzlePromise
 		public XORKey(byte[] key)
 		{
 			if(key == null)
-				throw new ArgumentNullException("key");
+				throw new ArgumentNullException(nameof(key));
 			if(key.Length != KeySize)
 				throw new ArgumentException("Key has invalid length from expected " + KeySize);
 			_Value = new BigInteger(1, key);
@@ -28,12 +28,12 @@ namespace NTumbleBit.PuzzlePromise
 		private XORKey(BigInteger value)
 		{
 			if(value == null)
-				throw new ArgumentNullException("value");
+				throw new ArgumentNullException(nameof(value));
 
 			_Value = value;
 		}
 
-		BigInteger _Value;
+		private BigInteger _Value;
 
 		public byte[] XOR(byte[] data)
 		{
@@ -49,7 +49,7 @@ namespace NTumbleBit.PuzzlePromise
 		}
 
 
-		const int KeySize = 256;
+		private const int KeySize = 256;
 		public byte[] ToBytes()
 		{
 			byte[] keyBytes = _Value.ToByteArrayUnsigned();

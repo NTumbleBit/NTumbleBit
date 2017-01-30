@@ -45,7 +45,7 @@ namespace NTumbleBit.Client.Tumbler.Services
 			get; set;
 		}
 
-		CancellationToken _Stop;
+		private CancellationToken _Stop;
 		public void Start(CancellationToken cancellation)
 		{
 			_Stop = cancellation;

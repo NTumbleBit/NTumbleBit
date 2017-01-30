@@ -123,10 +123,10 @@ namespace NTumbleBit.PuzzleSolver
 		{
 			parameters = parameters ?? new SolverParameters(serverKey.PubKey);
 			if(serverKey == null)
-				throw new ArgumentNullException("serverKey");
+				throw new ArgumentNullException(nameof(serverKey));
 			if(serverKey.PubKey != parameters.ServerKey)
-				throw new ArgumentNullException("Private key not matching expected public key");
-			InternalState = new SolverServerSession.State();
+				throw new ArgumentNullException($"Private key not matching expected public key: {nameof(serverKey.PubKey)} != {nameof(parameters.ServerKey)}");
+			InternalState = new State();
 			_ServerKey = serverKey;
 			_Parameters = parameters;
 		}
@@ -149,7 +149,7 @@ namespace NTumbleBit.PuzzleSolver
 			}
 		}
 
-		SolverParameters _Parameters;
+		private SolverParameters _Parameters;
 		public SolverParameters Parameters
 		{
 			get
@@ -176,7 +176,7 @@ namespace NTumbleBit.PuzzleSolver
 		public ServerCommitment[] SolvePuzzles(PuzzleValue[] puzzles)
 		{
 			if(puzzles == null)
-				throw new ArgumentNullException("puzzles");
+				throw new ArgumentNullException(nameof(puzzles));
 			if(puzzles.Length != Parameters.GetTotalCount())
 				throw new ArgumentException("Expecting " + Parameters.GetTotalCount() + " puzzles");
 			AssertState(SolverServerStates.WaitingPuzzles);
@@ -200,7 +200,7 @@ namespace NTumbleBit.PuzzleSolver
 		public SolutionKey[] CheckRevelation(ClientRevelation revelation)
 		{
 			if(revelation == null)
-				throw new ArgumentNullException("puzzleSolutions");
+				throw new ArgumentNullException($"{nameof(revelation)}");
 			if(revelation.FakeIndexes.Length != Parameters.FakePuzzleCount || revelation.Solutions.Length != Parameters.FakePuzzleCount)
 				throw new ArgumentException("Expecting " + Parameters.FakePuzzleCount + " puzzle solutions");
 			AssertState(SolverServerStates.WaitingRevelation);
@@ -235,11 +235,10 @@ namespace NTumbleBit.PuzzleSolver
 		public OfferInformation CheckBlindedFactors(BlindFactor[] blindFactors, FeeRate feeRate)
 		{
 			if(blindFactors == null)
-				throw new ArgumentNullException("blindFactors");
+				throw new ArgumentNullException(nameof(blindFactors));
 			if(blindFactors.Length != Parameters.RealPuzzleCount)
 				throw new ArgumentException("Expecting " + Parameters.RealPuzzleCount + " blind factors");
 			AssertState(SolverServerStates.WaitingBlindFactor);
-			List<SolutionKey> keys = new List<SolutionKey>();
 			Puzzle unblindedPuzzle = null;
 			int y = 0;
 			for(int i = 0; i < Parameters.RealPuzzleCount; i++)
@@ -266,7 +265,7 @@ namespace NTumbleBit.PuzzleSolver
 
 			InternalState.OfferSignature = signature;
 			InternalState.Status = SolverServerStates.WaitingFulfillment;
-			return new OfferInformation()
+			return new OfferInformation
 			{
 				FulfillKey = InternalState.FulfillKey.PubKey,
 				Signature = signature,
@@ -298,7 +297,7 @@ namespace NTumbleBit.PuzzleSolver
 			txBuilder.AddKnownSignature(InternalState.EscrowKey.PubKey, InternalState.OfferSignature);
 			txBuilder.AddKnownSignature(InternalState.GetClientEscrowPubKey(), InternalState.OfferClientSignature);
 			txBuilder.SignTransactionInPlace(offerTransaction);
-			return new TrustedBroadcastRequest()
+			return new TrustedBroadcastRequest
 			{
 				Key = InternalState.EscrowKey,
 				Transaction = offerTransaction,
@@ -320,13 +319,13 @@ namespace NTumbleBit.PuzzleSolver
 
 		public TrustedBroadcastRequest FulfillOffer(
 			TransactionSignature clientSignature,
-			Script cashout, 
+			Script cashout,
 			FeeRate feeRate)
 		{
 			if(clientSignature == null)
-				throw new ArgumentNullException("clientSignature");
+				throw new ArgumentNullException(nameof(clientSignature));
 			if(feeRate == null)
-				throw new ArgumentNullException("feeRate");
+				throw new ArgumentNullException(nameof(feeRate));
 			AssertState(SolverServerStates.WaitingFulfillment);
 			Script offerScript = GetOfferScript();
 
@@ -355,7 +354,7 @@ namespace NTumbleBit.PuzzleSolver
 
 			InternalState.OfferClientSignature = clientSignature;
 			InternalState.Status = SolverServerStates.Completed;
-			return new TrustedBroadcastRequest()
+			return new TrustedBroadcastRequest
 			{
 				Key = InternalState.FulfillKey,
 				PreviousScriptPubKey = offerCoin.ScriptPubKey,
@@ -366,7 +365,7 @@ namespace NTumbleBit.PuzzleSolver
 		private Script GetOfferScript()
 		{
 			var escrow = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(InternalState.EscrowedCoin.Redeem);
-			return SolverScriptBuilder.CreateOfferScript(new OfferScriptPubKeyParameters()
+			return SolverScriptBuilder.CreateOfferScript(new OfferScriptPubKeyParameters
 			{
 				Hashes = InternalState.SolvedPuzzles.Select(p => p.SolutionKey.GetHash()).ToArray(),
 				FulfillKey = InternalState.FulfillKey.PubKey,

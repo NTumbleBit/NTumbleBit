@@ -105,7 +105,7 @@ namespace NTumbleBit.Common
 			try
 			{
 				var url = confArgs.GetOrDefault<string>("rpc.url", network == null ? null : "http://localhost:" + network.RPCPort + "/");
-				return new RPCArgs()
+				return new RPCArgs
 				{
 					User = confArgs.GetOrDefault<string>("rpc.user", null),
 					Password = confArgs.GetOrDefault<string>("rpc.password", null),

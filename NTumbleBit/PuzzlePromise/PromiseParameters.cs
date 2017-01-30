@@ -36,7 +36,7 @@ namespace NTumbleBit.PuzzlePromise
 		public PromiseParameters(RsaPubKey serverKey) : this()
 		{
 			if(serverKey == null)
-				throw new ArgumentNullException("serverKey");
+				throw new ArgumentNullException(nameof(serverKey));
 			ServerKey = serverKey;
 		}
 

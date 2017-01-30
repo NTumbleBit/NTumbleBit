@@ -50,9 +50,9 @@ namespace NTumbleBit.PuzzleSolver
 		public SolverClientSession(RsaPubKey serverKey)
 		{
 			if(serverKey == null)
-				throw new ArgumentNullException("serverKey");
+				throw new ArgumentNullException(nameof(serverKey));
 			_Parameters = new SolverParameters(serverKey);
-			InternalState = new SolverClientSession.State();
+			InternalState = new State();
 		}
 
 
@@ -62,9 +62,9 @@ namespace NTumbleBit.PuzzleSolver
 		public SolverClientSession(SolverParameters parameters)
 		{
 			if(parameters == null)
-				throw new ArgumentNullException("parameters");
+				throw new ArgumentNullException(nameof(parameters));
 			_Parameters = parameters;
-			InternalState = new SolverClientSession.State();
+			InternalState = new State();
 		}
 
 		public SolverClientSession(SolverParameters parameters, State state) : this(parameters)
@@ -213,7 +213,7 @@ namespace NTumbleBit.PuzzleSolver
 		public void AcceptPuzzle(PuzzleValue puzzleValue)
 		{
 			if(puzzleValue == null)
-				throw new ArgumentNullException("puzzleValue");
+				throw new ArgumentNullException(nameof(puzzleValue));
 			AssertState(SolverClientStates.WaitingPuzzle);
 			InternalState.Puzzle = puzzleValue;
 			InternalState.Status = SolverClientStates.WaitingGeneratePuzzles;
@@ -254,7 +254,7 @@ namespace NTumbleBit.PuzzleSolver
 		public ClientRevelation Reveal(ServerCommitment[] commitments)
 		{
 			if(commitments == null)
-				throw new ArgumentNullException("commitments");
+				throw new ArgumentNullException(nameof(commitments));
 			if(commitments.Length != Parameters.GetTotalCount())
 				throw new ArgumentException("Expecting " + Parameters.GetTotalCount() + " commitments");
 			AssertState(SolverClientStates.WaitingCommitments);
@@ -278,7 +278,7 @@ namespace NTumbleBit.PuzzleSolver
 		public BlindFactor[] GetBlindFactors(SolutionKey[] keys)
 		{
 			if(keys == null)
-				throw new ArgumentNullException("keys");
+				throw new ArgumentNullException(nameof(keys));
 			if(keys.Length != Parameters.FakePuzzleCount)
 				throw new ArgumentException("Expecting " + Parameters.FakePuzzleCount + " keys");
 			AssertState(SolverClientStates.WaitingFakeCommitmentsProof);
@@ -308,10 +308,10 @@ namespace NTumbleBit.PuzzleSolver
 		public TransactionSignature SignOffer(OfferInformation offerInformation)
 		{
 			if(offerInformation == null)
-				throw new ArgumentNullException("offerInformation");
+				throw new ArgumentNullException(nameof(offerInformation));
 			AssertState(SolverClientStates.WaitingOffer);
 			InternalState.FulfillKey = offerInformation.FulfillKey;
-			InternalState.OfferTransactionFee = offerInformation.Fee;		
+			InternalState.OfferTransactionFee = offerInformation.Fee;
 			Transaction tx = CreateUnsignedOfferTransaction();
 			var signature = tx.Inputs.AsIndexedInputs().First().Sign(InternalState.EscrowKey, InternalState.EscrowedCoin, SigHash.All);
 			InternalState.Status = SolverClientStates.WaitingPuzzleSolutions;
@@ -342,7 +342,7 @@ namespace NTumbleBit.PuzzleSolver
 			tx.Outputs[0].Value -= feeRate.GetFee(vSize);
 			tx.Inputs[0].ScriptSig = new Script(OpcodeType.OP_0) + Op.GetPushOp(coin.Redeem.ToBytes());
 
-			var redeemTransaction = new TrustedBroadcastRequest()
+			var redeemTransaction = new TrustedBroadcastRequest
 			{
 				Key = InternalState.RedeemKey,
 				PreviousScriptPubKey = coin.Redeem.Hash.ScriptPubKey,
@@ -361,7 +361,7 @@ namespace NTumbleBit.PuzzleSolver
 
 		private OfferScriptPubKeyParameters CreateOfferScriptParameters()
 		{
-			return new OfferScriptPubKeyParameters()
+			return new OfferScriptPubKeyParameters
 			{
 				Hashes = _PuzzleElements.OfType<RealPuzzle>().Select(p => p.Commitment.KeyHash).ToArray(),
 				FulfillKey = InternalState.FulfillKey,
@@ -374,11 +374,11 @@ namespace NTumbleBit.PuzzleSolver
 		{
 			return CreateOfferScript().Hash.ScriptPubKey;
 		}
-		
+
 		public void CheckSolutions(Transaction[] transactions)
 		{
 			if(transactions == null)
-				throw new ArgumentNullException("transactions");
+				throw new ArgumentNullException(nameof(transactions));
 			foreach(var tx in transactions)
 			{
 				try
@@ -397,7 +397,7 @@ namespace NTumbleBit.PuzzleSolver
 		public void CheckSolutions(Transaction fulfillTx)
 		{
 			if(fulfillTx == null)
-				throw new ArgumentNullException("fulfillTx");
+				throw new ArgumentNullException(nameof(fulfillTx));
 			AssertState(SolverClientStates.WaitingPuzzleSolutions);
 			foreach(var input in fulfillTx.Inputs)
 			{
@@ -420,7 +420,7 @@ namespace NTumbleBit.PuzzleSolver
 		public void CheckSolutions(Script scriptSig)
 		{
 			if(scriptSig == null)
-				throw new ArgumentNullException("scriptSig");
+				throw new ArgumentNullException(nameof(scriptSig));
 			AssertState(SolverClientStates.WaitingPuzzleSolutions);
 			var solutions = SolverScriptBuilder.ExtractSolutions(scriptSig, Parameters.RealPuzzleCount);
 			if(solutions == null)
@@ -431,7 +431,7 @@ namespace NTumbleBit.PuzzleSolver
 		public void CheckSolutions(SolutionKey[] keys)
 		{
 			if(keys == null)
-				throw new ArgumentNullException("keys");
+				throw new ArgumentNullException(nameof(keys));
 			if(keys.Length != Parameters.RealPuzzleCount)
 				throw new ArgumentException("Expecting " + Parameters.RealPuzzleCount + " keys");
 			AssertState(SolverClientStates.WaitingPuzzleSolutions);

@@ -30,9 +30,9 @@ namespace NTumbleBit.PuzzlePromise
 			}
 			public EncryptedSignature(ECDSASignature ecdsa, uint256 signedHash, PuzzleSolution solution)
 			{
-				this.Signature = ecdsa;
-				this.PuzzleSolution = solution;
-				this.SignedHash = signedHash;
+				Signature = ecdsa;
+				PuzzleSolution = solution;
+				SignedHash = signedHash;
 			}
 
 			public uint256 SignedHash
@@ -52,7 +52,7 @@ namespace NTumbleBit.PuzzlePromise
 		public PromiseServerSession(PromiseParameters parameters)
 		{
 			if(parameters == null)
-				throw new ArgumentNullException("parameters");
+				throw new ArgumentNullException(nameof(parameters));
 			_Parameters = parameters;
 			InternalState = new State();
 		}
@@ -60,10 +60,8 @@ namespace NTumbleBit.PuzzlePromise
 		public PromiseServerSession(State state, PromiseParameters parameters) : this(parameters)
 		{
 			if(state == null)
-				throw new ArgumentNullException("state");
-			if(state == null)
-				return;
-			this.InternalState = state;
+				throw new ArgumentNullException(nameof(state));
+			InternalState = state;
 		}
 
 		public new class State : EscrowInitiator.State
@@ -108,8 +106,7 @@ namespace NTumbleBit.PuzzlePromise
 		}
 
 
-
-		readonly PromiseParameters _Parameters;
+		private readonly PromiseParameters _Parameters;
 		public PromiseParameters Parameters
 		{
 			get
@@ -129,7 +126,7 @@ namespace NTumbleBit.PuzzlePromise
 		public ServerCommitment[] SignHashes(SignaturesRequest sigRequest)
 		{
 			if(sigRequest == null)
-				throw new ArgumentNullException("sigRequest");
+				throw new ArgumentNullException(nameof(sigRequest));
 			if(sigRequest.Hashes.Length != Parameters.GetTotalTransactionsCount())
 				throw new ArgumentException("Incorrect number of hashes, expected " + sigRequest.Hashes.Length);
 			AssertState(PromiseServerStates.WaitingHashes);
@@ -157,7 +154,7 @@ namespace NTumbleBit.PuzzlePromise
 		public ServerCommitmentsProof CheckRevelation(ClientRevelation revelation)
 		{
 			if(revelation == null)
-				throw new ArgumentNullException("revelation");
+				throw new ArgumentNullException(nameof(revelation));
 			if(revelation.Salts.Length != Parameters.FakeTransactionCount || revelation.FakeIndexes.Length != Parameters.FakeTransactionCount)
 				throw new ArgumentNullException("The revelation should contains " + Parameters.FakeTransactionCount + " indexes and salts");
 			AssertState(PromiseServerStates.WaitingRevelation);
@@ -202,7 +199,7 @@ namespace NTumbleBit.PuzzlePromise
 			{
 				return InternalState.Status;
 			}
-		}		
+		}
 
 		private void AssertState(PromiseServerStates state)
 		{

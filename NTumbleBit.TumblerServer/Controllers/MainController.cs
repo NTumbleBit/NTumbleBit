@@ -21,13 +21,13 @@ namespace NTumbleBit.TumblerServer.Controllers
 		public MainController(TumblerConfiguration configuration, ClassicTumblerRepository repo, ClassicTumblerParameters parameters, ExternalServices services)
 		{
 			if(configuration == null)
-				throw new ArgumentNullException("configuration");
+				throw new ArgumentNullException(nameof(configuration));
 			if(parameters == null)
-				throw new ArgumentNullException("parameters");
+				throw new ArgumentNullException(nameof(parameters));
 			if(services == null)
-				throw new ArgumentNullException("services");
+				throw new ArgumentNullException(nameof(services));
 			if(repo == null)
-				throw new ArgumentNullException("repo");
+				throw new ArgumentNullException(nameof(repo));
 			_Tumbler = configuration;
 			_Repository = repo;
 			_Parameters = parameters;
@@ -97,7 +97,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 			var key = Repository.GetNextKey(cycle.Start, out keyIndex);
 			if(!cycle.IsInPhase(CyclePhase.ClientChannelEstablishment, height))
 				return BadRequest("incorrect-phase");
-			return Json(new TumblerEscrowKeyResponse() { PubKey = key.PubKey, KeyIndex = keyIndex });
+			return Json(new TumblerEscrowKeyResponse { PubKey = key.PubKey, KeyIndex = keyIndex });
 		}
 
 		[HttpPost("api/v1/tumblers/0/clientchannels/confirm")]
@@ -179,7 +179,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 				var redeem = Services.WalletService.GenerateAddress($"Cycle {cycle.Start} Tumbler Redeem");
 				var redeemTx = promiseServerSession.CreateRedeemTransaction(fee, redeem.ScriptPubKey);
 				Services.TrustedBroadcastService.Broadcast($"Cycle {session.GetCycle().Start} Tumbler Redeem (locked until: {redeemTx.Transaction.LockTime})", redeemTx);
-				return this.Json(promiseServerSession.EscrowedCoin);
+				return Json(promiseServerSession.EscrowedCoin);
 			}
 			catch(PuzzleException)
 			{
@@ -235,7 +235,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 			CycleParameters cycle = Parameters.CycleGenerator.GetCycle(cycleId);
 			if(!cycle.IsInPhase(expectedPhase, height))
 				throw BadRequest("invalid-phase").AsException();
-		}		
+		}
 
 		[HttpPost("api/v1/tumblers/0/clientchannels/{cycleId}/{channelId}/solvepuzzles")]
 		public IActionResult SolvePuzzles(int cycleId, string channelId, [FromBody]PuzzleValue[] puzzles)

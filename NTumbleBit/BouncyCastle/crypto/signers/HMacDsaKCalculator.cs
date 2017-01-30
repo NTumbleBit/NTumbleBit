@@ -27,9 +27,9 @@ namespace NTumbleBit.BouncyCastle.Crypto.Signers
          */
 		public HMacDsaKCalculator(IDigest digest)
 		{
-			this.hMac = new HMac(digest);
-			this.V = new byte[hMac.GetMacSize()];
-			this.K = new byte[hMac.GetMacSize()];
+			hMac = new HMac(digest);
+			V = new byte[hMac.GetMacSize()];
+			K = new byte[hMac.GetMacSize()];
 		}
 
 		public virtual bool IsDeterministic

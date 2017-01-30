@@ -37,7 +37,7 @@ namespace NTumbleBit.Common
 
 			foreach(var arg in args)
 			{
-				bool isParamName = arg.StartsWith("-");
+				bool isParamName = arg.StartsWith("-", StringComparison.Ordinal);
 				if(isParamName)
 				{
 					var splitted = arg.Split('=');
@@ -102,7 +102,7 @@ namespace NTumbleBit.Common
 
 		public TextFileConfiguration(Dictionary<string, List<string>> args)
 		{
-			this._Args = args;
+			_Args = args;
 		}
 
 		public static TextFileConfiguration Parse(string data)
@@ -114,7 +114,7 @@ namespace NTumbleBit.Common
 			{
 				lineCount++;
 				var line = l.Trim();
-				if(line.StartsWith("#"))
+				if(line.StartsWith("#", StringComparison.Ordinal))
 					continue;
 				var split = line.Split('=');
 				if(split.Length == 0)
@@ -149,7 +149,7 @@ namespace NTumbleBit.Common
 			return values.ToArray();
 		}
 
-		Dictionary<string, string> _Aliases = new Dictionary<string, string>();
+		private Dictionary<string, string> _Aliases = new Dictionary<string, string>();
 
 		public void AddAlias(string from, string to)
 		{

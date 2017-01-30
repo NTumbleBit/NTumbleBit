@@ -26,13 +26,13 @@ namespace NTumbleBit.BouncyCastle.Asn1
 			}
 			else if(obj is Asn1SequenceParser)
 			{
-				return Asn1Sequence.GetInstance(((Asn1SequenceParser)obj).ToAsn1Object());
+				return GetInstance(((Asn1SequenceParser)obj).ToAsn1Object());
 			}
 			else if(obj is byte[])
 			{
 				try
 				{
-					return Asn1Sequence.GetInstance(FromByteArray((byte[])obj));
+					return GetInstance(FromByteArray((byte[])obj));
 				}
 				catch(IOException e)
 				{
@@ -49,7 +49,7 @@ namespace NTumbleBit.BouncyCastle.Asn1
 				}
 			}
 
-			throw new ArgumentException("Unknown object in GetInstance: " + Platform.GetTypeName(obj), "obj");
+			throw new ArgumentException("Unknown object in GetInstance: " + Platform.GetTypeName(obj), nameof(obj));
 		}
 
 		protected internal Asn1Sequence(
@@ -80,7 +80,7 @@ namespace NTumbleBit.BouncyCastle.Asn1
 				Asn1Sequence outer)
 			{
 				this.outer = outer;
-				this.max = outer.Count;
+				max = outer.Count;
 			}
 
 			public IAsn1Convertible ReadObject()

@@ -38,11 +38,11 @@ namespace NTumbleBit
 		}
 
 		public virtual void ConfigureEscrowedCoin(ScriptCoin escrowedCoin, Key escrowKey)
-		{			
+		{
 			if(escrowedCoin == null)
-				throw new ArgumentNullException("escrowedCoin");
+				throw new ArgumentNullException(nameof(escrowedCoin));
 			if(escrowKey == null)
-				throw new ArgumentNullException("escrowKey");
+				throw new ArgumentNullException(nameof(escrowKey));
 			var redeem = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(escrowedCoin.Redeem);
 			if(redeem == null)
 				throw new PuzzleException("Invalid escrow");
@@ -50,7 +50,7 @@ namespace NTumbleBit
 				throw new PuzzleException("Invalid escrow");
 
 			InternalState.EscrowKey = escrowKey;
-			InternalState.EscrowedCoin = escrowedCoin;			
+			InternalState.EscrowedCoin = escrowedCoin;
 		}
 
 		public ScriptCoin EscrowedCoin

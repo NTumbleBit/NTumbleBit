@@ -9,15 +9,16 @@ namespace NTumbleBit.BouncyCastle.Asn1
      * a [n] where n is some number - these are assumed to follow the construction
      * rules (as with sequences).
      */
-	abstract class Asn1TaggedObject
+
+	internal abstract class Asn1TaggedObject
 		: Asn1Object
 	{
 		internal int tagNo;
 		//        internal bool           empty;
-		internal bool explicitly = true;
+		internal bool explicitly;
 		internal Asn1Encodable obj;
 
-		static public Asn1TaggedObject GetInstance(
+		public static Asn1TaggedObject GetInstance(
 			Asn1TaggedObject obj,
 			bool explicitly)
 		{
@@ -29,7 +30,7 @@ namespace NTumbleBit.BouncyCastle.Asn1
 			throw new ArgumentException("implicitly tagged tagged object");
 		}
 
-		static public Asn1TaggedObject GetInstance(
+		public static Asn1TaggedObject GetInstance(
 			object obj)
 		{
 			if(obj == null || obj is Asn1TaggedObject)
@@ -37,7 +38,7 @@ namespace NTumbleBit.BouncyCastle.Asn1
 				return (Asn1TaggedObject)obj;
 			}
 
-			throw new ArgumentException("Unknown object in GetInstance: " + obj.GetType().FullName, "obj");
+			throw new ArgumentException("Unknown object in GetInstance: " + obj.GetType().FullName, nameof(obj));
 		}
 
 		/**
@@ -48,7 +49,7 @@ namespace NTumbleBit.BouncyCastle.Asn1
 			int tagNo,
 			Asn1Encodable obj)
 		{
-			this.explicitly = true;
+			explicitly = true;
 			this.tagNo = tagNo;
 			this.obj = obj;
 		}
@@ -61,9 +62,9 @@ namespace NTumbleBit.BouncyCastle.Asn1
 			if(other == null)
 				return false;
 
-			return this.tagNo == other.tagNo
+			return tagNo == other.tagNo
 				//				&& this.empty == other.empty
-				&& this.explicitly == other.explicitly   // TODO Should this be part of equality?
+				&& explicitly == other.explicitly   // TODO Should this be part of equality?
 				&& Platform.Equals(GetObject(), other.GetObject());
 		}
 

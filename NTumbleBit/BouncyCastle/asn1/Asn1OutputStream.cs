@@ -3,7 +3,7 @@ using System.IO;
 
 namespace NTumbleBit.BouncyCastle.Asn1
 {
-	class Asn1OutputStream
+	internal class Asn1OutputStream
 		: DerOutputStream
 	{
 		public Asn1OutputStream(Stream os) : base(os)

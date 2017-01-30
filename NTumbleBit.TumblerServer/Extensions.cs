@@ -24,7 +24,7 @@ namespace NTumbleBit.TumblerServer
 		public ActionResultException(IActionResult result)
 		{
 			if(result == null)
-				throw new ArgumentNullException("result");
+				throw new ArgumentNullException(nameof(result));
 			_Result = result;
 		}
 
@@ -110,9 +110,6 @@ namespace NTumbleBit.TumblerServer
 							conf.VoucherKey = new RsaKey(File.ReadAllBytes(voucherFile));
 						}
 					}
-
-					Debug.Assert(conf.TumblerKey != null);
-					Debug.Assert(conf.VoucherKey != null);
 
 					try
 					{

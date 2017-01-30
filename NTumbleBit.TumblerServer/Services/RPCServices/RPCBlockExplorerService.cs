@@ -19,7 +19,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		public RPCBlockExplorerService(RPCClient client)
 		{
 			if(client == null)
-				throw new ArgumentNullException("client");
+				throw new ArgumentNullException(nameof(client));
 			_RPCClient = client;
 		}
 
@@ -39,7 +39,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		public TransactionInformation[] GetTransactions(Script scriptPubKey, bool withProof)
 		{
 			if(scriptPubKey == null)
-				throw new ArgumentNullException("scriptPubKey");
+				throw new ArgumentNullException(nameof(scriptPubKey));
 
 			var address = scriptPubKey.GetDestinationAddress(RPCClient.Network);
 			if(address == null)
@@ -119,7 +119,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				var confirmations = result.Result["confirmations"];
 				var confCount = confirmations == null ? 0 : Math.Max(0, (int)confirmations);
 
-				return new TransactionInformation()
+				return new TransactionInformation
 				{
 					Confirmations = confCount,
 					Transaction = tx

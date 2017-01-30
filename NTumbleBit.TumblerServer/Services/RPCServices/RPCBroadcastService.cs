@@ -32,9 +32,9 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		public RPCBroadcastService(RPCClient rpc, IRepository repository)
 		{
 			if(rpc == null)
-				throw new ArgumentNullException("rpc");
+				throw new ArgumentNullException(nameof(rpc));
 			if(repository == null)
-				throw new ArgumentNullException("repository");
+				throw new ArgumentNullException(nameof(repository));
 			_RPCClient = rpc;
 			_Repository = repository;
 			_BlockExplorerService = new RPCBlockExplorerService(rpc);
@@ -74,8 +74,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			var transactions = Repository.List<Record>("Broadcasts");
 			foreach(var tx in transactions)
 				tx.Transaction.CacheHashes();
-			return Utils.TopologicalSort(transactions,
-				tx => transactions.Where(tx2 => tx.Transaction.Inputs.Any(input => input.PrevOut.Hash == tx2.Transaction.GetHash()))).ToArray();
+			return transactions.TopologicalSort(tx => transactions.Where(tx2 => tx.Transaction.Inputs.Any<TxIn>(input => input.PrevOut.Hash == tx2.Transaction.GetHash()))).ToArray();
 		}
 
 		public Transaction[] TryBroadcast()
@@ -92,7 +91,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			return broadcasted.ToArray();
 		}
 
-		bool TryBroadcastCore(Record tx, int currentHeight)
+		private bool TryBroadcastCore(Record tx, int currentHeight)
 		{
 			bool remove = currentHeight >= tx.Expiration;
 

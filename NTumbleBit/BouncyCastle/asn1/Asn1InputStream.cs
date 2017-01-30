@@ -51,7 +51,7 @@ namespace NTumbleBit.BouncyCastle.Asn1
 			: base(inputStream)
 		{
 			this.limit = limit;
-			this.tmpBuffers = new byte[16][];
+			tmpBuffers = new byte[16][];
 		}
 
 		/**
@@ -76,7 +76,7 @@ namespace NTumbleBit.BouncyCastle.Asn1
 		{
 			bool isConstructed = (tag & Asn1Tags.Constructed) != 0;
 
-			DefiniteLengthInputStream defIn = new DefiniteLengthInputStream(this.s, length);
+			DefiniteLengthInputStream defIn = new DefiniteLengthInputStream(s, length);
 
 			if((tag & Asn1Tags.Application) != 0)
 			{
@@ -141,14 +141,12 @@ namespace NTumbleBit.BouncyCastle.Asn1
 			//
 			// calculate tag number
 			//
-			int tagNo = ReadTagNumber(this.s, tag);
-
-			bool isConstructed = (tag & Asn1Tags.Constructed) != 0;
+			int tagNo = ReadTagNumber(s, tag);
 
 			//
 			// calculate length
 			//
-			int length = ReadLength(this.s, limit);
+			int length = ReadLength(s, limit);
 
 			if(length < 0) // indefinite length method
 			{
