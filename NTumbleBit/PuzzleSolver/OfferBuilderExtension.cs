@@ -16,8 +16,6 @@ namespace NTumbleBit.PuzzleSolver
 
 		public override bool CanCombineScriptSig(Script scriptPubKey, Script a, Script b)
 		{
-			var parameters = SolverScriptBuilder.ExtractOfferScriptParameters(scriptPubKey);
-
 			var aCount = a.ToOps().Count();
 			var bCount = b.ToOps().Count();
 			int min = Math.Min(aCount, bCount);
@@ -63,7 +61,7 @@ namespace NTumbleBit.PuzzleSolver
 		public override int EstimateScriptSigSize(Script scriptPubKey)
 		{
 			var offer = SolverScriptBuilder.ExtractOfferScriptParameters(scriptPubKey);
-			return BuilderExtension.DummySignature.ToBytes().Length + offer.Hashes.Length * (int)SolutionKey.KeySize;
+			return DummySignature.ToBytes().Length + offer.Hashes.Length * (int)SolutionKey.KeySize;
 		}
 
 		public override Script GenerateScriptSig(Script scriptPubKey, IKeyRepository keyRepo, ISigner signer)

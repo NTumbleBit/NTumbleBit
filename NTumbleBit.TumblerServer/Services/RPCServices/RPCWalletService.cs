@@ -18,7 +18,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		public RPCWalletService(RPCClient rpc)
 		{
 			if(rpc == null)
-				throw new ArgumentNullException("rpc");
+				throw new ArgumentNullException(nameof(rpc));
 			_RPCClient = rpc;
 		}
 
@@ -51,7 +51,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			tx.Outputs.Add(txOut);
 
 			var changeAddress = BitcoinAddress.Create(_RPCClient.SendCommand("getrawchangeaddress").ResultString, _RPCClient.Network);
-			var result = _RPCClient.SendCommandNoThrows("fundrawtransaction", tx.ToHex(), new JObject()
+			var result = _RPCClient.SendCommandNoThrows("fundrawtransaction", tx.ToHex(), new JObject
 			{
 				new JProperty("lockUnspents", true),
 				new JProperty("feeRate", feeRate.GetFee(1000).ToDecimal(MoneyUnit.BTC)),

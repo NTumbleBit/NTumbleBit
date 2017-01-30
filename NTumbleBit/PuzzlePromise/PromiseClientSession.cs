@@ -24,7 +24,7 @@ namespace NTumbleBit.PuzzlePromise
 
 	public class PromiseClientSession : EscrowReceiver
 	{
-		abstract class HashBase
+		private abstract class HashBase
 		{
 			public ServerCommitment Commitment
 			{
@@ -37,7 +37,8 @@ namespace NTumbleBit.PuzzlePromise
 				get; set;
 			}
 		}
-		class RealHash : HashBase
+
+		private class RealHash : HashBase
 		{
 			public RealHash(Transaction tx, ScriptCoin coin)
 			{
@@ -64,12 +65,12 @@ namespace NTumbleBit.PuzzlePromise
 			}
 		}
 
-		class FakeHash : HashBase
+		private class FakeHash : HashBase
 		{
 			public FakeHash(PromiseParameters parameters)
 			{
 				if(parameters == null)
-					throw new ArgumentNullException("parameters");
+					throw new ArgumentNullException(nameof(parameters));
 				Parameters = parameters;
 			}
 			public uint256 Salt
@@ -157,7 +158,7 @@ namespace NTumbleBit.PuzzlePromise
 		{
 			if(state == null)
 				return;
-			InternalState = Serializer.Clone(state);			
+			InternalState = Serializer.Clone(state);
 			if(InternalState.Commitments != null)
 			{
 				_Hashes = new HashBase[InternalState.Commitments.Length];
@@ -230,15 +231,15 @@ namespace NTumbleBit.PuzzlePromise
 		public SignaturesRequest CreateSignatureRequest(IDestination cashoutDestination, FeeRate feeRate)
 		{
 			if(cashoutDestination == null)
-				throw new ArgumentNullException("cashoutDestination");
+				throw new ArgumentNullException(nameof(cashoutDestination));
 			return CreateSignatureRequest(cashoutDestination.ScriptPubKey, feeRate);
 		}
 		public SignaturesRequest CreateSignatureRequest(Script cashoutDestination, FeeRate feeRate)
 		{
 			if(cashoutDestination == null)
-				throw new ArgumentNullException("cashoutDestination");
+				throw new ArgumentNullException(nameof(cashoutDestination));
 			if(feeRate == null)
-				throw new ArgumentNullException("feeRate");
+				throw new ArgumentNullException(nameof(feeRate));
 			AssertState(PromiseClientStates.WaitingSignatureRequest);
 
 			Transaction cashout = new Transaction();
@@ -273,7 +274,7 @@ namespace NTumbleBit.PuzzlePromise
 			}
 			var fakeIndices = _Hashes.OfType<FakeHash>().Select(h => h.Index).ToArray();
 			uint256 indexSalt = null;
-			var request = new SignaturesRequest()
+			var request = new SignaturesRequest
 			{
 				Hashes = _Hashes.Select(h => h.GetHash()).ToArray(),
 				FakeIndexesHash = PromiseUtils.HashIndexes(ref indexSalt, fakeIndices),
@@ -285,7 +286,7 @@ namespace NTumbleBit.PuzzlePromise
 			return request;
 		}
 
-		PubKey[] GetExpectedSigners()
+		private PubKey[] GetExpectedSigners()
 		{
 			var parameters = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(InternalState.EscrowedCoin.GetScriptCode());
 			if(parameters == null)
@@ -296,7 +297,7 @@ namespace NTumbleBit.PuzzlePromise
 		public ClientRevelation Reveal(ServerCommitment[] commitments)
 		{
 			if(commitments == null)
-				throw new ArgumentNullException("commitments");
+				throw new ArgumentNullException(nameof(commitments));
 			if(commitments.Length != Parameters.GetTotalTransactionsCount())
 				throw new ArgumentException("Expecting " + Parameters.GetTotalTransactionsCount() + " commitments");
 			AssertState(PromiseClientStates.WaitingCommitments);
@@ -320,7 +321,7 @@ namespace NTumbleBit.PuzzlePromise
 		public PuzzleValue CheckCommitmentProof(ServerCommitmentsProof proof)
 		{
 			if(proof == null)
-				throw new ArgumentNullException("proof");
+				throw new ArgumentNullException(nameof(proof));
 			if(proof.FakeSolutions.Length != Parameters.FakeTransactionCount)
 				throw new ArgumentException("Expecting " + Parameters.FakeTransactionCount + " solutions");
 			if(proof.Quotients.Length != Parameters.RealTransactionCount - 1)
@@ -365,7 +366,7 @@ namespace NTumbleBit.PuzzlePromise
 			var blindedPuzzle = new Puzzle(Parameters.ServerKey, puzzleToSolve).Blind(ref blind);
 
 			InternalState.BlindFactor = blind;
-			InternalState.Status = PromiseClientStates.Completed;			
+			InternalState.Status = PromiseClientStates.Completed;
 			return blindedPuzzle.PuzzleValue;
 		}
 
@@ -397,7 +398,7 @@ namespace NTumbleBit.PuzzlePromise
 		internal IEnumerable<Transaction> GetSignedTransactions(PuzzleSolution solution)
 		{
 			if(solution == null)
-				throw new ArgumentNullException("solution");
+				throw new ArgumentNullException(nameof(solution));
 			AssertState(PromiseClientStates.Completed);
 			solution = solution.Unblind(Parameters.ServerKey, InternalState.BlindFactor);
 			BigInteger cumul = solution._Value;

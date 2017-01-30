@@ -14,9 +14,9 @@ namespace NTumbleBit.PuzzlePromise
 		public ServerCommitmentsProof(PuzzleSolution[] solutions, Quotient[] quotients)
 		{
 			if(solutions == null)
-				throw new ArgumentNullException("solutions");
+				throw new ArgumentNullException(nameof(solutions));
 			if(quotients == null)
-				throw new ArgumentNullException("quotients");
+				throw new ArgumentNullException(nameof(quotients));
 			FakeSolutions = solutions;
 			Quotients = quotients;
 		}

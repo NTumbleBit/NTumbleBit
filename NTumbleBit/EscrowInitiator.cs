@@ -45,23 +45,23 @@ namespace NTumbleBit
 		public virtual void ConfigureEscrowedCoin(ScriptCoin escrowedCoin, Key escrowKey, Key redeemKey)
 		{
 			if(escrowedCoin == null)
-				throw new ArgumentNullException("escrowedCoin");
+				throw new ArgumentNullException(nameof(escrowedCoin));
 			if(escrowKey == null)
-				throw new ArgumentNullException("escrowKey");
+				throw new ArgumentNullException(nameof(escrowKey));
 			if(redeemKey == null)
-				throw new ArgumentNullException("redeemKey");
+				throw new ArgumentNullException(nameof(redeemKey));
 			var escrow = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(escrowedCoin.Redeem);
 			if(escrow == null || !escrow.EscrowKeys.Any(e => e == escrowKey.PubKey))
 				throw new PuzzleException("Invalid escrow");
 			InternalState.EscrowedCoin = escrowedCoin;
 			InternalState.EscrowKey = escrowKey;
-			InternalState.RedeemKey = redeemKey;			
+			InternalState.RedeemKey = redeemKey;
 		}
 
 		public TrustedBroadcastRequest CreateRedeemTransaction(FeeRate feeRate, Script redeemDestination)
 		{
 			if(feeRate == null)
-				throw new ArgumentNullException("feeRate");
+				throw new ArgumentNullException(nameof(feeRate));
 
 			var coin = InternalState.EscrowedCoin;
 			var escrow = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(coin.Redeem);
@@ -75,7 +75,7 @@ namespace NTumbleBit
 			tx.Outputs[0].Value -= feeRate.GetFee(vSize);
 			tx.Inputs[0].ScriptSig = EscrowScriptBuilder.GenerateScriptSig(new TransactionSignature[] { null }) + Op.GetPushOp(coin.Redeem.ToBytes());
 
-			var redeemTransaction =  new TrustedBroadcastRequest()
+			var redeemTransaction =  new TrustedBroadcastRequest
 			{
 				Key = InternalState.RedeemKey,
 				PreviousScriptPubKey = coin.Redeem.Hash.ScriptPubKey,

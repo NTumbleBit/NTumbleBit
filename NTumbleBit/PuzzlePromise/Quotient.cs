@@ -13,14 +13,14 @@ namespace NTumbleBit.PuzzlePromise
 		public Quotient(byte[] quotient)
 		{
 			if(quotient == null)
-				throw new ArgumentNullException("quotient");
+				throw new ArgumentNullException(nameof(quotient));
 			_Value = new BigInteger(1, quotient);
 		}
 
 		internal Quotient(BigInteger quotient)
 		{
 			if(quotient == null)
-				throw new ArgumentNullException("quotient");
+				throw new ArgumentNullException(nameof(quotient));
 			_Value = quotient;
 		}
 

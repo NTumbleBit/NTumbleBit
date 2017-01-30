@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit
 {
-	class NBitcoinSecureRandom : SecureRandom
+	internal class NBitcoinSecureRandom : SecureRandom
 	{
 
 		private static readonly NBitcoinSecureRandom _Instance = new NBitcoinSecureRandom();
@@ -23,7 +23,7 @@ namespace NTumbleBit
 		{
 
 		}
-		
+
 		public override void NextBytes(byte[] buffer)
 		{
 			RandomUtils.GetBytes(buffer);

@@ -22,12 +22,12 @@ namespace NTumbleBit.JsonConverters
 			Support<Quotient>((a, b) => a.WriteQuotient(b), a => a.ReadQuotient());
 		}
 
-		Dictionary<Type, Tuple<Action<SerializerBase, object>, Func<SerializerBase, object>>> _Supports = new Dictionary<Type, Tuple<Action<SerializerBase, object>, Func<SerializerBase, object>>>();
+		private Dictionary<Type, Tuple<Action<SerializerBase, object>, Func<SerializerBase, object>>> _Supports = new Dictionary<Type, Tuple<Action<SerializerBase, object>, Func<SerializerBase, object>>>();
 
 		internal void Support<T>(Action<SerializerBase, T> serialize, Func<SerializerBase, T> deserialize)
 		{
 			_Supports.Add(typeof(T), Tuple.Create<Action<SerializerBase, object>, Func<SerializerBase, object>>((a, b) => serialize(a, (T)b), a => deserialize(a)));
-		}		
+		}
 
 
 		public override bool CanConvert(Type objectType)

@@ -41,7 +41,6 @@ namespace NTumbleBit.ClassicTumbler
 			if(startHeight < FirstCycle.Start)
 				throw new InvalidOperationException("cycle generation starts at " + FirstCycle.Start + "(actual " + startHeight + ")");
 
-			var periods = FirstCycle.GetPeriods();
 			var registrationLength = FirstCycle.RegistrationDuration - RegistrationOverlap;
 			if((startHeight - FirstCycle.Start) % registrationLength != 0)
 				throw new InvalidOperationException("Invalid cycle start height");

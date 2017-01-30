@@ -57,10 +57,8 @@ namespace NTumbleBit.BouncyCastle.Crypto.Paddings
 		{
 			this.forEncryption = forEncryption;
 
-			SecureRandom initRandom = null;
-
 			Reset();
-			padding.Init(initRandom);
+			padding.Init();
 			cipher.Init(forEncryption, parameters);
 		}
 

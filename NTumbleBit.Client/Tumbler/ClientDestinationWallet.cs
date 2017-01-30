@@ -27,7 +27,7 @@ namespace NTumbleBit.Client.Tumbler
 		public ClientDestinationWallet(string walletName, BitcoinExtPubKey extPubKey, KeyPath derivationPath, IRepository repository)
 		{
 			walletName = walletName ?? "";
-			repository.UpdateOrInsert(GetPartition(walletName), "", new WalletDescription()
+			repository.UpdateOrInsert(GetPartition(walletName), "", new WalletDescription
 			{
 				Name = walletName,
 				DerivationPath = derivationPath,
@@ -47,7 +47,7 @@ namespace NTumbleBit.Client.Tumbler
 			}
 		}
 
-		WalletDescription GetWalletDescription()
+		private WalletDescription GetWalletDescription()
 		{
 			return Repository.Get<WalletDescription>(GetPartition(_WalletName), "");
 		}

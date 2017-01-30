@@ -36,7 +36,7 @@ namespace NTumbleBit.BouncyCastle.Asn1
 			BigInteger value)
 		{
 			if(value == null)
-				throw new ArgumentNullException("value");
+				throw new ArgumentNullException(nameof(value));
 
 			bytes = value.ToByteArray();
 		}
@@ -86,7 +86,7 @@ namespace NTumbleBit.BouncyCastle.Asn1
 			if(other == null)
 				return false;
 
-			return Arrays.AreEqual(this.bytes, other.bytes);
+			return Arrays.AreEqual(bytes, other.bytes);
 		}
 
 		public override string ToString()

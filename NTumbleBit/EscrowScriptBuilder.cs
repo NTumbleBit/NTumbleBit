@@ -82,7 +82,7 @@ namespace NTumbleBit
 				var orderedKeys = keys.OrderBy(o => o.ToHex()).ToArray();
 				if(!keys.SequenceEqual(orderedKeys))
 					return null;
-				return new EscrowScriptPubKeyParameters()
+				return new EscrowScriptPubKeyParameters
 				{
 					EscrowKeys = new[] { k1, k2 },
 					LockTime = timeout,

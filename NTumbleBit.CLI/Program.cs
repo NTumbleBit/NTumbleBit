@@ -24,8 +24,8 @@ namespace NTumbleBit.CLI
 			var logger = new ConsoleLogger("Configuration", (a, b) => true, false);
 			try
 			{
-				var network = args.Contains("-testnet", StringComparer.CurrentCultureIgnoreCase) ? Network.TestNet :
-				args.Contains("-regtest", StringComparer.CurrentCultureIgnoreCase) ? Network.RegTest :
+				var network = args.Contains("-testnet", StringComparer.OrdinalIgnoreCase) ? Network.TestNet :
+				args.Contains("-regtest", StringComparer.OrdinalIgnoreCase) ? Network.RegTest :
 				Network.Main;
 				Logs.Configuration.LogInformation("Network: " + network);
 
@@ -64,7 +64,7 @@ namespace NTumbleBit.CLI
 						Logs.Main.LogError("tumbler.server not configured");
 						throw new ConfigException();
 					}
-					var client = new NTumbleBit.Client.Tumbler.TumblerClient(network, server);
+					var client = new TumblerClient(network, server);
 					Logs.Configuration.LogInformation("Downloading tumbler information of " + server.AbsoluteUri);
 					var parameters = Retry(3, () => client.GetTumblerParameters());
 					Logs.Configuration.LogInformation("Tumbler Server Connection successfull");
@@ -131,18 +131,21 @@ namespace NTumbleBit.CLI
 			}
 		}
 
-		static T Retry<T>(int count, Func<T> act)
+		private static T Retry<T>(int count, Func<T> act)
 		{
-			Exception ex = null;
+			var exceptions = new List<Exception>();
 			for(int i = 0; i < count; i++)
 			{
 				try
 				{
 					return act();
 				}
-				catch(Exception exx) { ex = exx; }
+				catch(Exception ex)
+				{
+					exceptions.Add(ex);
+				}
 			}
-			throw ex;
+			throw new AggregateException(exceptions);
 		}
 
 		public static string GetDefaultConfigurationFile(string dataDirectory, Network network)

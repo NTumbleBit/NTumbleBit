@@ -13,7 +13,7 @@ namespace NTumbleBit.BouncyCastle.Crypto.Paddings
          *
          * @param param parameters, if any required.
          */
-		void Init(SecureRandom random);
+		void Init();
 		//throws ArgumentException;
 
 		/**

@@ -28,10 +28,10 @@ namespace NTumbleBit.BouncyCastle.Crypto.Macs
 		public HMac(IDigest digest)
 		{
 			this.digest = digest;
-			this.digestSize = digest.GetDigestSize();
-			this.blockLength = digest.GetByteLength();
-			this.inputPad = new byte[blockLength];
-			this.outputBuf = new byte[blockLength + digestSize];
+			digestSize = digest.GetDigestSize();
+			blockLength = digest.GetByteLength();
+			inputPad = new byte[blockLength];
+			outputBuf = new byte[blockLength + digestSize];
 		}
 
 		public virtual string AlgorithmName

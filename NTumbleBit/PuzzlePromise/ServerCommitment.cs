@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace NTumbleBit.PuzzlePromise
 {
     public class ServerCommitment
-    {		
+    {
 		public ServerCommitment(PuzzleValue puzzleValue, byte[] promise)
 		{
 			Puzzle = puzzleValue;

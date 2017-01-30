@@ -19,7 +19,7 @@ namespace NTumbleBit.Common
 		public CommandLineParser(string[] args)
 		{
 			if(args == null)
-				throw new ArgumentNullException("args");
+				throw new ArgumentNullException(nameof(args));
 			_Args = args;
 		}
 
@@ -33,7 +33,7 @@ namespace NTumbleBit.Common
 			var start = key + "=";
 			foreach(var arg in Args)
 			{
-				if(arg.StartsWith(start))
+				if(arg.StartsWith(start, StringComparison.Ordinal))
 				{
 					return arg.Substring(start.Length);
 				}

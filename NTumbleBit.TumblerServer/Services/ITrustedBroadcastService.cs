@@ -9,7 +9,7 @@ namespace NTumbleBit.TumblerServer.Services
 #else
 namespace NTumbleBit.Client.Tumbler.Services
 #endif
-{	
+{
     public interface ITrustedBroadcastService
     {
 		void Broadcast(string label, TrustedBroadcastRequest broadcast);

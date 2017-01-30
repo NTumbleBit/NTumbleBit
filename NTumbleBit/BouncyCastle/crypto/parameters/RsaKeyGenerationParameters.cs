@@ -6,7 +6,7 @@ using NTumbleBit.BouncyCastle.Security;
 
 namespace NTumbleBit.BouncyCastle.Crypto.Parameters
 {
-	 class RsaKeyGenerationParameters
+	internal class RsaKeyGenerationParameters
 		: KeyGenerationParameters
 	{
 		private readonly BigInteger publicExponent;

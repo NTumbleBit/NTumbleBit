@@ -11,7 +11,7 @@ namespace NTumbleBit.BouncyCastle.Crypto.Parameters
 			byte[] key)
 		{
 			if(key == null)
-				throw new ArgumentNullException("key");
+				throw new ArgumentNullException(nameof(key));
 
 			this.key = (byte[])key.Clone();
 		}
@@ -22,11 +22,11 @@ namespace NTumbleBit.BouncyCastle.Crypto.Parameters
 			int keyLen)
 		{
 			if(key == null)
-				throw new ArgumentNullException("key");
+				throw new ArgumentNullException(nameof(key));
 			if(keyOff < 0 || keyOff > key.Length)
-				throw new ArgumentOutOfRangeException("keyOff");
+				throw new ArgumentOutOfRangeException(nameof(keyOff));
 			if(keyLen < 0 || (keyOff + keyLen) > key.Length)
-				throw new ArgumentOutOfRangeException("keyLen");
+				throw new ArgumentOutOfRangeException(nameof(keyLen));
 
 			this.key = new byte[keyLen];
 			Array.Copy(key, keyOff, this.key, 0, keyLen);
