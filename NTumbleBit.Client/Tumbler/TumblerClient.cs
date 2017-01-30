@@ -4,14 +4,11 @@ using NTumbleBit.Client.Tumbler.Models;
 using NTumbleBit.PuzzlePromise;
 using NTumbleBit.PuzzleSolver;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using DotNetTor.SocksPort;
-using NTumbleBit.Common.Logging;
 
 namespace NTumbleBit.Client.Tumbler
 {
@@ -27,29 +24,20 @@ namespace NTumbleBit.Client.Tumbler
 			if(torParameters != null)
 			{
 				Client = new HttpClient(new SocksPortHandler(torParameters.Host, torParameters.SocksPort));
-				_torControl = new DotNetTor.ControlPort.Client(
-					torParameters.Host,
-					torParameters.ControlPort,
-					torParameters.ControlPortPassword);
 			}
 			else
 			{
-				_torControl = null;
 				Client = new HttpClient();
 			}
 
 			Address = serverAddress;
 			Network = network;
 			TorParameters = torParameters;
-			Id = Guid.NewGuid();
 		}
 
 		public Network Network { get; }
 		public Uri Address { get; }
-		public Guid Id { get; }
-		public static Guid IdLastRequested = Guid.NewGuid();
 		public TorParameters TorParameters { get; }
-		private readonly DotNetTor.ControlPort.Client _torControl;
 
 	    private static HttpClient Client;
 		public Task<ClassicTumblerParameters> GetTumblerParametersAsync()
@@ -119,13 +107,6 @@ namespace NTumbleBit.Client.Tumbler
 
 	    private async Task<T> SendAsync<T>(HttpMethod method, object body, string relativePath, params object[] parameters)
 		{
-			// If using Tor and the last Id requested with is not the current one change circuits
-			if (_torControl != null && !IdLastRequested.Equals(Id))
-			{
-				IdLastRequested = Id;
-				await _torControl.ChangeCircuitAsync().ConfigureAwait(false);
-			}
-
 			var uri = GetFullUri(relativePath, parameters);
 			var message = new HttpRequestMessage(method, uri);
 			if(body != null)

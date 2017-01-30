@@ -68,6 +68,7 @@ namespace NTumbleBit.CLI
 					}
 
 					TumblerClient client;
+					TorParameters torParameters = null;
 					bool? useTor = config.GetOrDefault("tor.use", null as bool?);
 					if(useTor == null) throw new ConfigException("tor.use is not configured correctly");
 					else if((bool)useTor)
@@ -84,7 +85,7 @@ namespace NTumbleBit.CLI
 						}
 						else
 						{
-							TorParameters torParameters = new TorParameters();
+							torParameters = new TorParameters();
 							string TorHost = config.GetOrDefault("tor.host", null as string);
 							int? TorSocksPort = config.GetOrDefault("tor.socksport", null as int?);
 							int? TorControlPort = config.GetOrDefault("tor.controlport", null as int?);
@@ -153,7 +154,7 @@ namespace NTumbleBit.CLI
 					}
 					var destinationWallet = new ClientDestinationWallet("", pubKey, keypath, dbreeze);
 					var stateMachine = new StateMachinesExecutor(parameters, client, destinationWallet, services, dbreeze, logger);
-					stateMachine.Start(source.Token);
+					stateMachine.Start(source.Token, torParameters);
 					Logs.Configuration.LogInformation("State machines started");
 				}
 				Logs.Configuration.LogInformation("Press enter to stop");

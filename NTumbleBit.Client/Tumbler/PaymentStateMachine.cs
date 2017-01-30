@@ -2,13 +2,10 @@
 using NTumbleBit.Client.Tumbler.Services;
 using NTumbleBit.PuzzleSolver;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using NBitcoin;
 using NTumbleBit.PuzzlePromise;
 using Microsoft.Extensions.Logging;
-using NTumbleBit.Common;
 using NTumbleBit.Common.Logging;
 
 namespace NTumbleBit.Client.Tumbler
