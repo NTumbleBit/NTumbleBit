@@ -324,10 +324,4 @@ namespace NTumbleBit.Client.Tumbler
 				throw new PuzzleException(error);
 		}
 	}
-
-	internal enum TumbleBitIdentity
-	{
-		Alice,
-		Bob
-	}
 }
