@@ -22,8 +22,10 @@ namespace NTumbleBit.Client.Tumbler
 			ExternalServices services)
 		{
 			Parameters = parameters;
-			AliceClient = client;
-			BobClient = client;
+
+			AliceClient = new TumblerClient(client.Network, client.Address, client.TorParameters);
+			BobClient = new TumblerClient(client.Network, client.Address, client.TorParameters);
+
 			Services = services;
 			DestinationWallet = destinationWallet;
 		}
@@ -46,11 +48,6 @@ namespace NTumbleBit.Client.Tumbler
 				PromiseClientSession = new PromiseClientSession(parameters.CreatePromiseParamaters(), state.PromiseClientState);
 			if(state.SolverClientState != null)
 				SolverClientSession = new SolverClientSession(parameters.CreateSolverParamaters(), state.SolverClientState);
-		}
-
-		private static TumbleBitIdentity WhoAmI
-		{
-			get; set;
 		}
 
 		public ExternalServices Services
@@ -163,12 +160,6 @@ namespace NTumbleBit.Client.Tumbler
 			switch(phase)
 			{
 				case CyclePhase.Registration:
-					if (!WhoAmI.Equals(TumbleBitIdentity.Bob))
-					{
-						WhoAmI = TumbleBitIdentity.Bob;
-						if(BobClient.ChangeIpIfTorAsync().Result)
-							logger.LogInformation("Changing identity to Bob...");
-					}
 					if (ClientChannelNegotiation == null)
 					{
 						//Client asks for voucher
@@ -184,12 +175,6 @@ namespace NTumbleBit.Client.Tumbler
 					}
 					break;
 				case CyclePhase.ClientChannelEstablishment:
-					if (!WhoAmI.Equals(TumbleBitIdentity.Alice))
-					{
-						WhoAmI = TumbleBitIdentity.Alice;
-						if(AliceClient.ChangeIpIfTorAsync().Result)
-							logger.LogInformation("Changing identity to Alice...");
-					}
 					if (ClientChannelNegotiation.Status == TumblerClientSessionStates.WaitingTumblerClientTransactionKey)
 					{
 						var key = AliceClient.RequestTumblerEscrowKey(cycle.Start);
@@ -235,12 +220,6 @@ namespace NTumbleBit.Client.Tumbler
 					}
 					break;
 				case CyclePhase.TumblerChannelEstablishment:
-					if (!WhoAmI.Equals(TumbleBitIdentity.Bob))
-					{
-						WhoAmI = TumbleBitIdentity.Bob;
-						if(BobClient.ChangeIpIfTorAsync().Result)
-							logger.LogInformation("Changing identity to Bob...");
-					}
 					if (ClientChannelNegotiation != null && ClientChannelNegotiation.Status == TumblerClientSessionStates.WaitingGenerateTumblerTransactionKey)
 					{
 						//Client asks the Tumbler to make a channel
@@ -277,12 +256,6 @@ namespace NTumbleBit.Client.Tumbler
 						}
 						if(SolverClientSession.Status == SolverClientStates.WaitingGeneratePuzzles)
 						{
-							if (!WhoAmI.Equals(TumbleBitIdentity.Alice))
-							{
-								WhoAmI = TumbleBitIdentity.Alice;
-								if(AliceClient.ChangeIpIfTorAsync().Result)
-									logger.LogInformation("Changing identity to Alice...");
-							}
 							logger.LogInformation("Tumbler escrow confirmed " + tumblerTx.Transaction.GetHash());
 							feeRate = GetFeeRate();
 							var puzzles = SolverClientSession.GeneratePuzzles();
