@@ -72,54 +72,6 @@ namespace NTumbleBit.TumblerServer.Controllers
 			}
 		}
 		
-		/* Front End endpoints */
-		[HttpGet("api/v1/tumblers/0/Denomination")]
-		public Money GetDenomination()
-		{
-			return Parameters.Denomination;
-		}
-
-		[HttpGet("api/v1/tumblers/0/Fee")]
-		public Money GetFee()
-		{
-			return Parameters.Fee;
-		}
-
-		[HttpGet("api/v1/tumblers/0/BlockHeight")]
-		public int GetBlockHeight()
-		{
-			return Services.BlockExplorerService.GetCurrentHeight();
-		}
-
-		[HttpGet("api/v1/tumblers/0/SolverServerSessionStates")]
-		public List<SolverServerSession.State> GetSolverServerSessionStates()
-		{
-			List<SolverServerSession.State> states = new List<SolverServerSession.State> { };
-			IRepository repo = Repository.Repository;
-			List<string> keys = repo.ListPartitionKeys();
-			foreach (var key in keys)
-			{
-				states.AddRange(repo.List<SolverServerSession.State>(key));
-			}
-			return states;
-		}
-
-		[HttpGet("api/v1/tumblers/0/PromiseServerSessionStates")]
-		public List<PromiseServerSession.State> GetPromiseServerSessionStates()
-		{
-			List<PromiseServerSession.State> states = new List<PromiseServerSession.State> { };
-			IRepository repo = Repository.Repository;
-			List<string> keys = repo.ListPartitionKeys();
-			foreach (var key in keys)
-			{
-				states.AddRange(repo.List<PromiseServerSession.State>(key));
-			}
-			return states;
-		}
-
-		// END Front End Endpoints
-
-
 		[HttpGet("api/v1/tumblers/0/parameters")]
 		public ClassicTumblerParameters GetSolverParameters()
 		{

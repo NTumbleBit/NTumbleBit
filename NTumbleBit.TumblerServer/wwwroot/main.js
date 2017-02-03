@@ -1,9 +1,11 @@
 ﻿// global onload // global onload function
-const solverServerSessionStatesUri = "http://localhost:5000/api/v1/tumblers/0/SolverServerSessionStates";
-const promiseServerSessionStatesUri = "http://localhost:5000/api/v1/tumblers/0/PromiseServerSessionStates";
-const blockHeightUri = "http://localhost:5000/api/v1/tumblers/0/BlockHeight";
-const feeUri = "http://localhost:5000/api/v1/tumblers/0/Fee";
-const denominationUri = "./api/v1/tumblers/0/Denomination";
+
+const apiUri = "http://localhost:5000/api";
+const solverServerSessionStatesUri = "/SolverServerSessionStates";
+const promiseServerSessionStatesUri = "/PromiseServerSessionStates";
+const blockHeightUri = "/BlockHeight";
+const feeUri = "/Fee";
+const denominationUri = "/Denomination";
 
 const SATOSHI_TO_BTC = 100000000;
 
@@ -26,11 +28,47 @@ const promiseServerSessionStates = {
 let solvers = [];
 let promises = [];
 
-
 (function poll() {
   fetchEndpoints();
   setTimeout(poll, 10000);
 })();
+
+
+
+function fetchEndpoints() {
+  fetchBlockHeight();
+
+  fetch(apiUri + solverServerSessionStatesUri)
+    .then(handleErrors)
+    .then((res) => res.json())
+    .then((solvers) => updateInputs(solvers));
+
+  fetch(apiUri + promiseServerSessionStatesUri)
+    .then(handleErrors)
+    .then((res) => res.json())
+    .then((promises) => updateOutputs(promises));
+}
+
+(function fetchDenomination() {
+  fetch(apiUri + denominationUri)
+  .then(handleErrors)
+    .then((res) => res.json())
+    .then((denom) => updateDenomination(denom));
+})();
+
+(function fetchFee() {
+  fetch(apiUri + feeUri)
+    .then(handleErrors)
+    .then((res) => res.json())
+    .then((fee) => updateFee(fee));
+})();
+
+function fetchBlockHeight() {
+  fetch(apiUri + blockHeightUri)
+    .then(handleErrors)
+    .then((res) => res.json())
+    .then((height) => updateBlockHeight(height));
+}
 
 function handleErrors(response) {
   if (!response.ok) {
@@ -39,52 +77,17 @@ function handleErrors(response) {
   return response;
 }
 
-function fetchEndpoints() {
-  fetchBlockHeight();
-  
-
-  fetch(solverServerSessionStatesUri)
-    .then(handleErrors)
-    .then((res) => res.json())
-    .then((solvers) => updateInputs(solvers));
-
-  fetch(promiseServerSessionStatesUri)
-    .then(handleErrors)
-    .then((res) => res.json())
-    .then((promises) => updateOutputs(promises));
-
-}
-
-(function fetchDenomination() {
-  fetch(denominationUri)
-  .then(handleErrors)
-    .then((res) => res.json())
-    .then((denom) => updateDenomination(denom));
-})();
-
-(function fetchFee() {
-  fetch(feeUri)
-    .then(handleErrors)
-    .then((res) => res.json())
-    .then((fee) => updateFee(fee));
-})();
-
-function fetchBlockHeight() {
-  fetch(blockHeightUri)
-    .then(handleErrors)
-    .then((res) => res.json())
-    .then((height) => updateBlockHeight(height));
-}
-
 function updateDenomination(denom) {
   const denomDiv = document.querySelector('.denomination');
-  // BTC = 1000000 satoshi
+  // denomination given in satoshi
   denomDiv.textContent = (denom / SATOSHI_TO_BTC);
 }
+
 function updateFee(fee) {
   const feeDiv = document.querySelector('.fee');
   feeDiv.textContent = (fee / SATOSHI_TO_BTC);
 }
+
 function updateBlockHeight(height) {
   const blockHeightDiv = document.querySelector('.block-height');
   blockHeightDiv.textContent = height;
@@ -99,14 +102,12 @@ function updateInputs(solvers) {
 }
 
 function updateOutputs(promises) {
-
   const outputsDiv = document.querySelector('.outputs ul');
 
   outputsDiv.innerHTML = promises.map(promise =>
     genPromiseComponent(promise)
   ).join('');
 }
-
 
 function genSolverComponent(solver) {
   const status = solver.status;
