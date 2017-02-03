@@ -1,6 +1,4 @@
-﻿// global onload // global onload function
-
-const apiUri = "http://localhost:5000/api";
+﻿const apiUri = "http://localhost:5000/api";
 const solverServerSessionStatesUri = "/SolverServerSessionStates";
 const promiseServerSessionStatesUri = "/PromiseServerSessionStates";
 const blockHeightUri = "/BlockHeight";
@@ -32,8 +30,6 @@ let promises = [];
   fetchEndpoints();
   setTimeout(poll, 10000);
 })();
-
-
 
 function fetchEndpoints() {
   fetchBlockHeight();
