@@ -1,4 +1,4 @@
-﻿const apiUri = "http://localhost:5000/api";
+﻿const apiUri = "http://" + window.location.hostname +":" + window.location.port + "/api"
 const solverServerSessionStatesUri = "/SolverServerSessionStates";
 const promiseServerSessionStatesUri = "/PromiseServerSessionStates";
 const blockHeightUri = "/BlockHeight";
