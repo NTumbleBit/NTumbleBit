@@ -92,7 +92,7 @@ namespace NTumbleBit.TumblerServer
 
 			Network = args.Contains("-testnet", StringComparer.CurrentCultureIgnoreCase) ? Network.TestNet :
 				args.Contains("-regtest", StringComparer.CurrentCultureIgnoreCase) ? Network.RegTest :
-				Network.Main;
+				BC2.Network;
 
 			if(ConfigurationFile != null)
 			{
@@ -100,7 +100,7 @@ namespace NTumbleBit.TumblerServer
 				var configTemp = TextFileConfiguration.Parse(File.ReadAllText(ConfigurationFile));
 				Network = configTemp.GetOrDefault<bool>("testnet", false) ? Network.TestNet :
 						  configTemp.GetOrDefault<bool>("regtest", false) ? Network.RegTest :
-						  Network.Main;
+						  BC2.Network;
 			}
 			if(DataDir == null)
 			{
@@ -112,7 +112,7 @@ namespace NTumbleBit.TumblerServer
 				ConfigurationFile = GetDefaultConfigurationFile();
 			}
 			Logs.Configuration.LogInformation("Network: " + Network);
-			if(Network == Network.TestNet)
+			if(Network == BC2.Network)
 			{
 				var cycle = this
 							.ClassicTumblerParameters

@@ -20,6 +20,7 @@ namespace NTumbleBit.TumblerServer
         public static void Main(string[] args)
         {
 			Logs.Configure(new FuncLoggerFactory(i => new ConsoleLogger("Configuration", (a, b) => true, false)));
+			Logs.Main.LogInformation("Network " + BC2.Network);
 			var logger = new ConsoleLogger("Main", (a, b) => true, false);
 			var configuration = new TumblerConfiguration();
 			configuration.LoadArgs(args);

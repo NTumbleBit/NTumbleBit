@@ -1,9 +1,10 @@
 {
   "version": "1.0.0-*",
 
-  "dependencies": {
-    "NBitcoin": "3.0.0.87"
-  },
+    "dependencies": {
+        "NBitcoin": "3.0.1.7",
+        "NBitcoin.BC2": "1.0.1"
+    },
 
   "frameworks": {
     "netstandard1.3": {
