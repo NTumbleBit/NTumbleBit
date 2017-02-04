@@ -2,8 +2,8 @@
   "version": "1.0.0-*",
 
     "dependencies": {
-        "NBitcoin": "3.0.1.6",
-        "NBitcoin.BC2": "1.0.1"
+        "NBitcoin": "3.0.1.7",
+        "NBitcoin.BC2": "1.0.2"
     },
 
   "frameworks": {

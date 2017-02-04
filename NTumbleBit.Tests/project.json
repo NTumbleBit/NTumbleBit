@@ -7,9 +7,9 @@
         "NTumbleBit": "1.0.0-*",
         "NTumbleBit.TumblerServer": "1.0.0-*",
         "NTumbleBit.Client": "1.0.0-*",
-        "NBitcoin": "3.0.1.6",
+        "NBitcoin": "3.0.1.7",
         "dotnet-test-xunit": "2.2.0-preview2-build1029",
-        "NBitcoin.BC2": "1.0.1"
+        "NBitcoin.BC2": "1.0.2"
     },
 
   "frameworks": {

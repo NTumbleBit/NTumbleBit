@@ -7,7 +7,11 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit.Client.Tumbler
 {
-	public class ClientDestinationWallet
+	public interface IDestinationWallet
+	{
+		Script GetNewDestination();
+	}
+	public class ClientDestinationWallet : IDestinationWallet
 	{
 		public class WalletDescription
 		{
