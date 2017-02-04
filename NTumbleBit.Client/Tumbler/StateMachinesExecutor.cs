@@ -14,7 +14,7 @@ namespace NTumbleBit.Client.Tumbler
 		public StateMachinesExecutor(
 			ClassicTumblerParameters parameters,
 			TumblerClient client,
-			ClientDestinationWallet destinationWallet,
+			IDestinationWallet destinationWallet,
 			ExternalServices services,
 			IRepository repository,
 			ILogger logger)
@@ -54,7 +54,7 @@ namespace NTumbleBit.Client.Tumbler
 		{
 			get; set;
 		}
-		public ClientDestinationWallet DestinationWallet
+		public IDestinationWallet DestinationWallet
 		{
 			get;
 			private set;
