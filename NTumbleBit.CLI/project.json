@@ -12,10 +12,10 @@
         "NTumbleBit": "1.0.0-*",
         "NTumbleBit.Client": "1.0.0-*",
         "DBreeze": "1.79.0",
-        "NBitcoin": "3.0.1.7",
+        "NBitcoin": "3.0.1.9",
         "Microsoft.Extensions.Logging.Console": "1.0.0",
         "Microsoft.Extensions.Logging.Filter": "1.0.0",
-        "NBitcoin.BC2": "1.0.2"
+        "NBitcoin.BC2": "1.0.3"
     },
 
   "frameworks": {

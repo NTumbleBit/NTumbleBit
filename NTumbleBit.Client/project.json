@@ -2,13 +2,13 @@
     "version": "1.0.0-*",
 
     "dependencies": {
-        "NBitcoin": "3.0.1.7",
+        "NBitcoin": "3.0.1.9",
         "NETStandard.Library": "1.6.0",
         "NTumbleBit": "1.0.0-*",
         "NTumbleBit.Common": "1.0.0-*",
         "DBreeze": "1.79.0",
         "Microsoft.Extensions.Logging.Abstractions": "1.0.0",
-        "NBitcoin.BC2": "1.0.2"
+        "NBitcoin.BC2": "1.0.3"
     },
 
     "frameworks": {
