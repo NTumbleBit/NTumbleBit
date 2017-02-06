@@ -174,7 +174,7 @@ namespace NTumbleBit.Client.Tumbler
 					break;
 				case CyclePhase.ClientChannelEstablishment:
 					if(ClientChannelNegotiation.Status == TumblerClientSessionStates.WaitingTumblerClientTransactionKey)
-					{						
+					{
 						var key = AliceClient.RequestTumblerEscrowKey(cycle.Start);
 						ClientChannelNegotiation.ReceiveTumblerEscrowKey(key.PubKey, key.KeyIndex);
 						//Client create the escrow
@@ -204,7 +204,7 @@ namespace NTumbleBit.Client.Tumbler
 						{
 							//Client asks the public key of the Tumbler and sends its own
 							var aliceEscrowInformation = ClientChannelNegotiation.GenerateClientTransactionKeys();
-							var voucher = AliceClient.SignVoucher(new Models.SignVoucherRequest()
+							var voucher = AliceClient.SignVoucher(new Models.SignVoucherRequest
 							{
 								MerkleProof = clientTx.MerkleProof,
 								Transaction = clientTx.Transaction,
@@ -264,14 +264,14 @@ namespace NTumbleBit.Client.Tumbler
 							var offerInformation = AliceClient.CheckBlindFactors(cycle.Start, SolverClientSession.Id, blindFactors);
 							var offerSignature = SolverClientSession.SignOffer(offerInformation);
 							var offerRedeem = SolverClientSession.CreateOfferRedeemTransaction(feeRate, Services.WalletService.GenerateAddress($"Cycle {cycle.Start} Tumbler Redeem").ScriptPubKey);
-							//May need to find solution in the fullfillment transaction
+							//May need to find solution in the fulfillment transaction
 							var offerLabel = $"Cycle {cycle.Start} Client Offer Redeem (locked until {offerRedeem.Transaction.LockTime})";
 							Services.BlockExplorerService.Track(offerLabel, offerRedeem.PreviousScriptPubKey);
 							Services.TrustedBroadcastService.Broadcast(offerLabel, offerRedeem);
 							logger.LogInformation("Offer redeem " + offerRedeem.Transaction.GetHash() + " locked until " + offerRedeem.Transaction.LockTime.Height);
 							try
 							{
-								solutionKeys = AliceClient.FullfillOffer(cycle.Start, SolverClientSession.Id, offerSignature);
+								solutionKeys = AliceClient.FulfillOffer(cycle.Start, SolverClientSession.Id, offerSignature);
 								SolverClientSession.CheckSolutions(solutionKeys);
 								logger.LogInformation("Solution recovered from cooperative tumbler");
 							}
@@ -308,7 +308,6 @@ namespace NTumbleBit.Client.Tumbler
 
 		private TransactionInformation GetTransactionInformation(ICoin coin, bool withProof)
 		{
-			var expectedTxout = coin.TxOut;
 			var tx = Services.BlockExplorerService
 				.GetTransactions(coin.TxOut.ScriptPubKey, withProof)
 				.FirstOrDefault(t => t.Transaction.GetHash() == coin.Outpoint.Hash);

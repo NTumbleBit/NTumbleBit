@@ -79,8 +79,8 @@ namespace NTumbleBit.TumblerServer
 
 		public TumblerConfiguration LoadArgs(String[] args)
 		{
-			ConfigurationFile = args.Where(a => a.StartsWith("-conf=")).Select(a => a.Substring("-conf=".Length).Replace("\"", "")).FirstOrDefault();
-			DataDir = args.Where(a => a.StartsWith("-datadir=")).Select(a => a.Substring("-datadir=".Length).Replace("\"", "")).FirstOrDefault();
+			ConfigurationFile = args.Where(a => a.StartsWith("-conf=", StringComparison.Ordinal)).Select(a => a.Substring("-conf=".Length).Replace("\"", "")).FirstOrDefault();
+			DataDir = args.Where(a => a.StartsWith("-datadir=", StringComparison.Ordinal)).Select(a => a.Substring("-datadir=".Length).Replace("\"", "")).FirstOrDefault();
 			if(DataDir != null && ConfigurationFile != null)
 			{
 				var isRelativePath = Path.GetFullPath(ConfigurationFile).Length > ConfigurationFile.Length;
@@ -90,8 +90,8 @@ namespace NTumbleBit.TumblerServer
 				}
 			}
 
-			Network = args.Contains("-testnet", StringComparer.CurrentCultureIgnoreCase) ? Network.TestNet :
-				args.Contains("-regtest", StringComparer.CurrentCultureIgnoreCase) ? Network.RegTest :
+			Network = args.Contains("-testnet", StringComparer.OrdinalIgnoreCase) ? Network.TestNet :
+				args.Contains("-regtest", StringComparer.OrdinalIgnoreCase) ? Network.RegTest :
 				Network.Main;
 
 			if(ConfigurationFile != null)
@@ -114,8 +114,7 @@ namespace NTumbleBit.TumblerServer
 			Logs.Configuration.LogInformation("Network: " + Network);
 			if(Network == Network.TestNet)
 			{
-				var cycle = this
-							.ClassicTumblerParameters
+				var cycle = ClassicTumblerParameters
 							.CycleGenerator.FirstCycle;
 				cycle.RegistrationDuration = 3;
 				cycle.Start = 0;
@@ -142,7 +141,7 @@ namespace NTumbleBit.TumblerServer
 			{
 				Console.WriteLine("Details on the wiki page :  https://github.com/NTumbleBit/NTumbleBit/wiki/Server-Config");
 				OpenBrowser("https://github.com/NTumbleBit/NTumbleBit/wiki/Server-Config");
-				System.Environment.Exit(0);
+				Environment.Exit(0);
 			}
 
 			var defaultPort = config.GetOrDefault<int>("port", 5000);
@@ -204,7 +203,7 @@ namespace NTumbleBit.TumblerServer
 				hostOut = str.Substring(1, str.Length - 2);
 			else
 				hostOut = str;
-			return new IPEndPoint(IPAddress.Parse(str), portOut);
+			return new IPEndPoint(IPAddress.Parse(hostOut), portOut);
 		}
 
 		private void AssetConfigFileExists()
@@ -223,7 +222,7 @@ namespace NTumbleBit.TumblerServer
 
 		public void OpenBrowser(string url)
 		{
-			try 
+			try
 			{
 				if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 				{
@@ -237,10 +236,10 @@ namespace NTumbleBit.TumblerServer
 				{
 					Process.Start("open", url); // Not tested
 				}
-			} 
+			}
 			catch(Exception)
 			{
-				// nothing happens 
+				// nothing happens
 			}
 		}
 	}

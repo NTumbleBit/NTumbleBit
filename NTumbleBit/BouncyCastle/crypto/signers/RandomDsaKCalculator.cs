@@ -21,7 +21,7 @@ namespace NTumbleBit.BouncyCastle.Crypto.Signers
 
 		public virtual void Init(BigInteger n, SecureRandom random)
 		{
-			this.q = n;
+			q = n;
 			this.random = random;
 		}
 

@@ -33,14 +33,14 @@ namespace NTumbleBit.Tests
 			}
 		}
 
-		FeeRate FeeRate = new FeeRate(50, 1);
+		private FeeRate FeeRate = new FeeRate(50, 1);
 
 		[Fact]
 		public void TestCRUDDBReeze()
 		{
 			using(var server = TumblerServerTester.Create())
 			{
-				var repo = server.ServerContext.GetService<NTumbleBit.TumblerServer.Services.IRepository>();
+				var repo = server.ServerContext.GetService<TumblerServer.Services.IRepository>();
 				repo.UpdateOrInsert("a", "b", "c", (o, n) => n);
 				var result = repo.Get<string>("a", "b");
 				Assert.Equal("c", result);
@@ -68,7 +68,7 @@ namespace NTumbleBit.Tests
 				server.SyncNodes();
 				server.BobNode.FindBlock(103);
 				server.SyncNodes();
-				
+
 				var machine = server.ClientContext.PaymentMachineState;
 				machine.Update();
 				var cycle = machine.ClientChannelNegotiation.GetCycle();
@@ -111,8 +111,8 @@ namespace NTumbleBit.Tests
 
 				MineTo(server.TumblerNode, cycle, CyclePhase.PaymentPhase, true);
 				server.SyncNodes();
-				
-				//Offer + Fullfill should be broadcasted
+
+				//Offer + Fulfill should be broadcasted
 				var transactions = server.ServerContext.TrustedBroadcastService.TryBroadcast();
 				Assert.Equal(2, transactions.Length);
 
@@ -122,11 +122,11 @@ namespace NTumbleBit.Tests
 				Assert.Equal(2, block.Transactions.Count); //Offer get mined
 				server.SyncNodes();
 
-				//Fullfill get resigned and broadcasted
+				//Fulfill get resigned and broadcasted
 				transactions = server.ServerContext.TrustedBroadcastService.TryBroadcast();
 				Assert.Equal(1, transactions.Length);
 				block = server.TumblerNode.FindBlock(1).First();
-				Assert.Equal(2, block.Transactions.Count); //Fullfill get mined		
+				Assert.Equal(2, block.Transactions.Count); //Fulfill get mined
 
 				MineTo(server.TumblerNode, cycle, CyclePhase.ClientCashoutPhase);
 				server.SyncNodes();
@@ -146,7 +146,7 @@ namespace NTumbleBit.Tests
 
 
 		[Fact]
-		public void EscrowGetReddemedIfTimeout()
+		public void EscrowGetRedeemedIfTimeout()
 		{
 			using(var server = TumblerServerTester.Create())
 			{
@@ -191,7 +191,7 @@ namespace NTumbleBit.Tests
 				MineTo(server.AliceNode, cycle, CyclePhase.ClientCashoutPhase, offset: cycle.SafetyPeriodDuration - 1);
 				var broadcasted = server.ClientContext.TrustedBroadcastService.TryBroadcast();
 				Assert.Equal(0, broadcasted.Length);
-				MineTo(server.AliceNode, cycle, CyclePhase.ClientCashoutPhase, offset: cycle.SafetyPeriodDuration);				
+				MineTo(server.AliceNode, cycle, CyclePhase.ClientCashoutPhase, offset: cycle.SafetyPeriodDuration);
 				broadcasted = server.ClientContext.TrustedBroadcastService.TryBroadcast();
 				Assert.Equal(1, broadcasted.Length);
 				////////////////////////////////////////////////////////////////////////////////

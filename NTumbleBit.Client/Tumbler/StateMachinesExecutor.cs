@@ -60,7 +60,7 @@ namespace NTumbleBit.Client.Tumbler
 			private set;
 		}
 
-		CancellationToken _Stop;
+		private CancellationToken _Stop;
 		public void Start(CancellationToken cancellation)
 		{
 			_Stop = cancellation;
@@ -116,7 +116,7 @@ namespace NTumbleBit.Client.Tumbler
 			}).Start();
 		}
 
-		string GetPartitionKey(int cycle)
+		private string GetPartitionKey(int cycle)
 		{
 			return "Cycle_" + cycle;
 		}

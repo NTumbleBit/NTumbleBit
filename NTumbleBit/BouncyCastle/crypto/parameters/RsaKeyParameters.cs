@@ -5,7 +5,7 @@ using NTumbleBit.BouncyCastle.Math;
 
 namespace NTumbleBit.BouncyCastle.Crypto.Parameters
 {
-	class RsaKeyParameters
+	internal class RsaKeyParameters
 		: AsymmetricKeyParameter
 	{
 		private readonly BigInteger modulus;
@@ -18,13 +18,13 @@ namespace NTumbleBit.BouncyCastle.Crypto.Parameters
 			: base(isPrivate)
 		{
 			if(modulus == null)
-				throw new ArgumentNullException("modulus");
+				throw new ArgumentNullException(nameof(modulus));
 			if(exponent == null)
-				throw new ArgumentNullException("exponent");
+				throw new ArgumentNullException(nameof(exponent));
 			if(modulus.SignValue <= 0)
-				throw new ArgumentException("Not a valid RSA modulus", "modulus");
+				throw new ArgumentException("Not a valid RSA modulus", nameof(modulus));
 			if(exponent.SignValue <= 0)
-				throw new ArgumentException("Not a valid RSA exponent", "exponent");
+				throw new ArgumentException("Not a valid RSA exponent", nameof(exponent));
 
 			this.modulus = modulus;
 			this.exponent = exponent;
@@ -56,9 +56,9 @@ namespace NTumbleBit.BouncyCastle.Crypto.Parameters
 				return false;
 			}
 
-			return kp.IsPrivate == this.IsPrivate
-				&& kp.Modulus.Equals(this.modulus)
-				&& kp.Exponent.Equals(this.exponent);
+			return kp.IsPrivate == IsPrivate
+				&& kp.Modulus.Equals(modulus)
+				&& kp.Exponent.Equals(exponent);
 		}
 
 		public override int GetHashCode()

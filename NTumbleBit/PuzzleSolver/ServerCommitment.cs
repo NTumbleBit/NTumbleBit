@@ -14,8 +14,8 @@ namespace NTumbleBit.PuzzleSolver
 	{
 		public ServerCommitment(uint160 keyHash, byte[] encryptedSolution)
 		{
-			this.EncryptedSolution = encryptedSolution;
-			this.KeyHash = keyHash;
+			EncryptedSolution = encryptedSolution;
+			KeyHash = keyHash;
 		}
 
 		public byte[] EncryptedSolution

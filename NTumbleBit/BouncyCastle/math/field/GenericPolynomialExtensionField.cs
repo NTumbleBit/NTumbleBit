@@ -11,7 +11,7 @@ namespace NTumbleBit.BouncyCastle.Math.Field
 		internal GenericPolynomialExtensionField(IFiniteField subfield, IPolynomial polynomial)
 		{
 			this.subfield = subfield;
-			this.minimalPolynomial = polynomial;
+			minimalPolynomial = polynomial;
 		}
 
 		public virtual BigInteger Characteristic

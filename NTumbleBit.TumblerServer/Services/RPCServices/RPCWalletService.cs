@@ -6,7 +6,6 @@ using NBitcoin;
 using NBitcoin.RPC;
 using Newtonsoft.Json.Linq;
 using NTumbleBit.PuzzlePromise;
-using NBitcoin.DataEncoders;
 
 #if !CLIENT
 namespace NTumbleBit.TumblerServer.Services.RPCServices
@@ -19,7 +18,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		public RPCWalletService(RPCClient rpc)
 		{
 			if(rpc == null)
-				throw new ArgumentNullException("rpc");
+				throw new ArgumentNullException(nameof(rpc));
 			_RPCClient = rpc;
 		}
 
@@ -51,9 +50,8 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			Transaction tx = new Transaction();
 			tx.Outputs.Add(txOut);
 
-			var noWitnessSerialization = NBitcoin.Protocol.ProtocolVersion.WITNESS_VERSION - 1;
 			var changeAddress = BitcoinAddress.Create(_RPCClient.SendCommand("getrawchangeaddress").ResultString, _RPCClient.Network);
-			var result = _RPCClient.SendCommandNoThrows("fundrawtransaction", Encoders.Hex.EncodeData(tx.ToBytes(noWitnessSerialization)), new JObject()
+			var result = _RPCClient.SendCommandNoThrows("fundrawtransaction", tx.ToHex(), new JObject
 			{
 				new JProperty("lockUnspents", true),
 				new JProperty("feeRate", feeRate.GetFee(1000).ToDecimal(MoneyUnit.BTC)),
@@ -63,7 +61,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				return null;
 			var jobj = (JObject)result.Result;
 			var hex = jobj["hex"].Value<string>();
-			tx = new Transaction(hex, noWitnessSerialization);
+			tx = new Transaction(hex);
 			result = _RPCClient.SendCommandNoThrows("signrawtransaction", tx.ToHex());
 			if(result.Error != null)
 				return null;

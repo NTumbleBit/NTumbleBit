@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit.PuzzlePromise
 {
-	static class PromiseUtils
+	internal static class PromiseUtils
 	{
 
 		public static byte[] SHA512(byte[] data, int offset, int count)
@@ -28,9 +28,9 @@ namespace NTumbleBit.PuzzlePromise
 			return new uint256(HMACSHA256(salt.ToBytes(), bytes));
 		}
 
-		static byte[] HMACSHA256(byte[] key, byte[] data)
+		private static byte[] HMACSHA256(byte[] key, byte[] data)
 		{
-			var mac = new NTumbleBit.BouncyCastle.Crypto.Macs.HMac(new Sha256Digest());
+			var mac = new BouncyCastle.Crypto.Macs.HMac(new Sha256Digest());
 			mac.Init(new KeyParameter(key));
 			mac.BlockUpdate(data, 0, data.Length);
 			byte[] result = new byte[mac.GetMacSize()];

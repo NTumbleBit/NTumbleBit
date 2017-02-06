@@ -94,28 +94,22 @@ namespace NTumbleBit.Common
 			return rpcClient;
 		}
 
-		public static RPCClient ConfigureRPCClient(TextFileConfiguration confArgs, Network network, string prefix= null)
+		public static RPCClient ConfigureRPCClient(TextFileConfiguration confArgs, Network network)
 		{
-			RPCArgs args = Parse(confArgs, network, prefix);
+			RPCArgs args = Parse(confArgs, network);
 			return args.ConfigureRPCClient(network);
 		}
 
-		public static RPCArgs Parse(TextFileConfiguration confArgs, Network network, string prefix = null)
+		public static RPCArgs Parse(TextFileConfiguration confArgs, Network network)
 		{
-			prefix = prefix ?? "";
-			if(prefix != "")
-			{
-				if(!prefix.EndsWith("."))
-					prefix += ".";
-			}
 			try
 			{
-				var url = confArgs.GetOrDefault<string>(prefix + "rpc.url", network == null ? null : "http://localhost:" + network.RPCPort + "/");
-				return new RPCArgs()
+				var url = confArgs.GetOrDefault<string>("rpc.url", network == null ? null : "http://localhost:" + network.RPCPort + "/");
+				return new RPCArgs
 				{
-					User = confArgs.GetOrDefault<string>(prefix + "rpc.user", null),
-					Password = confArgs.GetOrDefault<string>(prefix + "rpc.password", null),
-					CookieFile = confArgs.GetOrDefault<string>(prefix + "rpc.cookiefile", null),
+					User = confArgs.GetOrDefault<string>("rpc.user", null),
+					Password = confArgs.GetOrDefault<string>("rpc.password", null),
+					CookieFile = confArgs.GetOrDefault<string>("rpc.cookiefile", null),
 					Url = url == null ? null : new Uri(url)
 				};
 			}

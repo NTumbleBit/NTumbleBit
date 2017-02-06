@@ -24,8 +24,8 @@ namespace NTumbleBit.CLI
 			var logger = new ConsoleLogger("Configuration", (a, b) => true, false);
 			try
 			{
-				var network = args.Contains("-testnet", StringComparer.CurrentCultureIgnoreCase) ? Network.TestNet :
-				args.Contains("-regtest", StringComparer.CurrentCultureIgnoreCase) ? Network.RegTest :
+				var network = args.Contains("-testnet", StringComparer.OrdinalIgnoreCase) ? Network.TestNet :
+				args.Contains("-regtest", StringComparer.OrdinalIgnoreCase) ? Network.RegTest :
 				Network.Main;
 				Logs.Configuration.LogInformation("Network: " + network);
 
@@ -64,7 +64,7 @@ namespace NTumbleBit.CLI
 						Logs.Main.LogError("tumbler.server not configured");
 						throw new ConfigException();
 					}
-					var client = new NTumbleBit.Client.Tumbler.TumblerClient(network, server);
+					var client = new TumblerClient(network, server);
 					Logs.Configuration.LogInformation("Downloading tumbler information of " + server.AbsoluteUri);
 					var parameters = Retry(3, () => client.GetTumblerParameters());
 					Logs.Configuration.LogInformation("Tumbler Server Connection successfull");
@@ -87,15 +87,30 @@ namespace NTumbleBit.CLI
 						throw new ConfigException("The tumbler server run on a different network than the local rpc server");
 					}
 
-					IDestinationWallet destinationWallet = null;
+					BitcoinExtPubKey pubKey = null;
+					KeyPath keypath = new KeyPath("0");
 					try
 					{
-						destinationWallet = GetDestinationWallet(config, rpc.Network, dbreeze);
+						pubKey = new BitcoinExtPubKey(config.GetOrDefault("outputwallet.extpubkey", null as string), rpc.Network);
 					}
 					catch
 					{
-						destinationWallet = GetRPCDestinationWallet(config, rpc.Network);
+						throw new ConfigException("outputwallet.extpubkey is not configured correctly");
 					}
+
+					string keyPathString = config.GetOrDefault("outputwallet.keypath", null as string);
+					if(keyPathString != null)
+					{
+						try
+						{
+							keypath = new KeyPath(keyPathString);
+						}
+						catch
+						{
+							throw new ConfigException("outputwallet.keypath is not configured correctly");
+						}
+					}
+					var destinationWallet = new ClientDestinationWallet("", pubKey, keypath, dbreeze);
 					var stateMachine = new StateMachinesExecutor(parameters, client, destinationWallet, services, dbreeze, logger);
 					stateMachine.Start(source.Token);
 					Logs.Configuration.LogInformation("State machines started");
@@ -116,53 +131,21 @@ namespace NTumbleBit.CLI
 			}
 		}
 
-		private static RPCDestinationWallet GetRPCDestinationWallet(TextFileConfiguration config, Network network)
+		private static T Retry<T>(int count, Func<T> act)
 		{
-			var rpc = RPCArgs.ConfigureRPCClient(config, network, "outputwallet");
-			return new RPCDestinationWallet(rpc);
-		}
-
-		private static ClientDestinationWallet GetDestinationWallet(TextFileConfiguration config, Network network, DBreezeRepository dbreeze)
-		{
-			BitcoinExtPubKey pubKey = null;
-			KeyPath keypath = new KeyPath("0");
-			try
-			{
-				pubKey = new BitcoinExtPubKey(config.GetOrDefault("outputwallet.extpubkey", null as string), network);
-			}
-			catch
-			{
-				throw new ConfigException("outputwallet.extpubkey is not configured correctly");
-			}
-
-			string keyPathString = config.GetOrDefault("outputwallet.keypath", null as string);
-			if(keyPathString != null)
-			{
-				try
-				{
-					keypath = new KeyPath(keyPathString);
-				}
-				catch
-				{
-					throw new ConfigException("outputwallet.keypath is not configured correctly");
-				}
-			}
-			var destinationWallet = new ClientDestinationWallet("", pubKey, keypath, dbreeze);
-			return destinationWallet;
-		}
-
-		static T Retry<T>(int count, Func<T> act)
-		{
-			Exception ex = null;
+			var exceptions = new List<Exception>();
 			for(int i = 0; i < count; i++)
 			{
 				try
 				{
 					return act();
 				}
-				catch(Exception exx) { ex = exx; }
+				catch(Exception ex)
+				{
+					exceptions.Add(ex);
+				}
 			}
-			throw ex;
+			throw new AggregateException(exceptions);
 		}
 
 		public static string GetDefaultConfigurationFile(string dataDirectory, Network network)

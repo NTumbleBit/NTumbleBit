@@ -7,7 +7,7 @@ namespace NTumbleBit.BouncyCastle.Crypto.Engines
 	/// <summary>
 	/// Implementation of Daniel J. Bernstein's ChaCha stream cipher.
 	/// </summary>
-	class ChaChaEngine
+	internal class ChaChaEngine
 		: Salsa20Engine
 	{
 		/// <summary>

@@ -9,7 +9,8 @@ namespace NTumbleBit.BouncyCastle.Crypto.Generators
 	/**
      * an RSA key pair generator.
      */
-	class RsaKeyPairGenerator
+
+	internal class RsaKeyPairGenerator
 	{
 		private static readonly BigInteger DefaultPublicExponent = BigInteger.ValueOf(0x10001);
 		private const int DefaultTests = 12;
@@ -21,11 +22,11 @@ namespace NTumbleBit.BouncyCastle.Crypto.Generators
 		{
 			if(parameters is RsaKeyGenerationParameters)
 			{
-				this.param = (RsaKeyGenerationParameters)parameters;
+				param = (RsaKeyGenerationParameters)parameters;
 			}
 			else
 			{
-				this.param = new RsaKeyGenerationParameters(
+				param = new RsaKeyGenerationParameters(
 					DefaultPublicExponent, parameters.Random, parameters.Strength, DefaultTests);
 			}
 		}

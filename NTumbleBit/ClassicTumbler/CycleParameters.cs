@@ -184,7 +184,7 @@ namespace NTumbleBit.ClassicTumbler
 
 		public CycleParameters Clone()
 		{
-			return new CycleParameters()
+			return new CycleParameters
 			{
 				ClientCashoutDuration = ClientCashoutDuration,
 				SafetyPeriodDuration = SafetyPeriodDuration,

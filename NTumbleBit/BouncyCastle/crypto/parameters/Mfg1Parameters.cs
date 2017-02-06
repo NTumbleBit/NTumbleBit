@@ -3,7 +3,7 @@
 namespace NTumbleBit.BouncyCastle.Crypto.Parameters
 {
 	/// <remarks>Parameters for mask derivation functions.</remarks>
-	class MgfParameters
+	internal class MgfParameters
 	{
 		private readonly byte[] seed;
 

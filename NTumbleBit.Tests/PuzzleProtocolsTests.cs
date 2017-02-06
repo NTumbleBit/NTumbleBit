@@ -68,7 +68,7 @@ namespace NTumbleBit.Tests
 
 		}
 
-		static byte[] GenerateEncryptableData(RsaKeyParameters key)
+		private static byte[] GenerateEncryptableData(RsaKeyParameters key)
 		{
 			while(true)
 			{
@@ -84,7 +84,7 @@ namespace NTumbleBit.Tests
 		//https://medium.com/@nicolasdorier/tumblebit-tumbler-mode-ea44e9a2a2ec#.a4wgwa86u
 		public void CanCalculatePhase()
 		{
-			var parameter = new CycleParameters()
+			var parameter = new CycleParameters
 			{
 				Start = 100,
 				RegistrationDuration = 10,
@@ -155,7 +155,7 @@ namespace NTumbleBit.Tests
 			Assert.True(decrypted.SequenceEqual(msg));
 		}
 
-		FeeRate FeeRate = new FeeRate(Money.Satoshis(50), 1);
+		private FeeRate FeeRate = new FeeRate(Money.Satoshis(50), 1);
 
 		[Fact]
 		public void TestPuzzlePromise()
@@ -233,7 +233,7 @@ namespace NTumbleBit.Tests
 		{
 			var redeem = EscrowScriptBuilder.CreateEscrow(new[] { escrow1, escrow2 }, redeemKey, new LockTime(0));
 			var scriptCoin = new Coin(new OutPoint(new uint256(RandomUtils.GetBytes(32)), 0),
-				new TxOut()
+				new TxOut
 				{
 					Value = Money.Coins(1.5m),
 					ScriptPubKey = redeem.Hash.ScriptPubKey
@@ -248,7 +248,7 @@ namespace NTumbleBit.Tests
 			PuzzleSolution expectedSolution = null;
 			Puzzle puzzle = key.PubKey.GeneratePuzzle(ref expectedSolution);
 
-			var parameters = new SolverParameters()
+			var parameters = new SolverParameters
 			{
 				FakePuzzleCount = 50,
 				RealPuzzleCount = 10,
@@ -293,7 +293,7 @@ namespace NTumbleBit.Tests
 			var clientOfferSig = client.SignOffer(offerInformation);
 
 			//Verify if the scripts are correctly created
-			var fullfill = server.FullfillOffer(clientOfferSig, new Key().ScriptPubKey, FeeRate);
+			var fulfill = server.FulfillOffer(clientOfferSig, new Key().ScriptPubKey, FeeRate);
 
 			var offerTransaction = server.GetSignedOfferTransaction();
 			TransactionBuilder txBuilder = new TransactionBuilder();
@@ -302,20 +302,20 @@ namespace NTumbleBit.Tests
 
 			txBuilder = new TransactionBuilder();
 			txBuilder.AddCoins(offerTransaction.Transaction.Outputs.AsCoins().ToArray());
-			Assert.True(txBuilder.Verify(fullfill.Transaction));
+			Assert.True(txBuilder.Verify(fulfill.Transaction));
 
-			//Check if can resign fullfill in case offer get malleated
+			//Check if can resign fulfill in case offer get malleated
 			offerTransaction.Transaction.LockTime = new LockTime(1);
-			fullfill.Transaction.Inputs[0].PrevOut = offerTransaction.Transaction.Outputs.AsCoins().First().Outpoint;
+			fulfill.Transaction.Inputs[0].PrevOut = offerTransaction.Transaction.Outputs.AsCoins().First().Outpoint;
 			txBuilder = new TransactionBuilder();
 			txBuilder.Extensions.Add(new OfferBuilderExtension());
-			txBuilder.AddKeys(server.GetInternalState().FullfillKey);
+			txBuilder.AddKeys(server.GetInternalState().FulfillKey);
 			txBuilder.AddCoins(offerTransaction.Transaction.Outputs.AsCoins().ToArray());
-			txBuilder.SignTransactionInPlace(fullfill.Transaction);
-			Assert.True(txBuilder.Verify(fullfill.Transaction));
+			txBuilder.SignTransactionInPlace(fulfill.Transaction);
+			Assert.True(txBuilder.Verify(fulfill.Transaction));
 			////////////////////////////////////////////////
 
-			client.CheckSolutions(fullfill.Transaction);
+			client.CheckSolutions(fulfill.Transaction);
 			RoundTrip(ref client, parameters);
 			var solution = client.GetSolution();
 			RoundTrip(ref client, parameters);
@@ -359,8 +359,8 @@ namespace NTumbleBit.Tests
 			client = new PromiseClientSession(parameters, clone);
 		}
 
-		LockTime EscrowDate = new LockTime(new DateTimeOffset(1988, 07, 18, 0, 0, 0, TimeSpan.Zero));
-		Money Amount = Money.Coins(1.0m);
+		private LockTime EscrowDate = new LockTime(new DateTimeOffset(1988, 07, 18, 0, 0, 0, TimeSpan.Zero));
+		private Money Amount = Money.Coins(1.0m);
 
 		[Fact]
 		public void CanBlind()

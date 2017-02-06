@@ -21,13 +21,13 @@ namespace NTumbleBit.TumblerServer.Controllers
 		public MainController(TumblerConfiguration configuration, ClassicTumblerRepository repo, ClassicTumblerParameters parameters, ExternalServices services)
 		{
 			if(configuration == null)
-				throw new ArgumentNullException("configuration");
+				throw new ArgumentNullException(nameof(configuration));
 			if(parameters == null)
-				throw new ArgumentNullException("parameters");
+				throw new ArgumentNullException(nameof(parameters));
 			if(services == null)
-				throw new ArgumentNullException("services");
+				throw new ArgumentNullException(nameof(services));
 			if(repo == null)
-				throw new ArgumentNullException("repo");
+				throw new ArgumentNullException(nameof(repo));
 			_Tumbler = configuration;
 			_Repository = repo;
 			_Parameters = parameters;
@@ -97,7 +97,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 			var key = Repository.GetNextKey(cycle.Start, out keyIndex);
 			if(!cycle.IsInPhase(CyclePhase.ClientChannelEstablishment, height))
 				return BadRequest("incorrect-phase");
-			return Json(new TumblerEscrowKeyResponse() { PubKey = key.PubKey, KeyIndex = keyIndex });
+			return Json(new TumblerEscrowKeyResponse { PubKey = key.PubKey, KeyIndex = keyIndex });
 		}
 
 		[HttpPost("api/v1/tumblers/0/clientchannels/confirm")]
@@ -179,7 +179,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 				var redeem = Services.WalletService.GenerateAddress($"Cycle {cycle.Start} Tumbler Redeem");
 				var redeemTx = promiseServerSession.CreateRedeemTransaction(fee, redeem.ScriptPubKey);
 				Services.TrustedBroadcastService.Broadcast($"Cycle {session.GetCycle().Start} Tumbler Redeem (locked until: {redeemTx.Transaction.LockTime})", redeemTx);
-				return this.Json(promiseServerSession.EscrowedCoin);
+				return Json(promiseServerSession.EscrowedCoin);
 			}
 			catch(PuzzleException)
 			{
@@ -235,7 +235,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 			CycleParameters cycle = Parameters.CycleGenerator.GetCycle(cycleId);
 			if(!cycle.IsInPhase(expectedPhase, height))
 				throw BadRequest("invalid-phase").AsException();
-		}		
+		}
 
 		[HttpPost("api/v1/tumblers/0/clientchannels/{cycleId}/{channelId}/solvepuzzles")]
 		public IActionResult SolvePuzzles(int cycleId, string channelId, [FromBody]PuzzleValue[] puzzles)
@@ -260,33 +260,33 @@ namespace NTumbleBit.TumblerServer.Controllers
 		{
 			var session = GetSolverServerSession(cycleId, channelId, CyclePhase.PaymentPhase);
 			var feeRate = Services.FeeService.GetFeeRate();
-			var fullfillKey = session.CheckBlindedFactors(blindFactors, feeRate);
+			var fulfillKey = session.CheckBlindedFactors(blindFactors, feeRate);
 			var cycle = Parameters.CycleGenerator.GetCycle(cycleId);
-			//later we will track it for fullfillment
+			//later we will track it for fulfillment
 			Services.BlockExplorerService.Track($"Cycle {cycle.Start} Client Offer", session.GetOfferScriptPubKey());
 			Repository.Save(cycleId, session);
-			return Json(fullfillKey);
+			return Json(fulfillKey);
 		}
 
 		[HttpPost("api/v1/tumblers/0/clientchannels/{cycleId}/{channelId}/offer")]
-		public IActionResult FullfillOffer(int cycleId, string channelId, [FromBody]TransactionSignature clientSignature)
+		public IActionResult FulfillOffer(int cycleId, string channelId, [FromBody]TransactionSignature clientSignature)
 		{
 			var session = GetSolverServerSession(cycleId, channelId, CyclePhase.TumblerCashoutPhase);
 			var feeRate = Services.FeeService.GetFeeRate();
-			if(session.Status != SolverServerStates.WaitingFullfillment)
+			if(session.Status != SolverServerStates.WaitingFulfillment)
 				return BadRequest("invalid-state");
 			try
 			{
 				var cycle = Parameters.CycleGenerator.GetCycle(cycleId);
 				var cashout = Services.WalletService.GenerateAddress($"Cycle {cycle.Start} Tumbler Cashout");
-				var fullfill = session.FullfillOffer(clientSignature, cashout.ScriptPubKey, feeRate);
-				fullfill.BroadcastAt = new LockTime(cycle.GetPeriods().Payment.End - 1);
+				var fulfill = session.FulfillOffer(clientSignature, cashout.ScriptPubKey, feeRate);
+				fulfill.BroadcastAt = new LockTime(cycle.GetPeriods().Payment.End - 1);
 				Repository.Save(cycle.Start, session);
 
 				var signedOffer = session.GetSignedOfferTransaction();
-				signedOffer.BroadcastAt = fullfill.BroadcastAt - 1;
+				signedOffer.BroadcastAt = fulfill.BroadcastAt - 1;
 				Services.TrustedBroadcastService.Broadcast($"Cycle {cycle.Start} Client Offer Transaction (planned for: {signedOffer.BroadcastAt})", signedOffer);
-				Services.TrustedBroadcastService.Broadcast($"Cycle {cycle.Start} Tumbler Fullfillment Transaction (planned for: {fullfill.BroadcastAt})", fullfill);
+				Services.TrustedBroadcastService.Broadcast($"Cycle {cycle.Start} Tumbler Fulfillment Transaction (planned for: {fulfill.BroadcastAt})", fulfill);
 				return Json(session.GetSolutionKeys());
 			}
 			catch(PuzzleException)

@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace NTumbleBit.PuzzleSolver
-{	
+{
 	internal class PuzzleSetElement
 	{
 		public Puzzle Puzzle
@@ -16,7 +16,7 @@ namespace NTumbleBit.PuzzleSolver
 			get;
 			set;
 		}
-		
+
 		public int Index
 		{
 			get;
@@ -29,7 +29,8 @@ namespace NTumbleBit.PuzzleSolver
 			set;
 		}
 	}
-	class RealPuzzle : PuzzleSetElement
+
+	internal class RealPuzzle : PuzzleSetElement
 	{
 		public RealPuzzle(Puzzle puzzle, BlindFactor blindFactory)
 		{
@@ -44,18 +45,18 @@ namespace NTumbleBit.PuzzleSolver
 
 		public override string ToString()
 		{
-			return "+Real " + Puzzle.ToString();
+			return "+Real " + Puzzle;
 		}
 	}
 
-	class FakePuzzle : PuzzleSetElement
+	internal class FakePuzzle : PuzzleSetElement
 	{
 		public FakePuzzle(Puzzle puzzle, PuzzleSolution solution)
 		{
 			Puzzle = puzzle;
 			Solution = solution;
 		}
-	
+
 		public PuzzleSolution Solution
 		{
 			get;
@@ -64,7 +65,7 @@ namespace NTumbleBit.PuzzleSolver
 
 		public override string ToString()
 		{
-			return "-Fake " + Puzzle.ToString();
+			return "-Fake " + Puzzle;
 		}
 	}
 }
