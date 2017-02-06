@@ -24,6 +24,8 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		}
 
 		private readonly RPCClient _RPCClient;
+		private bool supportReceivedByAddress = true;
+
 		public RPCClient RPCClient
 		{
 			get
@@ -45,6 +47,67 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			if(address == null)
 				return new TransactionInformation[0];
 
+			List<TransactionInformation> results = null;
+			if(supportReceivedByAddress)
+			{
+				try
+				{
+					results = QueryWithListReceivedByAddress(withProof, address);
+				}
+				catch(RPCException)
+				{
+					supportReceivedByAddress = false;
+				}
+			}
+
+			if(results == null)
+				results = QueryWithListTransactions(withProof, address);
+			if(withProof)
+			{
+				foreach(var tx in results.ToList())
+				{
+					MerkleBlock proof = null;
+					var result = RPCClient.SendCommandNoThrows("gettxoutproof", new JArray(tx.Transaction.GetHash().ToString()));
+					if(result == null || result.Error != null)
+					{
+						results.Remove(tx);
+						continue;
+					}
+					proof = new MerkleBlock();
+					proof.ReadWrite(Encoders.Hex.DecodeData(result.ResultString));
+					tx.MerkleProof = proof;
+				}
+			}
+			return results.ToArray();
+		}
+
+		private List<TransactionInformation> QueryWithListReceivedByAddress(bool withProof, BitcoinAddress address)
+		{
+			var result = RPCClient.SendCommand("listreceivedbyaddress", 0, false, true, address.ToString());
+			var transactions = ((JArray)result.Result).OfType<JObject>().Select(o => o["txids"]).OfType<JArray>().SingleOrDefault();
+			if(transactions == null)
+				return null;
+
+			HashSet<uint256> resultsSet = new HashSet<uint256>();
+			List<TransactionInformation> results = new List<TransactionInformation>();
+			foreach(var txIdObj in transactions)
+			{
+				var txId = new uint256(txIdObj.ToString());
+				//May have duplicates
+				if(!resultsSet.Contains(txId))
+				{
+					var tx = GetTransaction(txId);
+					if(tx == null || (withProof && tx.Confirmations == 0))
+						continue;
+					resultsSet.Add(txId);
+					results.Add(tx);
+				}
+			}
+			return results;
+		}
+
+		private List<TransactionInformation> QueryWithListTransactions(bool withProof, BitcoinAddress address)
+		{
 			List<TransactionInformation> results = new List<TransactionInformation>();
 			HashSet<uint256> resultsSet = new HashSet<uint256>();
 			int count = 100;
@@ -82,24 +145,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				if(transactions.Count < count || highestConfirmation >= 1000)
 					break;
 			}
-
-			if(withProof)
-			{
-				foreach(var tx in results.ToList())
-				{
-					MerkleBlock proof = null;
-					var result = RPCClient.SendCommandNoThrows("gettxoutproof", new JArray(tx.Transaction.GetHash().ToString()));
-					if(result == null || result.Error != null)
-					{
-						results.Remove(tx);
-						continue;
-					}
-					proof = new MerkleBlock();
-					proof.ReadWrite(Encoders.Hex.DecodeData(result.ResultString));
-					tx.MerkleProof = proof;
-				}
-			}
-			return results.ToArray();
+			return results;
 		}
 
 		public TransactionInformation GetTransaction(uint256 txId)
