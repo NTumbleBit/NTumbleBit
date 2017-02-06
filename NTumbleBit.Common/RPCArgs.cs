@@ -96,7 +96,7 @@ namespace NTumbleBit.Common
 
 		public static RPCClient ConfigureRPCClient(TextFileConfiguration confArgs, Network network, string prefix= null)
 		{
-			RPCArgs args = Parse(confArgs, network);
+			RPCArgs args = Parse(confArgs, network, prefix);
 			return args.ConfigureRPCClient(network);
 		}
 
