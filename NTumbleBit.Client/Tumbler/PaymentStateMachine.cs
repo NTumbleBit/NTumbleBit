@@ -15,7 +15,7 @@ namespace NTumbleBit.Client.Tumbler
 		public PaymentStateMachine(
 			ClassicTumblerParameters parameters,
 			TumblerClient client,
-			ClientDestinationWallet destinationWallet,
+			IDestinationWallet destinationWallet,
 			ExternalServices services)
 		{
 			Parameters = parameters;
@@ -30,7 +30,7 @@ namespace NTumbleBit.Client.Tumbler
 		public PaymentStateMachine(
 			ClassicTumblerParameters parameters,
 			TumblerClient client,
-			ClientDestinationWallet destinationWallet,
+			IDestinationWallet destinationWallet,
 			ExternalServices services,
 			State state) : this(parameters, client, destinationWallet, services)
 		{
@@ -81,7 +81,7 @@ namespace NTumbleBit.Client.Tumbler
 			get;
 			private set;
 		}
-		public ClientDestinationWallet DestinationWallet
+		public IDestinationWallet DestinationWallet
 		{
 			get;
 			private set;
