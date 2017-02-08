@@ -18,7 +18,7 @@
     },
     "NTumbleBit.TumblerServer": {
       "commandName": "Project",
-      "commandLineArgs": "-port 5000",
+      "commandLineArgs": "-testnet -port 5000",
       "launchBrowser": true,
       "launchUrl": "http://localhost:5000",
       "environmentVariables": {

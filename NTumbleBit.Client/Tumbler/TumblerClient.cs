@@ -4,48 +4,42 @@ using NTumbleBit.Client.Tumbler.Models;
 using NTumbleBit.PuzzlePromise;
 using NTumbleBit.PuzzleSolver;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using DotNetTor.SocksPort;
 
 namespace NTumbleBit.Client.Tumbler
 {
     public class TumblerClient
     {
-		public TumblerClient(Network network, Uri serverAddress)
+		public TumblerClient(Network network, Uri serverAddress, TorParameters torParameters = null)
 		{
 			if(serverAddress == null)
 				throw new ArgumentNullException(nameof(serverAddress));
 			if(network == null)
 				throw new ArgumentNullException(nameof(network));
-			_Address = serverAddress;
-			_Network = network;
-		}
 
-
-		private readonly Network _Network;
-		public Network Network
-		{
-			get
+			if(torParameters != null)
 			{
-				return _Network;
+				Client = new HttpClient(new SocksPortHandler(torParameters.Host, torParameters.SocksPort));
 			}
-		}
-
-
-		private readonly Uri _Address;
-		public Uri Address
-		{
-			get
+			else
 			{
-				return _Address;
+				Client = new HttpClient();
 			}
+
+			Address = serverAddress;
+			Network = network;
+			TorParameters = torParameters;
 		}
 
-	    private static readonly HttpClient Client = new HttpClient();
+		public Network Network { get; }
+		public Uri Address { get; }
+		public TorParameters TorParameters { get; }
+
+	    private static HttpClient Client;
 		public Task<ClassicTumblerParameters> GetTumblerParametersAsync()
 		{
 			return GetAsync<ClassicTumblerParameters>("api/v1/tumblers/0/parameters");
@@ -182,8 +176,6 @@ namespace NTumbleBit.Client.Tumbler
 		{
 			return SendAsync<PuzzleSolver.ServerCommitment[]>(HttpMethod.Post, puzzles, "api/v1/tumblers/0/clientchannels/{0}/{1}/solvepuzzles", cycleId, channelId);
 		}
-
-
 
 		public PuzzlePromise.ServerCommitment[] SignHashes(int cycleId, string channelId, SignaturesRequest sigReq)
 		{

@@ -179,7 +179,7 @@ namespace NTumbleBit.Common
 
 		private T ConvertValue<T>(string str)
 		{
-			if(typeof(T) == typeof(bool))
+			if(typeof(T) == typeof(bool) || typeof(T) == typeof(bool?))
 			{
 				var trueValues = new[] { "1", "true" };
 				var falseValues = new[] { "0", "false" };
@@ -193,7 +193,7 @@ namespace NTumbleBit.Common
 				return (T)(object)new Uri(str, UriKind.Absolute);
 			else if(typeof(T) == typeof(string))
 				return (T)(object)str;
-			else if(typeof(T) == typeof(int))
+			else if(typeof(T) == typeof(int) || typeof(T) == typeof(int?))
 			{
 				return (T)(object)int.Parse(str, CultureInfo.InvariantCulture);
 			}

@@ -20,8 +20,7 @@ namespace NTumbleBit.Client.Tumbler
 			ILogger logger)
 		{
 			Parameters = parameters;
-			AliceClient = client;
-			BobClient = client;
+			Client = client;
 			Services = services;
 			DestinationWallet = destinationWallet;
 			Logger = logger;
@@ -42,11 +41,7 @@ namespace NTumbleBit.Client.Tumbler
 		{
 			get; set;
 		}
-		public TumblerClient BobClient
-		{
-			get; set;
-		}
-		public TumblerClient AliceClient
+		public TumblerClient Client
 		{
 			get; set;
 		}
@@ -61,7 +56,7 @@ namespace NTumbleBit.Client.Tumbler
 		}
 
 		private CancellationToken _Stop;
-		public void Start(CancellationToken cancellation)
+		public void Start(CancellationToken cancellation, TorParameters torParameters = null)
 		{
 			_Stop = cancellation;
 			new Thread(() =>
@@ -101,6 +96,13 @@ namespace NTumbleBit.Client.Tumbler
 							var machine = CreateStateMachine(state);
 							try
 							{
+								if(torParameters != null)
+								{
+									var torControl = new DotNetTor.ControlPort.Client(torParameters.Host, torParameters.ControlPort,
+										torParameters.ControlPortPassword);
+									Logger.LogInformation("Changing TOR identity...");
+									torControl.ChangeCircuitAsync().Wait();
+								}
 								machine.Update(Logger);
 							}
 							catch(Exception ex)
@@ -127,7 +129,7 @@ namespace NTumbleBit.Client.Tumbler
 
 		private PaymentStateMachine CreateStateMachine(PaymentStateMachine.State state)
 		{
-			return new PaymentStateMachine(Parameters, AliceClient, DestinationWallet, Services, state);
+			return new PaymentStateMachine(Parameters, Client, DestinationWallet, Services, state);
 		}
 	}
 }

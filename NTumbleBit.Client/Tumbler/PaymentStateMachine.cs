@@ -2,13 +2,10 @@
 using NTumbleBit.Client.Tumbler.Services;
 using NTumbleBit.PuzzleSolver;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using NBitcoin;
 using NTumbleBit.PuzzlePromise;
 using Microsoft.Extensions.Logging;
-using NTumbleBit.Common;
 using NTumbleBit.Common.Logging;
 
 namespace NTumbleBit.Client.Tumbler
@@ -22,8 +19,10 @@ namespace NTumbleBit.Client.Tumbler
 			ExternalServices services)
 		{
 			Parameters = parameters;
-			AliceClient = client;
-			BobClient = client;
+
+			AliceClient = new TumblerClient(client.Network, client.Address, client.TorParameters);
+			BobClient = new TumblerClient(client.Network, client.Address, client.TorParameters);
+
 			Services = services;
 			DestinationWallet = destinationWallet;
 		}
@@ -158,13 +157,13 @@ namespace NTumbleBit.Client.Tumbler
 			switch(phase)
 			{
 				case CyclePhase.Registration:
-					if(ClientChannelNegotiation == null)
+					if (ClientChannelNegotiation == null)
 					{
 						//Client asks for voucher
 						var voucherResponse = BobClient.AskUnsignedVoucher();
 						//Client ensures he is in the same cycle as the tumbler (would fail if one tumbler or client's chain isn't sync)
 						var tumblerCycle = Parameters.CycleGenerator.GetCycle(voucherResponse.CycleStart);
-						Assert(tumblerCycle.Start == cycle.Start, "invalid-phase");
+						Assert(tumblerCycle.Start == cycle.Start, "Invalid phase. The Tumbler's or the Client's chain may not be fully synced yet.");
 						//Saving the voucher for later
 						StartCycle = cycle.Start;
 						ClientChannelNegotiation = new ClientChannelNegotiation(Parameters, cycle.Start);
@@ -173,7 +172,7 @@ namespace NTumbleBit.Client.Tumbler
 					}
 					break;
 				case CyclePhase.ClientChannelEstablishment:
-					if(ClientChannelNegotiation.Status == TumblerClientSessionStates.WaitingTumblerClientTransactionKey)
+					if (ClientChannelNegotiation.Status == TumblerClientSessionStates.WaitingTumblerClientTransactionKey)
 					{
 						var key = AliceClient.RequestTumblerEscrowKey(cycle.Start);
 						ClientChannelNegotiation.ReceiveTumblerEscrowKey(key.PubKey, key.KeyIndex);
@@ -218,7 +217,7 @@ namespace NTumbleBit.Client.Tumbler
 					}
 					break;
 				case CyclePhase.TumblerChannelEstablishment:
-					if(ClientChannelNegotiation != null && ClientChannelNegotiation.Status == TumblerClientSessionStates.WaitingGenerateTumblerTransactionKey)
+					if (ClientChannelNegotiation != null && ClientChannelNegotiation.Status == TumblerClientSessionStates.WaitingGenerateTumblerTransactionKey)
 					{
 						//Client asks the Tumbler to make a channel
 						var bobEscrowInformation = ClientChannelNegotiation.GetOpenChannelRequest();
