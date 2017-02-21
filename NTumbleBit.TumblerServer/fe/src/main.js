@@ -1,6 +1,7 @@
 ﻿const apiUri = "http://" + window.location.hostname +":" + window.location.port + "/api"
 const solverServerSessionStatesUri = "/SolverServerSessionStates";
 const promiseServerSessionStatesUri = "/PromiseServerSessionStates";
+const cycleStateUri = "/Cycles";
 const blockHeightUri = "/BlockHeight";
 const feeUri = "/Fee";
 const denominationUri = "/Denomination";
@@ -25,6 +26,7 @@ const promiseServerSessionStates = {
 
 let solvers = [];
 let promises = [];
+let cycles = [];
 
 (function poll() {
   fetchEndpoints();
@@ -34,15 +36,10 @@ let promises = [];
 function fetchEndpoints() {
   fetchBlockHeight();
 
-  fetch(apiUri + solverServerSessionStatesUri)
+  fetch(apiUri + cycleStateUri)
     .then(handleErrors)
-    .then((res) => res.json())
-    .then((solvers) => updateInputs(solvers));
-
-  fetch(apiUri + promiseServerSessionStatesUri)
-    .then(handleErrors)
-    .then((res) => res.json())
-    .then((promises) => updateOutputs(promises));
+    .then(res => res.json())
+    .then(cycles => updateInputs(cycles));
 }
 
 (function fetchDenomination() {

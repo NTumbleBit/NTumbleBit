@@ -243,3 +243,6 @@ ModelManifest.xml
 Tumbler.pem
 Seed.dat
 TestData/
+
+# Front end
+node_modules
