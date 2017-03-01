@@ -149,32 +149,38 @@ namespace NTumbleBit.Common
 			return values.ToArray();
 		}
 
-		private Dictionary<string, string> _Aliases = new Dictionary<string, string>();
+		private List<Tuple<string, string>> _Aliases = new List<Tuple<string, string>>();
 
 		public void AddAlias(string from, string to)
 		{
 			from = NormalizeKey(from);
 			to = NormalizeKey(to);
-			_Aliases.Add(from, to);
+			_Aliases.Add(Tuple.Create(from, to));
 		}
 		public T GetOrDefault<T>(string key, T defaultValue)
 		{
 			key = NormalizeKey(key);
-			string alias = null;
-			if(_Aliases.TryGetValue(key, out alias))
+
+			var aliases = _Aliases
+				.Where(a => a.Item1 == key || a.Item2 == key)
+				.Select(a => a.Item1 == key ? a.Item2 : a.Item1)
+				.ToList();
+			aliases.Insert(0, key);
+
+			foreach(var alias in aliases)
 			{
-				key = alias;
+				List<string> values;
+				if(!_Args.TryGetValue(alias, out values))
+					continue;
+				if(values.Count == 0)
+					continue;
+				try
+				{
+					return ConvertValue<T>(values[0]);
+				}
+				catch(FormatException) { throw new ConfigurationException("Key " + key + " should be of type " + typeof(T).Name); }
 			}
-			List<string> values;
-			if(!_Args.TryGetValue(key, out values))
-				return defaultValue;
-			if(values.Count == 0)
-				return defaultValue;
-			try
-			{
-				return ConvertValue<T>(values[0]);
-			}
-			catch(FormatException) { throw new ConfigurationException("Key " + key + " should be of type " + typeof(T).Name); }
+			return defaultValue;
 		}
 
 		private T ConvertValue<T>(string str)
