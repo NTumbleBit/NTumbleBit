@@ -41,7 +41,7 @@ namespace NTumbleBit.Common
 				if(isParamName)
 				{
 					var splitted = arg.Split('=');
-					if(splitted.Length < 1)
+					if(splitted.Length > 1)
 					{
 						var value = String.Join("=", splitted.Skip(1).ToArray());
 						flushNoValueParam();
