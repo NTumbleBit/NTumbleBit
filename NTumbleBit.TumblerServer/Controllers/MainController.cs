@@ -85,6 +85,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 			var cycleParameters = Parameters.CycleGenerator.GetRegistratingCycle(height);
 			BobServerChannelNegotiation session = CreateBobServerChannelNegotiation(cycleParameters.Start);
 			return session.GenerateUnsignedVoucher();
+			// REGISTER BOBBY AS ACCEPTING WHO PINGED THIS SHIZNIT
 		}
 
 
@@ -98,6 +99,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 			if(!cycle.IsInPhase(CyclePhase.ClientChannelEstablishment, height))
 				return BadRequest("incorrect-phase");
 			return Json(new TumblerEscrowKeyResponse { PubKey = key.PubKey, KeyIndex = keyIndex });
+			// REGISTER ALICE AS ACCEPTING
 		}
 
 		[HttpPost("api/v1/tumblers/0/clientchannels/confirm")]
@@ -133,6 +135,8 @@ namespace NTumbleBit.TumblerServer.Controllers
 				var confirmations = Services.BlockExplorerService.GetBlockConfirmations(request.MerkleProof.Header.GetHash());
 				if((confirmations < Parameters.CycleGenerator.FirstCycle.SafetyPeriodDuration))
 					return BadRequest("not-enough-confirmation");
+
+				// ALICE CONFIRMED
 
 				Services.BlockExplorerService.Track($"Cycle {cycle.Start} Client Escrow", expectedTxOut.ScriptPubKey);
 				if(!Services.BlockExplorerService.TrackPrunedTransaction(request.Transaction, request.MerkleProof))
@@ -185,6 +189,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 			{
 				return BadRequest("incorrect-voucher");
 			}
+			// Confirm bob
 		}
 
 		private BobServerChannelNegotiation CreateBobServerChannelNegotiation(int cycleStart)
@@ -206,6 +211,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 		{
 			var session = GetPromiseServerSession(cycleId, channelId, CyclePhase.TumblerChannelEstablishment);
 			var proof = session.CheckRevelation(revelation);
+			// Bob attempted close
 			Repository.Save(cycleId, session);
 			return Json(proof);
 		}
@@ -288,6 +294,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 				Services.TrustedBroadcastService.Broadcast($"Cycle {cycle.Start} Client Offer Transaction (planned for: {signedOffer.BroadcastAt})", signedOffer);
 				Services.TrustedBroadcastService.Broadcast($"Cycle {cycle.Start} Tumbler Fulfillment Transaction (planned for: {fulfill.BroadcastAt})", fulfill);
 				return Json(session.GetSolutionKeys());
+				// Alice attempt close
 			}
 			catch(PuzzleException)
 			{

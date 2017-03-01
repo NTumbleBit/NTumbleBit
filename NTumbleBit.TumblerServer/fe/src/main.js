@@ -24,8 +24,8 @@ const promiseServerSessionStates = {
   "Completed": 4
 };
 
-let solvers = [];
-let promises = [];
+const vm = new Vue();
+
 let cycles = [];
 
 (function poll() {
@@ -39,7 +39,7 @@ function fetchEndpoints() {
   fetch(apiUri + cycleStateUri)
     .then(handleErrors)
     .then(res => res.json())
-    .then(cycles => updateInputs(cycles));
+    .then(cycles => updateCycles(cycles));
 }
 
 (function fetchDenomination() {
@@ -63,11 +63,11 @@ function fetchBlockHeight() {
     .then((height) => updateBlockHeight(height));
 }
 
-function handleErrors(response) {
-  if (!response.ok) {
-    throw Error(response.statusText);
+function handleErrors(res) {
+  if (!res.ok) {
+    throw Error(res.statusText);
   }
-  return response;
+  return res;
 }
 
 function updateDenomination(denom) {
@@ -102,6 +102,29 @@ function updateOutputs(promises) {
   ).join('');
 }
 
+var promiseVm = new Vue({
+  props: ['promise']
+});
+var solverVm = new Vue({
+  props: ['solver']
+});
+
+var cycleVm = new Vue({
+  components: {
+    'promise': promiseVm,
+    'solver': solverVm
+  },
+  template: ``
+});
+
+function updateCycles(cycles) {
+  const cyclesDiv = document.querySelector('.cycles ul');
+
+  cyclesDiv.innerHTML = cycles.map(cycle =>
+    genCycleComponent(cycle)
+  ).join('');
+}
+
 function genSolverComponent(solver) {
   const status = solver.status;
   const id = solver.escrowedCoin.scriptPubKey;
@@ -122,6 +145,21 @@ function genPromiseComponent(promise) {
       <p>scriptPubKey: ${id}</p>
       <label>status: ${status}</label>
       <progress value="${promiseServerSessionStates[status]}" max="4">
+    </li>
+  `;
+}
+
+function genCycleComponent(cycle) {
+  const height = cycle.height; 
+  return `
+    <li class="cycle" id="cycle-${height}">
+      <h4>Cycle ${height}</h4>
+      <div class="inputs flex">
+        <ul></ul>
+      </div>
+      <div class="outputs flex">
+        <ul></ul>
+      </div>
     </li>
   `;
 }

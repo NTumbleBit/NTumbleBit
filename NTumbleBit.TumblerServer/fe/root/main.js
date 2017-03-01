@@ -26,8 +26,8 @@ var promiseServerSessionStates = {
   "Completed": 4
 };
 
-var solvers = [];
-var promises = [];
+var vm = new Vue();
+
 var cycles = [];
 
 (function poll() {
@@ -41,7 +41,7 @@ function fetchEndpoints() {
   fetch(apiUri + cycleStateUri).then(handleErrors).then(function (res) {
     return res.json();
   }).then(function (cycles) {
-    return updateInputs(cycles);
+    return updateCycles(cycles);
   });
 }
 
@@ -69,11 +69,11 @@ function fetchBlockHeight() {
   });
 }
 
-function handleErrors(response) {
-  if (!response.ok) {
-    throw Error(response.statusText);
+function handleErrors(res) {
+  if (!res.ok) {
+    throw Error(res.statusText);
   }
-  return response;
+  return res;
 }
 
 function updateDenomination(denom) {
@@ -108,6 +108,29 @@ function updateOutputs(promises) {
   }).join('');
 }
 
+var promiseVm = new Vue({
+  props: ['promise']
+});
+var solverVm = new Vue({
+  props: ['solver']
+});
+
+var cycleVm = new Vue({
+  components: {
+    'promise': promiseVm,
+    'solver': solverVm
+  },
+  template: ""
+});
+
+function updateCycles(cycles) {
+  var cyclesDiv = document.querySelector('.cycles ul');
+
+  cyclesDiv.innerHTML = cycles.map(function (cycle) {
+    return genCycleComponent(cycle);
+  }).join('');
+}
+
 function genSolverComponent(solver) {
   var status = solver.status;
   var id = solver.escrowedCoin.scriptPubKey;
@@ -118,4 +141,9 @@ function genPromiseComponent(promise) {
   var status = promise.status;
   var id = promise.escrowedCoin.scriptPubKey;
   return "\n    <li class=\"promise\">\n      <p>scriptPubKey: " + id + "</p>\n      <label>status: " + status + "</label>\n      <progress value=\"" + promiseServerSessionStates[status] + "\" max=\"4\">\n    </li>\n  ";
+}
+
+function genCycleComponent(cycle) {
+  var height = cycle.height;
+  return "\n    <li class=\"cycle\" id=\"cycle-" + height + "\">\n      <h4>Cycle " + height + "</h4>\n      <div class=\"inputs flex\">\n        <ul></ul>\n      </div>\n      <div class=\"outputs flex\">\n        <ul></ul>\n      </div>\n    </li>\n  ";
 }
