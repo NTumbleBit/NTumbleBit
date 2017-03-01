@@ -22,6 +22,7 @@ namespace NTumbleBit.CLI
 		{
 			Logs.Configure(new FuncLoggerFactory(i => new ConsoleLogger("Configuration", (a, b) => true, false)));
 			var logger = new ConsoleLogger("Configuration", (a, b) => true, false);
+			CancellationTokenSource broadcasterCancel = new CancellationTokenSource();
 			try
 			{
 				var network = args.Contains("-testnet", StringComparer.OrdinalIgnoreCase) ? Network.TestNet :
@@ -49,11 +50,10 @@ namespace NTumbleBit.CLI
 				}
 				var dbreeze = new DBreezeRepository(Path.Combine(dataDir, "db"));
 
-
 				var services = ExternalServices.CreateFromRPCClient(rpc, dbreeze);
-				CancellationTokenSource source = new CancellationTokenSource();
+				
 				var broadcaster = new BroadcasterJob(services, logger);
-				broadcaster.Start(source.Token);
+				broadcaster.Start(broadcasterCancel.Token);
 				Logs.Configuration.LogInformation("Monitor started");
 
 				if(!onlymonitor)
@@ -112,12 +112,12 @@ namespace NTumbleBit.CLI
 					}
 					var destinationWallet = new ClientDestinationWallet("", pubKey, keypath, dbreeze);
 					var stateMachine = new StateMachinesExecutor(parameters, client, destinationWallet, services, dbreeze, logger);
-					stateMachine.Start(source.Token);
+					stateMachine.Start(broadcasterCancel.Token);
 					Logs.Configuration.LogInformation("State machines started");
 				}
 				Logs.Configuration.LogInformation("Press enter to stop");
 				Console.ReadLine();
-				source.Cancel();
+				broadcasterCancel.Cancel();
 			}
 			catch(ConfigException ex)
 			{
@@ -128,6 +128,11 @@ namespace NTumbleBit.CLI
 			{
 				Logs.Configuration.LogError(ex.Message);
 				Logs.Configuration.LogDebug(ex.StackTrace);
+			}
+			finally
+			{
+				if(!broadcasterCancel.IsCancellationRequested)
+					broadcasterCancel.Cancel();
 			}
 		}
 
