@@ -245,4 +245,7 @@ Seed.dat
 TestData/
 
 # Front end
+.DS_Store
 node_modules
+/*.log
+lib/
