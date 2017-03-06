@@ -1,9 +1,7 @@
 import 'babel-polyfill'
 import 'isomorphic-fetch'
 
-import { APP_CONTAINER_SELECTOR, TUMBLER_SERVER_PORT } from '../shared/config'
-
-document.querySelector(APP_CONTAINER_SELECTOR).innerHTML = '<h1>HEllo wp</h1'
+import { TUMBLER_SERVER_PORT } from '../shared/config'
 
 const apiUri = `http://${window.location.hostname}:${TUMBLER_SERVER_PORT}/api`
 const cycleStateUri = '/Cycles'

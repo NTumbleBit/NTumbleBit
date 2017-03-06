@@ -32,7 +32,7 @@ namespace NTumbleBit.TumblerServer
 					.AllowAnyHeader()
 					.AllowAnyMethod()
 					.AllowAnyOrigin()
-					.AllowCredentials();
+					.AllowCredentials()
 			));
 			services.AddSingleton<IObjectModelValidator, NoObjectModelValidator>();
 			services.AddMvcCore(o => o.Filters.Add(new ActionResultExceptionFilter()))
@@ -62,7 +62,7 @@ namespace NTumbleBit.TumblerServer
 			builder.AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true);
 			Configuration = builder.Build();
 
-			app.UseCors("AllowAnyOrigin	");
+			app.UseCors("AllowAnyOrigin");
 			app.UseMvc();
 			app.UseDefaultFiles();
 			app.UseStaticFiles(new StaticFileOptions()

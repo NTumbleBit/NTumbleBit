@@ -1,5 +1,5 @@
 {
-  "name": "TumblerServer-GUI",
+  "name": "TumblerServer-UI",
   "license": "MIT",
   "scripts": {
     "start": "yarn dev:start",

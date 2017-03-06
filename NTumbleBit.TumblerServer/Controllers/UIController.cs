@@ -16,9 +16,9 @@ using Microsoft.AspNetCore.Cors;
 namespace NTumbleBit.TumblerServer.Controllers
 {
 	[EnableCors("AllowAnyOrigin")]
-	public class GUIController : Controller
+	public class UIController : Controller
 	{
-		public GUIController(TumblerConfiguration configuration, ClassicTumblerRepository repo, ClassicTumblerParameters parameters, ExternalServices services)
+		public UIController(TumblerConfiguration configuration, ClassicTumblerRepository repo, ClassicTumblerParameters parameters, ExternalServices services)
 		{
 			if (configuration == null)
 				throw new ArgumentNullException(nameof(configuration));

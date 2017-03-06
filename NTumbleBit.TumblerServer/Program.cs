@@ -27,7 +27,6 @@ namespace NTumbleBit.TumblerServer
 			{
 				var host = new WebHostBuilder()
 				.UseKestrel()
-				.UseWebRoot("fe/root")
 				.UseAppConfiguration(configuration)
 				.UseContentRoot(Directory.GetCurrentDirectory())
 				.UseIISIntegration()
