@@ -1,4 +1,5 @@
 import 'babel-polyfill'
+import 'isomorphic-fetch'
 
 import { APP_CONTAINER_SELECTOR, TUMBLER_SERVER_PORT } from '../shared/config'
 
