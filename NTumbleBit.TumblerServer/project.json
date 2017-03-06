@@ -18,7 +18,8 @@
         "NBitcoin": "3.0.1.9",
         "NTumbleBit.Common": "1.0.0-*",
         "Microsoft.AspNetCore.StaticFiles": "1.0.0",
-        "Microsoft.Extensions.Configuration.Json": "1.0.0"
+      "Microsoft.Extensions.Configuration.Json": "1.0.0",
+      "Microsoft.AspNetCore.Cors": "1.1.0"
     },
 
     "tools": {

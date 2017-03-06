@@ -11,11 +11,13 @@ using System.Net;
 using NBitcoin;
 using NTumbleBit.TumblerServer.Services;
 using NBitcoin.Crypto;
+using Microsoft.AspNetCore.Cors;
 
 // For more information on enabling Web API for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace NTumbleBit.TumblerServer.Controllers
 {
+	[DisableCors]
 	public class MainController : Controller
 	{
 		public MainController(TumblerConfiguration configuration, ClassicTumblerRepository repo, ClassicTumblerParameters parameters, ExternalServices services)

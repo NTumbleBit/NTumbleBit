@@ -17,6 +17,7 @@ using Microsoft.Extensions.Options;
 using NBitcoin.RPC;
 using NTumbleBit.ClassicTumbler;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using Microsoft.AspNetCore.Cors.Infrastructure;
 
 namespace NTumbleBit.TumblerServer
 {
@@ -26,6 +27,13 @@ namespace NTumbleBit.TumblerServer
 		// For more information on how to configure your application, visit http://go.microsoft.com/fwlink/?LinkID=398940
 		public void ConfigureServices(IServiceCollection services)
 		{
+			services.AddCors(o => o.AddPolicy("AllowAnyOrigin", builder =>
+				builder
+					.AllowAnyHeader()
+					.AllowAnyMethod()
+					.AllowAnyOrigin()
+					.AllowCredentials();
+			));
 			services.AddSingleton<IObjectModelValidator, NoObjectModelValidator>();
 			services.AddMvcCore(o => o.Filters.Add(new ActionResultExceptionFilter()))
 				.AddJsonFormatters()
@@ -54,6 +62,7 @@ namespace NTumbleBit.TumblerServer
 			builder.AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true);
 			Configuration = builder.Build();
 
+			app.UseCors("AllowAnyOrigin	");
 			app.UseMvc();
 			app.UseDefaultFiles();
 			app.UseStaticFiles(new StaticFileOptions()

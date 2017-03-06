@@ -249,3 +249,4 @@ TestData/
 node_modules
 /*.log
 lib/
+dist/

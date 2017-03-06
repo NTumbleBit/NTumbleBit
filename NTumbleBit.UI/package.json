@@ -3,17 +3,20 @@
   "license": "MIT",
   "scripts": {
     "start": "yarn dev:start",
-    "dev:start": "nodemon --ignore lib --exec babel-node src/server",
+    "dev:start": "nodemon --ignore lib --ignore dist --exec babel-node src/server",
+    "dev:wds": "webpack-dev-server --progress",
     "prod:build": "rimraf lib && babel src -d lib --copy-files",
     "prod:start": "cross-env NODE_ENV=production pm2 start lib/server && pm2 logs",
     "prod:stop": "pm2 delete all",
-    "lint": "eslint src",
+    "lint": "eslint src webpack.config.babel.js --ext .js,.jsx",
     "fix": "eslint src --fix",
     "precommit": "yarn lint",
     "prepush": "yarn lint && yarn prod:build"
   },
   "devDependencies": {
     "babel-cli": "^6.23.0",
+    "babel-core": "^6.23.1",
+    "babel-loader": "^6.4.0",
     "babel-preset-env": "^1.2.0",
     "cross-env": "^3.2.3",
     "eslint": "^3.17.0",
@@ -23,9 +26,12 @@
     "husky": "^0.13.2",
     "nodemon": "^1.11.0",
     "pm2": "^2.4.2",
-    "rimraf": "^2.6.1"
+    "rimraf": "^2.6.1",
+    "webpack": "^2.2.1",
+    "webpack-dev-server": "^2.4.1"
   },
   "dependencies": {
+    "babel-polyfill": "^6.23.0",
     "compression": "^1.6.2",
     "express": "^4.15.2"
   }

@@ -9,11 +9,13 @@ using NTumbleBit.PuzzlePromise;
 using NBitcoin;
 using NTumbleBit.PuzzleSolver;
 using static NTumbleBit.TumblerServer.Services.RPCServices.RPCBroadcastService;
+using Microsoft.AspNetCore.Cors;
 
 // For more information on enabling Web API for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace NTumbleBit.TumblerServer.Controllers
 {
+	[EnableCors("AllowAnyOrigin")]
 	public class GUIController : Controller
 	{
 		public GUIController(TumblerConfiguration configuration, ClassicTumblerRepository repo, ClassicTumblerParameters parameters, ExternalServices services)

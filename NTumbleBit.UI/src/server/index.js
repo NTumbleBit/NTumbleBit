@@ -17,5 +17,5 @@ app.get('/', (req, res) => {
 
 app.listen(WEB_PORT, () => {
   // eslint-disable-next-line no-console
-  console.log(`Magic happens on port ${WEB_PORT} ${isProd ? '(production)' : '(development)'}.`)
+  console.log(`Magic happens on port ${WEB_PORT} ${isProd ? '(production)' : '(development). \nKeep "yarn dev:wds" running in another terminal'}.`)
 })

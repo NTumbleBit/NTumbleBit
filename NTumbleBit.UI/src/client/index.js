@@ -1,5 +1,10 @@
-const apiUri = `http://${window.location.hostname}:${window.location.port}/api`
+import 'babel-polyfill'
 
+import { APP_CONTAINER_SELECTOR, TUMBLER_SERVER_PORT } from '../shared/config'
+
+document.querySelector(APP_CONTAINER_SELECTOR).innerHTML = '<h1>HEllo wp</h1'
+
+const apiUri = `http://${window.location.hostname}:${TUMBLER_SERVER_PORT}/api`
 const cycleStateUri = '/Cycles'
 const blockHeightUri = '/BlockHeight'
 const feeUri = '/Fee'
@@ -53,16 +58,20 @@ function updateBlockHeight(height) {
 
 function updateCycles(cycles) {
   const cyclesDiv = document.querySelector('.cycles ul')
-
-  cyclesDiv.innerHTML = cycles.map(cycle =>
-    genCycleComponent(cycle),
-  ).join('')
+  cyclesDiv.innerHTML = cycles.map(cycle => genCycleComponent(cycle)).join('')
 }
 
 // Fetch data ------------------------------------------------------
 
+const getReqInit = {
+  method: 'get',
+  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+  mode: 'cors',
+  cache: 'default',
+}
+
 function fetchBlockHeight() {
-  fetch(apiUri + blockHeightUri)
+  fetch(apiUri + blockHeightUri, getReqInit)
     .then(handleErrors)
     .then(res => res.json())
     .then(height => updateBlockHeight(height))
@@ -71,7 +80,7 @@ function fetchBlockHeight() {
 function fetchEndpoints() {
   fetchBlockHeight()
 
-  fetch(apiUri + cycleStateUri)
+  fetch(apiUri + cycleStateUri, getReqInit)
     .then(handleErrors)
     .then(res => res.json())
     .then(cycles => updateCycles(cycles))
@@ -85,12 +94,14 @@ function fetchEndpoints() {
 
 // Denom & Fee only get called once
 ;(function fetchDenomination() {
-  fetch(apiUri + denominationUri)
+  fetch(apiUri + denominationUri, getReqInit)
   .then(handleErrors)
     .then(res => res.json())
     .then(denom => updateDenomination(denom))
-}())(function fetchFee() {
-  fetch(apiUri + feeUri)
+}())
+
+;(function fetchFee() {
+  fetch(apiUri + feeUri, getReqInit)
     .then(handleErrors)
     .then(res => res.json())
     .then(fee => updateFee(fee))
