@@ -22,13 +22,13 @@ namespace NTumbleBit.TumblerServer.Controllers
 	{
 		public MainController(TumblerConfiguration configuration, ClassicTumblerRepository repo, ClassicTumblerParameters parameters, ExternalServices services)
 		{
-			if(configuration == null)
+			if (configuration == null)
 				throw new ArgumentNullException(nameof(configuration));
-			if(parameters == null)
+			if (parameters == null)
 				throw new ArgumentNullException(nameof(parameters));
-			if(services == null)
+			if (services == null)
 				throw new ArgumentNullException(nameof(services));
-			if(repo == null)
+			if (repo == null)
 				throw new ArgumentNullException(nameof(repo));
 			_Tumbler = configuration;
 			_Repository = repo;

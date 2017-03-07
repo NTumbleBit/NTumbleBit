@@ -19,8 +19,8 @@ namespace NTumbleBit.TumblerServer.Controllers
 	public class UIController : Controller
 	{
 		public UIController(TumblerConfiguration configuration,
-							ClassicTumblerRepository repo, 
-							ClassicTumblerParameters parameters, 
+							ClassicTumblerRepository repo,
+							ClassicTumblerParameters parameters,
 							ExternalServices services,
 							ClassicTumblerState state)
 		{
