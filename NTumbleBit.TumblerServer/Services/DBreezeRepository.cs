@@ -90,7 +90,7 @@ namespace NTumbleBit.Client.Tumbler.Services
 			}
 		}
 
-		public T[] List<T>(string partitionKey)
+		public List<T> List<T>(string partitionKey)
 		{
 			lock(_EnginesByParitionKey)
 			{
@@ -103,7 +103,7 @@ namespace NTumbleBit.Client.Tumbler.Services
 						result.Add(Serializer.ToObject<T>(Encoding.UTF8.GetString(row.Value)));
 					}
 				}
-				return result.ToArray();
+				return result;
 			}
 		}
 

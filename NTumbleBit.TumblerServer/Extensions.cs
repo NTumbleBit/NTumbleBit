@@ -74,6 +74,11 @@ namespace NTumbleBit.TumblerServer
 				});
 				services.AddSingleton((provider) =>
 				{
+					var repo = provider.GetRequiredService<ClassicTumblerRepository>();
+					return new ClassicTumblerState(repo);
+				});
+				services.AddSingleton((provider) =>
+				{
 					var conf = configuration ?? new TumblerConfiguration().LoadArgs(new string[0]);
 
 					var rsaFile = Path.Combine(conf.DataDir, "Tumbler.pem");

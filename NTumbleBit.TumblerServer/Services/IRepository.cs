@@ -12,7 +12,7 @@ namespace NTumbleBit.Client.Tumbler.Services
 	public interface IRepository
 	{
 		void UpdateOrInsert<T>(string partitionKey, string rowKey, T data, Func<T, T, T> update);
-		T[] List<T>(string partitionKey);
+		List<T> List<T>(string partitionKey);
         List<string> ListPartitionKeys();
 		void Delete<T>(string partitionKey, string rowKey);
 		void Delete(string partitionKey);

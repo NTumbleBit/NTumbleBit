@@ -18,7 +18,11 @@ namespace NTumbleBit.TumblerServer.Controllers
 	[EnableCors("AllowAnyOrigin")]
 	public class UIController : Controller
 	{
-		public UIController(TumblerConfiguration configuration, ClassicTumblerRepository repo, ClassicTumblerParameters parameters, ExternalServices services)
+		public UIController(TumblerConfiguration configuration,
+							ClassicTumblerRepository repo, 
+							ClassicTumblerParameters parameters, 
+							ExternalServices services,
+							ClassicTumblerState state)
 		{
 			if (configuration == null)
 				throw new ArgumentNullException(nameof(configuration));
@@ -28,10 +32,13 @@ namespace NTumbleBit.TumblerServer.Controllers
 				throw new ArgumentNullException(nameof(services));
 			if (repo == null)
 				throw new ArgumentNullException(nameof(repo));
+			if (state == null)
+				throw new ArgumentNullException(nameof(state));
 			_Tumbler = configuration;
 			_Repository = repo;
 			_Parameters = parameters;
 			_Services = services;
+			_State = state;
 		}
 
 		private readonly ExternalServices _Services;
@@ -71,6 +78,15 @@ namespace NTumbleBit.TumblerServer.Controllers
 			}
 		}
 
+		private readonly ClassicTumblerState _State;
+		public ClassicTumblerState State
+		{
+			get
+			{
+				return _State;
+			}
+		}
+
 		[HttpGet("api/Denomination")]
 		public Money GetDenomination()
 		{
@@ -89,28 +105,16 @@ namespace NTumbleBit.TumblerServer.Controllers
 			return Services.BlockExplorerService.GetCurrentHeight();
 		}
 
-		[HttpGet("api/Cycles")]
-		public List<ClassicTumblerCycle> GetCycleStates()
+		[HttpGet("api/Tumbles")]
+		public List<ClassicTumble> GetCycleStates()
 		{
-			List<ClassicTumblerCycle> cycles = new List<ClassicTumblerCycle>();
-			IRepository repo = Repository.Repository;
-			List<string> keys = repo.ListPartitionKeys().Where(x => x.Contains("Cycle")).ToList();
-			foreach (var key in keys)
-			{
-				cycles.Add(new ClassicTumblerCycle(
-					key.Substring(key.LastIndexOf("_")+1),
-					repo.List<SolverServerSession.State>(key),
-					repo.List<PromiseServerSession.State>(key)
-				));
-			}
-			return cycles;
-
+			return State.Tumbles;
 		}
 
 		[HttpGet("api/SolverServerSessionStates")]
-		public Dictionary<string, SolverServerSession.State[]> GetSolverServerSessionStates()
+		public Dictionary<string, List<SolverServerSession.State>> GetSolverServerSessionStates()
 		{
-			Dictionary<string, SolverServerSession.State[]> states = new Dictionary<string, SolverServerSession.State[]> { };
+			Dictionary<string, List<SolverServerSession.State>> states = new Dictionary<string, List<SolverServerSession.State>> { };
 			IRepository repo = Repository.Repository;
 			List<string> keys = repo.ListPartitionKeys().Where(s => s.Contains("Cycle")).ToList();
 			foreach (var key in keys)
@@ -121,14 +125,14 @@ namespace NTumbleBit.TumblerServer.Controllers
 		}
 
 		[HttpGet("api/PromiseServerSessionStates")]
-		public List<PromiseServerSession.State> GetPromiseServerSessionStates()
+		public Dictionary<string, List<PromiseServerSession.State>> GetPromiseServerSessionStates()
 		{
-			List<PromiseServerSession.State> states = new List<PromiseServerSession.State> { };
+			Dictionary<string, List<PromiseServerSession.State>> states = new Dictionary<string, List<PromiseServerSession.State>> { };
 			IRepository repo = Repository.Repository;
 			List<string> keys = repo.ListPartitionKeys().Where(s => s.Contains("Cycle")).ToList();
 			foreach (var key in keys)
 			{
-				states.AddRange(repo.List<PromiseServerSession.State>(key));
+				states.Add(key, repo.List<PromiseServerSession.State>(key));
 			}
 			return states;
 		}

@@ -87,7 +87,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 			var cycleParameters = Parameters.CycleGenerator.GetRegistratingCycle(height);
 			BobServerChannelNegotiation session = CreateBobServerChannelNegotiation(cycleParameters.Start);
 			return session.GenerateUnsignedVoucher();
-			// REGISTER BOBBY AS ACCEPTING WHO PINGED THIS SHIZNIT
+			// REGISTER BOB AS ACCEPTING
 		}
 
 
@@ -199,6 +199,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 			return new BobServerChannelNegotiation(Parameters, Tumbler.TumblerKey, Tumbler.VoucherKey, cycleStart);
 		}
 
+		// Tumbler Sign
 		[HttpPost("api/v1/tumblers/0/channels/{cycleId}/{channelId}/signhashes")]
 		public IActionResult SignHashes(int cycleId, string channelId, [FromBody]SignaturesRequest sigReq)
 		{
