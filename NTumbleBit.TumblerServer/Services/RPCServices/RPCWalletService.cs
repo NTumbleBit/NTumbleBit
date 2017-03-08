@@ -58,13 +58,15 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				new JProperty("changeAddress", changeAddress.ToString()),
 			});
 			if(result.Error != null)
-				return null;
+			{
+				if(result.Error.Message.Equals("Insufficient funds", StringComparison.OrdinalIgnoreCase))
+					return null;
+				result.ThrowIfError();
+			}
 			var jobj = (JObject)result.Result;
 			var hex = jobj["hex"].Value<string>();
 			tx = new Transaction(hex);
-			result = _RPCClient.SendCommandNoThrows("signrawtransaction", tx.ToHex());
-			if(result.Error != null)
-				return null;
+			result = _RPCClient.SendCommand("signrawtransaction", tx.ToHex());
 			jobj = (JObject)result.Result;
 			hex = jobj["hex"].Value<string>();
 			return new Transaction(hex);
