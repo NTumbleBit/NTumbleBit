@@ -61,6 +61,28 @@ namespace NTumbleBit.TumblerServer
 			});
 		}
 
+		public void Save(int cycleId, AlicePaymentChannel channel)
+		{
+			Repository.UpdateOrInsert(GetTumblePartition(cycleId), cycleId.ToString(), channel, (o, n) =>
+			{
+				if (o.ETag != n.ETag)
+					throw new InvalidOperationException("Optimistic concurrency failure");
+				n.ETag++;
+				return n;
+			});
+		}
+
+		public void Save(int cycleId, BobPaymentChannel channel)
+		{
+			Repository.UpdateOrInsert(GetTumblePartition(cycleId), cycleId.ToString(), channel, (o, n) =>
+			{
+				if (o.ETag != n.ETag)
+					throw new InvalidOperationException("Optimistic concurrency failure");
+				n.ETag++;
+				return n;
+			});
+		}
+
 		public PromiseServerSession GetPromiseServerSession(int cycleId, string id)
 		{
 			var session = Repository.Get<PromiseServerSession.State>(GetCyclePartition(cycleId), id);
@@ -117,6 +139,11 @@ namespace NTumbleBit.TumblerServer
 		private static string GetCyclePartition(int cycleId)
 		{
 			return "Cycle_" + cycleId;
+		}
+
+		private static string GetTumblePartition(int cycleId)
+		{
+			return "Tumble_" + cycleId;
 		}
 
 		public bool MarkUsedNonce(int cycle, uint160 nonce)
