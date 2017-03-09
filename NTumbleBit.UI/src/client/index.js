@@ -4,7 +4,7 @@ import 'isomorphic-fetch'
 import { TUMBLER_SERVER_PORT } from '../shared/config'
 
 const apiUri = `http://${window.location.hostname}:${TUMBLER_SERVER_PORT}/api`
-const cycleStateUri = '/Cycles'
+const cycleStateUri = '/Tumbles'
 const blockHeightUri = '/BlockHeight'
 const feeUri = '/Fee'
 const denominationUri = '/Denomination'
@@ -22,16 +22,41 @@ function handleErrors(res) {
 
 // component generators ---------------------------------------------
 
+function genAliceComponent(alice) {
+  return `
+    <li class='alice'>
+      <h4>${alice.txId || 'unconfirmed'}</h4>
+      <p>Status: ${alice.status}</p>
+    </li>
+  `
+}
+
+function genBobComponent(bob) {
+  return `
+    <li class='bob'>
+      <h4>${bob.txId || 'unconfirmed'}</h4>
+      <p>Status: ${bob.status}</p>
+    </li>
+  `
+}
+
 function genCycleComponent(cycle) {
-  const height = cycle.height
+  const height = cycle.cycle
+  const aliceComponents = cycle.alices.map(alice => genAliceComponent(alice)).join('')
+  const bobComponents = cycle.bobs.map(bob => genBobComponent(bob)).join('')
+
   return `
     <li class='cycle' id='cycle-${height}'>
-      <h4>Cycle ${height}</h4>
-      <div class='inputs flex'>
-        <ul></ul>
-      </div>
-      <div class='outputs flex'>
-        <ul></ul>
+      <h4 class='cycle-title'>Cycle ${height}</h4>
+      <div class='channels'>
+        <div class='alices flex'>
+          <h5>Alices</h5>
+          <ul>${aliceComponents}</ul>
+        </div>
+        <div class='bobs flex'>
+          <h5>Bobs</h5>
+          <ul>${bobComponents}</ul>
+        </div>
       </div>
     </li>
   `

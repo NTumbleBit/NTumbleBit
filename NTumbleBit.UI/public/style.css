@@ -1,4 +1,4 @@
-﻿html {
+html {
   height: 100%;
   box-sizing: border-box;
 }
@@ -27,26 +27,56 @@ body {
 header {
   padding: 16px 0;
 }
+
 h1, h2, h3, h4, h5, h6,
 p, ul {
-  margin: 0;
+  margin: 0 0 8px;
 }
 
 .content {
   padding-top: 32px;
 }
 
+.cycle {
+  margin: 0 auto 8px;
+  padding: 8px;
+  background: #efefef;
+}
+
+.cycle-title {
+  background: #fff;
+  display: inline-block;
+  position: relative;
+  margin-top: -20px;
+  clear: both;
+  border-radius: 4px;
+  box-shadow: 1px 1px 2px #ccc;
+}
+
 .channels {
-  margin: 0 auto;
   flex: 1;
   display: flex;
   justify-content: space-between;
 }
-/* spacebetween possible */
-.inputs,
-.outputs {
+
+.alices,
+.bobs {
   flex-grow: 1;
+  width: 0;
   justify-content: space-between;
+  margin-right: 8px;
+}
+
+.alices:last-child,
+.bobs:last-child {
+  margin-right: 0;
+}
+
+.alice,
+.bob {
+  box-sizing: border-box;
+  padding: 8px;
+  background-color: #ddd;
 }
 
 ul {
