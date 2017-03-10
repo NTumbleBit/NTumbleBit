@@ -16,6 +16,16 @@ This implementation is compatible with .NETCore 1.1 (as of today counter intuiti
 
 You need to install dotnet core on your system as instructed on [.NET Core installation guide](https://www.microsoft.com/net/core).
 
+On Linux or Mac, if you get the error `warning : Unable to find a project to restore!` please run:
+```
+apt-get install dotnet-dev-1.0.0-preview2.1-003177
+```
+
+On Windows, if you have the same error, please install:
+```
+https://go.microsoft.com/fwlink/?LinkID=835014
+```
+
 You will also need a synchronized Bitcoin Full node (pruned nodes also work), with the RPC server running.
 
 ##Project status
