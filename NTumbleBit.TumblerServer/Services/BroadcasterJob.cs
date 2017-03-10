@@ -77,7 +77,6 @@ namespace NTumbleBit.Client.Tumbler.Services
 							catch(Exception ex)
 							{
 								Logger.LogError("Error while running Broadcaster: " + ex.ToString());
-								Logger.LogDebug(ex.StackTrace);
 							}
 							try
 							{
@@ -90,7 +89,6 @@ namespace NTumbleBit.Client.Tumbler.Services
 							catch(Exception ex)
 							{
 								Logger.LogError("Error while running TrustedBroadcaster: " + ex.ToString());
-								Logger.LogDebug(ex.StackTrace);
 							}
 						}
 					}

@@ -66,14 +66,16 @@ namespace NTumbleBit.Client.Tumbler
 			_Stop = cancellation;
 			new Thread(() =>
 			{
-				try
+
+				int lastHeight = 0;
+				int lastCycle = 0;
+				while(true)
 				{
-					int lastHeight = 0;
-					int lastCycle = 0;
-					while(true)
+					try
 					{
 						_Stop.WaitHandle.WaitOne(5000);
-						_Stop.ThrowIfCancellationRequested();
+						if(_Stop.IsCancellationRequested)
+							break;
 
 						var height = Services.BlockExplorerService.GetCurrentHeight();
 						if(height == lastHeight)
@@ -105,14 +107,17 @@ namespace NTumbleBit.Client.Tumbler
 							}
 							catch(Exception ex)
 							{
-								Logger.LogError("Error while executing state machine " + machine.StartCycle + ": " + ex.Message);
-								Logger.LogDebug(ex.StackTrace);
+								Logger.LogError("Error while executing state machine " + machine.StartCycle + ": " + ex.ToString());
 							}
 							Save(machine, machine.StartCycle);
 						}
 					}
+					catch(Exception ex)
+					{
+						Logger.LogError("Uncaught exception StateMachineExecutor : " + ex.ToString());
+						Thread.Sleep(5000);
+					}
 				}
-				catch(OperationCanceledException) { }
 			}).Start();
 		}
 
