@@ -8,6 +8,12 @@ const renderApp = title =>
   <title>${title}</title>
   <meta charset="utf-8" />
   <link href="${STATIC_PATH}/style.css" rel="stylesheet"></link>
+  <link rel="apple-touch-icon" sizes="180x180" href="${STATIC_PATH}/favicon/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="${STATIC_PATH}/favicon/favicon-32x32.png" sizes="32x32">
+  <link rel="icon" type="image/png" href="${STATIC_PATH}/favicon/favicon-16x16.png" sizes="16x16">
+  <link rel="manifest" href="${STATIC_PATH}/favicon/manifest.json">
+  <link rel="mask-icon" href="${STATIC_PATH}/favicon/safari-pinned-tab.svg" color="#ee9f20">
+  <meta name="theme-color" content="#ffffff">
 </head>
 <body>
   <div class="${APP_CONTAINER_CLASS}">
