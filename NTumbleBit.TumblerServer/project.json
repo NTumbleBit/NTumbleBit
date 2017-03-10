@@ -16,7 +16,7 @@
         "Microsoft.AspNetCore.Mvc.ViewFeatures": "1.0.1",
         "Microsoft.Extensions.Configuration.CommandLine": "1.0.0",
         "Microsoft.Extensions.Configuration.Binder": "1.0.0",
-        "NBitcoin": "3.0.1.9"
+        "NBitcoin": "3.0.2.6"
     },
 
     "tools": {

@@ -76,7 +76,7 @@ namespace NTumbleBit.Client.Tumbler.Services
 							}
 							catch(Exception ex)
 							{
-								Logger.LogError("Error while running Broadcaster: " + ex.Message);
+								Logger.LogError("Error while running Broadcaster: " + ex.ToString());
 								Logger.LogDebug(ex.StackTrace);
 							}
 							try
@@ -89,7 +89,7 @@ namespace NTumbleBit.Client.Tumbler.Services
 							}
 							catch(Exception ex)
 							{
-								Logger.LogError("Error while running TrustedBroadcaster: " + ex.Message);
+								Logger.LogError("Error while running TrustedBroadcaster: " + ex.ToString());
 								Logger.LogDebug(ex.StackTrace);
 							}
 						}
@@ -97,8 +97,7 @@ namespace NTumbleBit.Client.Tumbler.Services
 					catch(OperationCanceledException) { return; }
 					catch(Exception ex)
 					{
-						Logger.LogError("Uncatched exception in BroadcasterJob: " + ex.Message);
-						Logger.LogDebug(ex.StackTrace);
+						Logger.LogError("Uncatched exception in BroadcasterJob: " + ex.ToString());
 					}
 				}
 			}).Start();

@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard1.6</TargetFramework>
+    <DefineConstants>$(DefineConstants);CLIENT</DefineConstants>
+    <AssemblyName>NTumbleBit.Client</AssemblyName>
+    <PackageId>NTumbleBit.Client</PackageId>
+    <NetStandardImplicitPackageVersion>1.6.0</NetStandardImplicitPackageVersion>
+    <PackageTargetFallback>$(PackageTargetFallback);dnxcore50</PackageTargetFallback>
+    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
+    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
+    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\NTumbleBit.TumblerServer\Models\*.cs;..\NTumbleBit.TumblerServer\JsonConverters\*.cs;..\NTumbleBit.TumblerServer\Serializer.cs;..\NTumbleBit.TumblerServer\Services\**\*.cs;..\NTumbleBit.Common\NullLogger.cs" Exclude="bin\**;obj\**;**\*.xproj;packages\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NTumbleBit\NTumbleBit.csproj" />
+    <ProjectReference Include="..\NTumbleBit.Common\NTumbleBit.Common.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NBitcoin" Version="3.0.1.9" />
+    <PackageReference Include="DBreeze" Version="1.79.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="1.0.2" />
+  </ItemGroup>
+
+</Project>
