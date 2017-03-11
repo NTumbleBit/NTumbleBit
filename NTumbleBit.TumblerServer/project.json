@@ -7,7 +7,7 @@
         "NTumbleBit": "1.0.0-*",
         "NTumbleBit.Common": "1.0.0-*",
         "Microsoft.AspNetCore.Mvc.Core": "1.1.2",
-        "NBitcoin": "3.0.2.7",
+        "NBitcoin": "3.0.2.8",
         "DBreeze": "1.83.0",
         "Microsoft.AspNetCore.Diagnostics": "1.1.1",
         "Microsoft.AspNetCore.Mvc.ViewFeatures": "1.1.2",
