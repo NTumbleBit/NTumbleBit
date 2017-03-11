@@ -3,12 +3,13 @@
   "testRunner": "xunit",
 
     "dependencies": {
-        "xunit": "2.2.0-beta4-build3444",
         "NTumbleBit": "1.0.0-*",
         "NTumbleBit.TumblerServer": "1.0.0-*",
         "NTumbleBit.Client": "1.0.0-*",
         "NBitcoin": "3.0.2.6",
-        "dotnet-test-xunit": "2.2.0-preview2-build1029"
+        "dotnet-test-xunit": "2.2.0-preview2-build1029",
+        "Microsoft.NETCore.App": "1.1.1",
+        "xunit": "2.2.0"
     },
 
   "frameworks": {

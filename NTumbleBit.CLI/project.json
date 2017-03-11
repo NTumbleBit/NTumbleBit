@@ -5,16 +5,13 @@
   },
 
     "dependencies": {
-        "Microsoft.NETCore.App": {
-            "type": "platform",
-            "version": "1.1.0"
-        },
+        "Microsoft.NETCore.App": "1.1.1",
         "NTumbleBit": "1.0.0-*",
         "NTumbleBit.Client": "1.0.0-*",
-        "DBreeze": "1.79.0",
         "NBitcoin": "3.0.2.6",
-        "Microsoft.Extensions.Logging.Console": "1.0.0",
-        "Microsoft.Extensions.Logging.Filter": "1.0.0"
+        "DBreeze": "1.83.0",
+        "Microsoft.Extensions.Logging.Console": "1.1.1",
+        "Microsoft.Extensions.Logging.Filter": "1.1.1"
     },
 
   "frameworks": {
