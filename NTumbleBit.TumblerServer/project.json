@@ -1,6 +1,9 @@
 {
     "dependencies": {
-        "Microsoft.NETCore.App": "1.1.1",
+        "Microsoft.NETCore.App": {
+            "type": "platform",
+            "version": "1.1.1"
+        },
         "NTumbleBit": "1.0.0-*",
         "NTumbleBit.Common": "1.0.0-*",
         "Microsoft.AspNetCore.Mvc.Core": "1.1.2",
