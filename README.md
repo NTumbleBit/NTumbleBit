@@ -12,21 +12,25 @@ Another implementation can be found on [the official repository of TumbleBit](ht
 An "easy" to understand explanation of the protocol has been presented by Ethan Heilman and Leen Al Shenibr at [Scaling Bitcoin Milan](https://www.youtube.com/watch?v=iGVSnxz1mn8).
 
 ##Requirements
-This implementation is compatible with .NETCore 1.1 (as of today counter intuitively named dotnet-dev-1.0.0-preview2.1-003177) and works on [Windows](https://www.microsoft.com/net/core#windowsvs2015), [Linux](https://www.microsoft.com/net/core#linuxredhat), [Mac](https://www.microsoft.com/net/core#macos) or [Docker](https://www.microsoft.com/net/core#dockercmd).
 
-You need to install dotnet core on your system as instructed on [.NET Core installation guide](https://www.microsoft.com/net/core).
+As a user, you will need:
 
-On Linux or Mac, if you get the error `warning : Unable to find a project to restore!` please run:
-```
-apt-get install dotnet-dev-1.0.0-preview2.1-003177
-```
+1. [NET Core Runtime 1.1.1](https://github.com/dotnet/core/blob/master/release-notes/download-archives/1.1.1-download.md)
+2. [NET Core SDK 1.1.0 Preview 2.1](https://github.com/dotnet/core/blob/master/release-notes/download-archives/1.1-preview2.1-download.md) (see below)
+3. [Bitcoin Core 0.13.1](https://bitcoin.org/bin/bitcoin-core-0.13.1/) fully sync, rpc enabled.
 
-On Windows, if you have the same error, please install:
+You can easily install the SDK on ubuntu systems after having installed the runtime by running
 ```
-https://go.microsoft.com/fwlink/?LinkID=835014
+sudo apt-get install dotnet-dev-1.0.0-preview2.1-003177
 ```
+Using Bitcoin Core with later version should work as well.
 
-You will also need a synchronized Bitcoin Full node (pruned nodes also work), with the RPC server running.
+As a developer, you need additionally one of those:
+
+1. [Visual studio 2015 Update 3](https://go.microsoft.com/fwlink/?LinkId=691129) (Windows only)
+2. [Visual studio code](https://code.visualstudio.com/) with [C# Extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.csharp) (Cross plateform)
+
+If you have any issue, please check the [FAQ](https://github.com/NTumbleBit/NTumbleBit/wiki/FAQ), before posting an issue.
 
 ##Project status
 The current version has an implementation of:
