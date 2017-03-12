@@ -130,6 +130,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			if(remove)
 			{
 				Repository.Delete<Record>("Broadcasts", tx.Transaction.GetHash().ToString());
+				Repository.UpdateOrInsert("BroadcastsArchived", tx.Transaction.GetHash().ToString(), tx, (a, b) => a);
 			}
 			return false;
 		}
