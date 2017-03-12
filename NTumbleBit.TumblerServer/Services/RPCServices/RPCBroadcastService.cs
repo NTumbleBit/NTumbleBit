@@ -120,7 +120,8 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				var error = ex.RPCResult.Error.Message;
 				if(ex.RPCResult.Error.Code != RPCErrorCode.RPC_TRANSACTION_ALREADY_IN_CHAIN &&
 				   !error.EndsWith("bad-txns-inputs-spent", StringComparison.OrdinalIgnoreCase) &&
-				   !error.EndsWith("txn-mempool-conflict", StringComparison.OrdinalIgnoreCase))
+				   !error.EndsWith("txn-mempool-conflict", StringComparison.OrdinalIgnoreCase) &&
+				   !error.EndsWith("Missing inputs", StringComparison.OrdinalIgnoreCase))
 				{
 					remove = false;
 				}			
