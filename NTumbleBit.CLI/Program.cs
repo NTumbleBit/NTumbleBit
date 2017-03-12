@@ -93,10 +93,9 @@ namespace NTumbleBit.CLI
 					}
 					catch(Exception ex)
 					{
-						
+						Logs.Main.LogInformation("outputwallet.extpubkey is not configured, trying to use outputwallet.rpc settings.");
 						try
 						{
-
 							destinationWallet = GetRPCDestinationWallet(config, rpc.Network);
 						}
 						catch { throw ex; } //Not a bug, want to throw the other exception
