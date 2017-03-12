@@ -20,7 +20,7 @@ namespace NTumbleBit.PuzzleSolver
 			var bCount = b.ToOps().Count();
 			int min = Math.Min(aCount, bCount);
 			int max = Math.Max(aCount, bCount);
-			return min == 1 && max > 1;
+			return (min == 1 && max > 1) || (min == 1 && max == 1) ;
 		}
 
 		public override bool CanDeduceScriptPubKey(Script scriptSig)
@@ -44,6 +44,10 @@ namespace NTumbleBit.PuzzleSolver
 			Script otherScript = b;
 			if(b.ToOps().Count() == 1)
 			{
+				if(a.ToOps().Count() == 1)
+				{
+					return a; //In the case of offer redeem
+				}
 				oneSigScript = b;
 				otherScript = a;
 			}
@@ -67,7 +71,7 @@ namespace NTumbleBit.PuzzleSolver
 		public override Script GenerateScriptSig(Script scriptPubKey, IKeyRepository keyRepo, ISigner signer)
 		{
 			var offer = SolverScriptBuilder.ExtractOfferScriptParameters(scriptPubKey);
-			var key = keyRepo.FindKey(offer.FulfillKey.ScriptPubKey);
+			var key = keyRepo.FindKey(offer.FulfillKey.ScriptPubKey) ?? keyRepo.FindKey(offer.RedeemKey.ScriptPubKey);
 			if(key == null)
 				return null;
 			var sig = signer.Sign(key);

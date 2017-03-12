@@ -1,7 +1,8 @@
 {
   "profiles": {
     "NTumbleBit.CLI": {
-      "commandName": "Project"
+      "commandName": "Project",
+      "commandLineArgs": "-testnet -onlymonitor"
     }
   }
 }

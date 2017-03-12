@@ -231,7 +231,7 @@ namespace NTumbleBit.Tests
 
 		private ScriptCoin CreateEscrowCoin(PubKey escrow1, PubKey escrow2, PubKey redeemKey)
 		{
-			var redeem = EscrowScriptBuilder.CreateEscrow(new[] { escrow1, escrow2 }, redeemKey, new LockTime(0));
+			var redeem = EscrowScriptBuilder.CreateEscrow(new[] { escrow1, escrow2 }, redeemKey, new LockTime(10));
 			var scriptCoin = new Coin(new OutPoint(new uint256(RandomUtils.GetBytes(32)), 0),
 				new TxOut
 				{
@@ -291,29 +291,48 @@ namespace NTumbleBit.Tests
 			RoundTrip(ref server, parameters, key);
 
 			var clientOfferSig = client.SignOffer(offerInformation);
+			
 
 			//Verify if the scripts are correctly created
 			var fulfill = server.FulfillOffer(clientOfferSig, new Key().ScriptPubKey, FeeRate);
+			var offerRedeem = client.CreateOfferRedeemTransaction(FeeRate, clientRedeem.ScriptPubKey);
 
 			var offerTransaction = server.GetSignedOfferTransaction();
+			var offerCoin = offerTransaction.Transaction.Outputs.AsCoins().First();
+
 			TransactionBuilder txBuilder = new TransactionBuilder();
 			txBuilder.AddCoins(client.EscrowedCoin);
 			Assert.True(txBuilder.Verify(offerTransaction.Transaction));
 
 			txBuilder = new TransactionBuilder();
-			txBuilder.AddCoins(offerTransaction.Transaction.Outputs.AsCoins().ToArray());
+			txBuilder.AddCoins(offerCoin);
 			Assert.True(txBuilder.Verify(fulfill.Transaction));
+
+			var offerRedeemTx = offerRedeem.ReSign(offerCoin);
+			txBuilder = new TransactionBuilder();
+			txBuilder.AddCoins(offerCoin);
+			Assert.True(txBuilder.Verify(offerRedeemTx));
 
 			//Check if can resign fulfill in case offer get malleated
 			offerTransaction.Transaction.LockTime = new LockTime(1);
-			fulfill.Transaction.Inputs[0].PrevOut = offerTransaction.Transaction.Outputs.AsCoins().First().Outpoint;
+			offerCoin = offerTransaction.Transaction.Outputs.AsCoins().First();
+
+			fulfill.Transaction.Inputs[0].PrevOut = offerCoin.Outpoint;
 			txBuilder = new TransactionBuilder();
 			txBuilder.Extensions.Add(new OfferBuilderExtension());
 			txBuilder.AddKeys(server.GetInternalState().FulfillKey);
-			txBuilder.AddCoins(offerTransaction.Transaction.Outputs.AsCoins().ToArray());
+			txBuilder.AddCoins(offerCoin);
 			txBuilder.SignTransactionInPlace(fulfill.Transaction);
 			Assert.True(txBuilder.Verify(fulfill.Transaction));
-			////////////////////////////////////////////////
+
+			offerRedeemTx.Inputs[0].PrevOut = offerCoin.Outpoint;
+			txBuilder = new TransactionBuilder();
+			txBuilder.Extensions.Add(new OfferBuilderExtension());
+			txBuilder.AddKeys(offerRedeem.Key);
+			txBuilder.AddCoins(offerCoin);
+			txBuilder.SignTransactionInPlace(offerRedeemTx);
+			Assert.True(txBuilder.Verify(offerRedeemTx));
+			////////////////////////////////////////////////			
 
 			client.CheckSolutions(fulfill.Transaction);
 			RoundTrip(ref client, parameters);
