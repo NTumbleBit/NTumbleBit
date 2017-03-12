@@ -25,6 +25,7 @@ namespace NTumbleBit.TumblerServer
 			try
 			{
 				IWebHost host = null;
+				ExternalServices services = null;
 				if(!configuration.OnlyMonitor)
 				{
 					host = new WebHostBuilder()
@@ -34,11 +35,13 @@ namespace NTumbleBit.TumblerServer
 					.UseIISIntegration()
 					.UseStartup<Startup>()
 					.Build();
+					services = (ExternalServices)host.Services.GetService(typeof(ExternalServices));
+				}
+				else
+				{
+					services = ExternalServices.CreateFromRPCClient(configuration.RPC.ConfigureRPCClient(configuration.Network), new DBreezeRepository(Path.Combine(configuration.DataDir, "db")));
 				}
 
-				var services = host == null ?
-					ExternalServices.CreateFromRPCClient(configuration.RPC.ConfigureRPCClient(configuration.Network), new DBreezeRepository(Path.Combine(configuration.DataDir, "db")))
-					: (ExternalServices)host.Services.GetService(typeof(ExternalServices));
 				CancellationTokenSource cts = new CancellationTokenSource();
 				var job = new BroadcasterJob(services, Logs.Main);
 				job.Start(cts.Token);
