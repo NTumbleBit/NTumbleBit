@@ -20,8 +20,7 @@ namespace NTumbleBit.CLI
 	{
 		public static void Main(string[] args)
 		{
-			Logs.Configure(new FuncLoggerFactory(i => new ConsoleLogger("Configuration", (a, b) => true, false)));
-			var logger = new ConsoleLogger("Configuration", (a, b) => true, false);
+			Logs.Configure(new FuncLoggerFactory(i => new ConsoleLogger(i, (a, b) => true, false)));
 			CancellationTokenSource broadcasterCancel = new CancellationTokenSource();
 			try
 			{
@@ -52,9 +51,9 @@ namespace NTumbleBit.CLI
 
 				var services = ExternalServices.CreateFromRPCClient(rpc, dbreeze);
 
-				var broadcaster = new BroadcasterJob(services, logger);
+				var broadcaster = new BroadcasterJob(services, Logs.Main);
 				broadcaster.Start(broadcasterCancel.Token);
-				Logs.Configuration.LogInformation("Monitor started");
+				Logs.Main.LogInformation("BroadcasterJob started");
 
 				if(!onlymonitor)
 				{
@@ -103,11 +102,11 @@ namespace NTumbleBit.CLI
 						catch { throw ex; } //Not a bug, want to throw the other exception
 
 					}
-					var stateMachine = new StateMachinesExecutor(parameters, client, destinationWallet, services, dbreeze, logger);
+					var stateMachine = new StateMachinesExecutor(parameters, client, destinationWallet, services, dbreeze, Logs.Main);
 					stateMachine.Start(broadcasterCancel.Token);
-					Logs.Configuration.LogInformation("State machines started");
+					Logs.Main.LogInformation("State machines started");
 				}
-				Logs.Configuration.LogInformation("Press enter to stop");
+				Logs.Main.LogInformation("Press enter to stop");
 				Console.ReadLine();
 				broadcasterCancel.Cancel();
 			}

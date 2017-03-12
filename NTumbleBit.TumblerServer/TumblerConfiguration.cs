@@ -76,6 +76,11 @@ namespace NTumbleBit.TumblerServer
 			get;
 			set;
 		} = new List<IPEndPoint>();
+		public bool OnlyMonitor
+		{
+			get;
+			set;
+		}
 
 		public TumblerConfiguration LoadArgs(String[] args)
 		{
@@ -146,6 +151,7 @@ namespace NTumbleBit.TumblerServer
 
 			var defaultPort = config.GetOrDefault<int>("port", 5000);
 
+			OnlyMonitor = config.GetOrDefault<bool>("onlymonitor", false);
 			Listen = config
 						.GetAll("bind")
 						.Select(p => ConvertToEndpoint(p, defaultPort))

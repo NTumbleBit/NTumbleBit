@@ -15,39 +15,49 @@ using NTumbleBit.Common.Logging;
 
 namespace NTumbleBit.TumblerServer
 {
-    public class Program
-    {
-        public static void Main(string[] args)
-        {
-			Logs.Configure(new FuncLoggerFactory(i => new ConsoleLogger("Configuration", (a, b) => true, false)));
-			var logger = new ConsoleLogger("Main", (a, b) => true, false);
+	public class Program
+	{
+		public static void Main(string[] args)
+		{
+			Logs.Configure(new FuncLoggerFactory(i => new ConsoleLogger(i, (a, b) => true, false)));
 			var configuration = new TumblerConfiguration();
 			configuration.LoadArgs(args);
 			try
 			{
-				var host = new WebHostBuilder()
-				.UseKestrel()
-				.UseAppConfiguration(configuration)
-				.UseContentRoot(Directory.GetCurrentDirectory())
-				.UseIISIntegration()
-				.UseStartup<Startup>()
-				.Build();
+				IWebHost host = null;
+				if(!configuration.OnlyMonitor)
+				{
+					host = new WebHostBuilder()
+					.UseKestrel()
+					.UseAppConfiguration(configuration)
+					.UseContentRoot(Directory.GetCurrentDirectory())
+					.UseIISIntegration()
+					.UseStartup<Startup>()
+					.Build();
+				}
 
-				var services = (ExternalServices)host.Services.GetService(typeof(ExternalServices));
+				var services = host == null ?
+					ExternalServices.CreateFromRPCClient(configuration.RPC.ConfigureRPCClient(configuration.Network), new DBreezeRepository(Path.Combine(configuration.DataDir, "db")))
+					: (ExternalServices)host.Services.GetService(typeof(ExternalServices));
 				CancellationTokenSource cts = new CancellationTokenSource();
-				var job = new BroadcasterJob(services, logger);
+				var job = new BroadcasterJob(services, Logs.Main);
 				job.Start(cts.Token);
-				host.Run();
+				Logs.Main.LogInformation("BroadcasterJob started");
+
+				if(!configuration.OnlyMonitor)
+					host.Run();
+				else
+					Console.ReadLine();
 				cts.Cancel();
 			}
 			catch(ConfigException ex)
 			{
 				if(!string.IsNullOrEmpty(ex.Message))
-					logger.LogError(ex.Message);
+					Logs.Main.LogError(ex.Message);
 			}
 			catch(Exception exception)
 			{
-				logger.LogError("Exception thrown while running the server " + exception.Message);
+				Logs.Main.LogError("Exception thrown while running the server " + exception.Message);
 			}
 		}
 	}

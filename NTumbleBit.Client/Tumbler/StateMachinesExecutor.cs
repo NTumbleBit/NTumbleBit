@@ -115,7 +115,7 @@ namespace NTumbleBit.Client.Tumbler
 					catch(Exception ex)
 					{
 						Logger.LogError("Uncaught exception StateMachineExecutor : " + ex.ToString());
-						Thread.Sleep(5000);
+						_Stop.WaitHandle.WaitOne(5000);
 					}
 				}
 			}).Start();
