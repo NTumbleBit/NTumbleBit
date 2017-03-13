@@ -265,9 +265,8 @@ namespace NTumbleBit.Client.Tumbler
 							var offerSignature = SolverClientSession.SignOffer(offerInformation);
 							var offerRedeem = SolverClientSession.CreateOfferRedeemTransaction(feeRate, Services.WalletService.GenerateAddress($"Cycle {cycle.Start} Tumbler Redeem").ScriptPubKey);
 							//May need to find solution in the fulfillment transaction
-							var offerLabel = $"Cycle {cycle.Start} Client Offer Redeem (locked until {offerRedeem.Transaction.LockTime})";
-							Services.BlockExplorerService.Track(offerLabel, offerRedeem.PreviousScriptPubKey);
-							Services.TrustedBroadcastService.Broadcast(offerLabel, offerRedeem);
+							Services.BlockExplorerService.Track($"Cycle {cycle.Start} Offer", offerRedeem.PreviousScriptPubKey);
+							Services.TrustedBroadcastService.Broadcast($"Cycle {cycle.Start} Client Offer Redeem (locked until {offerRedeem.Transaction.LockTime})", offerRedeem);
 							logger.LogInformation("Offer redeem " + offerRedeem.Transaction.GetHash() + " locked until " + offerRedeem.Transaction.LockTime.Height);
 							try
 							{
