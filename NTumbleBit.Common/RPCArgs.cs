@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 
 namespace NTumbleBit.Common
 {
@@ -91,9 +92,18 @@ namespace NTumbleBit.Common
 				Logs.Configuration.LogError("The RPC server is not using the chain " + network.Name);
 				throw new ConfigException();
 			}
+			var getInfo = rpcClient.SendCommand(RPCOperations.getinfo);
+			var version = ((JObject)getInfo.Result)["version"].Value<int>();
+			if(version < MIN_CORE_VERSION)
+			{
+				Logs.Configuration.LogError($"The minimum Bitcoin Core version required is {MIN_CORE_VERSION} (detected: {version})");
+				throw new ConfigException();
+			}
+			Logs.Configuration.LogInformation($"Bitcoin Core version detected: {version}");
 			return rpcClient;
 		}
 
+		const int MIN_CORE_VERSION = 130100;
 		public static RPCClient ConfigureRPCClient(TextFileConfiguration confArgs, Network network, string prefix= null)
 		{
 			RPCArgs args = Parse(confArgs, network, prefix);
