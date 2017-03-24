@@ -121,7 +121,6 @@ namespace NTumbleBit.TumblerServer
 			{
 				var cycle = ClassicTumblerParameters
 							.CycleGenerator.FirstCycle;
-				cycle.RegistrationDuration = 3;
 				cycle.Start = 0;
 				cycle.RegistrationDuration = 3;
 				cycle.ClientChannelEstablishmentDuration = 3;
