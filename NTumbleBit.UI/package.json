@@ -23,7 +23,6 @@
     "eslint-config-airbnb-base": "^11.1.1",
     "eslint-plugin-import": "^2.2.0",
     "eslint-plugin-jsx-a11y": "^4.0.0",
-    "husky": "^0.13.2",
     "nodemon": "^1.11.0",
     "pm2": "^2.4.2",
     "rimraf": "^2.6.1",
