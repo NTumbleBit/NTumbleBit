@@ -32,7 +32,7 @@ As a developer, you need additionally one of those:
 
 If you have any issue, please check the [FAQ](https://github.com/NTumbleBit/NTumbleBit/wiki/FAQ), before posting an issue.
 
-##Project status
+## Project status
 The current version has an implementation of:
 * Puzzle Solver Algorithm
 * Puzzle Promise Algorithm
