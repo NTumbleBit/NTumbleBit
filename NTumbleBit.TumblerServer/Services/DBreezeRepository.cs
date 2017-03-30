@@ -26,7 +26,7 @@ namespace NTumbleBit.Client.Tumbler.Services
 			_Folder = folder;
 		}
 
-		private Dictionary<string, DBreezeEngine> _EnginesByParitionKey = new Dictionary<string, DBreezeEngine>();
+		private Dictionary<string, DBreezeEngineReference> _EnginesByParitionKey = new Dictionary<string, DBreezeEngineReference>();
 
 		public void UpdateOrInsert<T>(string partitionKey, string rowKey, T data, Func<T, T, T> update)
 		{
@@ -57,15 +57,65 @@ namespace NTumbleBit.Client.Tumbler.Services
 			string partitionPath = GetPartitionPath(partitionKey);
 			if(!Directory.Exists(partitionPath))
 				Directory.CreateDirectory(partitionPath);
-			DBreezeEngine engine;
+			DBreezeEngineReference engine;
 			if(!_EnginesByParitionKey.TryGetValue(partitionKey, out engine))
 			{
-				engine = new DBreezeEngine(partitionPath);
+				engine = new DBreezeEngineReference() { PartitionKey = partitionKey, Engine = new DBreezeEngine(partitionPath) };
 				_EnginesByParitionKey.Add(partitionKey, engine);
+				_EngineReferences.Enqueue(engine);
 			}
-			return engine;
+			engine.Used++;
+			while(_EngineReferences.Count > MaxOpenedEngine)
+			{
+				var reference = _EngineReferences.Dequeue();
+				reference.Used--;
+				if(reference.Used <= 0 && reference != engine)
+				{
+					if(_EnginesByParitionKey.Remove(reference.PartitionKey))
+						reference.Engine.Dispose();
+				}
+				else
+				{
+					_EngineReferences.Enqueue(reference);
+				}
+			}
+			return engine.Engine;
 		}
 
+		Queue<DBreezeEngineReference> _EngineReferences = new Queue<DBreezeEngineReference>();
+		
+		public int OpenedEngine
+		{
+			get
+			{
+				lock(_EnginesByParitionKey)
+				{				
+					return _EngineReferences.Count;
+				}
+			}
+		}
+		public int MaxOpenedEngine
+		{
+			get;
+			set;
+		} = 10;
+
+		class DBreezeEngineReference
+		{
+			public DBreezeEngine Engine
+			{
+				get; set;
+			}
+			public string PartitionKey
+			{
+				get;
+				internal set;
+			}
+			public int Used
+			{
+				get; set;
+			}
+		}
 		private string GetPartitionPath(string partitionKey)
 		{
 			return Path.Combine(_Folder, GetDirectory(partitionKey));
@@ -151,8 +201,9 @@ namespace NTumbleBit.Client.Tumbler.Services
 			{
 				foreach(var engine in _EnginesByParitionKey)
 				{
-					engine.Value.Dispose();
+					engine.Value.Engine.Dispose();
 				}
+				_EngineReferences.Clear();
 				_EnginesByParitionKey.Clear();
 			}
 		}
