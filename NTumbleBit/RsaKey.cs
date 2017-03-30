@@ -80,8 +80,9 @@ namespace NTumbleBit
 				var input = new BigInteger(1, output);
 				if(input.CompareTo(_Key.Modulus) >= 0)
 					continue;
-				var engine = new RsaCoreEngine();
+				var engine = new RsaBlindedEngine();
 				engine.Init(true, _Key);
+
 				return engine.ConvertOutput(engine.ProcessBlock(input));
 			}
 		}
@@ -93,7 +94,7 @@ namespace NTumbleBit
 			if(encrypted.CompareTo(_Key.Modulus) >= 0)
 				throw new DataLengthException("input too large for RSA cipher.");
 
-			RsaCoreEngine engine = new RsaCoreEngine();
+			RsaBlindedEngine engine = new RsaBlindedEngine();
 			engine.Init(false, _Key);
 			return engine.ProcessBlock(encrypted);
 		}
