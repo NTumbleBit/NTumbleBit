@@ -11,7 +11,7 @@ Cross-platform library, based on ["TumbleBit: An Untrusted Bitcoin-Compatible An
 Another implementation can be found on [the official repository of TumbleBit](https://github.com/BUSEC/TumbleBit). 
 An "easy" to understand explanation of the protocol has been presented by Ethan Heilman and Leen Al Shenibr at [Scaling Bitcoin Milan](https://www.youtube.com/watch?v=iGVSnxz1mn8).
 
-##Requirements
+## Requirements
 
 As a user, you will need:
 
@@ -32,7 +32,7 @@ As a developer, you need additionally one of those:
 
 If you have any issue, please check the [FAQ](https://github.com/NTumbleBit/NTumbleBit/wiki/FAQ), before posting an issue.
 
-##Project status
+## Project status
 The current version has an implementation of:
 * Puzzle Solver Algorithm
 * Puzzle Promise Algorithm
