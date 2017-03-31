@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 
 namespace NTumbleBit.Common
 {
@@ -91,25 +92,40 @@ namespace NTumbleBit.Common
 				Logs.Configuration.LogError("The RPC server is not using the chain " + network.Name);
 				throw new ConfigException();
 			}
+			var getInfo = rpcClient.SendCommand(RPCOperations.getinfo);
+			var version = ((JObject)getInfo.Result)["version"].Value<int>();
+			if(version < MIN_CORE_VERSION)
+			{
+				Logs.Configuration.LogError($"The minimum Bitcoin Core version required is {MIN_CORE_VERSION} (detected: {version})");
+				throw new ConfigException();
+			}
+			Logs.Configuration.LogInformation($"Bitcoin Core version detected: {version}");
 			return rpcClient;
 		}
 
-		public static RPCClient ConfigureRPCClient(TextFileConfiguration confArgs, Network network)
+		const int MIN_CORE_VERSION = 130100;
+		public static RPCClient ConfigureRPCClient(TextFileConfiguration confArgs, Network network, string prefix= null)
 		{
-			RPCArgs args = Parse(confArgs, network);
+			RPCArgs args = Parse(confArgs, network, prefix);
 			return args.ConfigureRPCClient(network);
 		}
 
-		public static RPCArgs Parse(TextFileConfiguration confArgs, Network network)
+		public static RPCArgs Parse(TextFileConfiguration confArgs, Network network, string prefix = null)
 		{
+			prefix = prefix ?? "";
+			if(prefix != "")
+			{
+				if(!prefix.EndsWith("."))
+					prefix += ".";
+			}
 			try
 			{
-				var url = confArgs.GetOrDefault<string>("rpc.url", network == null ? null : "http://localhost:" + network.RPCPort + "/");
-				return new RPCArgs
+				var url = confArgs.GetOrDefault<string>(prefix + "rpc.url", network == null ? null : "http://localhost:" + network.RPCPort + "/");
+				return new RPCArgs()
 				{
-					User = confArgs.GetOrDefault<string>("rpc.user", null),
-					Password = confArgs.GetOrDefault<string>("rpc.password", null),
-					CookieFile = confArgs.GetOrDefault<string>("rpc.cookiefile", null),
+					User = confArgs.GetOrDefault<string>(prefix + "rpc.user", null),
+					Password = confArgs.GetOrDefault<string>(prefix + "rpc.password", null),
+					CookieFile = confArgs.GetOrDefault<string>(prefix + "rpc.cookiefile", null),
 					Url = url == null ? null : new Uri(url)
 				};
 			}

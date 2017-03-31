@@ -48,6 +48,7 @@ namespace NTumbleBit.TumblerServer
 			var logging = new FilterLoggerSettings();
 			logging.Add("Microsoft.AspNetCore.Hosting.Internal.WebHost", LogLevel.Error);
 			logging.Add("Microsoft.AspNetCore.Mvc", LogLevel.Error);
+			logging.Add("Microsoft.AspNetCore.Server.Kestrel", LogLevel.Error);
 			loggerFactory
 				.WithFilter(logging)
 				.AddConsole();

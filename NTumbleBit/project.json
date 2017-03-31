@@ -2,7 +2,7 @@
   "version": "1.0.0-*",
 
     "dependencies": {
-        "NBitcoin": "3.0.1.9"
+        "NBitcoin": "3.0.2.9"
     },
 
   "frameworks": {

@@ -20,8 +20,8 @@ namespace NTumbleBit.CLI
 	{
 		public static void Main(string[] args)
 		{
-			Logs.Configure(new FuncLoggerFactory(i => new ConsoleLogger("Configuration", (a, b) => true, false)));
-			var logger = new ConsoleLogger("Configuration", (a, b) => true, false);
+			Logs.Configure(new FuncLoggerFactory(i => new ConsoleLogger(i, (a, b) => true, false)));
+			CancellationTokenSource broadcasterCancel = new CancellationTokenSource();
 			try
 			{
 				var network = args.Contains("-testnet", StringComparer.OrdinalIgnoreCase) ? Network.TestNet :
@@ -49,12 +49,11 @@ namespace NTumbleBit.CLI
 				}
 				var dbreeze = new DBreezeRepository(Path.Combine(dataDir, "db"));
 
-
 				var services = ExternalServices.CreateFromRPCClient(rpc, dbreeze);
-				CancellationTokenSource source = new CancellationTokenSource();
-				var broadcaster = new BroadcasterJob(services, logger);
-				broadcaster.Start(source.Token);
-				Logs.Configuration.LogInformation("Monitor started");
+
+				var broadcaster = new BroadcasterJob(services, Logs.Main);
+				broadcaster.Start(broadcasterCancel.Token);
+				Logs.Main.LogInformation("BroadcasterJob started");
 
 				if(!onlymonitor)
 				{
@@ -87,37 +86,28 @@ namespace NTumbleBit.CLI
 						throw new ConfigException("The tumbler server run on a different network than the local rpc server");
 					}
 
-					BitcoinExtPubKey pubKey = null;
-					KeyPath keypath = new KeyPath("0");
+					IDestinationWallet destinationWallet = null;
 					try
 					{
-						pubKey = new BitcoinExtPubKey(config.GetOrDefault("outputwallet.extpubkey", null as string), rpc.Network);
+						destinationWallet = GetDestinationWallet(config, rpc.Network, dbreeze);
 					}
-					catch
+					catch(Exception ex)
 					{
-						throw new ConfigException("outputwallet.extpubkey is not configured correctly");
-					}
-
-					string keyPathString = config.GetOrDefault("outputwallet.keypath", null as string);
-					if(keyPathString != null)
-					{
+						Logs.Main.LogInformation("outputwallet.extpubkey is not configured, trying to use outputwallet.rpc settings.");
 						try
 						{
-							keypath = new KeyPath(keyPathString);
+							destinationWallet = GetRPCDestinationWallet(config, rpc.Network);
 						}
-						catch
-						{
-							throw new ConfigException("outputwallet.keypath is not configured correctly");
-						}
+						catch { throw ex; } //Not a bug, want to throw the other exception
+
 					}
-					var destinationWallet = new ClientDestinationWallet("", pubKey, keypath, dbreeze);
-					var stateMachine = new StateMachinesExecutor(parameters, client, destinationWallet, services, dbreeze, logger);
-					stateMachine.Start(source.Token);
-					Logs.Configuration.LogInformation("State machines started");
+					var stateMachine = new StateMachinesExecutor(parameters, client, destinationWallet, services, dbreeze, Logs.Main);
+					stateMachine.Start(broadcasterCancel.Token);
+					Logs.Main.LogInformation("State machines started");
 				}
-				Logs.Configuration.LogInformation("Press enter to stop");
+				Logs.Main.LogInformation("Press enter to stop");
 				Console.ReadLine();
-				source.Cancel();
+				broadcasterCancel.Cancel();
 			}
 			catch(ConfigException ex)
 			{
@@ -128,6 +118,11 @@ namespace NTumbleBit.CLI
 			{
 				Logs.Configuration.LogError(ex.Message);
 				Logs.Configuration.LogDebug(ex.StackTrace);
+			}
+			finally
+			{
+				if(!broadcasterCancel.IsCancellationRequested)
+					broadcasterCancel.Cancel();
 			}
 		}
 
@@ -147,6 +142,41 @@ namespace NTumbleBit.CLI
 			}
 			throw new AggregateException(exceptions);
 		}
+
+		private static RPCDestinationWallet GetRPCDestinationWallet(TextFileConfiguration config, Network network)
+		{
+			var rpc = RPCArgs.ConfigureRPCClient(config, network, "outputwallet");
+			return new RPCDestinationWallet(rpc);
+		}
+
+		private static ClientDestinationWallet GetDestinationWallet(TextFileConfiguration config, Network network, DBreezeRepository dbreeze)
+		{
+			BitcoinExtPubKey pubKey = null;
+			KeyPath keypath = new KeyPath("0");
+			try
+			{
+				pubKey = new BitcoinExtPubKey(config.GetOrDefault("outputwallet.extpubkey", null as string), network);
+			}
+			catch
+			{
+				throw new ConfigException("outputwallet.extpubkey is not configured correctly");
+			}
+
+			string keyPathString = config.GetOrDefault("outputwallet.keypath", null as string);
+			if(keyPathString != null)
+			{
+				try
+				{
+					keypath = new KeyPath(keyPathString);
+				}
+				catch
+				{
+					throw new ConfigException("outputwallet.keypath is not configured correctly");
+				}
+			}
+			var destinationWallet = new ClientDestinationWallet("", pubKey, keypath, dbreeze);
+			return destinationWallet;
+		}		
 
 		public static string GetDefaultConfigurationFile(string dataDirectory, Network network)
 		{

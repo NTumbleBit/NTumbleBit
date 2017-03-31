@@ -26,7 +26,6 @@ namespace NTumbleBit
 			get;
 			set;
 		}
-
 		public Transaction ReSign(Coin coin)
 		{
 			var transaction = Transaction.Clone();

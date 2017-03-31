@@ -76,6 +76,11 @@ namespace NTumbleBit.TumblerServer
 			get;
 			set;
 		} = new List<IPEndPoint>();
+		public bool OnlyMonitor
+		{
+			get;
+			set;
+		}
 
 		public TumblerConfiguration LoadArgs(String[] args)
 		{
@@ -116,7 +121,6 @@ namespace NTumbleBit.TumblerServer
 			{
 				var cycle = ClassicTumblerParameters
 							.CycleGenerator.FirstCycle;
-				cycle.RegistrationDuration = 3;
 				cycle.Start = 0;
 				cycle.RegistrationDuration = 3;
 				cycle.ClientChannelEstablishmentDuration = 3;
@@ -146,6 +150,7 @@ namespace NTumbleBit.TumblerServer
 
 			var defaultPort = config.GetOrDefault<int>("port", 5000);
 
+			OnlyMonitor = config.GetOrDefault<bool>("onlymonitor", false);
 			Listen = config
 						.GetAll("bind")
 						.Select(p => ConvertToEndpoint(p, defaultPort))

@@ -118,26 +118,19 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 					return false;
 				}
 				var error = ex.RPCResult.Error.Message;
-				if(error.EndsWith("non-final", StringComparison.OrdinalIgnoreCase))
-					remove = false;
-				else
+				if(ex.RPCResult.Error.Code != RPCErrorCode.RPC_TRANSACTION_ALREADY_IN_CHAIN &&
+				   !error.EndsWith("bad-txns-inputs-spent", StringComparison.OrdinalIgnoreCase) &&
+				   !error.EndsWith("txn-mempool-conflict", StringComparison.OrdinalIgnoreCase) &&
+				   !error.EndsWith("Missing inputs", StringComparison.OrdinalIgnoreCase))
 				{
-					if(ex.RPCResult.Error.Code == RPCErrorCode.RPC_TRANSACTION_ALREADY_IN_CHAIN)
-					{
-					}
-					if(error.EndsWith("bad-txns-inputs-spent", StringComparison.OrdinalIgnoreCase))
-					{
-					}
-					else if(!error.EndsWith("txn-mempool-conflict", StringComparison.OrdinalIgnoreCase))
-					{
-						remove = false;
-					}
-				}
+					remove = false;
+				}			
 			}
 
 			if(remove)
 			{
 				Repository.Delete<Record>("Broadcasts", tx.Transaction.GetHash().ToString());
+				Repository.UpdateOrInsert("BroadcastsArchived", tx.Transaction.GetHash().ToString(), tx, (a, b) => a);
 			}
 			return false;
 		}

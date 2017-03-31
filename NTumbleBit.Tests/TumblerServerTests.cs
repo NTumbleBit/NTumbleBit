@@ -54,6 +54,17 @@ namespace NTumbleBit.Tests
 				repo.UpdateOrInsert("a", "c", "c", (o, n) => n);
 				repo.Delete("a");
 				Assert.Equal(0, repo.List<string>("a").Length);
+
+				var dbreezeRepo = (TumblerServer.Services.DBreezeRepository)repo;
+
+				var beforeOpened = dbreezeRepo.OpenedEngine;
+				Random r = new Random();
+				for(int i = 0; i < 100; i++)
+				{
+					var p = r.Next(0, 100);
+					repo.UpdateOrInsert(p.ToString(), "eh", "q", (a,b)=>a);
+					Assert.True(dbreezeRepo.OpenedEngine <= dbreezeRepo.MaxOpenedEngine);
+				}
 			}
 		}
 
