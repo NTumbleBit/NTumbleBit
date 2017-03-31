@@ -140,7 +140,7 @@ namespace NTumbleBit.Client.Tumbler.Services
 			}
 		}
 
-		public T[] List<T>(string partitionKey)
+		public List<T> List<T>(string partitionKey)
 		{
 			lock(_EnginesByParitionKey)
 			{
@@ -153,11 +153,23 @@ namespace NTumbleBit.Client.Tumbler.Services
 						result.Add(Serializer.ToObject<T>(Encoding.UTF8.GetString(row.Value)));
 					}
 				}
-				return result.ToArray();
+				return result;
 			}
 		}
 
-		private string GetTableName<T>()
+        public List<string> ListPartitionKeys()
+        {
+            List<string> paths = Directory.GetDirectories(_Folder, "*.*").ToList();
+            for (var i = 0; i < paths.Count; i++)
+            {
+                int pos = paths[i].LastIndexOf("\\") + 1; // may need to check / for unix systems
+                paths[i] = paths[i].Substring(pos, paths[i].Length - pos);
+            }
+
+            return paths;
+        }
+
+        private string GetTableName<T>()
 		{
 			return typeof(T).FullName;
 		}

@@ -11,27 +11,36 @@ using System.Net;
 using NBitcoin;
 using NTumbleBit.TumblerServer.Services;
 using NBitcoin.Crypto;
+using Microsoft.AspNetCore.Cors;
 
 // For more information on enabling Web API for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace NTumbleBit.TumblerServer.Controllers
 {
+	[DisableCors]
 	public class MainController : Controller
 	{
-		public MainController(TumblerConfiguration configuration, ClassicTumblerRepository repo, ClassicTumblerParameters parameters, ExternalServices services)
+		public MainController(TumblerConfiguration configuration,
+							ClassicTumblerRepository repo,
+							ClassicTumblerParameters parameters,
+							ExternalServices services,
+							ClassicTumblerState state)
 		{
-			if(configuration == null)
+			if (configuration == null)
 				throw new ArgumentNullException(nameof(configuration));
-			if(parameters == null)
+			if (parameters == null)
 				throw new ArgumentNullException(nameof(parameters));
-			if(services == null)
+			if (services == null)
 				throw new ArgumentNullException(nameof(services));
-			if(repo == null)
+			if (repo == null)
 				throw new ArgumentNullException(nameof(repo));
+			if (state == null)
+				throw new ArgumentNullException(nameof(state));
 			_Tumbler = configuration;
 			_Repository = repo;
 			_Parameters = parameters;
 			_Services = services;
+			_State = state;
 		}
 
 
@@ -72,6 +81,15 @@ namespace NTumbleBit.TumblerServer.Controllers
 			}
 		}
 
+		private readonly ClassicTumblerState _State;
+		public ClassicTumblerState State
+		{
+			get
+			{
+				return _State;
+			}
+		}
+		
 		[HttpGet("api/v1/tumblers/0/parameters")]
 		public ClassicTumblerParameters GetSolverParameters()
 		{
@@ -84,6 +102,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 			var height = Services.BlockExplorerService.GetCurrentHeight();
 			var cycleParameters = Parameters.CycleGenerator.GetRegistratingCycle(height);
 			BobServerChannelNegotiation session = CreateBobServerChannelNegotiation(cycleParameters.Start);
+			State.AddBobChannel(cycleParameters.Start);
 			return session.GenerateUnsignedVoucher();
 		}
 
@@ -97,6 +116,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 			var key = Repository.GetNextKey(cycle.Start, out keyIndex);
 			if(!cycle.IsInPhase(CyclePhase.ClientChannelEstablishment, height))
 				return BadRequest("incorrect-phase");
+			State.AddAliceChannel(cycleStart);
 			return Json(new TumblerEscrowKeyResponse { PubKey = key.PubKey, KeyIndex = keyIndex });
 		}
 
@@ -140,6 +160,8 @@ namespace NTumbleBit.TumblerServer.Controllers
 
 				if(!Repository.MarkUsedNonce(cycle.Start, new uint160(key.PubKey.Hash.ToBytes())))
 					return BadRequest("invalid-transaction");
+
+				State.ConfirmAliceChannel(cycle.Start, transaction.GetHash());
 				Repository.Save(cycle.Start, solverServerSession);
 				return Json(voucher);
 			}
@@ -174,6 +196,8 @@ namespace NTumbleBit.TumblerServer.Controllers
 				Services.BlockExplorerService.Track(escrowTumblerLabel, txOut.ScriptPubKey);
 				Services.BroadcastService.Broadcast(escrowTumblerLabel, tx);
 				var promiseServerSession = session.SetSignedTransaction(tx);
+
+				State.ConfirmBobChannel(cycle.Start, tx.GetHash());
 				Repository.Save(cycle.Start, promiseServerSession);
 
 				var redeem = Services.WalletService.GenerateAddress($"Cycle {cycle.Start} Tumbler Redeem");
@@ -192,6 +216,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 			return new BobServerChannelNegotiation(Parameters, Tumbler.TumblerKey, Tumbler.VoucherKey, cycleStart);
 		}
 
+		// Tumbler Sign
 		[HttpPost("api/v1/tumblers/0/channels/{cycleId}/{channelId}/signhashes")]
 		public IActionResult SignHashes(int cycleId, string channelId, [FromBody]SignaturesRequest sigReq)
 		{
@@ -206,6 +231,8 @@ namespace NTumbleBit.TumblerServer.Controllers
 		{
 			var session = GetPromiseServerSession(cycleId, channelId, CyclePhase.TumblerChannelEstablishment);
 			var proof = session.CheckRevelation(revelation);
+
+			State.AttemptCloseBobChannel(cycleId);
 			Repository.Save(cycleId, session);
 			return Json(proof);
 		}
@@ -281,6 +308,8 @@ namespace NTumbleBit.TumblerServer.Controllers
 				var cashout = Services.WalletService.GenerateAddress($"Cycle {cycle.Start} Tumbler Cashout");
 				var fulfill = session.FulfillOffer(clientSignature, cashout.ScriptPubKey, feeRate);
 				fulfill.BroadcastAt = new LockTime(cycle.GetPeriods().Payment.End - 1);
+
+				State.AttemptCloseAliceChannel(cycle.Start);
 				Repository.Save(cycle.Start, session);
 
 				var signedOffer = session.GetSignedOfferTransaction();

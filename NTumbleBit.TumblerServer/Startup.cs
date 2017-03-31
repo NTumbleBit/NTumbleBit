@@ -17,6 +17,7 @@ using Microsoft.Extensions.Options;
 using NBitcoin.RPC;
 using NTumbleBit.ClassicTumbler;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using Microsoft.AspNetCore.Cors.Infrastructure;
 
 namespace NTumbleBit.TumblerServer
 {
@@ -26,6 +27,13 @@ namespace NTumbleBit.TumblerServer
 		// For more information on how to configure your application, visit http://go.microsoft.com/fwlink/?LinkID=398940
 		public void ConfigureServices(IServiceCollection services)
 		{
+			services.AddCors(o => o.AddPolicy("AllowAnyOrigin", builder =>
+				builder
+					.AllowAnyHeader()
+					.AllowAnyMethod()
+					.AllowAnyOrigin()
+					.AllowCredentials()
+			));
 			services.AddSingleton<IObjectModelValidator, NoObjectModelValidator>();
 			services.AddMvcCore(o => o.Filters.Add(new ActionResultExceptionFilter()))
 				.AddJsonFormatters()
@@ -50,11 +58,25 @@ namespace NTumbleBit.TumblerServer
 				app.UseDeveloperExceptionPage();
 			}
 
-			app.UseMvc();
-
-
 			var builder = serviceProvider.GetService<ConfigurationBuilder>() ?? new ConfigurationBuilder();
+			builder.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+			builder.AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true);
 			Configuration = builder.Build();
+
+			app.UseCors("AllowAnyOrigin");
+			app.UseMvc();
+			app.UseDefaultFiles();
+			app.UseStaticFiles(new StaticFileOptions()
+			{
+				OnPrepareResponse = (context) =>
+				{
+					context.Context.Response.Headers["Cache-Control"] = Configuration["StaticFiles:Headers:Cache-Control"];
+					context.Context.Response.Headers["Pragma"] = Configuration["StaticFiles:Headers:Pragma"];
+					context.Context.Response.Headers["Expires"] = Configuration["StaticFiles:Headers:Expires"];
+				}
+			});
+
+			
 
 			var config = serviceProvider.GetService<TumblerConfiguration>();
 			var options = GetMVCOptions(serviceProvider);

@@ -398,7 +398,6 @@ namespace NTumbleBit.PuzzleSolver
 		{
 			if(fulfillTx == null)
 				throw new ArgumentNullException(nameof(fulfillTx));
-
 			AssertState(SolverClientStates.WaitingPuzzleSolutions);
 			foreach(var input in fulfillTx.Inputs)
 			{

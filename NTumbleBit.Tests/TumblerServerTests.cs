@@ -40,7 +40,7 @@ namespace NTumbleBit.Tests
 		{
 			using(var server = TumblerServerTester.Create())
 			{
-				var repo = server.ServerContext.GetService<TumblerServer.Services.IRepository>();
+				var repo = server.ServerContext.GetService<NTumbleBit.TumblerServer.Services.IRepository>();
 				repo.UpdateOrInsert("a", "b", "c", (o, n) => n);
 				var result = repo.Get<string>("a", "b");
 				Assert.Equal("c", result);
@@ -122,7 +122,6 @@ namespace NTumbleBit.Tests
 
 				MineTo(server.TumblerNode, cycle, CyclePhase.PaymentPhase, true);
 				server.SyncNodes();
-
 				//Offer + Fulfill should be broadcasted
 				var transactions = server.ServerContext.TrustedBroadcastService.TryBroadcast();
 				Assert.Equal(2, transactions.Length);
@@ -137,7 +136,7 @@ namespace NTumbleBit.Tests
 				transactions = server.ServerContext.TrustedBroadcastService.TryBroadcast();
 				Assert.Equal(1, transactions.Length);
 				block = server.TumblerNode.FindBlock(1).First();
-				Assert.Equal(2, block.Transactions.Count); //Fulfill get mined
+				Assert.Equal(2, block.Transactions.Count); //Fulfill get mined		
 
 				MineTo(server.TumblerNode, cycle, CyclePhase.ClientCashoutPhase);
 				server.SyncNodes();
