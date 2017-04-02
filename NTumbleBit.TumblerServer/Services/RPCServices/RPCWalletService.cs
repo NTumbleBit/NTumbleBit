@@ -65,7 +65,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			}
 			catch(RPCException ex)
 			{
-				if(ex.RPCCodeMessage.Equals("Insufficient funds", StringComparison.OrdinalIgnoreCase))
+				if(ex.Message.Equals("Insufficient funds", StringComparison.OrdinalIgnoreCase))
 					return null;
 				throw;
 			}
