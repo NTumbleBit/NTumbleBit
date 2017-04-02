@@ -2,7 +2,7 @@
     "version": "1.0.0-*",
 
     "dependencies": {
-        "NBitcoin": "3.0.2.9",
+        "NBitcoin": "3.0.2.11",
         "NTumbleBit": "1.0.0-*",
         "NTumbleBit.Common": "1.0.0-*",
         "DBreeze": "1.83.0",

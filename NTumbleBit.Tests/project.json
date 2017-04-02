@@ -6,7 +6,7 @@
         "NTumbleBit": "1.0.0-*",
         "NTumbleBit.TumblerServer": "1.0.0-*",
         "NTumbleBit.Client": "1.0.0-*",
-        "NBitcoin": "3.0.2.9",
+        "NBitcoin": "3.0.2.11",
         "dotnet-test-xunit": "2.2.0-preview2-build1029",
         "Microsoft.DotNet.InternalAbstractions": "1.0.0",
         "Microsoft.NETCore.App": {

@@ -53,36 +53,24 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 
 			var changeAddress = BitcoinAddress.Create(_RPCClient.SendCommand("getrawchangeaddress").ResultString, _RPCClient.Network);
 
-
-			var result = _RPCClient.SendCommandNoThrows("fundrawtransaction", ToHex(tx), new JObject
+			FundRawTransactionResponse response = null;
+			try
 			{
-				new JProperty("lockUnspents", true),
-				new JProperty("feeRate", feeRate.GetFee(1000).ToDecimal(MoneyUnit.BTC)),
-				new JProperty("changeAddress", changeAddress.ToString()),
-			});
-			if(result.Error != null)
-			{
-				if(result.Error.Message.Equals("Insufficient funds", StringComparison.OrdinalIgnoreCase))
-					return null;
-				result.ThrowIfError();
+				response = _RPCClient.FundRawTransaction(tx, new FundRawTransactionOptions()
+				{
+					ChangeAddress = changeAddress,
+					FeeRate = feeRate,
+					LockUnspents = true
+				});
 			}
-			var jobj = (JObject)result.Result;
-			var hex = jobj["hex"].Value<string>();
-			tx = new Transaction(hex);
-			result = _RPCClient.SendCommand("signrawtransaction", tx.ToHex());
-			jobj = (JObject)result.Result;
-			hex = jobj["hex"].Value<string>();
-			return new Transaction(hex);
-		}
-
-		//NBitcoin internally put a bit in the version number to make difference between transaction without input and transaction with witness.
-		private string ToHex(Transaction tx)
-		{
-			// if there is inputs, then it can't be confusing
-			if(tx.Inputs.Count > 0)
-				return tx.ToHex();
-			// if there is, do this ACK so that NBitcoin does not change the version number
-			return Encoders.Hex.EncodeData(tx.ToBytes(NBitcoin.Protocol.ProtocolVersion.WITNESS_VERSION - 1));
+			catch(RPCException ex)
+			{
+				if(ex.RPCCodeMessage.Equals("Insufficient funds", StringComparison.OrdinalIgnoreCase))
+					return null;
+				throw;
+			}
+			var result = _RPCClient.SendCommand("signrawtransaction", response.Transaction.ToHex());
+			return new Transaction(((JObject)result.Result)["hex"].Value<string>());
 		}
 	}
 }

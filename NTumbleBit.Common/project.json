@@ -4,7 +4,7 @@
     "dependencies": {
         "NETStandard.Library": "1.6.1",
         "NTumbleBit": "1.0.0-*",
-        "NBitcoin": "3.0.2.9",
+        "NBitcoin": "3.0.2.11",
         "Microsoft.Extensions.Logging.Abstractions": "1.1.1"
     },
 
