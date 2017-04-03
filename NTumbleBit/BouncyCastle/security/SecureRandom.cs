@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NBitcoin;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,22 +11,26 @@ namespace NTumbleBit.BouncyCastle.Security
 	{
 		public SecureRandom()
 		{
-
 		}
 
-		internal static byte[] GetNextBytes(SecureRandom random, int p)
+		public override int Next()
 		{
 			throw new NotImplementedException();
 		}
 
-		internal byte NextInt()
+		public override int Next(int maxValue)
 		{
 			throw new NotImplementedException();
 		}
 
-		internal void NextBytes(byte[] cekBlock, int p1, int p2)
+		public override int Next(int minValue, int maxValue)
 		{
 			throw new NotImplementedException();
+		}
+
+		public override void NextBytes(byte[] buffer)
+		{
+			RandomUtils.GetBytes(buffer);
 		}
 	}
 }
