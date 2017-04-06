@@ -15,7 +15,7 @@ namespace NTumbleBit.BouncyCastle.Security
 
 		public override int Next()
 		{
-			throw new NotImplementedException();
+			return RandomUtils.GetInt32();
 		}
 
 		public override int Next(int maxValue)
