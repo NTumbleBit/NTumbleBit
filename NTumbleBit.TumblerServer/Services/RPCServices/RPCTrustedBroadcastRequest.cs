@@ -73,7 +73,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				throw new NotSupportedException("ScriptPubKey to track not supported");
 			if(TrackPreviousScriptPubKey)
 				RPCClient.ImportAddress(address, label + " (PreviousScriptPubKey)", false);
-			var height = RPCClient.GetBlockCount();
+			var height = GetBlockCountAsync().GetAwaiter().GetResult();
 			var record = new Record();
 			record.Label = label;
 			//3 days expiration
@@ -107,7 +107,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 
 		public Transaction[] TryBroadcast()
 		{
-			var height = RPCClient.GetBlockCount();
+			var height = GetBlockCountAsync().GetAwaiter().GetResult();
 			List<Transaction> broadcasted = new List<Transaction>();
 			foreach(var broadcast in GetRequests())
 			{
@@ -134,6 +134,25 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			return broadcasted.ToArray();
 		}
 
+		private async Task<int> GetBlockCountAsync()
+		{
+			var blockCount = RPCClient.GetBlockCountAsync();
+			var rpcExplorer = BlockExplorer as RPCBlockExplorerService;
+			if(rpcExplorer == null)
+				return await blockCount.ConfigureAwait(false);
+
+			var bestBlockHash = await RPCClient.GetBestBlockHashAsync().ConfigureAwait(false);
+			if(lastBlock != bestBlockHash)
+				rpcExplorer.InvalidCachedTransactions();
+			lastBlock = bestBlockHash;
+			return await blockCount.ConfigureAwait(false);
+		}
+
+		uint256 lastBlock = null;
+		private async Task InvalidateCacheIfNeededAsync()
+		{
+			
+		}
 
 		private readonly IBlockExplorerService _BlockExplorer;
 		public IBlockExplorerService BlockExplorer
@@ -154,20 +173,6 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				.Where(t => t.Transaction.Outputs.Any(o => o.ScriptPubKey == scriptPubKey))
 				.Select(t => t.Transaction)
 				.ToArray();
-		}
-
-		public TransactionInformation GetTransaction(uint256 txId)
-		{
-			var result = RPCClient.SendCommandNoThrows("getrawtransaction", txId.ToString(), 1);
-			if(result == null || result.Error != null)
-				return null;
-			var tx = new Transaction((string)result.Result["hex"]);
-			var confirmations = result.Result["confirmations"];
-			return new TransactionInformation
-			{
-				Confirmations = confirmations == null ? 0 : (int)confirmations,
-				Transaction = tx
-			};
 		}
 	}
 

@@ -61,7 +61,10 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			}
 
 			if(results == null)
-				results = QueryWithListTransactions(withProof, address);
+			{
+				var walletTransactions = ListTransactions();
+				results = Filter(walletTransactions, !withProof, address);
+			}
 			if(withProof)
 			{
 				foreach(var tx in results.ToList())
@@ -106,44 +109,67 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			return results;
 		}
 
-		private List<TransactionInformation> QueryWithListTransactions(bool withProof, BitcoinAddress address)
+		public void InvalidCachedTransactions()
+		{
+			cachedTransactions = null;
+		}
+
+		object cachedTransactionsLock = new object();
+		JArray cachedTransactions;
+		JArray ListTransactions()
+		{
+			var cached = cachedTransactions;
+			if(cached != null)
+				return cached;
+			lock(cachedTransactionsLock)
+			{
+				JArray array = new JArray();
+				int count = 100;
+				int skip = 0;
+				int highestConfirmation = 0;
+
+				while(true)
+				{
+					var result = RPCClient.SendCommandNoThrows("listtransactions", "*", count, skip, true);
+					skip += count;
+					if(result.Error != null)
+						return null;
+					var transactions = (JArray)result.Result;
+					foreach(var obj in transactions)
+					{
+						array.Add(obj);
+						if(obj["confirmations"] != null)
+						{
+							highestConfirmation = Math.Max(highestConfirmation, (int)obj["confirmations"]);
+						}
+					}
+					if(transactions.Count < count || highestConfirmation >= 1400)
+						break;
+				}
+				cachedTransactions = array;
+				return array;
+			}
+		}
+
+		private List<TransactionInformation> Filter(JArray transactions, bool includeUnconf, BitcoinAddress address)
 		{
 			List<TransactionInformation> results = new List<TransactionInformation>();
 			HashSet<uint256> resultsSet = new HashSet<uint256>();
-			int count = 100;
-			int skip = 0;
-			int highestConfirmation = 0;
-			while(true)
+			foreach(var obj in transactions)
 			{
-				var result = RPCClient.SendCommandNoThrows("listtransactions", "*", count, skip, true);
-				skip += count;
-				if(result.Error != null)
-					return null;
-				var transactions = (JArray)result.Result;
-				foreach(var obj in transactions)
+				var txId = new uint256((string)obj["txid"]);
+				if((string)obj["address"] == address.ToString())
 				{
-					var txId = new uint256((string)obj["txid"]);
-
-					if(obj["confirmations"] != null)
+					//May have duplicates
+					if(!resultsSet.Contains(txId))
 					{
-						highestConfirmation = Math.Max(highestConfirmation, (int)obj["confirmations"]);
-					}
-
-					if((string)obj["address"] == address.ToString())
-					{
-						//May have duplicates
-						if(!resultsSet.Contains(txId))
-						{
-							var tx = GetTransaction(txId);
-							if(tx == null || (withProof && tx.Confirmations == 0))
-								continue;
-							resultsSet.Add(txId);
-							results.Add(tx);
-						}
+						var tx = GetTransaction(txId);
+						if(tx == null || (!includeUnconf && tx.Confirmations == 0))
+							continue;
+						resultsSet.Add(txId);
+						results.Add(tx);
 					}
 				}
-				if(transactions.Count < count || highestConfirmation >= 1000)
-					break;
 			}
 			return results;
 		}
