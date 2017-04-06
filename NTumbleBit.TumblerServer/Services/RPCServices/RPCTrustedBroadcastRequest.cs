@@ -149,11 +149,6 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		}
 
 		uint256 lastBlock = null;
-		private async Task InvalidateCacheIfNeededAsync()
-		{
-			
-		}
-
 		private readonly IBlockExplorerService _BlockExplorer;
 		public IBlockExplorerService BlockExplorer
 		{
