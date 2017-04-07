@@ -16,8 +16,13 @@ namespace NTumbleBit.Common.Logging
 		{
 			Configuration = factory.CreateLogger("Configuration");
 			Main = factory.CreateLogger("Main");
+			Server = factory.CreateLogger("Server");
 		}
 		public static ILogger Main
+		{
+			get; set;
+		}
+		public static ILogger Server
 		{
 			get; set;
 		}

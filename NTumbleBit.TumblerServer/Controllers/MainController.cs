@@ -11,6 +11,8 @@ using System.Net;
 using NBitcoin;
 using NTumbleBit.TumblerServer.Services;
 using NBitcoin.Crypto;
+using NTumbleBit.Common.Logging;
+using Microsoft.Extensions.Logging;
 
 // For more information on enabling Web API for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -122,6 +124,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 			var key = Repository.GetKey(cycle.Start, request.KeyReference);
 			if(key.PubKey != request.TumblerEscrowPubKey)
 				return BadRequest("incorrect-escrowpubkey");
+
 			aliceNegotiation.ReceiveClientEscrowInformation(request.ClientEscrowInformation, key);
 
 			try
@@ -141,6 +144,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 				if(!Repository.MarkUsedNonce(cycle.Start, new uint160(key.PubKey.Hash.ToBytes())))
 					return BadRequest("invalid-transaction");
 				Repository.Save(cycle.Start, solverServerSession);
+				Logs.Server.LogInformation($"Cycle {cycle.Start} Proof of Escrow signed for " + transaction.GetHash());
 				return Json(voucher);
 			}
 			catch(PuzzleException)
@@ -165,14 +169,19 @@ namespace NTumbleBit.TumblerServer.Controllers
 				{
 					return BadRequest("nonce-already-used");
 				}
+				Logs.Server.LogInformation($"Cycle {cycle.Start} Asked to open channel");
 				var txOut = session.BuildEscrowTxOut();
 				var tx = Services.WalletService.FundTransaction(txOut, fee);
 				if(tx == null)
+				{
+					Logs.Server.LogInformation("Not funds left for creating a channel");
 					return BadRequest("tumbler-insufficient-funds");
+				}
 
-				var escrowTumblerLabel = $"Cycle {session.GetCycle().Start} Tumbler Escrow";
+				var escrowTumblerLabel = $"Cycle {cycle.Start} Tumbler Escrow";
 				Services.BlockExplorerService.Track(escrowTumblerLabel, txOut.ScriptPubKey);
 				Services.BroadcastService.Broadcast(escrowTumblerLabel, tx);
+				Logs.Server.LogInformation($"Cycle {cycle.Start} Channel created " + tx.ToString());
 				var promiseServerSession = session.SetSignedTransaction(tx);
 				Repository.Save(cycle.Start, promiseServerSession);
 
