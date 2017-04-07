@@ -181,7 +181,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 				var escrowTumblerLabel = $"Cycle {cycle.Start} Tumbler Escrow";
 				Services.BlockExplorerService.Track(escrowTumblerLabel, txOut.ScriptPubKey);
 				Services.BroadcastService.Broadcast(escrowTumblerLabel, tx);
-				Logs.Server.LogInformation($"Cycle {cycle.Start} Channel created " + tx.ToString());
+				Logs.Server.LogInformation($"Cycle {cycle.Start} Channel created " + tx.GetHash());
 				var promiseServerSession = session.SetSignedTransaction(tx);
 				Repository.Save(cycle.Start, promiseServerSession);
 
