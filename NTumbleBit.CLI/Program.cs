@@ -7,26 +7,121 @@ using System.Threading.Tasks;
 using NBitcoin;
 using NTumbleBit.Common;
 using System.IO;
+using System.Reflection;
 using NTumbleBit.Client.Tumbler.Services;
 using NTumbleBit.Client.Tumbler;
 using System.Threading;
 using NTumbleBit.Common.Logging;
 using System.Text;
 using NBitcoin.RPC;
+using CommandLine;
+using NTumbleBit.ClassicTumbler;
 
 namespace NTumbleBit.CLI
 {
+	[Verb("tumble", HelpText = "Start a tumbler.")]
+	class TumbleOptions
+	{
+		[Option('n', "network", Default = "mainnet",
+			HelpText = "Other options are testnet or regtest.")]
+		public string Network { get; set; }
+
+		[Option('s', "server", Default = "http://localhost:5000",
+			HelpText = "Tumbler Server URI")]
+		public string Server { get; set; }
+	}
+	[Verb("status", HelpText = "Shows the current status.")]
+	class StatusOptions
+	{ //normal options here
+	}
+	[Verb("quit", HelpText = "Quit.")]
+	class QuitOptions
+	{ //normal options here
+	}
+
 	public class Program
 	{
+		private static BroadcasterJob _broadcaster;
+		private static ClassicTumblerParameters _parameters;
+		private static DBreezeRepository _dbreeze;
+		private static TumblerClient _client;
+		private static IDestinationWallet _destinationWallet;
+		private static ExternalServices _services;
+ 
 		public static void Main(string[] args)
 		{
+			System.Console.Write(Assembly.GetEntryAssembly().GetName().Name
+				+ " " + Assembly.GetEntryAssembly().GetName().Version);
+			System.Console.WriteLine(" -- TumbleBit Implementation in .NET Core");
+			System.Console.WriteLine("Type \"help\" for more information.");
+			System.Console.WriteLine();
+			while (true)
+			{
+				System.Console.Write(">>> ");
+				var split = Console.ReadLine().Split(null);
+				Parser.Default.ParseArguments<TumbleOptions, StatusOptions, QuitOptions>(split)
+					.WithParsed<QuitOptions>(_ => Environment.Exit(0))
+					.WithParsed<TumbleOptions>(opts => StartTumbler(args, opts))
+					.WithParsed<StatusOptions>(_ => GetStatus());
+			}
+		}
+
+		private static void GetStatus()
+		{
+			if (_broadcaster == null)
+			{
+				Console.WriteLine("Tumbler not initialized!");
+				Console.WriteLine("Try to \"tumble\" first.");
+				Console.WriteLine();
+				return;
+			}
+
 			Logs.Configure(new FuncLoggerFactory(i => new ConsoleLogger(i, (a, b) => true, false)));
 			CancellationTokenSource broadcasterCancel = new CancellationTokenSource();
 			try
 			{
-				var network = args.Contains("-testnet", StringComparer.OrdinalIgnoreCase) ? Network.TestNet :
-				args.Contains("-regtest", StringComparer.OrdinalIgnoreCase) ? Network.RegTest :
-				Network.Main;
+				_broadcaster.Start(broadcasterCancel.Token);
+				Logs.Main.LogInformation("BroadcasterJob started");
+				var stateMachine = new StateMachinesExecutor(_parameters, _client, _destinationWallet, _services, _dbreeze,
+					Logs.Main);
+				stateMachine.Start(broadcasterCancel.Token);
+				Logs.Main.LogInformation("State machines started");
+
+				Logs.Main.LogInformation("Press enter to stop");
+				Console.ReadLine();
+				broadcasterCancel.Cancel();
+			}
+			catch (Exception ex)
+			{
+				Logs.Configuration.LogError(ex.Message);
+				Logs.Configuration.LogDebug(ex.StackTrace);
+			}
+			finally
+			{
+				if (!broadcasterCancel.IsCancellationRequested)
+					broadcasterCancel.Cancel();
+			}
+		}
+
+		private static void StartTumbler(String[] args, TumbleOptions options)
+		{
+			if (_broadcaster != null)
+			{
+				Console.WriteLine("Tumbler already initialized!");
+				Console.WriteLine("Try to check the \"status\".");
+				Console.WriteLine();
+				return;
+			}
+
+			Logs.Configure(new FuncLoggerFactory(i => new ConsoleLogger(i, (a, b) => true, false)));
+			CancellationTokenSource broadcasterCancel = new CancellationTokenSource();
+			try
+			{
+				var network = options.Network.Equals("testnet", StringComparison.OrdinalIgnoreCase)
+					? Network.TestNet
+					: options.Network.Equals("regtest", StringComparison.OrdinalIgnoreCase)
+						? Network.RegTest
+						: Network.Main;
 				Logs.Configuration.LogInformation("Network: " + network);
 
 				var dataDir = DefaultDataDirectory.GetDefaultDirectory("NTumbleBit", network);
@@ -35,8 +130,6 @@ namespace NTumbleBit.CLI
 				var config = TextFileConfiguration.Parse(File.ReadAllText(configFile));
 				consoleArgs.MergeInto(config, true);
 				config.AddAlias("server", "tumbler.server");
-
-				var onlymonitor = config.GetOrDefault<bool>("onlymonitor", false);
 
 				RPCClient rpc = null;
 				try
@@ -47,81 +140,80 @@ namespace NTumbleBit.CLI
 				{
 					throw new ConfigException("Please, fix rpc settings in " + configFile);
 				}
-				var dbreeze = new DBreezeRepository(Path.Combine(dataDir, "db"));
+				_dbreeze = new DBreezeRepository(Path.Combine(dataDir, "db"));
 
-				var services = ExternalServices.CreateFromRPCClient(rpc, dbreeze);
+				_services = ExternalServices.CreateFromRPCClient(rpc, _dbreeze);
 
-				var broadcaster = new BroadcasterJob(services, Logs.Main);
-				broadcaster.Start(broadcasterCancel.Token);
+				_broadcaster = new BroadcasterJob(_services, Logs.Main);
+				_broadcaster.Start(broadcasterCancel.Token);
 				Logs.Main.LogInformation("BroadcasterJob started");
 
-				if(!onlymonitor)
+			    var server = new Uri(options.Server);
+				_client = new TumblerClient(network, server);
+				Logs.Configuration.LogInformation("Downloading tumbler information of " + server.AbsoluteUri);
+				_parameters = Retry(3, () => _client.GetTumblerParameters());
+				Logs.Configuration.LogInformation("Tumbler Server Connection successfull");
+				var existingConfig =
+					_dbreeze.Get<ClassicTumbler.ClassicTumblerParameters>("Configuration", _client.Address.AbsoluteUri);
+				if (existingConfig != null)
 				{
-					var server = config.GetOrDefault("tumbler.server", null as Uri);
-					if(server == null)
+					if (Serializer.ToString(existingConfig) != Serializer.ToString(_parameters))
 					{
-						Logs.Main.LogError("tumbler.server not configured");
+						Logs.Configuration.LogError(
+							"The configuration file of the tumbler changed since last connection, it should never happen");
 						throw new ConfigException();
 					}
-					var client = new TumblerClient(network, server);
-					Logs.Configuration.LogInformation("Downloading tumbler information of " + server.AbsoluteUri);
-					var parameters = Retry(3, () => client.GetTumblerParameters());
-					Logs.Configuration.LogInformation("Tumbler Server Connection successfull");
-					var existingConfig = dbreeze.Get<ClassicTumbler.ClassicTumblerParameters>("Configuration", client.Address.AbsoluteUri);
-					if(existingConfig != null)
-					{
-						if(Serializer.ToString(existingConfig) != Serializer.ToString(parameters))
-						{
-							Logs.Configuration.LogError("The configuration file of the tumbler changed since last connection, it should never happen");
-							throw new ConfigException();
-						}
-					}
-					else
-					{
-						dbreeze.UpdateOrInsert("Configuration", client.Address.AbsoluteUri, parameters, (o, n) => n);
-					}
+				}
+				else
+				{
+					_dbreeze.UpdateOrInsert("Configuration", _client.Address.AbsoluteUri, _parameters, (o, n) => n);
+				}
 
-					if(parameters.Network != rpc.Network)
-					{
-						throw new ConfigException("The tumbler server run on a different network than the local rpc server");
-					}
+				if (_parameters.Network != rpc.Network)
+				{
+					throw new ConfigException("The tumbler server run on a different network than the local rpc server");
+				}
 
-					IDestinationWallet destinationWallet = null;
+				//IDestinationWallet destinationWallet = null;
+				try
+				{
+					_destinationWallet = GetDestinationWallet(config, rpc.Network, _dbreeze);
+				}
+				catch (Exception ex)
+				{
+					Logs.Main.LogInformation(
+						"outputwallet.extpubkey is not configured, trying to use outputwallet.rpc settings.");
 					try
 					{
-						destinationWallet = GetDestinationWallet(config, rpc.Network, dbreeze);
+						_destinationWallet = GetRPCDestinationWallet(config, rpc.Network);
 					}
-					catch(Exception ex)
+					catch
 					{
-						Logs.Main.LogInformation("outputwallet.extpubkey is not configured, trying to use outputwallet.rpc settings.");
-						try
-						{
-							destinationWallet = GetRPCDestinationWallet(config, rpc.Network);
-						}
-						catch { throw ex; } //Not a bug, want to throw the other exception
-
-					}
-					var stateMachine = new StateMachinesExecutor(parameters, client, destinationWallet, services, dbreeze, Logs.Main);
-					stateMachine.Start(broadcasterCancel.Token);
-					Logs.Main.LogInformation("State machines started");
+						throw ex;
+					} //Not a bug, want to throw the other exception
 				}
+				var stateMachine = new StateMachinesExecutor(_parameters, _client, _destinationWallet, _services, _dbreeze,
+					Logs.Main);
+				stateMachine.Start(broadcasterCancel.Token);
+				Logs.Main.LogInformation("State machines started");
+
 				Logs.Main.LogInformation("Press enter to stop");
 				Console.ReadLine();
 				broadcasterCancel.Cancel();
 			}
-			catch(ConfigException ex)
+			catch (ConfigException ex)
 			{
-				if(!string.IsNullOrEmpty(ex.Message))
+				if (!string.IsNullOrEmpty(ex.Message))
 					Logs.Configuration.LogError(ex.Message);
 			}
-			catch(Exception ex)
+			catch (Exception ex)
 			{
 				Logs.Configuration.LogError(ex.Message);
 				Logs.Configuration.LogDebug(ex.StackTrace);
 			}
 			finally
 			{
-				if(!broadcasterCancel.IsCancellationRequested)
+				if (!broadcasterCancel.IsCancellationRequested)
 					broadcasterCancel.Cancel();
 			}
 		}
@@ -174,9 +266,9 @@ namespace NTumbleBit.CLI
 					throw new ConfigException("outputwallet.keypath is not configured correctly");
 				}
 			}
-			var destinationWallet = new ClientDestinationWallet("", pubKey, keypath, dbreeze);
+			ClientDestinationWallet destinationWallet = new ClientDestinationWallet("", pubKey, keypath, dbreeze);
 			return destinationWallet;
-		}		
+		}
 
 		public static string GetDefaultConfigurationFile(string dataDirectory, Network network)
 		{
