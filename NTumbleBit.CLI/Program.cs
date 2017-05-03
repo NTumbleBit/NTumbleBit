@@ -13,6 +13,8 @@ using System.Threading;
 using NTumbleBit.Common.Logging;
 using System.Text;
 using NBitcoin.RPC;
+using CommandLine;
+using System.Reflection;
 
 namespace NTumbleBit.CLI
 {
@@ -20,8 +22,41 @@ namespace NTumbleBit.CLI
 	{
 		public static void Main(string[] args)
 		{
+			if (args.Contains("-i", StringComparer.OrdinalIgnoreCase))
+			{
+				StartInteractiveMode(args);
+			}
+			StartTumbler(args);
+		}
+
+		private static void StartInteractiveMode(string[] args)
+		{
+			Console.Write(Assembly.GetEntryAssembly().GetName().Name
+						+ " " + Assembly.GetEntryAssembly().GetName().Version);
+			Console.WriteLine(" -- TumbleBit Implementation in .NET Core");
+			Console.WriteLine("Type \"help\" for more information.");
+
+			while (true)
+			{
+				Console.Write(">>> ");
+				var split = Console.ReadLine().Split(null);
+				Parser.Default.ParseArguments<TumbleOptions, StatusOptions, QuitOptions>(split)
+					.WithParsed<TumbleOptions>(_ => StartTumbler(args))
+					.WithParsed<StatusOptions>(_ => GetStatus())
+					.WithParsed<QuitOptions>(_ => Environment.Exit(0));
+			}
+		}
+
+		private static void GetStatus()
+		{
+			Console.WriteLine("Status not implemented yet!");
+		}
+
+		private static void StartTumbler(string[] args)
+		{
 			Logs.Configure(new FuncLoggerFactory(i => new ConsoleLogger(i, (a, b) => true, false)));
 			CancellationTokenSource broadcasterCancel = new CancellationTokenSource();
+			DBreezeRepository dbreeze = null;
 			try
 			{
 				var network = args.Contains("-testnet", StringComparer.OrdinalIgnoreCase) ? Network.TestNet :
@@ -47,7 +82,7 @@ namespace NTumbleBit.CLI
 				{
 					throw new ConfigException("Please, fix rpc settings in " + configFile);
 				}
-				var dbreeze = new DBreezeRepository(Path.Combine(dataDir, "db"));
+				dbreeze = new DBreezeRepository(Path.Combine(dataDir, "db"));
 
 				var services = ExternalServices.CreateFromRPCClient(rpc, dbreeze);
 
@@ -123,6 +158,7 @@ namespace NTumbleBit.CLI
 			{
 				if(!broadcasterCancel.IsCancellationRequested)
 					broadcasterCancel.Cancel();
+			    dbreeze?.Dispose();
 			}
 		}
 
