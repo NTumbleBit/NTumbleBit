@@ -30,7 +30,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		}
 		public FeeRate GetFeeRate()
 		{
-			return _RPCClient.TryEstimateFeeRate(1) ?? new FeeRate(Money.Satoshis(50), 1);
+			return _RPCClient.TryEstimateFeeRate(2) ?? new FeeRate(Money.Satoshis(50), 1);
 		}
 	}
 }
