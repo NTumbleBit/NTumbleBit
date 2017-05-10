@@ -30,7 +30,12 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		}
 		public FeeRate GetFeeRate()
 		{
-			return _RPCClient.TryEstimateFeeRate(1) ?? new FeeRate(Money.Satoshis(50), 1);
+			var rate = _RPCClient.TryEstimateFeeRate(1) ??
+				   _RPCClient.TryEstimateFeeRate(2) ??
+				   _RPCClient.TryEstimateFeeRate(3);
+			if(rate == null)
+				throw new FeeRateUnavailableException("The fee rate is unavailable");
+			return rate;
 		}
 	}
 }
