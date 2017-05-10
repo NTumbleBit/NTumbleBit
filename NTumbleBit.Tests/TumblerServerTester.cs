@@ -186,8 +186,10 @@ namespace NTumbleBit.Tests
 			_Host.Start();
 
 			ServerContext = new TumblerServerContext(_Host);
+			((TumblerServer.Services.RPCServices.RPCFeeService)ServerContext.ExtenalServices.FeeService).FallBackFeeRate = new FeeRate(Money.Satoshis(50), 1);
 			var repo = new Client.Tumbler.Services.DBreezeRepository(Path.Combine(directory, "client"));
 			ClientContext = new TumblerClientContext(CreateTumblerClient(), AliceNode.CreateRPCClient(), repo);
+			((Client.Tumbler.Services.RPCServices.RPCFeeService)ClientContext.PaymentMachineState.Services.FeeService).FallBackFeeRate = new FeeRate(Money.Satoshis(50), 1);
 		}
 
 		public TumblerClientContext ClientContext
