@@ -19,8 +19,11 @@ namespace NTumbleBit.Client.Tumbler.Services
     {
 		public static ExternalServices CreateFromRPCClient(RPCClient rpc, IRepository repository)
 		{
+			var info = rpc.SendCommand(RPCOperations.getinfo);
+			var minimumRate = new NBitcoin.FeeRate(NBitcoin.Money.Coins((decimal)(double)((Newtonsoft.Json.Linq.JValue)(info.Result["relayfee"])).Value), 1000);
+
 			ExternalServices service = new ExternalServices();
-			service.FeeService = new RPCFeeService(rpc);
+			service.FeeService = new RPCFeeService(rpc) { MinimumFeeRate = minimumRate };
 			service.WalletService = new RPCWalletService(rpc);
 			service.BroadcastService = new RPCBroadcastService(rpc, repository);
 			service.BlockExplorerService = new RPCBlockExplorerService(rpc);

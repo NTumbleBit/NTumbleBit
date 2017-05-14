@@ -32,6 +32,10 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		{
 			get; set;
 		}
+		public FeeRate MinimumFeeRate
+		{
+			get; set;
+		}
 		public FeeRate GetFeeRate()
 		{
 			var rate = _RPCClient.TryEstimateFeeRate(1) ??
@@ -40,6 +44,8 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				   FallBackFeeRate;
 			if(rate == null)
 				throw new FeeRateUnavailableException("The fee rate is unavailable");
+			if(rate < MinimumFeeRate)
+				rate = MinimumFeeRate;
 			return rate;
 		}
 	}
