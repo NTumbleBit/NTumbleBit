@@ -1,12 +1,12 @@
 # NTumbleBit
 TumbleBit implementation in .NET Core.  
 
-##[Check out the in-depth user guide on the Wiki](https://github.com/NTumbleBit/NTumbleBit/wiki)
+## [Check out the in-depth user guide on the Wiki](https://github.com/NTumbleBit/NTumbleBit/wiki)
 
-##Trailer/Motivation
+## Trailer/Motivation
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/T2nbxe7gH_4/2.jpg)](https://www.youtube.com/watch?v=T2nbxe7gH_4)
 
-##Resources
+## Resources
 Cross-platform library, based on ["TumbleBit: An Untrusted Bitcoin-Compatible Anonymous Payment Hub"](https://eprint.iacr.org/2016/575). 
 Another implementation can be found on [the official repository of TumbleBit](https://github.com/BUSEC/TumbleBit). 
 An "easy" to understand explanation of the protocol has been presented by Ethan Heilman and Leen Al Shenibr at [Scaling Bitcoin Milan](https://www.youtube.com/watch?v=iGVSnxz1mn8).
@@ -53,5 +53,5 @@ We recommend that you use [Visual Studio Code](https://code.visualstudio.com/), 
 We recommend that you use [Visual Studio 2015 Update 3 (free)](https://www.visualstudio.com/vs/community/) for building and running the tests.
 You can of course use Visual use command line or [Visual Studio Code](https://code.visualstudio.com/) as well.
 
-##Acknowledgements
+## Acknowledgements
 Special thanks to Ethan Heilman and Leen AlShenibr for their work, their research and proof of work made this project possible.
