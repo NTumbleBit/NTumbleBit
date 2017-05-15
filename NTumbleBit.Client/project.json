@@ -2,11 +2,11 @@
     "version": "1.0.0-*",
 
     "dependencies": {
-        "NBitcoin": "3.0.2.11",
+        "NBitcoin": "3.0.2.23",
         "NTumbleBit": "1.0.0-*",
         "NTumbleBit.Common": "1.0.0-*",
         "DBreeze": "1.83.0",
-        "Microsoft.Extensions.Logging.Abstractions": "1.1.1",
+        "Microsoft.Extensions.Logging.Abstractions": "1.1.2",
         "NETStandard.Library": "1.6.1"
     },
 

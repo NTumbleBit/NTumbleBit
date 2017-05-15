@@ -11,7 +11,7 @@
         },
         "NTumbleBit": "1.0.0-*",
         "NTumbleBit.Client": "1.0.0-*",
-        "NBitcoin": "3.0.2.11",
+        "NBitcoin": "3.0.2.23",
         "DBreeze": "1.83.0",
         "CommandLineParser": "2.1.1-beta",
         "Microsoft.Extensions.Logging.Console": "1.1.1",
