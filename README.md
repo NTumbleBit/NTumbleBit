@@ -16,18 +16,18 @@ An "easy" to understand explanation of the protocol has been presented by Ethan 
 As a user, you will need:
 
 1. [NET Core Runtime 1.1.1](https://github.com/dotnet/core/blob/master/release-notes/download-archives/1.1.1-download.md)
-2. [NET Core SDK 1.1.0 Preview 2.1](https://github.com/dotnet/core/blob/master/release-notes/download-archives/1.1-preview2.1-download.md) (see below)
+2. [NET Core SDK 1.0.4](https://github.com/dotnet/core/blob/master/release-notes/download-archives/1.0.4-sdk-download.md) (see below)
 3. [Bitcoin Core 0.13.1](https://bitcoin.org/bin/bitcoin-core-0.13.1/) fully sync, rpc enabled.
 
 You can easily install the SDK on ubuntu systems after having installed the runtime by running
 ```
-sudo apt-get install dotnet-dev-1.0.0-preview2.1-003177
+sudo apt-get install dotnet-dev-1.0.4
 ```
 Using Bitcoin Core with later version should work as well.
 
 As a developer, you need additionally one of those:
 
-1. [Visual studio 2015 Update 3](https://go.microsoft.com/fwlink/?LinkId=691129) (Windows only)
+1. [Visual studio 2017](https://www.visualstudio.com/downloads/) (Windows only)
 2. [Visual studio code](https://code.visualstudio.com/) with [C# Extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.csharp) (Cross plateform)
 
 If you have any issue, please check the [FAQ](https://github.com/NTumbleBit/NTumbleBit/wiki/FAQ), before posting an issue.
@@ -50,7 +50,7 @@ We recommend that you use [Visual Studio Code](https://code.visualstudio.com/), 
 
 ## Developing on Windows
 
-We recommend that you use [Visual Studio 2015 Update 3 (free)](https://www.visualstudio.com/vs/community/) for building and running the tests.
+We recommend that you use [Visual studio 2017](https://www.visualstudio.com/downloads/) for building and running the tests.
 You can of course use Visual use command line or [Visual Studio Code](https://code.visualstudio.com/) as well.
 
 ## Acknowledgements
