@@ -169,12 +169,12 @@ namespace NTumbleBit.PuzzleSolver
 			public PubKey FulfillKey
 			{
 				get;
-				internal set;
+				set;
 			}
 			public Money OfferTransactionFee
 			{
 				get;
-				internal set;
+				set;
 			}
 		}
 
