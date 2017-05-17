@@ -63,10 +63,14 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 					LockUnspents = true
 				});
 			}
-			catch(RPCException ex)
+			catch(RPCException)
 			{
-				if(ex.Message.Equals("Insufficient funds", StringComparison.OrdinalIgnoreCase))
-					return null;
+				var balance = _RPCClient.GetBalance(0, false);
+				var needed = tx.Outputs.Select(o => o.Value).Sum()
+							  + feeRate.GetFee(2000);
+				var missing = needed - balance;
+				if(missing > Money.Zero)
+					throw new NotEnoughFundsException("Not enough funds", "", missing);
 				throw;
 			}
 			var result = _RPCClient.SendCommand("signrawtransaction", response.Transaction.ToHex());

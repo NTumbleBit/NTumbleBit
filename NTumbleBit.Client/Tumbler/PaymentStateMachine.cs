@@ -180,12 +180,18 @@ namespace NTumbleBit.Client.Tumbler
 						//Client create the escrow
 						var txout = ClientChannelNegotiation.BuildClientEscrowTxOut();
 						feeRate = GetFeeRate();
-						var clientEscrowTx = Services.WalletService.FundTransaction(txout, feeRate);
-						if(clientEscrowTx == null)
+
+						Transaction clientEscrowTx = null;
+						try
 						{
-							logger.LogInformation("Not enough funds in the wallet to tumble");
+							clientEscrowTx = Services.WalletService.FundTransaction(txout, feeRate);
+						}
+						catch(NotEnoughFundsException ex)
+						{
+							logger.LogInformation($"Not enough funds in the wallet to tumble. Missing about {ex.Missing}. Denomination is {Parameters.Denomination}.");
 							break;
 						}
+
 						SolverClientSession = ClientChannelNegotiation.SetClientSignedTransaction(clientEscrowTx);
 						var redeem = SolverClientSession.CreateRedeemTransaction(feeRate, Services.WalletService.GenerateAddress($"Cycle {cycle.Start} Client Redeem").ScriptPubKey);
 
