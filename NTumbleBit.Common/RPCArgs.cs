@@ -76,7 +76,7 @@ namespace NTumbleBit.Common
 			{
 				if(ex.RPCCode != RPCErrorCode.RPC_METHOD_NOT_FOUND)
 				{
-					Logs.Configuration.LogError("Error connecting to RPC " + ex.Message);
+					Logs.Configuration.LogError("Received unexpected response from RPC server: " + ex.Message);
 					throw new ConfigException();
 				}
 			}
