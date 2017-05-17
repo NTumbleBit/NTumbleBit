@@ -72,8 +72,8 @@ namespace NTumbleBit
 			tx.Inputs[0].Sequence = 0;
 			tx.Outputs.Add(new TxOut(coin.Amount, redeemDestination));
 			var vSize = tx.GetVirtualSize() + 80;
-			tx.Outputs[0].Value -= feeRate.GetFee(vSize);
 			tx.Inputs[0].ScriptSig = EscrowScriptBuilder.GenerateScriptSig(new TransactionSignature[] { null }) + Op.GetPushOp(coin.Redeem.ToBytes());
+			tx.Outputs[0].Value -= feeRate.GetFee(vSize);
 
 			var redeemTransaction =  new TrustedBroadcastRequest
 			{
