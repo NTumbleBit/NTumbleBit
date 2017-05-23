@@ -8,8 +8,8 @@ TumbleBit implementation in .NET Core.
 
 ## Resources
 Cross-platform library, based on ["TumbleBit: An Untrusted Bitcoin-Compatible Anonymous Payment Hub"](https://eprint.iacr.org/2016/575). 
-Another implementation can be found on [the official repository of TumbleBit](https://github.com/BUSEC/TumbleBit). 
-An "easy" to understand explanation of the protocol has been presented by Ethan Heilman and Leen Al Shenibr at [Scaling Bitcoin Milan](https://www.youtube.com/watch?v=iGVSnxz1mn8).
+Another proof of consept implementation can be found in [the old repository of TumbleBit](https://github.com/BUSEC/TumbleBit).  
+An "easy" to understand explanation of the protocol has been presented by Ethan Heilman and Leen Al Shenibr at [Scaling Bitcoin Milan](https://www.youtube.com/watch?v=iGVSnxz1mn8), and on NTumbleBit implementation by Nicolas Dorier at [Blockchain Core Camp Tokyo](https://player.vimeo.com/video/215151763).
 
 ## Requirements
 
