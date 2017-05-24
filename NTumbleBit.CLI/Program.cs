@@ -26,7 +26,7 @@ namespace NTumbleBit.CLI
 			{
 				StartInteractiveMode(args);
 			}
-			StartTumbler(args);
+			else StartTumbler(args);
 		}
 
 		private static void StartInteractiveMode(string[] args)
