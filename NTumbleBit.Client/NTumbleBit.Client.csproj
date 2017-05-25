@@ -24,9 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="NBitcoin" Version="3.0.2.23" />
     <PackageReference Include="DBreeze" Version="1.84.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="1.1.2" />
   </ItemGroup>
 
 </Project>
