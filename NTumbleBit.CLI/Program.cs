@@ -22,7 +22,8 @@ namespace NTumbleBit.CLI
 	{
 		public static void Main(string[] args)
 		{
-			if (args.Contains("-i", StringComparer.OrdinalIgnoreCase))
+			if (args.Contains("-i", StringComparer.OrdinalIgnoreCase)
+				|| args.Contains("-interactive", StringComparer.OrdinalIgnoreCase))
 			{
 				StartInteractiveMode(args);
 			}
