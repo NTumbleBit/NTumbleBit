@@ -227,6 +227,9 @@ namespace NTumbleBit.CLI
 				builder.AppendLine("#rpc.user=bitcoinuser");
 				builder.AppendLine("#rpc.password=bitcoinpassword");
 				builder.AppendLine("#rpc.cookiefile=yourbitcoinfolder/.cookie");
+				builder.AppendLine("#tumbler.server=");
+				builder.AppendLine("#outputwallet.extpubkey=");
+				builder.AppendLine("#outputwallet.keypath=");
 				File.WriteAllText(config, builder.ToString());
 			}
 			return config;
