@@ -24,8 +24,7 @@ namespace NTumbleBit.Client.Tumbler.Services
 
 			ExternalServices service = new ExternalServices();
 			service.FeeService = new RPCFeeService(rpc) {
-				MinimumFeeRate = minimumRate,
-				FallBackFeeRate = minimumRate // for now
+				MinimumFeeRate = minimumRate
 			};
 			service.WalletService = new RPCWalletService(rpc);
 			service.BroadcastService = new RPCBroadcastService(rpc, repository);
