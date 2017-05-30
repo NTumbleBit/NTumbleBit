@@ -245,7 +245,12 @@ namespace NTumbleBit.PuzzlePromise
 			Transaction cashout = new Transaction();
 			cashout.AddInput(new TxIn(InternalState.EscrowedCoin.Outpoint, Script.Empty));
 			cashout.AddOutput(new TxOut(Money.Zero, cashoutDestination));
-			var fee = feeRate.GetFee(cashout.GetVirtualSize());
+			
+			var tb = new TransactionBuilder();
+			tb.Extensions.Add(new EscrowBuilderExtension());
+			tb.AddCoins(InternalState.EscrowedCoin);
+			var size = tb.EstimateSize(cashout, true);
+			var fee = feeRate.GetFee(size);
 			cashout.Outputs[0].Value = InternalState.EscrowedCoin.Amount - fee;
 
 
