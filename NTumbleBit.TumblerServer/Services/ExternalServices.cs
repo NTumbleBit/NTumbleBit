@@ -21,11 +21,22 @@ namespace NTumbleBit.Client.Tumbler.Services
 		{
 			var info = rpc.SendCommand(RPCOperations.getinfo);
 			var minimumRate = new NBitcoin.FeeRate(NBitcoin.Money.Coins((decimal)(double)((Newtonsoft.Json.Linq.JValue)(info.Result["relayfee"])).Value), 1000);
-
+			
 			ExternalServices service = new ExternalServices();
 			service.FeeService = new RPCFeeService(rpc) {
 				MinimumFeeRate = minimumRate
 			};
+
+			// on regtest the estimatefee always fails
+			if (rpc.Network == NBitcoin.Network.RegTest)
+			{
+				service.FeeService = new RPCFeeService(rpc)
+				{
+					MinimumFeeRate = minimumRate,
+					FallBackFeeRate = new NBitcoin.FeeRate(NBitcoin.Money.Satoshis(50), 1)
+				};
+			}
+
 			service.WalletService = new RPCWalletService(rpc);
 			service.BroadcastService = new RPCBroadcastService(rpc, repository);
 			service.BlockExplorerService = new RPCBlockExplorerService(rpc);
