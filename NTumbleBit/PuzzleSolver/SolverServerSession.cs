@@ -345,7 +345,12 @@ namespace NTumbleBit.PuzzleSolver
 			Transaction fulfill = new Transaction();
 			fulfill.Inputs.Add(new TxIn(offerCoin.Outpoint));
 			fulfill.Outputs.Add(new TxOut(offerCoin.Amount, cashout));
-			var size = new OfferBuilderExtension().EstimateScriptSigSize(offerCoin.Redeem);
+
+			var tb = new TransactionBuilder();
+			tb.Extensions.Add(new EscrowBuilderExtension());
+			tb.AddCoins(offerCoin);
+			var size = tb.EstimateSize(fulfill, true);
+			var fee = feeRate.GetFee(size);
 			fulfill.Outputs[0].Value -= feeRate.GetFee(size);
 
 			var signature = fulfill.Inputs.AsIndexedInputs().First().Sign(InternalState.FulfillKey, offerCoin, SigHash.All);
