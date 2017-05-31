@@ -338,9 +338,10 @@ namespace NTumbleBit.PuzzleSolver
 			tx.Inputs.Add(new TxIn(coin.Outpoint));
 			tx.Inputs[0].Sequence = 0;
 			tx.Outputs.Add(new TxOut(coin.Amount, redeemDestination));
-			var vSize = tx.GetVirtualSize() + 80;
-			tx.Outputs[0].Value -= feeRate.GetFee(vSize);
 			tx.Inputs[0].ScriptSig = new Script(OpcodeType.OP_0) + Op.GetPushOp(coin.Redeem.ToBytes());
+
+			var vSize = tx.GetVirtualSize() + 80; // Size without signature + the signature size
+			tx.Outputs[0].Value -= feeRate.GetFee(vSize);
 
 			var redeemTransaction = new TrustedBroadcastRequest
 			{
