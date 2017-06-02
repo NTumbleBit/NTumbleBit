@@ -346,11 +346,10 @@ namespace NTumbleBit.PuzzleSolver
 			fulfill.Inputs.Add(new TxIn(offerCoin.Outpoint));
 			fulfill.Outputs.Add(new TxOut(offerCoin.Amount, cashout));
 
-			var fulfillScript = SolverScriptBuilder.CreateFulfillScript(NBitcoin.BuilderExtensions.BuilderExtension.DummySignature, solutions) + Op.GetPushOp(offerCoin.Redeem.ToBytes());
+			var fulfillScript = SolverScriptBuilder.CreateFulfillScript(NBitcoin.BuilderExtensions.BuilderExtension.DummySignature, solutions);
 			fulfill.Inputs[0].ScriptSig = fulfillScript + Op.GetPushOp(offerCoin.Redeem.ToBytes());
-
 		
-			fulfill.Outputs[0].Value -= fulfill.GetVirtualSize();
+			fulfill.Outputs[0].Value -= feeRate.GetFee(fulfill.GetVirtualSize());
 
 			var signature = fulfill.Inputs.AsIndexedInputs().First().Sign(InternalState.FulfillKey, offerCoin, SigHash.All);
 			fulfillScript = SolverScriptBuilder.CreateFulfillScript(signature, solutions);
