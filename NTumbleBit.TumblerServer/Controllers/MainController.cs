@@ -172,12 +172,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 				Logs.Server.LogInformation($"Cycle {cycle.Start} Asked to open channel");
 				var txOut = session.BuildEscrowTxOut();
 				var tx = Services.WalletService.FundTransaction(txOut, fee);
-				if(tx == null)
-				{
-					Logs.Server.LogInformation("Not funds left for creating a channel");
-					return BadRequest("tumbler-insufficient-funds");
-				}
-
+				
 				var escrowTumblerLabel = $"Cycle {cycle.Start} Tumbler Escrow";
 				Services.BlockExplorerService.Track(escrowTumblerLabel, txOut.ScriptPubKey);
 				Services.BroadcastService.Broadcast(escrowTumblerLabel, tx);
@@ -194,7 +189,12 @@ namespace NTumbleBit.TumblerServer.Controllers
 			{
 				return BadRequest("incorrect-voucher");
 			}
-		}
+			catch (NotEnoughFundsException ex)
+			{
+				Logs.Server.LogInformation(ex.Message);
+				return BadRequest("tumbler-insufficient-funds");
+			}
+        }
 
 		private BobServerChannelNegotiation CreateBobServerChannelNegotiation(int cycleStart)
 		{
