@@ -18,9 +18,9 @@
     },
     "NTumbleBit.TumblerServer": {
       "commandName": "Project",
-      "commandLineArgs": "-port 5000",
+      "commandLineArgs": "-port 37123",
       "launchBrowser": true,
-      "launchUrl": "http://localhost:5000",
+      "launchUrl": "http://localhost:37123",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }

@@ -148,7 +148,7 @@ namespace NTumbleBit.TumblerServer
 				Environment.Exit(0);
 			}
 
-			var defaultPort = config.GetOrDefault<int>("port", 5000);
+			var defaultPort = config.GetOrDefault<int>("port", 37123);
 
 			OnlyMonitor = config.GetOrDefault<bool>("onlymonitor", false);
 			Listen = config
