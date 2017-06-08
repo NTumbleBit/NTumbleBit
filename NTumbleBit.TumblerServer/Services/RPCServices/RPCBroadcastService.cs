@@ -102,14 +102,12 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				tx.Transaction.Inputs.Any(i => i.Sequence != Sequence.Final);
 
 			if(isNonFinal)
-				remove = false;
+				return false;
+
 			try
 			{
-				if(!isNonFinal)
-				{
-					RPCClient.SendRawTransaction(tx.Transaction);
-					return true;
-				}
+				RPCClient.SendRawTransaction(tx.Transaction);
+				return true;
 			}
 			catch(RPCException ex)
 			{
