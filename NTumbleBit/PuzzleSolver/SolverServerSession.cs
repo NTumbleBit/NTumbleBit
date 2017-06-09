@@ -337,13 +337,14 @@ namespace NTumbleBit.PuzzleSolver
 				throw new PuzzleException("invalid-client-signature");
 
 			TransactionBuilder builder = new TransactionBuilder();
+			builder.StandardTransactionPolicy.CheckFee = false;
 			builder.Extensions.Add(new EscrowBuilderExtension());
 			builder.AddCoins(InternalState.EscrowedCoin);
 			builder.AddKeys(InternalState.EscrowKey);
 			builder.AddKnownSignature(clientKey, clientSignature);
 			builder.SignTransactionInPlace(offer);
 			if(!builder.Verify(offer))
-				throw new PuzzleException("invalid-tumbler-signature");
+				throw new PuzzleException("invalid-tumbler-signature " + offer.ToHex());
 			var offerCoin = offer.Outputs.AsCoins().First().ToScriptCoin(offerScript);
 
 			var solutions = InternalState.SolvedPuzzles.Select(s => s.SolutionKey).ToArray();
