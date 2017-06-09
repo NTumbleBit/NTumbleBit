@@ -298,9 +298,9 @@ namespace NTumbleBit.TumblerServer.Controllers
 				Services.TrustedBroadcastService.Broadcast($"Cycle {cycle.Start} Tumbler Fulfillment Transaction (planned for: {fulfill.BroadcastAt})", fulfill);
 				return Json(session.GetSolutionKeys());
 			}
-			catch(PuzzleException)
+			catch(PuzzleException ex)
 			{
-				return BadRequest("invalid-offer");
+				return BadRequest(ex.Message);
 			}
 		}
 	}

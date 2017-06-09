@@ -330,15 +330,20 @@ namespace NTumbleBit.PuzzleSolver
 			Script offerScript = GetOfferScript();
 
 			var offer = GetUnsignedOfferTransaction();
+
+			var signedHash = offer.Inputs.AsIndexedInputs().First().GetSignatureHash(InternalState.EscrowedCoin, clientSignature.SigHash);
+			var clientKey = InternalState.GetClientEscrowPubKey();
+			if(!clientKey.Verify(signedHash, clientSignature.Signature))
+				throw new PuzzleException("invalid-client-signature");
+
 			TransactionBuilder builder = new TransactionBuilder();
 			builder.Extensions.Add(new EscrowBuilderExtension());
 			builder.AddCoins(InternalState.EscrowedCoin);
 			builder.AddKeys(InternalState.EscrowKey);
-			var clientKey = InternalState.GetClientEscrowPubKey();
 			builder.AddKnownSignature(clientKey, clientSignature);
 			builder.SignTransactionInPlace(offer);
 			if(!builder.Verify(offer))
-				throw new PuzzleException("invalid-signature");
+				throw new PuzzleException("invalid-tumbler-signature");
 			var offerCoin = offer.Outputs.AsCoins().First().ToScriptCoin(offerScript);
 
 			var solutions = InternalState.SolvedPuzzles.Select(s => s.SolutionKey).ToArray();
