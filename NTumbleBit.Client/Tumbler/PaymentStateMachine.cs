@@ -268,7 +268,7 @@ namespace NTumbleBit.Client.Tumbler
 							var solutionKeys = AliceClient.CheckRevelation(cycle.Start, SolverClientSession.Id, revelation2);
 							var blindFactors = SolverClientSession.GetBlindFactors(solutionKeys);
 							var offerInformation = AliceClient.CheckBlindFactors(cycle.Start, SolverClientSession.Id, blindFactors);
-							var offerSignature = SolverClientSession.SignOffer(offerInformation);
+							var offerSignature = SolverClientSession.SignOffer(offerInformation);							
 							var offerRedeem = SolverClientSession.CreateOfferRedeemTransaction(feeRate, Services.WalletService.GenerateAddress($"Cycle {cycle.Start} Tumbler Redeem").ScriptPubKey);
 							//May need to find solution in the fulfillment transaction
 							Services.BlockExplorerService.Track($"Cycle {cycle.Start} Offer", offerRedeem.PreviousScriptPubKey);
@@ -280,9 +280,10 @@ namespace NTumbleBit.Client.Tumbler
 								SolverClientSession.CheckSolutions(solutionKeys);
 								logger.LogInformation("Solution recovered from cooperative tumbler");
 							}
-							catch
+							catch(Exception ex)
 							{
 								logger.LogWarning("Uncooperative tumbler detected, keep connection open.");
+								logger.LogWarning(ex.ToString());
 							}
 							logger.LogInformation("Payment completed");
 						}
@@ -295,8 +296,15 @@ namespace NTumbleBit.Client.Tumbler
 						if(SolverClientSession.Status == SolverClientStates.WaitingPuzzleSolutions)
 						{
 							var transactions = Services.BlockExplorerService.GetTransactions(SolverClientSession.GetOfferScriptPubKey(), false);
-							SolverClientSession.CheckSolutions(transactions.Select(t => t.Transaction).ToArray());
-							logger.LogInformation("Solution recovered from blockchain transaction");
+							if(transactions.Length == 0)
+							{
+								logger.LogInformation("Solution of puzzle not on the blockchain");
+							}
+							else
+							{
+								SolverClientSession.CheckSolutions(transactions.Select(t => t.Transaction).ToArray());
+								logger.LogInformation("Solution recovered from blockchain transaction");
+							}
 						}
 
 						if(SolverClientSession.Status == SolverClientStates.Completed)
