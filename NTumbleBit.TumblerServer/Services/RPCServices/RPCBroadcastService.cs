@@ -97,6 +97,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				{
 					broadcasted.Add(tx.Transaction);
 				}
+				knownBroadcastedSet.Add(tx.Transaction.GetHash());
 			}
 
 			knownBroadcasted = knownBroadcastedSet.ToArray();
@@ -106,6 +107,11 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		private bool TryBroadcastCore(Record tx, int currentHeight)
 		{
 			bool remove = currentHeight >= tx.Expiration;
+			if(remove)
+			{
+				RemoveRecord(tx);
+				return false;
+			}
 
 			//Make the broadcast a bit faster
 			var isNonFinal =
@@ -139,10 +145,15 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 
 			if(remove)
 			{
-				Repository.Delete<Record>("Broadcasts", tx.Transaction.GetHash().ToString());
-				Repository.UpdateOrInsert("BroadcastsArchived", tx.Transaction.GetHash().ToString(), tx, (a, b) => a);
+				RemoveRecord(tx);
 			}
 			return false;
+		}
+
+		private void RemoveRecord(Record tx)
+		{
+			Repository.Delete<Record>("Broadcasts", tx.Transaction.GetHash().ToString());
+			Repository.UpdateOrInsert("BroadcastsArchived", tx.Transaction.GetHash().ToString(), tx, (a, b) => a);
 		}
 
 		public bool Broadcast(Transaction transaction)

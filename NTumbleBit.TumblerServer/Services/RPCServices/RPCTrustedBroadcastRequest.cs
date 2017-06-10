@@ -154,9 +154,9 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 								_Broadcaster.Broadcast(transaction))
 							{
 								cache = null;
-								broadcasted.Add(transaction);
-								knownBroadcastedSet.Add(txHash);
+								broadcasted.Add(transaction);								
 							}
+							knownBroadcastedSet.Add(txHash);
 						}
 					}
 				}
