@@ -92,11 +92,21 @@ namespace NTumbleBit.Tests
 			}
 		}
 
+
 		[Fact]
 		public void CanCompleteCycleWithMachineState()
 		{
+			CanCompleteCycleWithMachineStateCore(true, false);
+			CanCompleteCycleWithMachineStateCore(true, true);
+		}
+
+
+		public void CanCompleteCycleWithMachineStateCore(bool cooperativeClient, bool cooperativeTumbler)
+		{
 			using(var server = TumblerServerTester.Create())
 			{
+				server.ServerContext.TumblerConfiguration.NonCooperative = !cooperativeTumbler;
+
 				server.AliceNode.FindBlock(1);
 				server.SyncNodes();
 				server.TumblerNode.FindBlock(1);
@@ -105,6 +115,8 @@ namespace NTumbleBit.Tests
 				server.SyncNodes();
 
 				var machine = server.ClientContext.PaymentMachineState;
+				machine.NonCooperative = !cooperativeClient;
+
 				var serverTracker = server.ServerContext.GetService<TumblerServer.Tracker>();
 				var clientTracker = machine.Tracker;
 

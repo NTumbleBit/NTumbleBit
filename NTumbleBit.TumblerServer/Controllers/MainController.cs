@@ -325,7 +325,8 @@ namespace NTumbleBit.TumblerServer.Controllers
 
 				Tracker.AddressCreated(cycle.Start, TransactionType.ClientFulfill, cashout.ScriptPubKey);
 				Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.ClientFulfill, fulfill);
-				return Json(session.GetSolutionKeys());
+
+				return Json(Tumbler.NonCooperative ? new SolutionKey[0] : session.GetSolutionKeys());
 			}
 			catch(PuzzleException ex)
 			{

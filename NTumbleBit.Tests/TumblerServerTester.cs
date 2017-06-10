@@ -193,11 +193,12 @@ namespace NTumbleBit.Tests
 
 			var repo = new Client.Tumbler.Services.DBreezeRepository(Path.Combine(directory, "client"));
 			ClientContext = new TumblerClientContext(CreateTumblerClient(), AliceNode.CreateRPCClient(), repo, new Client.Tumbler.Tracker(repo));
-
+			_ClientRepo = repo;
 			//Overrides client fee
 			((Client.Tumbler.Services.RPCServices.RPCFeeService)ClientContext.PaymentMachineState.Services.FeeService).FallBackFeeRate = new FeeRate(Money.Satoshis(50), 1);
 		}
 
+		Client.Tumbler.Services.DBreezeRepository _ClientRepo;
 		public TumblerClientContext ClientContext
 		{
 			get; set;
@@ -313,6 +314,11 @@ namespace NTumbleBit.Tests
 		{
 			_Host.Dispose();
 			_NodeBuilder.Dispose();
+			if(_ClientRepo != null)
+			{
+				_ClientRepo.Dispose();
+				_ClientRepo = null;
+			}
 		}
 	}
 }

@@ -32,7 +32,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				throw new ArgumentNullException(nameof(repository));
 			_RPCClient = rpc;
 			_Repository = repository;
-			_BlockExplorerService = new RPCBlockExplorerService(rpc);
+			_BlockExplorerService = new RPCBlockExplorerService(rpc, repository);
 		}
 
 

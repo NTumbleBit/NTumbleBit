@@ -81,6 +81,11 @@ namespace NTumbleBit.TumblerServer
 			get;
 			set;
 		}
+		public bool NonCooperative
+		{
+			get;
+			set;
+		}
 
 		public TumblerConfiguration LoadArgs(String[] args)
 		{

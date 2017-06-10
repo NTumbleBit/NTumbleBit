@@ -39,7 +39,7 @@ namespace NTumbleBit.Client.Tumbler.Services
 
 			service.WalletService = new RPCWalletService(rpc);
 			service.BroadcastService = new RPCBroadcastService(rpc, repository);
-			service.BlockExplorerService = new RPCBlockExplorerService(rpc);
+			service.BlockExplorerService = new RPCBlockExplorerService(rpc, repository);
 			service.TrustedBroadcastService = new RPCTrustedBroadcastService(rpc, service.BroadcastService, service.BlockExplorerService, repository, tracker)
 			{
 				//BlockExplorer will already track the addresses, since they used a shared bitcoind, no need of tracking again (this would overwrite labels)

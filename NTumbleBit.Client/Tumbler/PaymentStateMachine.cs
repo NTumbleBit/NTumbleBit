@@ -94,6 +94,11 @@ namespace NTumbleBit.Client.Tumbler
 			get;
 			private set;
 		}
+		public bool NonCooperative
+		{
+			get;
+			set;
+		}
 
 		public class State
 		{
