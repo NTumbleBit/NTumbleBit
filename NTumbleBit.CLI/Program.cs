@@ -18,47 +18,39 @@ using System.Reflection;
 
 namespace NTumbleBit.CLI
 {
-	public class Program
+	public partial class Program
 	{
-
-		private static void GetStatus(StatusOptions options, Tracker tracker, Network network)
+		public Tracker Tracker
 		{
-			if(options.CycleId != null)
-			{
-				var records = tracker.GetRecords(options.CycleId.Value);
-				foreach(var group in records.GroupBy(r => r.TransactionType).OrderBy(o => (int)o.Key))
-				{
-					StringBuilder builder = new StringBuilder();
-					builder.AppendLine(group.Key.ToString());
-					foreach(var data in group)
-					{
-						builder.Append("\t" + data.RecordType.ToString());
-						if(data.ScriptPubKey != null)
-							builder.AppendLine(" " + data.ScriptPubKey.GetDestinationAddress(network));
-						if(data.TransactionId != null)
-							builder.AppendLine(" " + data.TransactionId);
-					}
-					Console.WriteLine(builder.ToString());
-				}
-			}
+			get; set;
+		}
+		public Network Network
+		{
+			get; set;
 		}
 
+
+		
+
 		public static void Main(string[] args)
+		{
+			new Program().Run(args);
+		}
+		public void Run(string[] args)
 		{
 			Logs.Configure(new FuncLoggerFactory(i => new ConsoleLogger(i, (a, b) => true, false)));
 			CancellationTokenSource broadcasterCancel = new CancellationTokenSource();
 			DBreezeRepository dbreeze = null;
-			Tracker tracker = null;
 			try
 			{
-				var network = args.Contains("-testnet", StringComparer.OrdinalIgnoreCase) ? Network.TestNet :
+				Network = args.Contains("-testnet", StringComparer.OrdinalIgnoreCase) ? Network.TestNet :
 				args.Contains("-regtest", StringComparer.OrdinalIgnoreCase) ? Network.RegTest :
 				Network.Main;
-				Logs.Configuration.LogInformation("Network: " + network);
+				Logs.Configuration.LogInformation("Network: " + Network);
 
-				var dataDir = DefaultDataDirectory.GetDefaultDirectory("NTumbleBit", network);
+				var dataDir = DefaultDataDirectory.GetDefaultDirectory("NTumbleBit", Network);
 				var consoleArgs = new TextFileConfiguration(args);
-				var configFile = GetDefaultConfigurationFile(dataDir, network);
+				var configFile = GetDefaultConfigurationFile(dataDir, Network);
 				var config = TextFileConfiguration.Parse(File.ReadAllText(configFile));
 				consoleArgs.MergeInto(config, true);
 				config.AddAlias("server", "tumbler.server");
@@ -68,15 +60,15 @@ namespace NTumbleBit.CLI
 				RPCClient rpc = null;
 				try
 				{
-					rpc = RPCArgs.ConfigureRPCClient(config, network);
+					rpc = RPCArgs.ConfigureRPCClient(config, Network);
 				}
 				catch
 				{
 					throw new ConfigException("Please, fix rpc settings in " + configFile);
 				}
 				dbreeze = new DBreezeRepository(Path.Combine(dataDir, "db"));
-				tracker = new Tracker(dbreeze);
-				var services = ExternalServices.CreateFromRPCClient(rpc, dbreeze, tracker);
+				Tracker = new Tracker(dbreeze);
+				var services = ExternalServices.CreateFromRPCClient(rpc, dbreeze, Tracker);
 
 				var broadcaster = new BroadcasterJob(services, Logs.Main);
 				broadcaster.Start(broadcasterCancel.Token);
@@ -90,7 +82,7 @@ namespace NTumbleBit.CLI
 						Logs.Main.LogError("tumbler.server not configured");
 						throw new ConfigException();
 					}
-					var client = new TumblerClient(network, server);
+					var client = new TumblerClient(Network, server);
 					Logs.Configuration.LogInformation("Downloading tumbler information of " + server.AbsoluteUri);
 					var parameters = Retry(3, () => client.GetTumblerParameters());
 					Logs.Configuration.LogInformation("Tumbler Server Connection successfull");
@@ -128,28 +120,13 @@ namespace NTumbleBit.CLI
 						catch { throw ex; } //Not a bug, want to throw the other exception
 
 					}
-					var stateMachine = new StateMachinesExecutor(parameters, client, destinationWallet, services, dbreeze, Logs.Main, tracker);
+					var stateMachine = new StateMachinesExecutor(parameters, client, destinationWallet, services, dbreeze, Logs.Main, Tracker);
 					stateMachine.Start(broadcasterCancel.Token);
 					Logs.Main.LogInformation("State machines started");
 				}
 
 
-				Console.Write(Assembly.GetEntryAssembly().GetName().Name
-						+ " " + Assembly.GetEntryAssembly().GetName().Version);
-				Console.WriteLine(" -- TumbleBit Implementation in .NET Core");
-				Console.WriteLine("Type \"help\" or \"help <command>\" for more information.");
-
-
-				bool quit = false;
-				while(!quit)
-				{
-					Console.Write(">>> ");
-					var split = Console.ReadLine().Split(null);
-					Parser.Default.ParseArguments<StatusOptions, QuitOptions>(split)
-						.WithParsed<StatusOptions>(_ => GetStatus(_, tracker, network))
-						.WithParsed<QuitOptions>(_ => quit = true);
-				}
-
+				StartInteractive();
 
 				broadcasterCancel.Cancel();
 			}
