@@ -15,6 +15,7 @@ using System.Text;
 using NBitcoin.RPC;
 using CommandLine;
 using System.Reflection;
+using NTumbleBit.ClassicTumbler;
 
 namespace NTumbleBit.CLI
 {
@@ -29,8 +30,15 @@ namespace NTumbleBit.CLI
 			get; set;
 		}
 
-
-		
+		public ExternalServices Services
+		{
+			get; set;
+		}
+		public ClassicTumblerParameters TumblerConfiguration
+		{
+			get;
+			private set;
+		}
 
 		public static void Main(string[] args)
 		{
@@ -68,9 +76,9 @@ namespace NTumbleBit.CLI
 				}
 				dbreeze = new DBreezeRepository(Path.Combine(dataDir, "db"));
 				Tracker = new Tracker(dbreeze);
-				var services = ExternalServices.CreateFromRPCClient(rpc, dbreeze, Tracker);
+				Services = ExternalServices.CreateFromRPCClient(rpc, dbreeze, Tracker);
 
-				var broadcaster = new BroadcasterJob(services, Logs.Main);
+				var broadcaster = new BroadcasterJob(Services, Logs.Main);
 				broadcaster.Start(broadcasterCancel.Token);
 				Logs.Main.LogInformation("BroadcasterJob started");
 
@@ -99,6 +107,7 @@ namespace NTumbleBit.CLI
 					{
 						dbreeze.UpdateOrInsert("Configuration", client.Address.AbsoluteUri, parameters, (o, n) => n);
 					}
+					TumblerConfiguration = existingConfig;
 
 					if(parameters.Network != rpc.Network)
 					{
@@ -120,7 +129,7 @@ namespace NTumbleBit.CLI
 						catch { throw ex; } //Not a bug, want to throw the other exception
 
 					}
-					var stateMachine = new StateMachinesExecutor(parameters, client, destinationWallet, services, dbreeze, Logs.Main, Tracker);
+					var stateMachine = new StateMachinesExecutor(parameters, client, destinationWallet, Services, dbreeze, Logs.Main, Tracker);
 					stateMachine.Start(broadcasterCancel.Token);
 					Logs.Main.LogInformation("State machines started");
 				}

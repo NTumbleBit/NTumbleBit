@@ -5,6 +5,7 @@ using System.Linq;
 using CommandLine;
 using System.Reflection;
 using NBitcoin;
+using NTumbleBit.ClassicTumbler;
 
 namespace NTumbleBit.CLI
 {
@@ -39,10 +40,51 @@ namespace NTumbleBit.CLI
 		{
 			if(options.CycleId != null)
 			{
+				CycleParameters cycle = null;
+
+				try
+				{
+					cycle = TumblerConfiguration.CycleGenerator.GetCycle(options.CycleId.Value);
+				}
+				catch
+				{
+					Console.WriteLine("Invalid cycle");
+					return;
+				}
 				var records = Tracker.GetRecords(options.CycleId.Value);
+				var currentHeight = Services.BlockExplorerService.GetCurrentHeight();
+
+				StringBuilder builder = new StringBuilder();
+				var phases = new[]
+				{
+					CyclePhase.Registration,
+					CyclePhase.ClientChannelEstablishment,
+					CyclePhase.TumblerChannelEstablishment,
+					CyclePhase.PaymentPhase,
+					CyclePhase.TumblerCashoutPhase,
+					CyclePhase.ClientCashoutPhase
+				};
+
+				Console.WriteLine("Phases:");
+				var periods = cycle.GetPeriods();
+				foreach(var phase in phases)
+				{
+					var period = periods.GetPeriod(phase);
+					if(period.IsInPeriod(currentHeight))
+						builder.Append("(");
+					builder.Append(phase.ToString());
+					if(period.IsInPeriod(currentHeight))
+						builder.Append($" {(period.End - currentHeight)} blocks left)");
+
+					if(phase != CyclePhase.ClientCashoutPhase)
+						builder.Append("-");
+				}
+				Console.WriteLine(builder.ToString());
+				Console.WriteLine();
+				Console.WriteLine("Records:");
 				foreach(var group in records.GroupBy(r => r.TransactionType).OrderBy(o => (int)o.Key))
 				{
-					StringBuilder builder = new StringBuilder();
+					builder = new StringBuilder();
 					builder.AppendLine(group.Key.ToString());
 					foreach(var data in group.OrderBy(g => g.RecordType))
 					{
