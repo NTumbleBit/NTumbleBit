@@ -71,18 +71,35 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				tx.Transaction.CacheHashes();
 			return transactions.TopologicalSort(tx => transactions.Where(tx2 => tx.Transaction.Inputs.Any<TxIn>(input => input.PrevOut.Hash == tx2.Transaction.GetHash()))).ToArray();
 		}
-
 		public Transaction[] TryBroadcast()
 		{
+			uint256[] r = null;
+			return TryBroadcast(ref r);
+		}
+		public Transaction[] TryBroadcast(ref uint256[] knownBroadcasted)
+		{
 			List<Transaction> broadcasted = new List<Transaction>();
+
+			HashSet<uint256> knownBroadcastedSet = new HashSet<uint256>(knownBroadcasted ?? new uint256[0]);
 			int height = RPCClient.GetBlockCount();
+			var walletTransactions = RPCClient.ListTransactions();
+
+			foreach(var obj in walletTransactions)
+			{
+				if(obj["confirmations"] != null && (int)obj["confirmations"] > 0)
+					knownBroadcastedSet.Add(new uint256((string)obj["txid"]));
+			}
+
 			foreach(var tx in GetTransactions())
 			{
-				if(TryBroadcastCore(tx, height))
+				if(!knownBroadcastedSet.Contains(tx.Transaction.GetHash()) &&
+					TryBroadcastCore(tx, height))
 				{
 					broadcasted.Add(tx.Transaction);
 				}
 			}
+
+			knownBroadcasted = knownBroadcastedSet.ToArray();
 			return broadcasted.ToArray();
 		}
 
@@ -117,7 +134,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				   !error.EndsWith("Missing inputs", StringComparison.OrdinalIgnoreCase))
 				{
 					remove = false;
-				}			
+				}
 			}
 
 			if(remove)

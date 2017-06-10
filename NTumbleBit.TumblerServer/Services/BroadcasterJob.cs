@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using NBitcoin;
 using NTumbleBit.Common;
 using NTumbleBit.Common.Logging;
 using System;
@@ -66,9 +67,10 @@ namespace NTumbleBit.Client.Tumbler.Services
 							if(height == lastHeight)
 								continue;
 							lastHeight = height;
+							uint256[] knownBroadcasted = null;
 							try
 							{
-								var transactions = BroadcasterService.TryBroadcast();
+								var transactions = BroadcasterService.TryBroadcast(ref knownBroadcasted);
 								foreach(var tx in transactions)
 								{
 									Logger.LogInformation("Broadcaster broadcasted  " + tx.GetHash());
@@ -80,7 +82,7 @@ namespace NTumbleBit.Client.Tumbler.Services
 							}
 							try
 							{
-								var transactions = TrustedBroadcasterService.TryBroadcast();
+								var transactions = TrustedBroadcasterService.TryBroadcast(ref knownBroadcasted);
 								foreach(var tx in transactions)
 								{
 									Logger.LogInformation("TrustedBroadcaster broadcasted " + tx.GetHash());

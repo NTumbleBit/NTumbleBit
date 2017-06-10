@@ -77,7 +77,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 
 			if(results == null)
 			{
-				var walletTransactions = cache?.Transactions ?? ListTransactions();
+				var walletTransactions = cache?.Transactions ?? RPCClient.ListTransactions();
 				if(cache == null)
 					cache = new TransactionsCache() { Transactions = walletTransactions };
 				results = Filter(walletTransactions, !withProof, address);
@@ -124,34 +124,6 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				}
 			}
 			return results;
-		}
-
-		JArray ListTransactions()
-		{
-			JArray array = new JArray();
-			int count = 100;
-			int skip = 0;
-			int highestConfirmation = 0;
-
-			while(true)
-			{
-				var result = RPCClient.SendCommandNoThrows("listtransactions", "*", count, skip, true);
-				skip += count;
-				if(result.Error != null)
-					return null;
-				var transactions = (JArray)result.Result;
-				foreach(var obj in transactions)
-				{
-					array.Add(obj);
-					if(obj["confirmations"] != null)
-					{
-						highestConfirmation = Math.Max(highestConfirmation, (int)obj["confirmations"]);
-					}
-				}
-				if(transactions.Count < count || highestConfirmation >= 1400)
-					break;
-			}
-			return array;
 		}
 
 		private List<TransactionInformation> Filter(JArray transactions, bool includeUnconf, BitcoinAddress address)
