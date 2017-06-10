@@ -199,5 +199,14 @@ namespace NTumbleBit.Client.Tumbler
 		{
 			return SendAsync<SolutionKey[]>(HttpMethod.Post, clientSignature, "api/v1/tumblers/0/clientchannels/{0}/{1}/offer", cycleId, channelId);
 		}
+
+		public void GiveEscapeKey(int cycleId, string channelId, TransactionSignature signature)
+		{
+			GiveEscapeKeyAsync(cycleId, channelId, signature).GetAwaiter().GetResult();
+		}
+		public Task GiveEscapeKeyAsync(int cycleId, string channelId, TransactionSignature signature)
+		{
+			return SendAsync<string>(HttpMethod.Post, signature, "api/v1/tumblers/0/clientchannels/{0}/{1}/escape", cycleId, channelId);
+		}
 	}
 }

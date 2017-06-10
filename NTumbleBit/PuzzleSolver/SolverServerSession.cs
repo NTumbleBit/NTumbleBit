@@ -20,6 +20,7 @@ namespace NTumbleBit.PuzzleSolver
 		WaitingRevelation,
 		WaitingBlindFactor,
 		WaitingFulfillment,
+		WaitingEscape,
 		Completed
 	}
 	public class SolverServerSession : EscrowReceiver
@@ -289,7 +290,7 @@ namespace NTumbleBit.PuzzleSolver
 
 		public TrustedBroadcastRequest GetSignedOfferTransaction()
 		{
-			AssertState(SolverServerStates.Completed);
+			AssertState(SolverServerStates.WaitingEscape);
 			var offerTransaction = GetUnsignedOfferTransaction();
 			TransactionBuilder txBuilder = new TransactionBuilder();
 			txBuilder.Extensions.Add(new EscrowBuilderExtension());
@@ -307,7 +308,7 @@ namespace NTumbleBit.PuzzleSolver
 
 		public SolutionKey[] GetSolutionKeys()
 		{
-			AssertState(SolverServerStates.Completed);
+			AssertState(SolverServerStates.WaitingEscape);
 			return InternalState.SolvedPuzzles.Select(s => s.SolutionKey).ToArray();
 		}
 
@@ -331,10 +332,7 @@ namespace NTumbleBit.PuzzleSolver
 
 			var offer = GetUnsignedOfferTransaction();
 
-			var signedHash = offer.Inputs.AsIndexedInputs().First().GetSignatureHash(InternalState.EscrowedCoin, clientSignature.SigHash);
-			var clientKey = InternalState.GetClientEscrowPubKey();
-			if(!clientKey.Verify(signedHash, clientSignature.Signature))
-				throw new PuzzleException("invalid-client-signature");
+			PubKey clientKey = AssertValidSignature(clientSignature, offer);
 
 			TransactionBuilder builder = new TransactionBuilder();
 			builder.StandardTransactionPolicy.CheckFee = false;
@@ -354,7 +352,7 @@ namespace NTumbleBit.PuzzleSolver
 
 			var fulfillScript = SolverScriptBuilder.CreateFulfillScript(NBitcoin.BuilderExtensions.BuilderExtension.DummySignature, solutions);
 			fulfill.Inputs[0].ScriptSig = fulfillScript + Op.GetPushOp(offerCoin.Redeem.ToBytes());
-		
+
 			fulfill.Outputs[0].Value -= feeRate.GetFee(fulfill.GetVirtualSize());
 
 			var signature = fulfill.Inputs.AsIndexedInputs().First().Sign(InternalState.FulfillKey, offerCoin, SigHash.All);
@@ -362,13 +360,47 @@ namespace NTumbleBit.PuzzleSolver
 			fulfill.Inputs[0].ScriptSig = fulfillScript + Op.GetPushOp(offerCoin.Redeem.ToBytes());
 
 			InternalState.OfferClientSignature = clientSignature;
-			InternalState.Status = SolverServerStates.Completed;
+			InternalState.Status = SolverServerStates.WaitingEscape;
 			return new TrustedBroadcastRequest
 			{
 				Key = InternalState.FulfillKey,
 				PreviousScriptPubKey = offerCoin.ScriptPubKey,
 				Transaction = fulfill
 			};
+		}
+
+		private PubKey AssertValidSignature(TransactionSignature clientSignature, Transaction offer)
+		{
+			var signedHash = offer.Inputs.AsIndexedInputs().First().GetSignatureHash(InternalState.EscrowedCoin, clientSignature.SigHash);
+			var clientKey = InternalState.GetClientEscrowPubKey();
+			if(!clientKey.Verify(signedHash, clientSignature.Signature))
+				throw new PuzzleException("invalid-client-signature");
+			return clientKey;
+		}
+
+		public Transaction GetSignedEscapeTransaction(TransactionSignature clientSignature, Script cashout)
+		{
+			AssertState(SolverServerStates.WaitingEscape);
+
+			var escapeTx = GetUnsignedOfferTransaction();
+			escapeTx.Outputs[0].ScriptPubKey = cashout;
+			var clientKey = AssertValidSignature(clientSignature, escapeTx);
+
+			TransactionBuilder builder = new TransactionBuilder();
+			builder.StandardTransactionPolicy.CheckFee = false;
+			builder.Extensions.Add(new EscrowBuilderExtension());
+			builder.AddCoins(InternalState.EscrowedCoin);		
+			builder.AddKnownSignature(clientKey, clientSignature);
+			//This add the known signature if correct SigHash
+			builder.SignTransactionInPlace(escapeTx, SigHash.None | SigHash.AnyoneCanPay);
+
+			//This sign SigHash.All
+			builder.AddKeys(InternalState.EscrowKey);
+			builder.SignTransactionInPlace(escapeTx);
+			if(!builder.Verify(escapeTx))
+				throw new PuzzleException("invalid-tumbler-signature");
+
+			return escapeTx;
 		}
 
 		private Script GetOfferScript()

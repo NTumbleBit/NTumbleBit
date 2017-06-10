@@ -309,6 +309,13 @@ namespace NTumbleBit.Client.Tumbler
 							{
 								solutionKeys = AliceClient.FulfillOffer(cycle.Start, SolverClientSession.Id, offerSignature);
 								SolverClientSession.CheckSolutions(solutionKeys);
+
+								if(!NonCooperative)
+								{
+									var signature = SolverClientSession.SignEscape();
+									AliceClient.GiveEscapeKey(cycle.Start, SolverClientSession.Id, signature);
+								}
+
 								logger.LogInformation("Solution recovered from cooperative tumbler");
 							}
 							catch(Exception ex)

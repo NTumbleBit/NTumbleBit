@@ -189,7 +189,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 				Logs.Server.LogInformation($"Cycle {cycle.Start} Asked to open channel");
 				var txOut = session.BuildEscrowTxOut();
 				var tx = Services.WalletService.FundTransaction(txOut, fee);
-				
+
 				var escrowTumblerLabel = $"Cycle {cycle.Start} Tumbler Escrow";
 				Services.BlockExplorerService.Track(txOut.ScriptPubKey);
 
@@ -210,12 +210,12 @@ namespace NTumbleBit.TumblerServer.Controllers
 			{
 				return BadRequest("incorrect-voucher");
 			}
-			catch (NotEnoughFundsException ex)
+			catch(NotEnoughFundsException ex)
 			{
 				Logs.Server.LogInformation(ex.Message);
 				return BadRequest("tumbler-insufficient-funds");
 			}
-        }
+		}
 
 		private BobServerChannelNegotiation CreateBobServerChannelNegotiation(int cycleStart)
 		{
@@ -311,7 +311,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 			{
 				var cycle = Parameters.CycleGenerator.GetCycle(cycleId);
 				var cashout = Services.WalletService.GenerateAddress();
-				
+
 				var fulfill = session.FulfillOffer(clientSignature, cashout.ScriptPubKey, feeRate);
 				fulfill.BroadcastAt = new LockTime(cycle.GetPeriods().Payment.End - 1);
 				Repository.Save(cycle.Start, session);
@@ -332,6 +332,30 @@ namespace NTumbleBit.TumblerServer.Controllers
 			{
 				return BadRequest(ex.Message);
 			}
+		}
+
+		[HttpPost("api/v1/tumblers/0/clientchannels/{cycleId}/{channelId}/escape")]
+		public IActionResult GiveEscapeKey(int cycleId, string channelId, [FromBody]TransactionSignature clientSignature)
+		{
+			var session = GetSolverServerSession(cycleId, channelId, CyclePhase.TumblerCashoutPhase);
+			if(session.Status != SolverServerStates.WaitingEscape)
+				return BadRequest("invalid-state");
+
+			try
+			{
+				var cashout = Services.WalletService.GenerateAddress();
+				var tx = session.GetSignedEscapeTransaction(clientSignature, cashout.ScriptPubKey);
+
+				Tracker.AddressCreated(cycleId, TransactionType.ClientEscape, cashout.ScriptPubKey);
+				Tracker.TransactionCreated(cycleId, TransactionType.ClientEscape, tx.GetHash());
+
+				Services.BroadcastService.Broadcast(tx);
+			}
+			catch(PuzzleException ex)
+			{
+				return BadRequest(ex.Message);
+			}
+			return Ok();
 		}
 	}
 }

@@ -318,6 +318,15 @@ namespace NTumbleBit.PuzzleSolver
 			return signature;
 		}
 
+		public TransactionSignature SignEscape()
+		{
+			AssertState(SolverClientStates.Completed);
+			var dummy = new Transaction();
+			dummy.Inputs.Add(new TxIn(InternalState.EscrowedCoin.Outpoint));
+			dummy.Outputs.Add(new TxOut());
+			return dummy.SignInput(InternalState.EscrowKey, InternalState.EscrowedCoin, SigHash.None | SigHash.AnyoneCanPay);
+		}
+
 		private Transaction CreateUnsignedOfferTransaction()
 		{
 			Script offer = CreateOfferScript();

@@ -96,7 +96,9 @@ namespace NTumbleBit.Tests
 		[Fact]
 		public void CanCompleteCycleWithMachineState()
 		{
+			CanCompleteCycleWithMachineStateCore(false, true);
 			CanCompleteCycleWithMachineStateCore(true, false);
+			CanCompleteCycleWithMachineStateCore(false, false);
 			CanCompleteCycleWithMachineStateCore(true, true);
 		}
 
@@ -175,36 +177,52 @@ namespace NTumbleBit.Tests
 
 				machine.Update();
 
+				Block block = null;
+				if(cooperativeClient && cooperativeTumbler)
+					block = server.TumblerNode.FindBlock(1).First();
+
 				MineTo(server.TumblerNode, cycle, CyclePhase.PaymentPhase, true);
 				server.SyncNodes();
 
-				//Offer + Fulfill should be broadcasted
-				var transactions = server.ServerContext.TrustedBroadcastService.TryBroadcast();
-				Assert.Equal(2, transactions.Length);
-				var unmalleatedTransactions = transactions;
+				Transaction[] transactions = null;
+				if(!cooperativeClient || !cooperativeTumbler)
+				{
+					//Offer + Fulfill should be broadcasted
+					transactions = server.ServerContext.TrustedBroadcastService.TryBroadcast();
+					Assert.Equal(2, transactions.Length);
+					var unmalleatedTransactions = transactions;
 
-				serverTracker.AssertKnown(TumblerServer.TransactionType.ClientOffer, transactions[0].GetHash());
-				serverTracker.AssertKnown(TumblerServer.TransactionType.ClientFulfill, transactions[1].GetHash());
+					serverTracker.AssertKnown(TumblerServer.TransactionType.ClientOffer, transactions[0].GetHash());
+					serverTracker.AssertKnown(TumblerServer.TransactionType.ClientFulfill, transactions[1].GetHash());
 
-				//Offer got malleated
-				server.TumblerNode.Malleate(transactions[0].GetHash());
-				var block = server.TumblerNode.FindBlock(1).First();
-				Assert.Equal(2, block.Transactions.Count); //Offer get mined
-				server.SyncNodes();
-				var malleatedOffer = block.Transactions[1];
+					//Offer got malleated
+					server.TumblerNode.Malleate(transactions[0].GetHash());
+					block = server.TumblerNode.FindBlock(1).First();
+					Assert.Equal(2, block.Transactions.Count); //Offer get mined
+					server.SyncNodes();
+					var malleatedOffer = block.Transactions[1];
 
-				//Fulfill get resigned and broadcasted
-				transactions = server.ServerContext.TrustedBroadcastService.TryBroadcast();
-				Assert.Equal(1, transactions.Length);
-				block = server.TumblerNode.FindBlock(1).First();
-				Assert.Equal(2, block.Transactions.Count); //Fulfill get mined
+					//Fulfill get resigned and broadcasted
+					transactions = server.ServerContext.TrustedBroadcastService.TryBroadcast();
+					Assert.Equal(1, transactions.Length);
+					block = server.TumblerNode.FindBlock(1).First();
+					Assert.Equal(2, block.Transactions.Count); //Fulfill get mined
 
-				var malleatedFulfill = block.Transactions[1];
+					var malleatedFulfill = block.Transactions[1];
 
-				Assert.NotEqual(unmalleatedTransactions[0].GetHash(), malleatedOffer.GetHash());
-				Assert.NotEqual(unmalleatedTransactions[1].GetHash(), malleatedFulfill.GetHash());
-				serverTracker.AssertNotKnown(malleatedOffer.GetHash()); //Offer got sneakily malleated, so the server did not broadcasted this version
-				serverTracker.AssertKnown(TumblerServer.TransactionType.ClientFulfill, malleatedFulfill.GetHash());
+					Assert.NotEqual(unmalleatedTransactions[0].GetHash(), malleatedOffer.GetHash());
+					Assert.NotEqual(unmalleatedTransactions[1].GetHash(), malleatedFulfill.GetHash());
+					serverTracker.AssertNotKnown(malleatedOffer.GetHash()); //Offer got sneakily malleated, so the server did not broadcasted this version
+					serverTracker.AssertKnown(TumblerServer.TransactionType.ClientFulfill, malleatedFulfill.GetHash());
+				}
+				else
+				{
+					//Escape should be broadcasted
+					Assert.Equal(2, block.Transactions.Count);
+				
+					serverTracker.AssertKnown(TumblerServer.TransactionType.ClientEscape, block.Transactions[1].GetHash());
+					serverTracker.AssertKnown(TumblerServer.TransactionType.ClientEscape, block.Transactions[1].Outputs[0].ScriptPubKey);
+				}
 
 				MineTo(server.TumblerNode, cycle, CyclePhase.ClientCashoutPhase);
 				server.SyncNodes();
@@ -213,7 +231,7 @@ namespace NTumbleBit.Tests
 				transactions = server.ClientContext.UntrustedBroadcaster.TryBroadcast();
 				Assert.Equal(1, transactions.Length);
 				block = server.AliceNode.FindBlock().First();
-				//Should contains client cashout
+				//Should contains TumblerCashout
 				Assert.Equal(2, block.Transactions.Count);
 
 				clientTracker.AssertKnown(TransactionType.TumblerCashout, block.Transactions[1].GetHash());
@@ -223,7 +241,7 @@ namespace NTumbleBit.Tests
 				transactions = server.ClientContext.UntrustedBroadcaster.TryBroadcast();
 				Assert.Equal(0, transactions.Length);
 
-				
+
 			}
 		}
 

@@ -28,6 +28,7 @@ namespace NTumbleBit.Client.Tumbler
 		ClientEscrow,
 		ClientRedeem,
 		ClientOffer,
+		ClientEscape,
 		/// <summary>
 		/// The transaction that cashout client's escrow (go to tumbler)
 		/// </summary>
