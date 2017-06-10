@@ -19,21 +19,24 @@ namespace NTumbleBit.Client.Tumbler
 			ClassicTumblerParameters parameters,
 			TumblerClient client,
 			IDestinationWallet destinationWallet,
-			ExternalServices services)
+			ExternalServices services,
+			Tracker tracker)
 		{
 			Parameters = parameters;
 			AliceClient = client;
 			BobClient = client;
 			Services = services;
 			DestinationWallet = destinationWallet;
+			Tracker = tracker;
 		}
+
 
 		public PaymentStateMachine(
 			ClassicTumblerParameters parameters,
 			TumblerClient client,
 			IDestinationWallet destinationWallet,
 			ExternalServices services,
-			State state) : this(parameters, client, destinationWallet, services)
+			State state, Tracker tracker) : this(parameters, client, destinationWallet, services, tracker)
 		{
 			if(state == null)
 				return;
@@ -48,6 +51,10 @@ namespace NTumbleBit.Client.Tumbler
 				SolverClientSession = new SolverClientSession(parameters.CreateSolverParamaters(), state.SolverClientState);
 		}
 
+		public Tracker Tracker
+		{
+			get; set;
+		}
 		public ExternalServices Services
 		{
 			get; set;
@@ -178,13 +185,13 @@ namespace NTumbleBit.Client.Tumbler
 						var key = AliceClient.RequestTumblerEscrowKey(cycle.Start);
 						ClientChannelNegotiation.ReceiveTumblerEscrowKey(key.PubKey, key.KeyIndex);
 						//Client create the escrow
-						var txout = ClientChannelNegotiation.BuildClientEscrowTxOut();
+						var escrowTxOut = ClientChannelNegotiation.BuildClientEscrowTxOut();
 						feeRate = GetFeeRate();
 
 						Transaction clientEscrowTx = null;
 						try
 						{
-							clientEscrowTx = Services.WalletService.FundTransaction(txout, feeRate);
+							clientEscrowTx = Services.WalletService.FundTransaction(escrowTxOut, feeRate);
 						}
 						catch(NotEnoughFundsException ex)
 						{
@@ -193,14 +200,24 @@ namespace NTumbleBit.Client.Tumbler
 						}
 
 						SolverClientSession = ClientChannelNegotiation.SetClientSignedTransaction(clientEscrowTx);
-						var redeem = SolverClientSession.CreateRedeemTransaction(feeRate, Services.WalletService.GenerateAddress($"Cycle {cycle.Start} Client Redeem").ScriptPubKey);
 
-						var escrowLabel = $"Cycle {cycle.Start} Client Escrow";
-						Services.BlockExplorerService.Track(escrowLabel, redeem.PreviousScriptPubKey);
-						Services.BroadcastService.Broadcast(escrowLabel, clientEscrowTx);
-						Services.TrustedBroadcastService.Broadcast($"Cycle {cycle.Start} Client Redeem (locked until {redeem.Transaction.LockTime})", redeem);
+						Tracker.AddressCreated(cycle.Start, TransactionType.ClientEscrow, escrowTxOut.ScriptPubKey);
+						Tracker.TransactionCreated(cycle.Start, TransactionType.ClientEscrow, clientEscrowTx.GetHash());
+						Services.BlockExplorerService.Track(escrowTxOut.ScriptPubKey);
+
+
+						var redeemDestination = Services.WalletService.GenerateAddress().ScriptPubKey;
+						var redeemTx = SolverClientSession.CreateRedeemTransaction(feeRate, redeemDestination);
+
+						Tracker.AddressCreated(cycle.Start, TransactionType.ClientRedeem, redeemDestination);
+						//redeemTx does not be to be recorded to the tracker, this is TrustedBroadcastService job
+
+						Services.BroadcastService.Broadcast(clientEscrowTx);
+
+						Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.ClientRedeem, redeemTx);
+
 						logger.LogInformation("Client escrow broadcasted " + clientEscrowTx.GetHash());
-						logger.LogInformation("Client escrow redeem " + redeem.Transaction.GetHash() + " will be broadcast later if tumbler unresponsive");
+						logger.LogInformation("Client escrow redeem " + redeemTx.Transaction.GetHash() + " will be broadcast later if tumbler unresponsive");
 					}
 					else if(ClientChannelNegotiation.Status == TumblerClientSessionStates.WaitingSolvedVoucher)
 					{
@@ -231,10 +248,16 @@ namespace NTumbleBit.Client.Tumbler
 						var tumblerInformation = BobClient.OpenChannel(bobEscrowInformation);
 						PromiseClientSession = ClientChannelNegotiation.ReceiveTumblerEscrowedCoin(tumblerInformation);
 						//Tell to the block explorer we need to track that address (for checking if it is confirmed in payment phase)
-						var escrowTumblerLabel = $"Cycle {cycle.Start} Tumbler Escrow";
-						Services.BlockExplorerService.Track(escrowTumblerLabel, PromiseClientSession.EscrowedCoin.ScriptPubKey);
+						Services.BlockExplorerService.Track(PromiseClientSession.EscrowedCoin.ScriptPubKey);
+
+
+						Tracker.AddressCreated(cycle.Start, TransactionType.TumblerEscrow, PromiseClientSession.EscrowedCoin.ScriptPubKey);
+						Tracker.TransactionCreated(cycle.Start, TransactionType.TumblerEscrow, PromiseClientSession.EscrowedCoin.Outpoint.Hash);
+
 						//Channel is done, now need to run the promise protocol to get valid puzzle
 						var cashoutDestination = DestinationWallet.GetNewDestination();
+						Tracker.AddressCreated(cycle.Start, TransactionType.TumblerCashout, cashoutDestination);
+
 						feeRate = GetFeeRate();
 						var sigReq = PromiseClientSession.CreateSignatureRequest(cashoutDestination, feeRate);
 						var commiments = BobClient.SignHashes(cycle.Start, PromiseClientSession.Id, sigReq);
@@ -268,11 +291,14 @@ namespace NTumbleBit.Client.Tumbler
 							var solutionKeys = AliceClient.CheckRevelation(cycle.Start, SolverClientSession.Id, revelation2);
 							var blindFactors = SolverClientSession.GetBlindFactors(solutionKeys);
 							var offerInformation = AliceClient.CheckBlindFactors(cycle.Start, SolverClientSession.Id, blindFactors);
-							var offerSignature = SolverClientSession.SignOffer(offerInformation);							
-							var offerRedeem = SolverClientSession.CreateOfferRedeemTransaction(feeRate, Services.WalletService.GenerateAddress($"Cycle {cycle.Start} Tumbler Redeem").ScriptPubKey);
+							var offerSignature = SolverClientSession.SignOffer(offerInformation);
+
+							var offerRedeemAddress = Services.WalletService.GenerateAddress();
+							var offerRedeem = SolverClientSession.CreateOfferRedeemTransaction(feeRate, offerRedeemAddress.ScriptPubKey);
 							//May need to find solution in the fulfillment transaction
-							Services.BlockExplorerService.Track($"Cycle {cycle.Start} Offer", offerRedeem.PreviousScriptPubKey);
-							Services.TrustedBroadcastService.Broadcast($"Cycle {cycle.Start} Client Offer Redeem (locked until {offerRedeem.Transaction.LockTime})", offerRedeem);
+							Services.BlockExplorerService.Track(offerRedeem.PreviousScriptPubKey);
+							Tracker.AddressCreated(cycle.Start, TransactionType.ClientOfferRedeem, offerRedeemAddress.ScriptPubKey);
+							Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.ClientOfferRedeem, offerRedeem);
 							logger.LogInformation("Offer redeem " + offerRedeem.Transaction.GetHash() + " locked until " + offerRedeem.Transaction.LockTime.Height);
 							try
 							{
@@ -311,7 +337,8 @@ namespace NTumbleBit.Client.Tumbler
 						{
 							var tumblingSolution = SolverClientSession.GetSolution();
 							var transaction = PromiseClientSession.GetSignedTransaction(tumblingSolution);
-							Services.BroadcastService.Broadcast($"Cycle {cycle.Start} Client Cashout", transaction);
+							Tracker.TransactionCreated(cycle.Start, TransactionType.TumblerCashout, transaction.GetHash());
+							Services.BroadcastService.Broadcast(transaction);
 							logger.LogInformation("Client Cashout completed " + transaction.GetHash());
 						}
 					}

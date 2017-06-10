@@ -21,14 +21,15 @@ namespace NTumbleBit.Tests
 {
 	public class TumblerClientContext
 	{
-		public TumblerClientContext(TumblerClient tumblerClient, RPCClient rpcClient, Client.Tumbler.Services.IRepository clientRepository)
+		public TumblerClientContext(TumblerClient tumblerClient, RPCClient rpcClient, Client.Tumbler.Services.IRepository clientRepository, Client.Tumbler.Tracker tracker)
 		{
 			var parameters = tumblerClient.GetTumblerParameters();
 			PaymentMachineState = new PaymentStateMachine(
 				parameters,
 				tumblerClient,
 				new ClientDestinationWallet("", new ExtKey().Neuter().GetWif(rpcClient.Network), new KeyPath(), clientRepository),
-				Client.Tumbler.Services.ExternalServices.CreateFromRPCClient(rpcClient, clientRepository)
+				Client.Tumbler.Services.ExternalServices.CreateFromRPCClient(rpcClient, clientRepository, tracker),
+				new Client.Tumbler.Tracker(clientRepository)
 				);
 		}
 		public PaymentStateMachine PaymentMachineState
@@ -191,7 +192,7 @@ namespace NTumbleBit.Tests
 			((TumblerServer.Services.RPCServices.RPCFeeService)ServerContext.ExtenalServices.FeeService).FallBackFeeRate = new FeeRate(Money.Satoshis(100), 1);
 
 			var repo = new Client.Tumbler.Services.DBreezeRepository(Path.Combine(directory, "client"));
-			ClientContext = new TumblerClientContext(CreateTumblerClient(), AliceNode.CreateRPCClient(), repo);
+			ClientContext = new TumblerClientContext(CreateTumblerClient(), AliceNode.CreateRPCClient(), repo, new Client.Tumbler.Tracker(repo));
 
 			//Overrides client fee
 			((Client.Tumbler.Services.RPCServices.RPCFeeService)ClientContext.PaymentMachineState.Services.FeeService).FallBackFeeRate = new FeeRate(Money.Satoshis(50), 1);

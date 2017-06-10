@@ -20,7 +20,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 {
 	public class MainController : Controller
 	{
-		public MainController(TumblerConfiguration configuration, ClassicTumblerRepository repo, ClassicTumblerParameters parameters, ExternalServices services)
+		public MainController(TumblerConfiguration configuration, ClassicTumblerRepository repo, ClassicTumblerParameters parameters, ExternalServices services, Tracker tracker)
 		{
 			if(configuration == null)
 				throw new ArgumentNullException(nameof(configuration));
@@ -30,12 +30,25 @@ namespace NTumbleBit.TumblerServer.Controllers
 				throw new ArgumentNullException(nameof(services));
 			if(repo == null)
 				throw new ArgumentNullException(nameof(repo));
+			if(tracker == null)
+				throw new ArgumentNullException(nameof(tracker));
 			_Tumbler = configuration;
 			_Repository = repo;
 			_Parameters = parameters;
 			_Services = services;
+			_Tracker = tracker;
 		}
 
+
+
+		private readonly Tracker _Tracker;
+		public Tracker Tracker
+		{
+			get
+			{
+				return _Tracker;
+			}
+		}
 
 		private readonly ExternalServices _Services;
 		public ExternalServices Services
@@ -137,7 +150,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 				if((confirmations < Parameters.CycleGenerator.FirstCycle.SafetyPeriodDuration))
 					return BadRequest("not-enough-confirmation");
 
-				Services.BlockExplorerService.Track($"Cycle {cycle.Start} Client Escrow", expectedTxOut.ScriptPubKey);
+				Services.BlockExplorerService.Track(expectedTxOut.ScriptPubKey);
 				if(!Services.BlockExplorerService.TrackPrunedTransaction(request.Transaction, request.MerkleProof))
 					return BadRequest("invalid-merkleproof");
 
@@ -145,6 +158,10 @@ namespace NTumbleBit.TumblerServer.Controllers
 					return BadRequest("invalid-transaction");
 				Repository.Save(cycle.Start, solverServerSession);
 				Logs.Server.LogInformation($"Cycle {cycle.Start} Proof of Escrow signed for " + transaction.GetHash());
+
+				Tracker.AddressCreated(cycle.Start, TransactionType.ClientEscrow, expectedTxOut.ScriptPubKey);
+				Tracker.TransactionCreated(cycle.Start, TransactionType.ClientEscrow, request.Transaction.GetHash());
+
 				return Json(voucher);
 			}
 			catch(PuzzleException)
@@ -174,15 +191,19 @@ namespace NTumbleBit.TumblerServer.Controllers
 				var tx = Services.WalletService.FundTransaction(txOut, fee);
 				
 				var escrowTumblerLabel = $"Cycle {cycle.Start} Tumbler Escrow";
-				Services.BlockExplorerService.Track(escrowTumblerLabel, txOut.ScriptPubKey);
-				Services.BroadcastService.Broadcast(escrowTumblerLabel, tx);
+				Services.BlockExplorerService.Track(txOut.ScriptPubKey);
+
+				Tracker.AddressCreated(cycle.Start, TransactionType.TumblerEscrow, txOut.ScriptPubKey);
+				Tracker.TransactionCreated(cycle.Start, TransactionType.TumblerEscrow, tx.GetHash());
+				Services.BroadcastService.Broadcast(tx);
 				Logs.Server.LogInformation($"Cycle {cycle.Start} Channel created " + tx.GetHash());
 				var promiseServerSession = session.SetSignedTransaction(tx);
 				Repository.Save(cycle.Start, promiseServerSession);
 
-				var redeem = Services.WalletService.GenerateAddress($"Cycle {cycle.Start} Tumbler Redeem");
+				var redeem = Services.WalletService.GenerateAddress();
 				var redeemTx = promiseServerSession.CreateRedeemTransaction(fee, redeem.ScriptPubKey);
-				Services.TrustedBroadcastService.Broadcast($"Cycle {session.GetCycle().Start} Tumbler Redeem (locked until: {redeemTx.Transaction.LockTime})", redeemTx);
+				Tracker.AddressCreated(cycle.Start, TransactionType.TumblerRedeem, redeem.ScriptPubKey);
+				Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.TumblerRedeem, redeemTx);
 				return Json(promiseServerSession.EscrowedCoin);
 			}
 			catch(PuzzleException)
@@ -272,7 +293,9 @@ namespace NTumbleBit.TumblerServer.Controllers
 			var fulfillKey = session.CheckBlindedFactors(blindFactors, feeRate);
 			var cycle = Parameters.CycleGenerator.GetCycle(cycleId);
 			//later we will track it for fulfillment
-			Services.BlockExplorerService.Track($"Cycle {cycle.Start} Client Offer", session.GetOfferScriptPubKey());
+
+			var offerScriptPubKey = session.GetOfferScriptPubKey();
+			Services.BlockExplorerService.Track(offerScriptPubKey);
 			Repository.Save(cycleId, session);
 			return Json(fulfillKey);
 		}
@@ -287,15 +310,21 @@ namespace NTumbleBit.TumblerServer.Controllers
 			try
 			{
 				var cycle = Parameters.CycleGenerator.GetCycle(cycleId);
-				var cashout = Services.WalletService.GenerateAddress($"Cycle {cycle.Start} Tumbler Cashout");
+				var cashout = Services.WalletService.GenerateAddress();
+				
 				var fulfill = session.FulfillOffer(clientSignature, cashout.ScriptPubKey, feeRate);
 				fulfill.BroadcastAt = new LockTime(cycle.GetPeriods().Payment.End - 1);
 				Repository.Save(cycle.Start, session);
 
 				var signedOffer = session.GetSignedOfferTransaction();
 				signedOffer.BroadcastAt = fulfill.BroadcastAt - 1;
-				Services.TrustedBroadcastService.Broadcast($"Cycle {cycle.Start} Client Offer Transaction (planned for: {signedOffer.BroadcastAt})", signedOffer);
-				Services.TrustedBroadcastService.Broadcast($"Cycle {cycle.Start} Tumbler Fulfillment Transaction (planned for: {fulfill.BroadcastAt})", fulfill);
+
+
+				Tracker.AddressCreated(cycle.Start, TransactionType.ClientOffer, session.GetOfferScriptPubKey());
+				Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.ClientOffer, signedOffer);
+
+				Tracker.AddressCreated(cycle.Start, TransactionType.ClientFulfill, cashout.ScriptPubKey);
+				Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.ClientFulfill, fulfill);
 				return Json(session.GetSolutionKeys());
 			}
 			catch(PuzzleException ex)

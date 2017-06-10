@@ -61,11 +61,18 @@ namespace NTumbleBit.TumblerServer
 					return dbreeze;
 				});
 
+				services.AddSingleton<Tracker>(provider =>
+				{
+					var repo = provider.GetRequiredService<IRepository>();
+					return new Tracker(repo);
+				});
+
 				services.AddSingleton((provider) =>
 				{
 					var conf = provider.GetRequiredService<TumblerConfiguration>();
 					var repo = provider.GetRequiredService<IRepository>();
-					return ExternalServices.CreateFromRPCClient(conf.RPCClient, repo);
+					var tracker = provider.GetRequiredService<Tracker>();
+					return ExternalServices.CreateFromRPCClient(conf.RPCClient, repo, tracker);
 				});
 				services.AddSingleton((provider) =>
 				{

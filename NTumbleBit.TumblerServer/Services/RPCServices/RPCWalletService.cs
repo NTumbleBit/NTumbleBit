@@ -32,9 +32,9 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			}
 		}
 
-		public IDestination GenerateAddress(string label)
+		public IDestination GenerateAddress()
 		{
-			var result = _RPCClient.SendCommand("getnewaddress", label ?? "");
+			var result = _RPCClient.SendCommand("getnewaddress", "");
 			return BitcoinAddress.Create(result.ResultString, _RPCClient.Network);
 		}
 

@@ -344,7 +344,7 @@ namespace NTumbleBit.PuzzleSolver
 			builder.AddKnownSignature(clientKey, clientSignature);
 			builder.SignTransactionInPlace(offer);
 			if(!builder.Verify(offer))
-				throw new PuzzleException("invalid-tumbler-signature " + offer.ToHex());
+				throw new PuzzleException("invalid-tumbler-signature");
 			var offerCoin = offer.Outputs.AsCoins().First().ToScriptCoin(offerScript);
 
 			var solutions = InternalState.SolvedPuzzles.Select(s => s.SolutionKey).ToArray();

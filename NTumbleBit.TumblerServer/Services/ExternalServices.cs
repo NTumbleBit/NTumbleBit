@@ -17,7 +17,7 @@ namespace NTumbleBit.Client.Tumbler.Services
 {
 	public class ExternalServices
     {
-		public static ExternalServices CreateFromRPCClient(RPCClient rpc, IRepository repository)
+		public static ExternalServices CreateFromRPCClient(RPCClient rpc, IRepository repository, Tracker tracker)
 		{
 			var info = rpc.SendCommand(RPCOperations.getinfo);
 			var minimumRate = new NBitcoin.FeeRate(NBitcoin.Money.Coins((decimal)(double)((Newtonsoft.Json.Linq.JValue)(info.Result["relayfee"])).Value), 1000);
@@ -40,7 +40,7 @@ namespace NTumbleBit.Client.Tumbler.Services
 			service.WalletService = new RPCWalletService(rpc);
 			service.BroadcastService = new RPCBroadcastService(rpc, repository);
 			service.BlockExplorerService = new RPCBlockExplorerService(rpc);
-			service.TrustedBroadcastService = new RPCTrustedBroadcastService(rpc, service.BroadcastService, service.BlockExplorerService, repository)
+			service.TrustedBroadcastService = new RPCTrustedBroadcastService(rpc, service.BroadcastService, service.BlockExplorerService, repository, tracker)
 			{
 				//BlockExplorer will already track the addresses, since they used a shared bitcoind, no need of tracking again (this would overwrite labels)
 				TrackPreviousScriptPubKey = false

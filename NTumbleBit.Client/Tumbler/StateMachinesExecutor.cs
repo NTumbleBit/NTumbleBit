@@ -17,7 +17,8 @@ namespace NTumbleBit.Client.Tumbler
 			IDestinationWallet destinationWallet,
 			ExternalServices services,
 			IRepository repository,
-			ILogger logger)
+			ILogger logger,
+			Tracker tracker)
 		{
 			Parameters = parameters;
 			AliceClient = client;
@@ -26,8 +27,13 @@ namespace NTumbleBit.Client.Tumbler
 			DestinationWallet = destinationWallet;
 			Logger = logger;
 			Repository = repository;
+			Tracker = tracker;
 		}
 
+		public Tracker Tracker
+		{
+			get; set;
+		}
 		public IRepository Repository
 		{
 			get; set;
@@ -132,7 +138,7 @@ namespace NTumbleBit.Client.Tumbler
 
 		private PaymentStateMachine CreateStateMachine(PaymentStateMachine.State state)
 		{
-			return new PaymentStateMachine(Parameters, AliceClient, DestinationWallet, Services, state);
+			return new PaymentStateMachine(Parameters, AliceClient, DestinationWallet, Services, state, Tracker);
 		}
 	}
 }

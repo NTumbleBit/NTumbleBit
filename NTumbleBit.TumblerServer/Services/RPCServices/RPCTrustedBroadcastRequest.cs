@@ -25,13 +25,24 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
                 get;
                 set;
             }
-            public TrustedBroadcastRequest Request
+
+			public TransactionType TransactionType
+			{
+				get; set;
+			}
+
+			public int Cycle
+			{
+				get; set;
+			}
+
+			public TrustedBroadcastRequest Request
             {
                 get; set;
             }
         }
 
-        public RPCTrustedBroadcastService(RPCClient rpc, IBroadcastService innerBroadcast, IBlockExplorerService explorer, IRepository repository)
+        public RPCTrustedBroadcastService(RPCClient rpc, IBroadcastService innerBroadcast, IBlockExplorerService explorer, IRepository repository, Tracker tracker)
         {
             if(rpc == null)
                 throw new ArgumentNullException(nameof(rpc));
@@ -41,14 +52,18 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
                 throw new ArgumentNullException(nameof(repository));
             if(explorer == null)
                 throw new ArgumentNullException(nameof(explorer));
-            _Repository = repository;
+			if(tracker == null)
+				throw new ArgumentNullException(nameof(tracker));
+			_Repository = repository;
             _RPCClient = rpc;
             _Broadcaster = innerBroadcast;
             TrackPreviousScriptPubKey = true;
             _BlockExplorer = explorer;
+			_Tracker = tracker;
         }
 
-        private IBroadcastService _Broadcaster;
+		private Tracker _Tracker;
+		private IBroadcastService _Broadcaster;
 
         private readonly RPCClient _RPCClient;
         public RPCClient RPCClient
@@ -64,25 +79,28 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
             get; set;
         }
 
-        public void Broadcast(string label, TrustedBroadcastRequest broadcast)
-        {
+		public void Broadcast(int cycleStart, TransactionType transactionType, TrustedBroadcastRequest broadcast)
+		{
             if(broadcast == null)
                 throw new ArgumentNullException(nameof(broadcast));
             var address = broadcast.PreviousScriptPubKey.GetDestinationAddress(RPCClient.Network);
             if(address == null)
                 throw new NotSupportedException("ScriptPubKey to track not supported");
             if(TrackPreviousScriptPubKey)
-                RPCClient.ImportAddress(address, label + " (PreviousScriptPubKey)", false);
+                RPCClient.ImportAddress(address, "", false);
             var height = RPCClient.GetBlockCountAsync().GetAwaiter().GetResult();
             var record = new Record();
-            record.Label = label;
             //3 days expiration
             record.Expiration = height + (int)(TimeSpan.FromDays(3).Ticks / Network.Main.Consensus.PowTargetSpacing.Ticks);
             record.Request = broadcast;
+			record.TransactionType = transactionType;
+			record.Cycle = cycleStart;
             AddBroadcast(record);
             if(height < broadcast.BroadcastAt.Height)
                 return;
-            _Broadcaster.Broadcast(record.Label, broadcast.Transaction);
+
+			_Tracker.TransactionCreated(record.Cycle, record.TransactionType, broadcast.Transaction.GetHash());
+            _Broadcaster.Broadcast(broadcast.Transaction);
         }
 
         private void AddBroadcast(Record broadcast)
@@ -122,7 +140,8 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
                         if(coin.ScriptPubKey == broadcast.Request.PreviousScriptPubKey)
                         {
                             var transaction = broadcast.Request.ReSign(coin);
-                            if(_Broadcaster.Broadcast(broadcast.Label, transaction))
+							_Tracker.TransactionCreated(broadcast.Cycle, broadcast.TransactionType, transaction.GetHash());
+							if(_Broadcaster.Broadcast(transaction))
                             {
                                 cache = null;
                                 broadcasted.Add(transaction);

@@ -199,12 +199,12 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
             catch(RPCException) { return null; }
         }
 
-        public void Track(string label, Script scriptPubkey)
+        public void Track(Script scriptPubkey)
         {
             var address = scriptPubkey.GetDestinationAddress(RPCClient.Network);
             if(address != null)
             {
-                RPCClient.ImportAddress(address, label, false);
+                RPCClient.ImportAddress(address, "", false);
             }
         }
 

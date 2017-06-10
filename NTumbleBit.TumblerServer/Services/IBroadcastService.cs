@@ -12,7 +12,7 @@ namespace NTumbleBit.Client.Tumbler.Services
 {
 	public interface IBroadcastService
     {
-		bool Broadcast(string label, Transaction tx);
+		bool Broadcast(Transaction tx);
 		Transaction[] TryBroadcast();
 
 	}

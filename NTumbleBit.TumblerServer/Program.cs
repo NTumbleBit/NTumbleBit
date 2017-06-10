@@ -39,7 +39,8 @@ namespace NTumbleBit.TumblerServer
 				}
 				else
 				{
-					services = ExternalServices.CreateFromRPCClient(configuration.RPC.ConfigureRPCClient(configuration.Network), new DBreezeRepository(Path.Combine(configuration.DataDir, "db")));
+					var dbreeze = new DBreezeRepository(Path.Combine(configuration.DataDir, "db"));
+					services = ExternalServices.CreateFromRPCClient(configuration.RPC.ConfigureRPCClient(configuration.Network), dbreeze, new Tracker(dbreeze));
 				}
 
 				CancellationTokenSource cts = new CancellationTokenSource();

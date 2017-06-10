@@ -19,11 +19,6 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			{
 				get; set;
 			}
-			public string Label
-			{
-				get;
-				set;
-			}
 			public Transaction Transaction
 			{
 				get; set;
@@ -133,11 +128,10 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			return false;
 		}
 
-		public bool Broadcast(string label, Transaction transaction)
+		public bool Broadcast(Transaction transaction)
 		{
 			var record = new Record();
 			record.Transaction = transaction;
-			record.Label = label;
 			var height = _RPCClient.GetBlockCount();
 			//3 days expiration
 			record.Expiration = height + (int)(TimeSpan.FromDays(3).Ticks / Network.Main.Consensus.PowTargetSpacing.Ticks);
