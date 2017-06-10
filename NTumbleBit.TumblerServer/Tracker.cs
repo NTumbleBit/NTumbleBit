@@ -16,7 +16,7 @@ namespace NTumbleBit.TumblerServer
 namespace NTumbleBit.Client.Tumbler
 #endif
 {
-	public enum TransactionType
+	public enum TransactionType : int
 	{
 		TumblerEscrow,
 		TumblerRedeem,

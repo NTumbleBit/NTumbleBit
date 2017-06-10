@@ -20,44 +20,35 @@ namespace NTumbleBit.CLI
 {
 	public class Program
 	{
+
+		private static void GetStatus(StatusOptions options, Tracker tracker, Network network)
+		{
+			if(options.CycleId != null)
+			{
+				var records = tracker.GetRecords(options.CycleId.Value);
+				foreach(var group in records.GroupBy(r => r.TransactionType).OrderBy(o => (int)o.Key))
+				{
+					StringBuilder builder = new StringBuilder();
+					builder.AppendLine(group.Key.ToString());
+					foreach(var data in group)
+					{
+						builder.Append("\t" + data.RecordType.ToString());
+						if(data.ScriptPubKey != null)
+							builder.AppendLine(" " + data.ScriptPubKey.GetDestinationAddress(network));
+						if(data.TransactionId != null)
+							builder.AppendLine(" " + data.TransactionId);
+					}
+					Console.WriteLine(builder.ToString());
+				}
+			}
+		}
+
 		public static void Main(string[] args)
-		{
-			if (args.Contains("-i", StringComparer.OrdinalIgnoreCase)
-				|| args.Contains("-interactive", StringComparer.OrdinalIgnoreCase))
-			{
-				StartInteractiveMode(args);
-			}
-			else StartTumbler(args);
-		}
-
-		private static void StartInteractiveMode(string[] args)
-		{
-			Console.Write(Assembly.GetEntryAssembly().GetName().Name
-						+ " " + Assembly.GetEntryAssembly().GetName().Version);
-			Console.WriteLine(" -- TumbleBit Implementation in .NET Core");
-			Console.WriteLine("Type \"help\" for more information.");
-
-			while (true)
-			{
-				Console.Write(">>> ");
-				var split = Console.ReadLine().Split(null);
-				Parser.Default.ParseArguments<TumbleOptions, StatusOptions, QuitOptions>(split)
-					.WithParsed<TumbleOptions>(_ => StartTumbler(args))
-					.WithParsed<StatusOptions>(_ => GetStatus())
-					.WithParsed<QuitOptions>(_ => Environment.Exit(0));
-			}
-		}
-
-		private static void GetStatus()
-		{
-			Console.WriteLine("Status not implemented yet!");
-		}
-
-		private static void StartTumbler(string[] args)
 		{
 			Logs.Configure(new FuncLoggerFactory(i => new ConsoleLogger(i, (a, b) => true, false)));
 			CancellationTokenSource broadcasterCancel = new CancellationTokenSource();
 			DBreezeRepository dbreeze = null;
+			Tracker tracker = null;
 			try
 			{
 				var network = args.Contains("-testnet", StringComparer.OrdinalIgnoreCase) ? Network.TestNet :
@@ -84,8 +75,8 @@ namespace NTumbleBit.CLI
 					throw new ConfigException("Please, fix rpc settings in " + configFile);
 				}
 				dbreeze = new DBreezeRepository(Path.Combine(dataDir, "db"));
-
-				var services = ExternalServices.CreateFromRPCClient(rpc, dbreeze, new Tracker(dbreeze));
+				tracker = new Tracker(dbreeze);
+				var services = ExternalServices.CreateFromRPCClient(rpc, dbreeze, tracker);
 
 				var broadcaster = new BroadcasterJob(services, Logs.Main);
 				broadcaster.Start(broadcasterCancel.Token);
@@ -137,12 +128,29 @@ namespace NTumbleBit.CLI
 						catch { throw ex; } //Not a bug, want to throw the other exception
 
 					}
-					var stateMachine = new StateMachinesExecutor(parameters, client, destinationWallet, services, dbreeze, Logs.Main, new Tracker(dbreeze));
+					var stateMachine = new StateMachinesExecutor(parameters, client, destinationWallet, services, dbreeze, Logs.Main, tracker);
 					stateMachine.Start(broadcasterCancel.Token);
 					Logs.Main.LogInformation("State machines started");
 				}
-				Logs.Main.LogInformation("Press enter to stop");
-				Console.ReadLine();
+
+
+				Console.Write(Assembly.GetEntryAssembly().GetName().Name
+						+ " " + Assembly.GetEntryAssembly().GetName().Version);
+				Console.WriteLine(" -- TumbleBit Implementation in .NET Core");
+				Console.WriteLine("Type \"help\" or \"help <command>\" for more information.");
+
+
+				bool quit = false;
+				while(!quit)
+				{
+					Console.Write(">>> ");
+					var split = Console.ReadLine().Split(null);
+					Parser.Default.ParseArguments<StatusOptions, QuitOptions>(split)
+						.WithParsed<StatusOptions>(_ => GetStatus(_, tracker, network))
+						.WithParsed<QuitOptions>(_ => quit = true);
+				}
+
+
 				broadcasterCancel.Cancel();
 			}
 			catch(ConfigException ex)
@@ -159,7 +167,7 @@ namespace NTumbleBit.CLI
 			{
 				if(!broadcasterCancel.IsCancellationRequested)
 					broadcasterCancel.Cancel();
-			    dbreeze?.Dispose();
+				dbreeze?.Dispose();
 			}
 		}
 
@@ -213,7 +221,7 @@ namespace NTumbleBit.CLI
 			}
 			var destinationWallet = new ClientDestinationWallet("", pubKey, keypath, dbreeze);
 			return destinationWallet;
-		}		
+		}
 
 		public static string GetDefaultConfigurationFile(string dataDirectory, Network network)
 		{

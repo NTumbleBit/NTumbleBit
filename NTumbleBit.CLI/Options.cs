@@ -1,17 +1,30 @@
 ﻿using CommandLine;
 
 namespace NTumbleBit.CLI
-{
-	[Verb("tumble", HelpText = "Start a tumbler.")]
-	internal class TumbleOptions
-	{
-		//normal options here
-	}
-
+{	
 	[Verb("status", HelpText = "Shows the current status.")]
 	internal class StatusOptions
 	{
-		//normal options here
+		[Option('c', "cycle",
+			HelpText = "Query cycle information")]
+		public int? CycleId
+		{
+			get; set;
+		}
+
+		[Option('t', "tx",
+			HelpText = "Query transaction information")]
+		public string TxId
+		{
+			get; set;
+		}
+
+		[Option('a', "address",
+			HelpText = "Query address information")]
+		public string Address
+		{
+			get; set;
+		}
 	}
 
 	[Verb("quit", HelpText = "Quit.")]
