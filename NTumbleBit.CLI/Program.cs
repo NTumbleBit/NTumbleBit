@@ -85,7 +85,7 @@ namespace NTumbleBit.CLI
 				}
 				dbreeze = new DBreezeRepository(Path.Combine(dataDir, "db"));
 
-				var services = ExternalServices.CreateFromRPCClient(rpc, dbreeze);
+				var services = ExternalServices.CreateFromRPCClient(rpc, dbreeze, new Tracker(dbreeze));
 
 				var broadcaster = new BroadcasterJob(services, Logs.Main);
 				broadcaster.Start(broadcasterCancel.Token);
@@ -137,7 +137,7 @@ namespace NTumbleBit.CLI
 						catch { throw ex; } //Not a bug, want to throw the other exception
 
 					}
-					var stateMachine = new StateMachinesExecutor(parameters, client, destinationWallet, services, dbreeze, Logs.Main);
+					var stateMachine = new StateMachinesExecutor(parameters, client, destinationWallet, services, dbreeze, Logs.Main, new Tracker(dbreeze));
 					stateMachine.Start(broadcasterCancel.Token);
 					Logs.Main.LogInformation("State machines started");
 				}
