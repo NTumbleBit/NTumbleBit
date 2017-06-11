@@ -310,6 +310,14 @@ namespace NTumbleBit.Client.Tumbler
 								solutionKeys = AliceClient.FulfillOffer(cycle.Start, SolverClientSession.Id, offerSignature);
 								SolverClientSession.CheckSolutions(solutionKeys);
 
+								var tumblingSolution = SolverClientSession.GetSolution();
+								var transaction = PromiseClientSession.GetSignedTransaction(tumblingSolution);
+
+								Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.TumblerCashout, new TrustedBroadcastRequest()
+								{
+									BroadcastAt = cycle.GetPeriods().ClientCashout.Start,
+									Transaction = transaction
+								});
 								if(!NonCooperative)
 								{
 									var signature = SolverClientSession.SignEscape();
@@ -342,16 +350,13 @@ namespace NTumbleBit.Client.Tumbler
 							{
 								SolverClientSession.CheckSolutions(transactions.Select(t => t.Transaction).ToArray());
 								logger.LogInformation("Solution recovered from blockchain transaction");
-							}
-						}
 
-						if(SolverClientSession.Status == SolverClientStates.Completed)
-						{
-							var tumblingSolution = SolverClientSession.GetSolution();
-							var transaction = PromiseClientSession.GetSignedTransaction(tumblingSolution);
-							Tracker.TransactionCreated(cycle.Start, TransactionType.TumblerCashout, transaction.GetHash());
-							Services.BroadcastService.Broadcast(transaction);
-							logger.LogInformation("Client Cashout completed " + transaction.GetHash());
+								var tumblingSolution = SolverClientSession.GetSolution();
+								var transaction = PromiseClientSession.GetSignedTransaction(tumblingSolution);
+								Tracker.TransactionCreated(cycle.Start, TransactionType.TumblerCashout, transaction.GetHash());
+								Services.BroadcastService.Broadcast(transaction);
+								logger.LogInformation("Client Cashout completed " + transaction.GetHash());
+							}
 						}
 					}
 					break;

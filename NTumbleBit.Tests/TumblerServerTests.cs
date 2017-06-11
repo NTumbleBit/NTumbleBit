@@ -228,7 +228,12 @@ namespace NTumbleBit.Tests
 				server.SyncNodes();
 				machine.Update();
 
-				transactions = server.ClientContext.UntrustedBroadcaster.TryBroadcast();
+				if(cooperativeTumbler)
+					//Received the solution out of blockchain, so the transaction should have been planned in advance
+					transactions = server.ClientContext.TrustedBroadcastService.TryBroadcast();
+				else
+					//Received the solution from theblockchain, the transaction has not been planned in advance
+					transactions = server.ClientContext.UntrustedBroadcaster.TryBroadcast();
 				Assert.Equal(1, transactions.Length);
 				block = server.AliceNode.FindBlock().First();
 				//Should contains TumblerCashout

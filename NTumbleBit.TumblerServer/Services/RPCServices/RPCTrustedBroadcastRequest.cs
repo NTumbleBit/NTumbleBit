@@ -83,10 +83,8 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		{
 			if(broadcast == null)
 				throw new ArgumentNullException(nameof(broadcast));
-			var address = broadcast.PreviousScriptPubKey.GetDestinationAddress(RPCClient.Network);
-			if(address == null)
-				throw new NotSupportedException("ScriptPubKey to track not supported");
-			if(TrackPreviousScriptPubKey)
+			var address = broadcast.PreviousScriptPubKey?.GetDestinationAddress(RPCClient.Network);
+			if(address != null && TrackPreviousScriptPubKey)
 				RPCClient.ImportAddress(address, "", false);
 			var height = RPCClient.GetBlockCountAsync().GetAwaiter().GetResult();
 			var record = new Record();
@@ -140,23 +138,39 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				if(height < broadcast.Request.BroadcastAt.Height)
 					continue;
 
-				foreach(var tx in GetReceivedTransactions(ref cache, broadcast.Request.PreviousScriptPubKey))
+				if(broadcast.Request.PreviousScriptPubKey == null)
 				{
-					foreach(var coin in tx.Outputs.AsCoins())
+					var transaction = broadcast.Request.Transaction;
+					var txHash = transaction.GetHash();
+					_Tracker.TransactionCreated(broadcast.Cycle, broadcast.TransactionType, txHash);
+					if(!knownBroadcastedSet.Contains(txHash) &&
+									_Broadcaster.Broadcast(transaction))
 					{
-						if(coin.ScriptPubKey == broadcast.Request.PreviousScriptPubKey)
+						cache = null;
+						broadcasted.Add(transaction);
+					}
+					knownBroadcastedSet.Add(txHash);
+				}
+				else
+				{
+					foreach(var tx in GetReceivedTransactions(ref cache, broadcast.Request.PreviousScriptPubKey))
+					{
+						foreach(var coin in tx.Outputs.AsCoins())
 						{
-							var transaction = broadcast.Request.ReSign(coin);
-							var txHash = transaction.GetHash();
-							_Tracker.TransactionCreated(broadcast.Cycle, broadcast.TransactionType, txHash);
-
-							if(!knownBroadcastedSet.Contains(txHash) &&
-								_Broadcaster.Broadcast(transaction))
+							if(coin.ScriptPubKey == broadcast.Request.PreviousScriptPubKey)
 							{
-								cache = null;
-								broadcasted.Add(transaction);								
+								var transaction = broadcast.Request.ReSign(coin);
+								var txHash = transaction.GetHash();
+								_Tracker.TransactionCreated(broadcast.Cycle, broadcast.TransactionType, txHash);
+
+								if(!knownBroadcastedSet.Contains(txHash) &&
+									_Broadcaster.Broadcast(transaction))
+								{
+									cache = null;
+									broadcasted.Add(transaction);
+								}
+								knownBroadcastedSet.Add(txHash);
 							}
-							knownBroadcastedSet.Add(txHash);
 						}
 					}
 				}
