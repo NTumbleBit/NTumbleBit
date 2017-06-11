@@ -1,7 +1,11 @@
 ﻿using CommandLine;
 
+#if !CLIENT
+namespace NTumbleBit.TumblerServer
+#else
 namespace NTumbleBit.CLI
-{	
+#endif
+{
 	[Verb("status", HelpText = "Shows the current status.")]
 	internal class StatusOptions
 	{

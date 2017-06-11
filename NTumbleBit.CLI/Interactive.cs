@@ -7,7 +7,12 @@ using System.Reflection;
 using NBitcoin;
 using NTumbleBit.ClassicTumbler;
 
+
+#if !CLIENT
+namespace NTumbleBit.TumblerServer
+#else
 namespace NTumbleBit.CLI
+#endif
 {
 	public partial class Program
 	{
@@ -44,7 +49,7 @@ namespace NTumbleBit.CLI
 
 				try
 				{
-					cycle = TumblerConfiguration.CycleGenerator.GetCycle(options.CycleId.Value);
+					cycle = TumblerParameters.CycleGenerator.GetCycle(options.CycleId.Value);
 				}
 				catch
 				{
@@ -114,7 +119,7 @@ namespace NTumbleBit.CLI
 
 			if(options.Address != null)
 			{
-				var address = BitcoinAddress.Create(options.Address, Network);
+				var address = BitcoinAddress.Create(options.Address, TumblerParameters.Network);
 				var result = Tracker.Search(address.ScriptPubKey);
 				if(result == null)
 					Console.WriteLine("Not found");

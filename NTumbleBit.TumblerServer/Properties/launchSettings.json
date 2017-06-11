@@ -10,7 +10,6 @@
   "profiles": {
     "IIS Express": {
       "commandName": "IISExpress",
-      "launchBrowser": true,
       "launchUrl": "/api/5",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
@@ -18,12 +17,13 @@
     },
     "NTumbleBit.TumblerServer": {
       "commandName": "Project",
-      "commandLineArgs": "-port 37123",
+      "commandLineArgs": "-testnet -port 37123",
       "launchBrowser": true,
       "launchUrl": "http://localhost:37123",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
-      }
+      },
+      "applicationUrl": "http://localhost:5000/"
     }
   }
 }

@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp1.1</TargetFramework>
+	<DefineConstants>$(DefineConstants);CLIENT</DefineConstants>
     <AssemblyName>NTumbleBit.CLI</AssemblyName>
     <OutputType>Exe</OutputType>
     <PackageId>NTumbleBit.CLI</PackageId>

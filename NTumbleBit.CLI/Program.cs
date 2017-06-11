@@ -34,7 +34,7 @@ namespace NTumbleBit.CLI
 		{
 			get; set;
 		}
-		public ClassicTumblerParameters TumblerConfiguration
+		public ClassicTumblerParameters TumblerParameters
 		{
 			get;
 			private set;
@@ -107,7 +107,7 @@ namespace NTumbleBit.CLI
 					{
 						dbreeze.UpdateOrInsert("Configuration", client.Address.AbsoluteUri, parameters, (o, n) => n);
 					}
-					TumblerConfiguration = existingConfig;
+					TumblerParameters = existingConfig;
 
 					if(parameters.Network != rpc.Network)
 					{
