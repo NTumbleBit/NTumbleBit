@@ -25,6 +25,8 @@ namespace NTumbleBit.TumblerServer
 		public void Run(string[] args)
 		{
 			Logs.Configure(new FuncLoggerFactory(i => new ConsoleLogger(i, (a, b) => true, false)));
+			BroadcasterToken = new CancellationTokenSource();
+			MixingToken = new CancellationTokenSource();
 			var config = new TumblerConfiguration();
 			config.LoadArgs(args);
 			try
@@ -40,6 +42,7 @@ namespace NTumbleBit.TumblerServer
 					.UseStartup<Startup>()
 					.Build();
 					Services = (ExternalServices)host.Services.GetService(typeof(ExternalServices));
+					Tracker = (Tracker)host.Services.GetService(typeof(Tracker));
 				}
 				else
 				{
@@ -48,8 +51,6 @@ namespace NTumbleBit.TumblerServer
 					Services = ExternalServices.CreateFromRPCClient(config.RPC.ConfigureRPCClient(TumblerParameters.Network), dbreeze, Tracker);
 				}
 
-				BroadcasterToken = new CancellationTokenSource();
-				MixingToken = new CancellationTokenSource();
 				var job = new BroadcasterJob(Services, Logs.Main);
 				job.Start(BroadcasterToken.Token);
 				Logs.Main.LogInformation("BroadcasterJob started");
@@ -79,7 +80,15 @@ namespace NTumbleBit.TumblerServer
 			}
 			catch(Exception exception)
 			{
-				Logs.Main.LogError("Exception thrown while running the server " + exception.Message);
+				Logs.Main.LogError("Exception thrown while running the server");
+				Logs.Main.LogError(exception.ToString());
+			}
+			finally
+			{
+				if(!MixingToken.IsCancellationRequested)
+					MixingToken.Cancel();
+				if(!BroadcasterToken.IsCancellationRequested)
+					BroadcasterToken.Cancel();
 			}
 		}
 	}
