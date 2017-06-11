@@ -6,6 +6,14 @@ using CommandLine;
 using System.Reflection;
 using NBitcoin;
 using NTumbleBit.ClassicTumbler;
+using System.Threading;
+#if !CLIENT
+using NTumbleBit.TumblerServer.Services;
+using NTumbleBit.TumblerServer;
+#else
+using NTumbleBit.Client.Tumbler.Services;
+using NTumbleBit.Client.Tumbler;
+#endif
 
 
 #if !CLIENT
@@ -16,6 +24,31 @@ namespace NTumbleBit.CLI
 {
 	public partial class Program
 	{
+		public ClassicTumblerParameters TumblerParameters
+		{
+			get; set;
+		}
+		public Network Network
+		{
+			get; set;
+		}
+		public Tracker Tracker
+		{
+			get; set;
+		}
+		public ExternalServices Services
+		{
+			get; set;
+		}
+		public CancellationTokenSource MixingToken
+		{
+			get; set;
+		}
+		public CancellationTokenSource BroadcasterToken
+		{
+			get; set;
+		}
+
 		void StartInteractive()
 		{
 			Console.Write(Assembly.GetEntryAssembly().GetName().Name
@@ -31,8 +64,9 @@ namespace NTumbleBit.CLI
 				try
 				{
 
-					Parser.Default.ParseArguments<StatusOptions, QuitOptions>(split)
+					Parser.Default.ParseArguments<StatusOptions, StopOptions, QuitOptions>(split)
 						.WithParsed<StatusOptions>(_ => GetStatus(_))
+						.WithParsed<StopOptions>(_ => Stop(_))
 						.WithParsed<QuitOptions>(_ => quit = true);
 				}
 				catch(FormatException)
@@ -40,9 +74,57 @@ namespace NTumbleBit.CLI
 					Console.WriteLine("Invalid format");
 				}
 			}
+			MixingToken.Cancel();
+			BroadcasterToken.Cancel();
 		}
+
+		private void Stop(StopOptions opt)
+		{
+			opt.Target = opt.Target ?? "";
+			var stopMixer = opt.Target.Equals("mixer", StringComparison.OrdinalIgnoreCase);
+			var stopBroadcasted = opt.Target.Equals("broadcaster", StringComparison.OrdinalIgnoreCase);
+			var both = opt.Target.Equals("both", StringComparison.OrdinalIgnoreCase);
+			if(both)
+				stopMixer = stopBroadcasted = true;
+			if(stopMixer)
+			{
+				MixingToken.Cancel();
+			}
+			if(stopBroadcasted)
+			{
+				BroadcasterToken.Cancel();
+			}
+			if(!stopMixer && !stopBroadcasted)
+				throw new FormatException();
+		}
+
 		void GetStatus(StatusOptions options)
 		{
+			if(!string.IsNullOrWhiteSpace(options.Query))
+			{
+				bool parsed = false;
+				try
+				{
+					options.CycleId = int.Parse(options.Query);
+					parsed = true;
+				}
+				catch { }
+				try
+				{
+					options.TxId = new uint256(options.Query).ToString();
+					parsed = true;
+				}
+				catch { }
+				try
+				{
+					options.Address = BitcoinAddress.Create(options.Query, Network).ToString();
+					parsed = true;
+				}
+				catch { }
+				if(!parsed)
+					throw new FormatException();
+			}
+
 			if(options.CycleId != null)
 			{
 				CycleParameters cycle = null;

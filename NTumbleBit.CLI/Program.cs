@@ -21,25 +21,6 @@ namespace NTumbleBit.CLI
 {
 	public partial class Program
 	{
-		public Tracker Tracker
-		{
-			get; set;
-		}
-		public Network Network
-		{
-			get; set;
-		}
-
-		public ExternalServices Services
-		{
-			get; set;
-		}
-		public ClassicTumblerParameters TumblerParameters
-		{
-			get;
-			private set;
-		}
-
 		public static void Main(string[] args)
 		{
 			new Program().Run(args);
@@ -47,7 +28,8 @@ namespace NTumbleBit.CLI
 		public void Run(string[] args)
 		{
 			Logs.Configure(new FuncLoggerFactory(i => new ConsoleLogger(i, (a, b) => true, false)));
-			CancellationTokenSource broadcasterCancel = new CancellationTokenSource();
+			BroadcasterToken = new CancellationTokenSource();
+			MixingToken = new CancellationTokenSource();
 			DBreezeRepository dbreeze = null;
 			try
 			{
@@ -79,7 +61,7 @@ namespace NTumbleBit.CLI
 				Services = ExternalServices.CreateFromRPCClient(rpc, dbreeze, Tracker);
 
 				var broadcaster = new BroadcasterJob(Services, Logs.Main);
-				broadcaster.Start(broadcasterCancel.Token);
+				broadcaster.Start(BroadcasterToken.Token);
 				Logs.Main.LogInformation("BroadcasterJob started");
 
 				if(!onlymonitor)
@@ -130,14 +112,12 @@ namespace NTumbleBit.CLI
 
 					}
 					var stateMachine = new StateMachinesExecutor(parameters, client, destinationWallet, Services, dbreeze, Logs.Main, Tracker);
-					stateMachine.Start(broadcasterCancel.Token);
+					stateMachine.Start(MixingToken.Token);
 					Logs.Main.LogInformation("State machines started");
 				}
 
 
 				StartInteractive();
-
-				broadcasterCancel.Cancel();
 			}
 			catch(ConfigException ex)
 			{
@@ -151,8 +131,10 @@ namespace NTumbleBit.CLI
 			}
 			finally
 			{
-				if(!broadcasterCancel.IsCancellationRequested)
-					broadcasterCancel.Cancel();
+				if(!MixingToken.IsCancellationRequested)
+					MixingToken.Cancel();
+				if(!BroadcasterToken.IsCancellationRequested)
+					BroadcasterToken.Cancel();
 				dbreeze?.Dispose();
 			}
 		}

@@ -81,7 +81,10 @@ namespace NTumbleBit.Client.Tumbler
 					{
 						_Stop.WaitHandle.WaitOne(5000);
 						if(_Stop.IsCancellationRequested)
+						{
+							Logger.LogInformation("Mixer stopped");
 							break;
+						}
 
 						var height = Services.BlockExplorerService.GetCurrentHeight();
 						if(height == lastHeight)

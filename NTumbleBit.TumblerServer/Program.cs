@@ -17,23 +17,7 @@ using NTumbleBit.ClassicTumbler;
 namespace NTumbleBit.TumblerServer
 {
 	public partial class Program
-	{
-		public ClassicTumblerParameters TumblerParameters
-		{
-			get; set;
-		}
-		public Network Network
-		{
-			get; set;
-		}
-		public Tracker Tracker
-		{
-			get; set;
-		}
-		public ExternalServices Services
-		{
-			get; set;
-		}
+	{		
 		public static void Main(string[] args)
 		{
 			new Program().Run(args);
@@ -64,9 +48,10 @@ namespace NTumbleBit.TumblerServer
 					Services = ExternalServices.CreateFromRPCClient(config.RPC.ConfigureRPCClient(TumblerParameters.Network), dbreeze, Tracker);
 				}
 
-				CancellationTokenSource cts = new CancellationTokenSource();
+				BroadcasterToken = new CancellationTokenSource();
+				MixingToken = new CancellationTokenSource();
 				var job = new BroadcasterJob(Services, Logs.Main);
-				job.Start(cts.Token);
+				job.Start(BroadcasterToken.Token);
 				Logs.Main.LogInformation("BroadcasterJob started");
 
 				TumblerParameters = config.ClassicTumblerParameters;
@@ -77,15 +62,15 @@ namespace NTumbleBit.TumblerServer
 					{
 						try
 						{
-							host.Run(cts.Token);
+							host.Run(MixingToken.Token);
 						}
 						catch(Exception ex)
 						{
-							Logs.Server.LogCritical(1, ex, "Error while starting the host");
+							if(!MixingToken.IsCancellationRequested)
+								Logs.Server.LogCritical(1, ex, "Error while starting the host");
 						}
 					}).Start();
 				StartInteractive();
-				cts.Cancel();
 			}
 			catch(ConfigException ex)
 			{
