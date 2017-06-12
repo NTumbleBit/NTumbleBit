@@ -13,6 +13,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using NBitcoin.RPC;
 
 namespace NTumbleBit.Tests
 {
@@ -185,6 +186,7 @@ namespace NTumbleBit.Tests
 				server.SyncNodes();
 
 				Transaction[] transactions = null;
+				Transaction unmalleatedOffer = null;
 				if(!cooperativeClient || !cooperativeTumbler)
 				{
 					//Offer + Fulfill should be broadcasted
@@ -196,6 +198,7 @@ namespace NTumbleBit.Tests
 					serverTracker.AssertKnown(TumblerServer.TransactionType.ClientFulfill, transactions[1].GetHash());
 
 					//Offer got malleated
+					unmalleatedOffer = transactions[0];
 					server.TumblerNode.Malleate(transactions[0].GetHash());
 					block = server.TumblerNode.FindBlock(1).First();
 					Assert.Equal(2, block.Transactions.Count); //Offer get mined
@@ -219,7 +222,7 @@ namespace NTumbleBit.Tests
 				{
 					//Escape should be broadcasted
 					Assert.Equal(2, block.Transactions.Count);
-				
+
 					serverTracker.AssertKnown(TumblerServer.TransactionType.ClientEscape, block.Transactions[1].GetHash());
 					serverTracker.AssertKnown(TumblerServer.TransactionType.ClientEscape, block.Transactions[1].Outputs[0].ScriptPubKey);
 				}
@@ -247,9 +250,66 @@ namespace NTumbleBit.Tests
 				Assert.Equal(0, transactions.Length);
 
 
+				var allTransactions = server.AliceNode.CreateNodeClient().GetBlocks().SelectMany(b => b.Transactions).ToDictionary(t => t.GetHash());
+				var expectedRate = new FeeRate(100, 1);
+
+
+				if(unmalleatedOffer != null)
+				{
+					allTransactions.Add(unmalleatedOffer.GetHash(), unmalleatedOffer);
+					AssertRate(allTransactions, expectedRate, unmalleatedOffer);
+				}
+
+				foreach(var txId in new[]
+				{
+					TumblerServer.TransactionType.ClientEscape,
+					TumblerServer.TransactionType.TumblerEscrow,
+					TumblerServer.TransactionType.TumblerRedeem,
+					TumblerServer.TransactionType.ClientOffer,
+					TumblerServer.TransactionType.ClientFulfill,
+				}.SelectMany(r => serverTracker.GetRecords(cycle.Start).Where(t => t.RecordType == TumblerServer.RecordType.Transaction && t.TransactionType == r)))
+				{
+					if(txId != null)
+					{
+						var tx = allTransactions.TryGet(txId.TransactionId) ??
+							server.ServerContext.TrustedBroadcastService.GetKnownTransaction(txId.TransactionId) ?? server.ServerContext.BroadcastService.GetKnownTransaction(txId.TransactionId);
+						if(tx != null)
+							AssertRate(allTransactions, expectedRate, tx);
+					}
+				}
+
+
+				expectedRate = new FeeRate(50, 1);
+				foreach(var txId in new[]
+				{
+					NTumbleBit.Client.Tumbler.TransactionType.ClientEscrow,
+					NTumbleBit.Client.Tumbler.TransactionType.ClientRedeem,
+					NTumbleBit.Client.Tumbler.TransactionType.ClientOfferRedeem,
+					NTumbleBit.Client.Tumbler.TransactionType.TumblerCashout
+				}.SelectMany(r => clientTracker.GetRecords(cycle.Start).Where(t => t.RecordType == NTumbleBit.Client.Tumbler.RecordType.Transaction && t.TransactionType == r)))
+				{
+					if(txId != null)
+					{
+						var tx = allTransactions.TryGet(txId.TransactionId) ??
+							server.ClientContext.TrustedBroadcastService.GetKnownTransaction(txId.TransactionId) ?? server.ClientContext.UntrustedBroadcaster.GetKnownTransaction(txId.TransactionId);
+						if(tx != null
+							 && tx.Inputs[0].PrevOut.Hash != uint256.Zero) //Client offer redeem, as it is broadcasted to the trusted broadcaster before offer is known
+							AssertRate(allTransactions, expectedRate, tx);
+					}
+				}
 			}
 		}
 
+		private static void AssertRate(Dictionary<uint256, Transaction> allTransactions, FeeRate expectedRate, Transaction tx)
+		{
+			var previousCoins = tx.Inputs.Select(t => t.PrevOut).Select(t => allTransactions[t.Hash].Outputs.AsCoins().ToArray()[(int)t.N]).ToArray();
+			var rate = tx.GetFeeRate(previousCoins);
+			var tb = new TransactionBuilder();
+			tb.StandardTransactionPolicy.CheckFee = false;
+			tb.AddCoins(previousCoins);
+			Assert.True(tb.Verify(tx));
+			Assert.True(expectedRate.FeePerK.Almost(rate.FeePerK, 0.05m));
+		}
 
 		[Fact]
 		public void EscrowGetRedeemedIfTimeout()

@@ -113,6 +113,10 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				return false;
 			}
 
+			//Happens when the caller does not know the previous input yet
+			if(tx.Transaction.Inputs.Count == 0 || tx.Transaction.Inputs[0].PrevOut.Hash == uint256.Zero)
+				return false;
+
 			//Make the broadcast a bit faster
 			var isNonFinal =
 				tx.Transaction.LockTime.IsHeightLock &&
@@ -165,6 +169,11 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			record.Expiration = height + (int)(TimeSpan.FromDays(3).Ticks / Network.Main.Consensus.PowTargetSpacing.Ticks);
 			Repository.UpdateOrInsert<Record>("Broadcasts", transaction.GetHash().ToString(), record, (o, n) => o);
 			return TryBroadcastCore(record, height);
+		}
+
+		public Transaction GetKnownTransaction(uint256 txId)
+		{
+			return Repository.Get<Record>("Broadcasts", txId.ToString())?.Transaction;
 		}
 	}
 }

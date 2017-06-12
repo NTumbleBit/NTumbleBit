@@ -189,6 +189,11 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			return broadcasted.ToArray();
 		}
 
+		public Transaction GetKnownTransaction(uint256 txId)
+		{
+			return Repository.Get<Record>("TrustedBroadcasts", txId.ToString())?.Request.Transaction;
+		}
+
 		private readonly IBlockExplorerService _BlockExplorer;
 		public IBlockExplorerService BlockExplorer
 		{
