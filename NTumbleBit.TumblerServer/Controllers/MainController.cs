@@ -159,8 +159,10 @@ namespace NTumbleBit.TumblerServer.Controllers
 				Repository.Save(cycle.Start, solverServerSession);
 				Logs.Server.LogInformation($"Cycle {cycle.Start} Proof of Escrow signed for " + transaction.GetHash());
 
-				Tracker.AddressCreated(cycle.Start, TransactionType.ClientEscrow, expectedTxOut.ScriptPubKey);
-				Tracker.TransactionCreated(cycle.Start, TransactionType.ClientEscrow, request.Transaction.GetHash());
+
+				var correlation = GetCorrelation(solverServerSession);
+				Tracker.AddressCreated(cycle.Start, TransactionType.ClientEscrow, expectedTxOut.ScriptPubKey, correlation);
+				Tracker.TransactionCreated(cycle.Start, TransactionType.ClientEscrow, request.Transaction.GetHash(), correlation);
 
 				return Json(voucher);
 			}
@@ -189,12 +191,12 @@ namespace NTumbleBit.TumblerServer.Controllers
 				Logs.Server.LogInformation($"Cycle {cycle.Start} Asked to open channel");
 				var txOut = session.BuildEscrowTxOut();
 				var tx = Services.WalletService.FundTransaction(txOut, fee);
-
+				var correlation = GetCorrelation(session);
 				var escrowTumblerLabel = $"Cycle {cycle.Start} Tumbler Escrow";
 				Services.BlockExplorerService.Track(txOut.ScriptPubKey);
 
-				Tracker.AddressCreated(cycle.Start, TransactionType.TumblerEscrow, txOut.ScriptPubKey);
-				Tracker.TransactionCreated(cycle.Start, TransactionType.TumblerEscrow, tx.GetHash());
+				Tracker.AddressCreated(cycle.Start, TransactionType.TumblerEscrow, txOut.ScriptPubKey, correlation);
+				Tracker.TransactionCreated(cycle.Start, TransactionType.TumblerEscrow, tx.GetHash(), correlation);
 				Services.BroadcastService.Broadcast(tx);
 				Logs.Server.LogInformation($"Cycle {cycle.Start} Channel created " + tx.GetHash());
 				var promiseServerSession = session.SetSignedTransaction(tx);
@@ -202,8 +204,8 @@ namespace NTumbleBit.TumblerServer.Controllers
 
 				var redeem = Services.WalletService.GenerateAddress();
 				var redeemTx = promiseServerSession.CreateRedeemTransaction(fee, redeem.ScriptPubKey);
-				Tracker.AddressCreated(cycle.Start, TransactionType.TumblerRedeem, redeem.ScriptPubKey);
-				Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.TumblerRedeem, redeemTx);
+				Tracker.AddressCreated(cycle.Start, TransactionType.TumblerRedeem, redeem.ScriptPubKey, correlation);
+				Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.TumblerRedeem, correlation, redeemTx);
 				return Json(promiseServerSession.EscrowedCoin);
 			}
 			catch(PuzzleException)
@@ -216,6 +218,17 @@ namespace NTumbleBit.TumblerServer.Controllers
 				return BadRequest("tumbler-insufficient-funds");
 			}
 		}
+
+		private uint GetCorrelation(BobServerChannelNegotiation session)
+		{
+			return new uint160(session.GetInternalState().EscrowKey.ScriptPubKey.Hash.ToString()).GetLow32();
+		}
+
+		private uint GetCorrelation(SolverServerSession session)
+		{
+			return new uint160(session.EscrowedCoin.ScriptPubKey.Hash.ToString()).GetLow32();
+		}
+
 
 		private BobServerChannelNegotiation CreateBobServerChannelNegotiation(int cycleStart)
 		{
@@ -319,12 +332,13 @@ namespace NTumbleBit.TumblerServer.Controllers
 				var signedOffer = session.GetSignedOfferTransaction();
 				signedOffer.BroadcastAt = fulfill.BroadcastAt - 1;
 
+				var correlation = GetCorrelation(session);
 
-				Tracker.AddressCreated(cycle.Start, TransactionType.ClientOffer, session.GetOfferScriptPubKey());
-				Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.ClientOffer, signedOffer);
+				Tracker.AddressCreated(cycle.Start, TransactionType.ClientOffer, session.GetOfferScriptPubKey(), correlation);
+				Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.ClientOffer, correlation, signedOffer);
 
-				Tracker.AddressCreated(cycle.Start, TransactionType.ClientFulfill, cashout.ScriptPubKey);
-				Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.ClientFulfill, fulfill);
+				Tracker.AddressCreated(cycle.Start, TransactionType.ClientFulfill, cashout.ScriptPubKey, correlation);
+				Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.ClientFulfill, correlation, fulfill);
 
 				return Json(Tumbler.NonCooperative ? new SolutionKey[0] : session.GetSolutionKeys());
 			}
@@ -333,6 +347,8 @@ namespace NTumbleBit.TumblerServer.Controllers
 				return BadRequest(ex.Message);
 			}
 		}
+
+		
 
 		[HttpPost("api/v1/tumblers/0/clientchannels/{cycleId}/{channelId}/escape")]
 		public IActionResult GiveEscapeKey(int cycleId, string channelId, [FromBody]TransactionSignature clientSignature)
@@ -346,8 +362,9 @@ namespace NTumbleBit.TumblerServer.Controllers
 				var cashout = Services.WalletService.GenerateAddress();
 				var tx = session.GetSignedEscapeTransaction(clientSignature, cashout.ScriptPubKey);
 
-				Tracker.AddressCreated(cycleId, TransactionType.ClientEscape, cashout.ScriptPubKey);
-				Tracker.TransactionCreated(cycleId, TransactionType.ClientEscape, tx.GetHash());
+				var correlation = GetCorrelation(session);
+				Tracker.AddressCreated(cycleId, TransactionType.ClientEscape, cashout.ScriptPubKey, correlation);
+				Tracker.TransactionCreated(cycleId, TransactionType.ClientEscape, tx.GetHash(), correlation);
 
 				Services.BroadcastService.Broadcast(tx);
 			}

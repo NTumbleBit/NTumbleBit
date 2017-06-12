@@ -80,9 +80,9 @@ namespace NTumbleBit.Tests
 				var address3 = new Key().ScriptPubKey;
 
 				var h = new Transaction().GetHash();
-				tracker.AddressCreated(1, TumblerServer.TransactionType.ClientEscrow, address);
-				tracker.AddressCreated(1, TumblerServer.TransactionType.ClientFulfill, address2);
-				tracker.TransactionCreated(1, TumblerServer.TransactionType.ClientEscrow, h);
+				tracker.AddressCreated(1, TumblerServer.TransactionType.ClientEscrow, address, 0);
+				tracker.AddressCreated(1, TumblerServer.TransactionType.ClientFulfill, address2, 0);
+				tracker.TransactionCreated(1, TumblerServer.TransactionType.ClientEscrow, h, 0);
 
 				Assert.Equal(0, tracker.GetRecords(2).Length);
 				Assert.Equal(3, tracker.GetRecords(1).Length);

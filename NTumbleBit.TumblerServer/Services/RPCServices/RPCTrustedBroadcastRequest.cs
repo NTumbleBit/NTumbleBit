@@ -40,6 +40,11 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			{
 				get; set;
 			}
+
+			public uint Correlation
+			{
+				get; set;
+			}
 		}
 
 		public RPCTrustedBroadcastService(RPCClient rpc, IBroadcastService innerBroadcast, IBlockExplorerService explorer, IRepository repository, Tracker tracker)
@@ -79,7 +84,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			get; set;
 		}
 
-		public void Broadcast(int cycleStart, TransactionType transactionType, TrustedBroadcastRequest broadcast)
+		public void Broadcast(int cycleStart, TransactionType transactionType, uint correlation, TrustedBroadcastRequest broadcast)
 		{
 			if(broadcast == null)
 				throw new ArgumentNullException(nameof(broadcast));
@@ -97,7 +102,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			if(height < broadcast.BroadcastAt.Height)
 				return;
 
-			_Tracker.TransactionCreated(record.Cycle, record.TransactionType, broadcast.Transaction.GetHash());
+			_Tracker.TransactionCreated(record.Cycle, record.TransactionType, broadcast.Transaction.GetHash(), record.Correlation);
 			_Broadcaster.Broadcast(broadcast.Transaction);
 		}
 
@@ -142,7 +147,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				{
 					var transaction = broadcast.Request.Transaction;
 					var txHash = transaction.GetHash();
-					_Tracker.TransactionCreated(broadcast.Cycle, broadcast.TransactionType, txHash);
+					_Tracker.TransactionCreated(broadcast.Cycle, broadcast.TransactionType, txHash, broadcast.Correlation);
 					if(!knownBroadcastedSet.Contains(txHash) &&
 									_Broadcaster.Broadcast(transaction))
 					{
@@ -161,7 +166,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 							{
 								var transaction = broadcast.Request.ReSign(coin);
 								var txHash = transaction.GetHash();
-								_Tracker.TransactionCreated(broadcast.Cycle, broadcast.TransactionType, txHash);
+								_Tracker.TransactionCreated(broadcast.Cycle, broadcast.TransactionType, txHash, broadcast.Correlation);
 
 								if(!knownBroadcastedSet.Contains(txHash) &&
 									_Broadcaster.Broadcast(transaction))

@@ -169,19 +169,24 @@ namespace NTumbleBit.CLI
 				Console.WriteLine(builder.ToString());
 				Console.WriteLine();
 				Console.WriteLine("Records:");
-				foreach(var group in records.GroupBy(r => r.TransactionType).OrderBy(o => (int)o.Key))
+				foreach(var correlationGroup in records.GroupBy(r => r.Correlation).OrderBy(o => (int)o.Key))
 				{
-					builder = new StringBuilder();
-					builder.AppendLine(group.Key.ToString());
-					foreach(var data in group.OrderBy(g => g.RecordType))
+					Console.WriteLine("========");
+					foreach(var group in correlationGroup.GroupBy(r => r.TransactionType).OrderBy(o => (int)o.Key))
 					{
-						builder.Append("\t" + data.RecordType.ToString());
-						if(data.ScriptPubKey != null)
-							builder.AppendLine(" " + data.ScriptPubKey.GetDestinationAddress(Network));
-						if(data.TransactionId != null)
-							builder.AppendLine(" " + data.TransactionId);
+						builder = new StringBuilder();
+						builder.AppendLine(group.Key.ToString());
+						foreach(var data in group.OrderBy(g => g.RecordType))
+						{
+							builder.Append("\t" + data.RecordType.ToString());
+							if(data.ScriptPubKey != null)
+								builder.AppendLine(" " + data.ScriptPubKey.GetDestinationAddress(Network));
+							if(data.TransactionId != null)
+								builder.AppendLine(" " + data.TransactionId);
+						}
+						Console.WriteLine(builder.ToString());
 					}
-					Console.WriteLine(builder.ToString());
+					Console.WriteLine("========");
 				}
 			}
 

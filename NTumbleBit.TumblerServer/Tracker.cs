@@ -70,6 +70,11 @@ namespace NTumbleBit.Client.Tumbler
 		{
 			get; set;
 		}
+		public uint Correlation
+		{
+			get;
+			set;
+		}
 	}
 	public class Tracker
 	{
@@ -91,28 +96,30 @@ namespace NTumbleBit.Client.Tumbler
 			return "Cycle_" + cycleId;
 		}
 
-		public void TransactionCreated(int cycleId, TransactionType type, uint256 txId)
+		public void TransactionCreated(int cycleId, TransactionType type, uint256 txId, uint correlation)
 		{
 			var record = new TrackerRecord()
 			{
 				Cycle = cycleId,
 				RecordType = RecordType.Transaction,
 				TransactionType = type,
-				TransactionId = txId
+				TransactionId = txId,
+				Correlation = correlation,
 			};
 
 			_Repo.UpdateOrInsert(GetCyclePartition(cycleId), txId.GetLow64().ToString(), record, (a, b) => b);
 			_Repo.UpdateOrInsert("Search", "t:" + txId.ToString(), cycleId, (a, b) => b);
 		}
 
-		public void AddressCreated(int cycleId, TransactionType type, Script scriptPubKey)
+		public void AddressCreated(int cycleId, TransactionType type, Script scriptPubKey, uint correlation)
 		{
 			var record = new TrackerRecord()
 			{
 				Cycle = cycleId,
 				RecordType = RecordType.ScriptPubKey,
 				TransactionType = type,
-				ScriptPubKey = scriptPubKey
+				ScriptPubKey = scriptPubKey,
+				Correlation = correlation
 			};
 			_Repo.UpdateOrInsert(GetCyclePartition(cycleId), Rand(), record, (a, b) => b);
 			_Repo.UpdateOrInsert("Search", "t:" + scriptPubKey.Hash.ToString(), cycleId, (a, b) => b);
