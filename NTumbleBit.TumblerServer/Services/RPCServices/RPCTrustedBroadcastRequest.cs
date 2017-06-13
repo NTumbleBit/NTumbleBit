@@ -98,6 +98,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			record.Request = broadcast;
 			record.TransactionType = transactionType;
 			record.Cycle = cycleStart;
+			record.Correlation = correlation;
 			AddBroadcast(record);
 			if(height < broadcast.BroadcastAt.Height)
 				return;
