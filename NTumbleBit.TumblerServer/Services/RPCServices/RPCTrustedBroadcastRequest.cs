@@ -93,8 +93,12 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				RPCClient.ImportAddress(address, "", false);
 			var height = RPCClient.GetBlockCountAsync().GetAwaiter().GetResult();
 			var record = new Record();
-			//3 days expiration
-			record.Expiration = height + (int)(TimeSpan.FromDays(3).Ticks / Network.Main.Consensus.PowTargetSpacing.Ticks);
+
+			//3 days expiration after now or broadcast date
+			var expirationBase = Math.Max(height, broadcast.BroadcastAt.Height);
+			expirationBase = Math.Max(expirationBase, broadcast.Transaction.LockTime.Height);
+			record.Expiration = expirationBase + (int)(TimeSpan.FromDays(3).Ticks / Network.Main.Consensus.PowTargetSpacing.Ticks);
+
 			record.Request = broadcast;
 			record.TransactionType = transactionType;
 			record.Cycle = cycleStart;

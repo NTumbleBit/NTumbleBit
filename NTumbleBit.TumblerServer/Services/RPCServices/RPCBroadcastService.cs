@@ -106,12 +106,16 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 
 		private bool TryBroadcastCore(Record tx, int currentHeight)
 		{
-			bool remove = currentHeight >= tx.Expiration;
+			bool remove;
+			var result = TryBroadcastCore(tx, currentHeight, out remove);
 			if(remove)
-			{
 				RemoveRecord(tx);
-				return false;
-			}
+			return result;
+		}
+
+		private bool TryBroadcastCore(Record tx, int currentHeight, out bool remove)
+		{
+			remove = currentHeight >= tx.Expiration;
 
 			//Happens when the caller does not know the previous input yet
 			if(tx.Transaction.Inputs.Count == 0 || tx.Transaction.Inputs[0].PrevOut.Hash == uint256.Zero)
@@ -140,16 +144,10 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				var error = ex.RPCResult.Error.Message;
 				if(ex.RPCResult.Error.Code != RPCErrorCode.RPC_TRANSACTION_ALREADY_IN_CHAIN &&
 				   !error.EndsWith("bad-txns-inputs-spent", StringComparison.OrdinalIgnoreCase) &&
-				   !error.EndsWith("txn-mempool-conflict", StringComparison.OrdinalIgnoreCase) &&
-				   !error.EndsWith("Missing inputs", StringComparison.OrdinalIgnoreCase))
+				   !error.EndsWith("txn-mempool-conflict", StringComparison.OrdinalIgnoreCase))
 				{
 					remove = false;
 				}
-			}
-
-			if(remove)
-			{
-				RemoveRecord(tx);
 			}
 			return false;
 		}
@@ -173,7 +171,8 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 
 		public Transaction GetKnownTransaction(uint256 txId)
 		{
-			return Repository.Get<Record>("Broadcasts", txId.ToString())?.Transaction;
+			return Repository.Get<Record>("Broadcasts", txId.ToString())?.Transaction ??
+				   Repository.Get<Record>("BroadcastsArchived", txId.ToString())?.Transaction;
 		}
 	}
 }
