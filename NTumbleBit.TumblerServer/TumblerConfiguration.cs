@@ -81,7 +81,7 @@ namespace NTumbleBit.TumblerServer
 			get;
 			set;
 		}
-		public bool NonCooperative
+		public bool Cooperative
 		{
 			get;
 			set;
@@ -153,6 +153,8 @@ namespace NTumbleBit.TumblerServer
 				Environment.Exit(0);
 			}
 
+			Cooperative = config.GetOrDefault<bool>("cooperative", true);
+
 			var defaultPort = config.GetOrDefault<int>("port", 37123);
 
 			OnlyMonitor = config.GetOrDefault<bool>("onlymonitor", false);
@@ -181,6 +183,9 @@ namespace NTumbleBit.TumblerServer
 				builder.AppendLine("#rpc.user=bitcoinuser");
 				builder.AppendLine("#rpc.password=bitcoinpassword");
 				builder.AppendLine("#rpc.cookiefile=yourbitcoinfolder/.cookie");
+
+				builder.AppendLine("####Advanced Comands");
+				builder.AppendLine("#cooperative=false");
 				File.WriteAllText(config, builder.ToString());
 			}
 			return config;

@@ -65,6 +65,11 @@ namespace NTumbleBit.Client.Tumbler
 			get;
 			private set;
 		}
+		public bool Cooperative
+		{
+			get;
+			set;
+		}
 
 		private CancellationToken _Stop;
 		public void Start(CancellationToken cancellation)
@@ -141,7 +146,7 @@ namespace NTumbleBit.Client.Tumbler
 
 		private PaymentStateMachine CreateStateMachine(PaymentStateMachine.State state)
 		{
-			return new PaymentStateMachine(Parameters, AliceClient, DestinationWallet, Services, state, Tracker);
+			return new PaymentStateMachine(Parameters, AliceClient, DestinationWallet, Services, state, Tracker) { Cooperative = Cooperative };
 		}
 	}
 }

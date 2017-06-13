@@ -94,7 +94,7 @@ namespace NTumbleBit.Client.Tumbler
 			get;
 			private set;
 		}
-		public bool NonCooperative
+		public bool Cooperative
 		{
 			get;
 			set;
@@ -320,7 +320,7 @@ namespace NTumbleBit.Client.Tumbler
 									BroadcastAt = cycle.GetPeriods().ClientCashout.Start,
 									Transaction = transaction
 								});
-								if(!NonCooperative)
+								if(Cooperative)
 								{
 									var signature = SolverClientSession.SignEscape();
 									AliceClient.GiveEscapeKey(cycle.Start, SolverClientSession.Id, signature);

@@ -108,7 +108,7 @@ namespace NTumbleBit.Tests
 		{
 			using(var server = TumblerServerTester.Create())
 			{
-				server.ServerContext.TumblerConfiguration.NonCooperative = !cooperativeTumbler;
+				server.ServerContext.TumblerConfiguration.Cooperative = cooperativeTumbler;
 
 				server.AliceNode.FindBlock(1);
 				server.SyncNodes();
@@ -118,7 +118,7 @@ namespace NTumbleBit.Tests
 				server.SyncNodes();
 
 				var machine = server.ClientContext.PaymentMachineState;
-				machine.NonCooperative = !cooperativeClient;
+				machine.Cooperative = cooperativeClient;
 
 				var serverTracker = server.ServerContext.GetService<TumblerServer.Tracker>();
 				var clientTracker = machine.Tracker;

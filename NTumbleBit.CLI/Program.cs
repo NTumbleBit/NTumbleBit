@@ -111,7 +111,10 @@ namespace NTumbleBit.CLI
 						catch { throw ex; } //Not a bug, want to throw the other exception
 
 					}
-					var stateMachine = new StateMachinesExecutor(parameters, client, destinationWallet, Services, dbreeze, Logs.Main, Tracker);
+					var stateMachine = new StateMachinesExecutor(parameters, client, destinationWallet, Services, dbreeze, Logs.Main, Tracker)
+					{
+						Cooperative = config.GetOrDefault<bool>("cooperative", true)
+					};
 					stateMachine.Start(MixingToken.Token);
 					Logs.Main.LogInformation("State machines started");
 				}
@@ -206,6 +209,9 @@ namespace NTumbleBit.CLI
 				builder.AppendLine("#tumbler.server=");
 				builder.AppendLine("#outputwallet.extpubkey=");
 				builder.AppendLine("#outputwallet.keypath=");
+
+				builder.AppendLine("####Advanced Comands");
+				builder.AppendLine("#cooperative=false");
 				File.WriteAllText(config, builder.ToString());
 			}
 			return config;
