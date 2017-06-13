@@ -194,9 +194,9 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			return broadcasted.ToArray();
 		}
 
-		public Transaction GetKnownTransaction(uint256 txId)
+		public TrustedBroadcastRequest GetKnownTransaction(uint256 txId)
 		{
-			return Repository.Get<Record>("TrustedBroadcasts", txId.ToString())?.Request.Transaction;
+			return Repository.Get<Record>("TrustedBroadcasts", txId.ToString())?.Request;
 		}
 
 		private readonly IBlockExplorerService _BlockExplorer;

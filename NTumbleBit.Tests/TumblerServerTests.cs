@@ -272,7 +272,7 @@ namespace NTumbleBit.Tests
 					if(txId != null)
 					{
 						var tx = allTransactions.TryGet(txId.TransactionId) ??
-							server.ServerContext.TrustedBroadcastService.GetKnownTransaction(txId.TransactionId) ?? server.ServerContext.BroadcastService.GetKnownTransaction(txId.TransactionId);
+							server.ServerContext.TrustedBroadcastService.GetKnownTransaction(txId.TransactionId)?.Transaction ?? server.ServerContext.BroadcastService.GetKnownTransaction(txId.TransactionId);
 						if(tx != null)
 							AssertRate(allTransactions, expectedRate, tx);
 					}
@@ -291,7 +291,7 @@ namespace NTumbleBit.Tests
 					if(txId != null)
 					{
 						var tx = allTransactions.TryGet(txId.TransactionId) ??
-							server.ClientContext.TrustedBroadcastService.GetKnownTransaction(txId.TransactionId) ?? server.ClientContext.UntrustedBroadcaster.GetKnownTransaction(txId.TransactionId);
+							server.ClientContext.TrustedBroadcastService.GetKnownTransaction(txId.TransactionId)?.Transaction ?? server.ClientContext.UntrustedBroadcaster.GetKnownTransaction(txId.TransactionId);
 						if(tx != null
 							 && tx.Inputs[0].PrevOut.Hash != uint256.Zero) //Client offer redeem, as it is broadcasted to the trusted broadcaster before offer is known
 							AssertRate(allTransactions, expectedRate, tx);

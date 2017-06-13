@@ -201,6 +201,36 @@ namespace NTumbleBit.CLI
 					Console.WriteLine("Cycle " + result.Cycle);
 					Console.WriteLine("Type " + result.TransactionType);
 				}
+
+				var knownTransaction = Services.TrustedBroadcastService.GetKnownTransaction(txId);
+				Transaction tx = knownTransaction?.Transaction;
+				if(knownTransaction != null)
+				{
+					if(knownTransaction.BroadcastAt != 0)
+						Console.WriteLine("Planned for " + knownTransaction.BroadcastAt.ToString());
+					if(tx.Inputs[0].PrevOut.Hash == uint256.Zero)
+						Console.WriteLine("Parent transaction yet unknown");
+				}
+				if(tx == null)
+				{
+					tx = Services.BroadcastService.GetKnownTransaction(txId);
+				}
+				var txInfo = Services.BlockExplorerService.GetTransaction(txId);
+				if(tx == null)
+					tx = txInfo?.Transaction;
+				if(txInfo != null)
+				{
+					if(txInfo.Confirmations != 0)
+						Console.WriteLine(txInfo.Confirmations + " Confirmations");
+					else
+						Console.WriteLine("Unconfirmed");
+				}
+
+				if(tx != null)
+				{
+					Console.WriteLine("Timelock " + tx.LockTime.ToString());
+					Console.WriteLine("Hex " + tx.ToHex());
+				}
 				//TODO ask to other objects for more info
 			}
 

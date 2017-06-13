@@ -30,6 +30,7 @@ namespace NTumbleBit.Client.Tumbler.Services
     {
 		int GetCurrentHeight();
 		TransactionInformation[] GetTransactions(Script scriptPubKey, bool withProof);
+		TransactionInformation GetTransaction(uint256 txId);
 		void Track(Script scriptPubkey);
 		int GetBlockConfirmations(uint256 blockId);
 		bool TrackPrunedTransaction(Transaction transaction, MerkleBlock merkleProof);
