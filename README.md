@@ -15,14 +15,14 @@ An "easy" to understand explanation of the protocol has been presented by Ethan 
 
 As a user, you will need:
 
-1. [NET Core Runtime 1.1.1](https://github.com/dotnet/core/blob/master/release-notes/download-archives/1.1.1-download.md)
-2. [NET Core SDK 1.0.4](https://github.com/dotnet/core/blob/master/release-notes/download-archives/1.0.4-sdk-download.md) (see below)
-3. [Bitcoin Core 0.13.1](https://bitcoin.org/bin/bitcoin-core-0.13.1/) fully sync, rpc enabled.
+1. [NET Core SDK 1.0.4](https://github.com/dotnet/core/blob/master/release-notes/download-archives/1.0.4-sdk-download.md) (see below)
+2. [Bitcoin Core 0.13.1](https://bitcoin.org/bin/bitcoin-core-0.13.1/) fully sync, rpc enabled.
 
 You can easily install the SDK on ubuntu systems after having installed the runtime by running
 ```
 sudo apt-get install dotnet-dev-1.0.4
 ```
+You can known more about install on your system on [this link](https://www.microsoft.com/net/core).
 Using Bitcoin Core with later version should work as well.
 
 As a developer, you need additionally one of those:
