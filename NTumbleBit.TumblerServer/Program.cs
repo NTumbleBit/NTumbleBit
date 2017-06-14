@@ -70,6 +70,8 @@ namespace NTumbleBit.TumblerServer
 							if(!MixingToken.IsCancellationRequested)
 								Logs.Server.LogCritical(1, ex, "Error while starting the host");
 						}
+						if(MixingToken.IsCancellationRequested)
+							Logs.Server.LogInformation("Server stopped");
 					}).Start();
 				StartInteractive();
 			}
