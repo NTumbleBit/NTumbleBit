@@ -37,10 +37,11 @@ namespace NTumbleBit.Client.Tumbler.Services
 				};
 			}
 
+			var cache = new RPCWalletCache(rpc, repository);
 			service.WalletService = new RPCWalletService(rpc);
-			service.BroadcastService = new RPCBroadcastService(rpc, repository);
-			service.BlockExplorerService = new RPCBlockExplorerService(rpc, repository);
-			service.TrustedBroadcastService = new RPCTrustedBroadcastService(rpc, service.BroadcastService, service.BlockExplorerService, repository, tracker)
+			service.BroadcastService = new RPCBroadcastService(rpc, cache, repository);
+			service.BlockExplorerService = new RPCBlockExplorerService(rpc, cache, repository);
+			service.TrustedBroadcastService = new RPCTrustedBroadcastService(rpc, service.BroadcastService, service.BlockExplorerService, repository, cache, tracker)
 			{
 				//BlockExplorer will already track the addresses, since they used a shared bitcoind, no need of tracking again (this would overwrite labels)
 				TrackPreviousScriptPubKey = false

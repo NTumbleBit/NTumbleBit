@@ -127,9 +127,9 @@ namespace NTumbleBit.Tests
 				machine.Update();
 				var cycle = machine.ClientChannelNegotiation.GetCycle();
 
-				MineTo(server.AliceNode, cycle, CyclePhase.ClientChannelEstablishment);
+				server.MineTo(server.AliceNode, cycle, CyclePhase.ClientChannelEstablishment);
 				server.SyncNodes();
-
+				
 
 				var escrow1 = machine.AliceClient.RequestTumblerEscrowKey(machine.StartCycle);
 				var escrow2 = machine.AliceClient.RequestTumblerEscrowKey(machine.StartCycle);
@@ -162,7 +162,7 @@ namespace NTumbleBit.Tests
 				//
 
 
-				MineTo(server.AliceNode, cycle, CyclePhase.TumblerChannelEstablishment);
+				server.MineTo(server.AliceNode, cycle, CyclePhase.TumblerChannelEstablishment);
 				server.SyncNodes();
 
 				machine.Update();
@@ -173,7 +173,7 @@ namespace NTumbleBit.Tests
 				clientTracker.AssertKnown(TransactionType.TumblerEscrow, machine.PromiseClientSession.EscrowedCoin.ScriptPubKey);
 				clientTracker.AssertKnown(TransactionType.TumblerEscrow, machine.PromiseClientSession.EscrowedCoin.Outpoint.Hash);
 
-				MineTo(server.TumblerNode, cycle, CyclePhase.PaymentPhase);
+				server.MineTo(server.TumblerNode, cycle, CyclePhase.PaymentPhase);
 				server.SyncNodes();
 
 				machine.Update();
@@ -182,7 +182,7 @@ namespace NTumbleBit.Tests
 				if(cooperativeClient && cooperativeTumbler)
 					block = server.TumblerNode.FindBlock(1).First();
 
-				MineTo(server.TumblerNode, cycle, CyclePhase.PaymentPhase, true);
+				server.MineTo(server.TumblerNode, cycle, CyclePhase.PaymentPhase, true);
 				server.SyncNodes();
 
 				Transaction[] transactions = null;
@@ -227,7 +227,7 @@ namespace NTumbleBit.Tests
 					serverTracker.AssertKnown(TumblerServer.TransactionType.ClientEscape, block.Transactions[1].Outputs[0].ScriptPubKey);
 				}
 
-				MineTo(server.TumblerNode, cycle, CyclePhase.ClientCashoutPhase);
+				server.MineTo(server.TumblerNode, cycle, CyclePhase.ClientCashoutPhase);
 				server.SyncNodes();
 				machine.Update();
 
@@ -327,7 +327,7 @@ namespace NTumbleBit.Tests
 				machine.Update();
 				var cycle = machine.ClientChannelNegotiation.GetCycle();
 
-				MineTo(server.AliceNode, cycle, CyclePhase.ClientChannelEstablishment);
+				server.MineTo(server.AliceNode, cycle, CyclePhase.ClientChannelEstablishment);
 				server.SyncNodes();
 
 				machine.Update();
@@ -348,40 +348,29 @@ namespace NTumbleBit.Tests
 						.GetTransactions(machine.SolverClientSession.EscrowedCoin.ScriptPubKey, false)
 						.Count());
 
-				MineTo(server.AliceNode, cycle, CyclePhase.TumblerChannelEstablishment);
+				server.MineTo(server.AliceNode, cycle, CyclePhase.TumblerChannelEstablishment);
 				server.SyncNodes();
 
 				machine.Update();
 
 				//Client Refund broadcasted exactly when we are at ClientCashoutPhase + SafetyPeriodDuration
-				MineTo(server.AliceNode, cycle, CyclePhase.ClientCashoutPhase, offset: cycle.SafetyPeriodDuration - 1);
+				server.MineTo(server.AliceNode, cycle, CyclePhase.ClientCashoutPhase, offset: cycle.SafetyPeriodDuration - 1);
 				var broadcasted = server.ClientContext.TrustedBroadcastService.TryBroadcast();
 				Assert.Equal(0, broadcasted.Length);
-				MineTo(server.AliceNode, cycle, CyclePhase.ClientCashoutPhase, offset: cycle.SafetyPeriodDuration);
+				server.MineTo(server.AliceNode, cycle, CyclePhase.ClientCashoutPhase, offset: cycle.SafetyPeriodDuration);
 				broadcasted = server.ClientContext.TrustedBroadcastService.TryBroadcast();
 				Assert.Equal(1, broadcasted.Length);
 				////////////////////////////////////////////////////////////////////////////////
 
 				//Tumbler Refund broadcasted exactly when we are at ClientCashoutPhase + SafetyPeriodDuration
-				MineTo(server.AliceNode, cycle, CyclePhase.ClientCashoutPhase, end: true, offset: cycle.SafetyPeriodDuration - 1);
+				server.MineTo(server.AliceNode, cycle, CyclePhase.ClientCashoutPhase, end: true, offset: cycle.SafetyPeriodDuration - 1);
 				broadcasted = server.ServerContext.TrustedBroadcastService.TryBroadcast();
 				Assert.Equal(0, broadcasted.Length);
-				MineTo(server.AliceNode, cycle, CyclePhase.ClientCashoutPhase, end: true, offset: cycle.SafetyPeriodDuration);
+				server.MineTo(server.AliceNode, cycle, CyclePhase.ClientCashoutPhase, end: true, offset: cycle.SafetyPeriodDuration);
 				broadcasted = server.ServerContext.TrustedBroadcastService.TryBroadcast();
 				Assert.Equal(1, broadcasted.Length);
 				////////////////////////////////////////////////////////////////////////////////
 			}
-		}
-
-		private void MineTo(CoreNode node, CycleParameters cycle, CyclePhase phase, bool end = false, int offset = 0)
-		{
-			var height = node.CreateRPCClient().GetBlockCount();
-			var periodStart = end ? cycle.GetPeriods().GetPeriod(phase).End : cycle.GetPeriods().GetPeriod(phase).Start;
-			var blocksToFind = periodStart - height + offset;
-			if(blocksToFind <= 0)
-				return;
-
-			node.FindBlock(blocksToFind);
 		}
 	}
 }

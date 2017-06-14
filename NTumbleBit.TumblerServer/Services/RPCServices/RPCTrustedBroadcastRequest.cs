@@ -47,7 +47,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			}
 		}
 
-		public RPCTrustedBroadcastService(RPCClient rpc, IBroadcastService innerBroadcast, IBlockExplorerService explorer, IRepository repository, Tracker tracker)
+		public RPCTrustedBroadcastService(RPCClient rpc, IBroadcastService innerBroadcast, IBlockExplorerService explorer, IRepository repository, RPCWalletCache cache, Tracker tracker)
 		{
 			if(rpc == null)
 				throw new ArgumentNullException(nameof(rpc));
@@ -59,12 +59,15 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				throw new ArgumentNullException(nameof(explorer));
 			if(tracker == null)
 				throw new ArgumentNullException(nameof(tracker));
+			if(cache == null)
+				throw new ArgumentNullException(nameof(cache));
 			_Repository = repository;
 			_RPCClient = rpc;
 			_Broadcaster = innerBroadcast;
 			TrackPreviousScriptPubKey = true;
 			_BlockExplorer = explorer;
 			_Tracker = tracker;
+			_Cache = cache;
 		}
 
 		private Tracker _Tracker;
@@ -91,7 +94,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			var address = broadcast.PreviousScriptPubKey?.GetDestinationAddress(RPCClient.Network);
 			if(address != null && TrackPreviousScriptPubKey)
 				RPCClient.ImportAddress(address, "", false);
-			var height = RPCClient.GetBlockCountAsync().GetAwaiter().GetResult();
+			var height = _Cache.BlockCount;
 			var record = new Record();
 
 			//3 days expiration after now or broadcast date
@@ -138,10 +141,9 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		}
 		public Transaction[] TryBroadcast(ref uint256[] knownBroadcasted)
 		{
-			var height = RPCClient.GetBlockCountAsync().GetAwaiter().GetResult();
+			var height = _Cache.BlockCount;
 			HashSet<uint256> knownBroadcastedSet = new HashSet<uint256>(knownBroadcasted ?? new uint256[0]);
 
-			RPCBlockExplorerService.TransactionsCache cache = null;
 			List<Transaction> broadcasted = new List<Transaction>();
 			foreach(var broadcast in GetRequests())
 			{
@@ -156,14 +158,13 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 					if(!knownBroadcastedSet.Contains(txHash) &&
 									_Broadcaster.Broadcast(transaction))
 					{
-						cache = null;
 						broadcasted.Add(transaction);
 					}
 					knownBroadcastedSet.Add(txHash);
 				}
 				else
 				{
-					foreach(var tx in GetReceivedTransactions(ref cache, broadcast.Request.PreviousScriptPubKey))
+					foreach(var tx in GetReceivedTransactions(broadcast.Request.PreviousScriptPubKey))
 					{
 						foreach(var coin in tx.Outputs.AsCoins())
 						{
@@ -176,7 +177,6 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 								if(!knownBroadcastedSet.Contains(txHash) &&
 									_Broadcaster.Broadcast(transaction))
 								{
-									cache = null;
 									broadcasted.Add(transaction);
 								}
 								knownBroadcastedSet.Add(txHash);
@@ -200,6 +200,8 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		}
 
 		private readonly IBlockExplorerService _BlockExplorer;
+		private readonly RPCWalletCache _Cache;
+
 		public IBlockExplorerService BlockExplorer
 		{
 			get
@@ -209,16 +211,12 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		}
 
 
-		public Transaction[] GetReceivedTransactions(ref RPCBlockExplorerService.TransactionsCache cache, Script scriptPubKey)
+		public Transaction[] GetReceivedTransactions(Script scriptPubKey)
 		{
 			if(scriptPubKey == null)
 				throw new ArgumentNullException(nameof(scriptPubKey));
-
-			var rpc = BlockExplorer as RPCBlockExplorerService;
 			return
-				(rpc == null ?
-				BlockExplorer.GetTransactions(scriptPubKey, false) :
-				rpc.GetTransactions(ref cache, scriptPubKey, false))
+				BlockExplorer.GetTransactions(scriptPubKey, false)
 				.Where(t => t.Transaction.Outputs.Any(o => o.ScriptPubKey == scriptPubKey))
 				.Select(t => t.Transaction)
 				.ToArray();

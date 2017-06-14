@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using NBitcoin;
 using NTumbleBit.ClassicTumbler;
 using NTumbleBit.Client.Tumbler.Services;
 using System;
@@ -78,23 +79,15 @@ namespace NTumbleBit.Client.Tumbler
 			new Thread(() =>
 			{
 
-				int lastHeight = 0;
+				uint256 lastBlock = uint256.Zero;
 				int lastCycle = 0;
 				while(true)
 				{
+					Exception unhandled = null;
 					try
 					{
-						_Stop.WaitHandle.WaitOne(5000);
-						if(_Stop.IsCancellationRequested)
-						{
-							Logger.LogInformation("Mixer stopped");
-							break;
-						}
-
+						lastBlock = Services.BlockExplorerService.WaitBlock(lastBlock, _Stop);
 						var height = Services.BlockExplorerService.GetCurrentHeight();
-						if(height == lastHeight)
-							continue;
-						lastHeight = height;
 						Logger.LogInformation("New block of height " + height);
 						var cycle = Parameters.CycleGenerator.GetRegistratingCycle(height);
 						if(lastCycle != cycle.Start)
@@ -126,9 +119,23 @@ namespace NTumbleBit.Client.Tumbler
 							Save(machine, machine.StartCycle);
 						}
 					}
+					catch(OperationCanceledException ex)
+					{
+						if(_Stop.IsCancellationRequested)
+						{
+							Logger.LogInformation("Mixer stopped");
+							break;
+						}
+						else
+							unhandled = ex;
+					}
 					catch(Exception ex)
 					{
-						Logger.LogError("Uncaught exception StateMachineExecutor : " + ex.ToString());
+						unhandled = ex;
+					}
+					if(unhandled != null)
+					{
+						Logger.LogError("Uncaught exception StateMachineExecutor : " + unhandled.ToString());
 						_Stop.WaitHandle.WaitOne(5000);
 					}
 				}

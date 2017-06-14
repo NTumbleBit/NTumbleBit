@@ -24,7 +24,8 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				get; set;
 			}
 		}
-		public RPCBroadcastService(RPCClient rpc, IRepository repository)
+		RPCWalletCache _Cache;
+		public RPCBroadcastService(RPCClient rpc, RPCWalletCache cache, IRepository repository)
 		{
 			if(rpc == null)
 				throw new ArgumentNullException(nameof(rpc));
@@ -32,7 +33,8 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				throw new ArgumentNullException(nameof(repository));
 			_RPCClient = rpc;
 			_Repository = repository;
-			_BlockExplorerService = new RPCBlockExplorerService(rpc, repository);
+			_Cache = cache;
+			_BlockExplorerService = new RPCBlockExplorerService(rpc, cache, repository);
 		}
 
 
@@ -81,13 +83,11 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			List<Transaction> broadcasted = new List<Transaction>();
 
 			HashSet<uint256> knownBroadcastedSet = new HashSet<uint256>(knownBroadcasted ?? new uint256[0]);
-			int height = RPCClient.GetBlockCount();
-			var walletTransactions = RPCClient.ListTransactions();
-
-			foreach(var obj in walletTransactions)
+			int height = _Cache.BlockCount;
+			foreach(var obj in _Cache.GetEntries())
 			{
-				if(obj["confirmations"] != null && (int)obj["confirmations"] > 0)
-					knownBroadcastedSet.Add(new uint256((string)obj["txid"]));
+				if(obj.Confirmations > 0)
+					knownBroadcastedSet.Add(obj.TransactionId);
 			}
 
 			foreach(var tx in GetTransactions())
@@ -133,6 +133,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			try
 			{
 				RPCClient.SendRawTransaction(tx.Transaction);
+				_Cache.ImportTransaction(tx.Transaction, 0);
 				return true;
 			}
 			catch(RPCException ex)
@@ -162,7 +163,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		{
 			var record = new Record();
 			record.Transaction = transaction;
-			var height = _RPCClient.GetBlockCount();
+			var height = _Cache.BlockCount;
 			//3 days expiration
 			record.Expiration = height + (int)(TimeSpan.FromDays(3).Ticks / Network.Main.Consensus.PowTargetSpacing.Ticks);
 			Repository.UpdateOrInsert<Record>("Broadcasts", transaction.GetHash().ToString(), record, (o, n) => o);

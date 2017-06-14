@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using NBitcoin;
 using Newtonsoft.Json.Linq;
 using NBitcoin.DataEncoders;
+using System.Threading;
 
 
 #if !CLIENT
@@ -16,19 +17,18 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 {
 	public class RPCBlockExplorerService : IBlockExplorerService
 	{
-		public class TransactionsCache
-		{
-			internal JArray Transactions;
-		}
-
-		public RPCBlockExplorerService(RPCClient client, IRepository repo)
+		RPCWalletCache _Cache;
+		public RPCBlockExplorerService(RPCClient client, RPCWalletCache cache, IRepository repo)
 		{
 			if(client == null)
 				throw new ArgumentNullException(nameof(client));
 			if(repo == null)
 				throw new ArgumentNullException("repo");
+			if(cache == null)
+				throw new ArgumentNullException("cache");
 			_RPCClient = client;
 			_Repo = repo;
+			_Cache = cache;
 		}
 
 		IRepository _Repo;
@@ -44,16 +44,25 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		}
 		public int GetCurrentHeight()
 		{
-			return RPCClient.GetBlockCount();
+			return _Cache.BlockCount;
+		}
+
+		public uint256 WaitBlock(uint256 currentBlock, CancellationToken cancellation = default(CancellationToken))
+		{
+			while(true)
+			{
+				var h = _RPCClient.GetBestBlockHash();
+				if(h != currentBlock)
+				{
+					_Cache.Refresh(h);
+					return h;
+				}
+				cancellation.WaitHandle.WaitOne(5000);
+				cancellation.ThrowIfCancellationRequested();
+			}
 		}
 
 		public TransactionInformation[] GetTransactions(Script scriptPubKey, bool withProof)
-		{
-			TransactionsCache cache = null;
-			return GetTransactions(ref cache, scriptPubKey, withProof);
-		}
-
-		public TransactionInformation[] GetTransactions(ref TransactionsCache cache, Script scriptPubKey, bool withProof)
 		{
 			if(scriptPubKey == null)
 				throw new ArgumentNullException(nameof(scriptPubKey));
@@ -77,9 +86,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 
 			if(results == null)
 			{
-				var walletTransactions = cache?.Transactions ?? RPCClient.ListTransactions();
-				if(cache == null)
-					cache = new TransactionsCache() { Transactions = walletTransactions };
+				var walletTransactions = _Cache.GetEntries();
 				results = Filter(walletTransactions, !withProof, address);
 			}
 			if(withProof)
@@ -126,61 +133,35 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			return results;
 		}
 
-		private List<TransactionInformation> Filter(JArray transactions, bool includeUnconf, BitcoinAddress address)
+		private List<TransactionInformation> Filter(RPCWalletEntry[] entries, bool includeUnconf, BitcoinAddress address)
 		{
 			List<TransactionInformation> results = new List<TransactionInformation>();
 			HashSet<uint256> resultsSet = new HashSet<uint256>();
-			foreach(var obj in transactions)
+			foreach(var obj in entries)
 			{
-				var txId = new uint256((string)obj["txid"]);
-
-				//Core does not show the address for outgoing transactions so we can't use the following:
-				//if((string)obj["address"] == address.ToString())
-
-
 				//May have duplicates
-				if(!resultsSet.Contains(txId))
+				if(!resultsSet.Contains(obj.TransactionId))
 				{
-					var confirmations = Math.Max(0, obj["confirmations"] == null ? 0 : (int)obj["confirmations"]);
+					var confirmations = obj.Confirmations;
+					var tx = _Cache.GetTransaction(obj.TransactionId);
 
-					var tx = GetCachedTransaction(txId, confirmations);
-					if(tx == null)
-					{
-						tx = GetTransaction(txId);
-						if(tx != null)
-							PutCached(txId, tx);
-					}
-
-					if(tx == null || (!includeUnconf && tx.Confirmations == 0))
+					if(tx == null || (!includeUnconf && confirmations == 0))
 						continue;
 
-					if(tx.Transaction.Outputs.Any(o => o.ScriptPubKey == address.ScriptPubKey) ||
-					   tx.Transaction.Inputs.Any(o => o.ScriptSig.GetSigner().ScriptPubKey == address.ScriptPubKey))
+					if(tx.Outputs.Any(o => o.ScriptPubKey == address.ScriptPubKey) ||
+					   tx.Inputs.Any(o => o.ScriptSig.GetSigner().ScriptPubKey == address.ScriptPubKey))
 					{
 
-						resultsSet.Add(txId);
-						results.Add(tx);
+						resultsSet.Add(obj.TransactionId);
+						results.Add(new TransactionInformation()
+						{
+							Transaction = tx,
+							Confirmations = confirmations
+						});
 					}
 				}
 			}
 			return results;
-		}
-
-		private void PutCached(uint256 txId, TransactionInformation tx)
-		{
-			_Repo.UpdateOrInsert("CachedTransactions", txId.ToString(), tx.Transaction, (a, b) => b);
-		}
-
-		private TransactionInformation GetCachedTransaction(uint256 txId, int confirmations)
-		{
-			var tx = _Repo.Get<Transaction>("CachedTransactions", txId.ToString());
-			if(tx == null)
-				return null;
-			return new TransactionInformation()
-			{
-				Transaction = tx,
-				Confirmations = confirmations
-			};
 		}
 
 		public TransactionInformation GetTransaction(uint256 txId)
@@ -229,7 +210,12 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		public bool TrackPrunedTransaction(Transaction transaction, MerkleBlock merkleProof)
 		{
 			var result = RPCClient.SendCommandNoThrows("importprunedfunds", transaction.ToHex(), Encoders.Hex.EncodeData(merkleProof.ToBytes()));
-			return result != null && result.Error == null;
+			var success = result != null && result.Error == null;
+			if(success)
+			{
+				_Cache.ImportTransaction(transaction, GetBlockConfirmations(merkleProof.Header.GetHash()));
+			}
+			return success;
 		}
 	}
 }

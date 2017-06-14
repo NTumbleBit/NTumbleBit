@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Server.Kestrel;
 using Microsoft.Extensions.Configuration;
 using NBitcoin;
 using NBitcoin.RPC;
+using NTumbleBit.ClassicTumbler;
 using NTumbleBit.Client.Tumbler;
 using NTumbleBit.TumblerServer;
 using NTumbleBit.TumblerServer.Services;
@@ -198,6 +199,26 @@ namespace NTumbleBit.Tests
 			((Client.Tumbler.Services.RPCServices.RPCFeeService)ClientContext.PaymentMachineState.Services.FeeService).FallBackFeeRate = new FeeRate(Money.Satoshis(50), 1);
 		}
 
+		public void MineTo(CoreNode node, CycleParameters cycle, CyclePhase phase, bool end = false, int offset = 0)
+		{
+			var height = node.CreateRPCClient().GetBlockCount();
+			var periodStart = end ? cycle.GetPeriods().GetPeriod(phase).End : cycle.GetPeriods().GetPeriod(phase).Start;
+			var blocksToFind = periodStart - height + offset;
+			if(blocksToFind <= 0)
+				return;
+
+			node.FindBlock(blocksToFind);
+			RefreshWalletCache();
+		}
+
+		public void RefreshWalletCache()
+		{
+			if(ClientContext != null)
+				ClientContext.BlockExplorer.WaitBlock(uint256.Zero);
+			if(ServerContext != null)
+				ServerContext.BlockExplorer.WaitBlock(uint256.Zero);
+		}
+
 		Client.Tumbler.Services.DBreezeRepository _ClientRepo;
 		public TumblerClientContext ClientContext
 		{
@@ -219,6 +240,7 @@ namespace NTumbleBit.Tests
 						node.Sync(node2, true);
 				}
 			}
+			RefreshWalletCache();
 		}
 
 		private static bool TryDelete(string directory, bool throws)

@@ -54,19 +54,14 @@ namespace NTumbleBit.Client.Tumbler.Services
 			{
 				while(true)
 				{
-
+					Exception unhandled = null;
 					try
 					{
-						int lastHeight = 0;
+						uint256 lastBlock = uint256.Zero;
 						while(true)
 						{
-							_Stop.WaitHandle.WaitOne(5000);
-							_Stop.ThrowIfCancellationRequested();
-
+							lastBlock = BlockExplorerService.WaitBlock(lastBlock, _Stop);
 							var height = BlockExplorerService.GetCurrentHeight();
-							if(height == lastHeight)
-								continue;
-							lastHeight = height;
 							uint256[] knownBroadcasted = null;
 							try
 							{
@@ -94,10 +89,24 @@ namespace NTumbleBit.Client.Tumbler.Services
 							}
 						}
 					}
-					catch(OperationCanceledException) { return; }
+					catch(OperationCanceledException ex)
+					{
+						if(_Stop.IsCancellationRequested)
+						{
+							Logger.LogInformation("BroadcasterJob stopped");
+							break;
+						}
+						else
+							unhandled = ex;
+					}
 					catch(Exception ex)
 					{
-						Logger.LogError("Uncatched exception in BroadcasterJob: " + ex.ToString());
+						unhandled = ex;
+					}
+					if(unhandled != null)
+					{
+						Logger.LogError("Uncaught exception BroadcasterJob : " + unhandled.ToString());
+						_Stop.WaitHandle.WaitOne(5000);
 					}
 				}
 			}).Start();
