@@ -141,7 +141,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				//May have duplicates
 				if(!resultsSet.Contains(txId))
 				{
-					var confirmations = Math.Max(0, (int)obj["confirmations"]);
+					var confirmations = Math.Max(0, obj["confirmations"] == null ? 0 : (int)obj["confirmations"]);
 
 					var tx = GetCachedTransaction(txId, confirmations);
 					if(tx == null)
