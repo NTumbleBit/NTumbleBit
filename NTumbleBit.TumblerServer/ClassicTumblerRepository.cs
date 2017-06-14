@@ -84,13 +84,13 @@ namespace NTumbleBit.TumblerServer
 		{
 			ExtKey key = GetExtKey();
 			var partition = GetCyclePartition(cycleId);
-			var nextIndex = Repository.Get<int>(partition, "KeyIndex") + 1;
-			Repository.UpdateOrInsert<int>(partition, "KeyIndex", nextIndex, (o, n) =>
+			var nextIndex = 0;
+			Repository.UpdateOrInsert<int>(partition, "KeyIndex", 0, (o, n) =>
 			{
-				nextIndex = Math.Max(o, n);
+				nextIndex = Math.Max(o, n) + 1;
 				return nextIndex;
 			});
-			keyIndex = nextIndex - 1;
+			keyIndex = nextIndex;
 			return key.Derive(cycleId, false).Derive((uint)keyIndex).PrivateKey;
 		}
 
