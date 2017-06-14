@@ -15,6 +15,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -63,68 +64,6 @@ namespace NTumbleBit.Tests
 			}
 		}
 	}
-	public class TumblerServerContext
-	{
-		private IWebHost _Host;
-
-		public TumblerServerContext(IWebHost _Host)
-		{
-			this._Host = _Host;
-		}
-
-		public ClassicTumblerRepository TumblerRepository
-		{
-			get
-			{
-				return (ClassicTumblerRepository)_Host.Services.GetService(typeof(ClassicTumblerRepository));
-			}
-		}
-
-		public TumblerConfiguration TumblerConfiguration
-		{
-			get
-			{
-				return (TumblerConfiguration)_Host.Services.GetService(typeof(TumblerConfiguration));
-			}
-		}
-
-		public T GetService<T>()
-		{
-			return (T)_Host.Services.GetService(typeof(T));
-		}
-
-		public ExternalServices ExtenalServices
-		{
-			get
-			{
-				return (ExternalServices)_Host.Services.GetService(typeof(ExternalServices));
-			}
-		}
-
-		public TumblerServer.Services.RPCServices.RPCBroadcastService BroadcastService
-		{
-			get
-			{
-				return (TumblerServer.Services.RPCServices.RPCBroadcastService)ExtenalServices.BroadcastService;
-			}
-		}
-
-		public TumblerServer.Services.RPCServices.RPCBlockExplorerService BlockExplorer
-		{
-			get
-			{
-				return (TumblerServer.Services.RPCServices.RPCBlockExplorerService)ExtenalServices.BlockExplorerService;
-			}
-		}
-
-		public TumblerServer.Services.RPCServices.RPCTrustedBroadcastService TrustedBroadcastService
-		{
-			get
-			{
-				return (TumblerServer.Services.RPCServices.RPCTrustedBroadcastService)ExtenalServices.TrustedBroadcastService;
-			}
-		}
-	}
 	public class TumblerServerTester : IDisposable
 	{
 		public static TumblerServerTester Create([CallerMemberNameAttribute]string caller = null)
@@ -167,36 +106,51 @@ namespace NTumbleBit.Tests
 
 			var conf = new TumblerConfiguration();
 			conf.DataDir = directory;
+			File.WriteAllBytes(Path.Combine(conf.DataDir, "Tumbler.pem"), TestKeys.Default.ToBytes());
+			File.WriteAllBytes(Path.Combine(conf.DataDir, "Voucher.pem"), TestKeys.Default2.ToBytes());
+			conf.RPC.Url = rpc.Address;
+			var creds = ExtractCredentials(File.ReadAllText(_TumblerNode.Config));
+			conf.RPC.User = creds.Item1;
+			conf.RPC.Password = creds.Item2;
 			conf.Network = Network.RegTest;
-			conf.RPCClient = rpc;
-			conf.TumblerKey = TestKeys.Default;
-			conf.VoucherKey = TestKeys.Default2;
 			conf.ClassicTumblerParameters.FakePuzzleCount /= 4;
 			conf.ClassicTumblerParameters.FakeTransactionCount /= 4;
 			conf.ClassicTumblerParameters.RealTransactionCount /= 4;
 			conf.ClassicTumblerParameters.RealPuzzleCount /= 4;
 			conf.ClassicTumblerParameters.CycleGenerator.FirstCycle.Start = 105;
 
+			var runtime = TumblerRuntime.FromConfiguration(conf);
 			_Host = new WebHostBuilder()
 				.UseKestrel()
-				.UseAppConfiguration(conf)
+				.UseAppConfiguration(runtime)
 				.UseContentRoot(Path.GetFullPath(directory))
 				.UseIISIntegration()
 				.UseStartup<Startup>()
 				.Build();
 
 			_Host.Start();
-
-			ServerContext = new TumblerServerContext(_Host);
+			ServerRuntime = runtime;
 
 			//Overrides server fee
-			((TumblerServer.Services.RPCServices.RPCFeeService)ServerContext.ExtenalServices.FeeService).FallBackFeeRate = new FeeRate(Money.Satoshis(100), 1);
+			((TumblerServer.Services.RPCServices.RPCFeeService)runtime.Services.FeeService).FallBackFeeRate = new FeeRate(Money.Satoshis(100), 1);
 
 			var repo = new Client.Tumbler.Services.DBreezeRepository(Path.Combine(directory, "client"));
 			ClientContext = new TumblerClientContext(CreateTumblerClient(), AliceNode.CreateRPCClient(), repo, new Client.Tumbler.Tracker(repo));
 			_ClientRepo = repo;
 			//Overrides client fee
 			((Client.Tumbler.Services.RPCServices.RPCFeeService)ClientContext.PaymentMachineState.Services.FeeService).FallBackFeeRate = new FeeRate(Money.Satoshis(50), 1);
+		}
+
+		private Tuple<string, string> ExtractCredentials(string config)
+		{
+			var user = Regex.Match(config, "rpcuser=([^\r\n]*)");
+			var pass = Regex.Match(config, "rpcpassword=([^\r\n]*)");
+			return Tuple.Create(user.Groups[1].Value, pass.Groups[1].Value);
+		}
+
+		public TumblerRuntime ServerRuntime
+		{
+			get; set;
 		}
 
 		public void MineTo(CoreNode node, CycleParameters cycle, CyclePhase phase, bool end = false, int offset = 0)
@@ -215,17 +169,12 @@ namespace NTumbleBit.Tests
 		{
 			if(ClientContext != null)
 				ClientContext.BlockExplorer.WaitBlock(uint256.Zero);
-			if(ServerContext != null)
-				ServerContext.BlockExplorer.WaitBlock(uint256.Zero);
+			if(ServerRuntime != null)
+				ServerRuntime.Services.BlockExplorerService.WaitBlock(uint256.Zero, default(CancellationToken));
 		}
 
 		Client.Tumbler.Services.DBreezeRepository _ClientRepo;
 		public TumblerClientContext ClientContext
-		{
-			get; set;
-		}
-
-		public TumblerServerContext ServerContext
 		{
 			get; set;
 		}
@@ -301,7 +250,7 @@ namespace NTumbleBit.Tests
 
 		public TumblerClient CreateTumblerClient()
 		{
-			return new TumblerClient(ServerContext.TumblerConfiguration.Network, Address);
+			return new TumblerClient(ServerRuntime.Network, Address);
 		}
 
 		private readonly string _Directory;

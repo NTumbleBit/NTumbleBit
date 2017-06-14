@@ -31,24 +31,19 @@ namespace NTumbleBit.TumblerServer
 			config.LoadArgs(args);
 			try
 			{
+				var runtime = TumblerRuntime.FromConfiguration(config);
+				Services = runtime.Services;
+				Tracker = runtime.Tracker;
 				IWebHost host = null;
 				if(!config.OnlyMonitor)
 				{
 					host = new WebHostBuilder()
 					.UseKestrel()
-					.UseAppConfiguration(config)
+					.UseAppConfiguration(runtime)
 					.UseContentRoot(Directory.GetCurrentDirectory())
 					.UseIISIntegration()
 					.UseStartup<Startup>()
 					.Build();
-					Services = (ExternalServices)host.Services.GetService(typeof(ExternalServices));
-					Tracker = (Tracker)host.Services.GetService(typeof(Tracker));
-				}
-				else
-				{
-					var dbreeze = new DBreezeRepository(Path.Combine(config.DataDir, "db"));
-					Tracker = new Tracker(dbreeze);
-					Services = ExternalServices.CreateFromRPCClient(config.RPC.ConfigureRPCClient(TumblerParameters.Network), dbreeze, Tracker);
 				}
 
 				var job = new BroadcasterJob(Services, Logs.Main);

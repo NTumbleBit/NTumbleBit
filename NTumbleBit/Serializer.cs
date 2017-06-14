@@ -52,5 +52,10 @@ namespace NTumbleBit
 			var o = ToString(data);
 			return ToObject<T>(o);
 		}
+
+		public static void RegisterFrontConverters(JsonSerializerSettings serializerSettings, object network)
+		{
+			throw new NotImplementedException();
+		}
 	}
 }

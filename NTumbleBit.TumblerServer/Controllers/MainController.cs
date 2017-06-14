@@ -20,46 +20,41 @@ namespace NTumbleBit.TumblerServer.Controllers
 {
 	public class MainController : Controller
 	{
-		public MainController(TumblerConfiguration configuration, ClassicTumblerRepository repo, ClassicTumblerParameters parameters, ExternalServices services, Tracker tracker)
+		public MainController(TumblerRuntime runtime)
 		{
-			if(configuration == null)
-				throw new ArgumentNullException(nameof(configuration));
-			if(parameters == null)
-				throw new ArgumentNullException(nameof(parameters));
-			if(services == null)
-				throw new ArgumentNullException(nameof(services));
-			if(repo == null)
-				throw new ArgumentNullException(nameof(repo));
-			if(tracker == null)
-				throw new ArgumentNullException(nameof(tracker));
-			_Tumbler = configuration;
-			_Repository = repo;
-			_Parameters = parameters;
-			_Services = services;
-			_Tracker = tracker;
+			if(runtime == null)
+				throw new ArgumentNullException(nameof(runtime));
+			_Runtime = runtime;
+			_Repository = new ClassicTumblerRepository(_Runtime);
 		}
 
 
 
-		private readonly Tracker _Tracker;
+		private readonly TumblerRuntime _Runtime;
+		public TumblerRuntime Runtime
+		{
+			get
+			{
+				return _Runtime;
+			}
+		}
 		public Tracker Tracker
 		{
 			get
 			{
-				return _Tracker;
+				return _Runtime.Tracker;
 			}
 		}
 
-		private readonly ExternalServices _Services;
 		public ExternalServices Services
 		{
 			get
 			{
-				return _Services;
+				return _Runtime.Services;
 			}
 		}
 
-		private readonly ClassicTumblerRepository _Repository;
+		ClassicTumblerRepository _Repository;
 		public ClassicTumblerRepository Repository
 		{
 			get
@@ -68,22 +63,20 @@ namespace NTumbleBit.TumblerServer.Controllers
 			}
 		}
 
-		private readonly TumblerConfiguration _Tumbler;
 		public TumblerConfiguration Tumbler
 		{
 			get
 			{
-				return _Tumbler;
+				return _Runtime.Source;
 			}
 		}
 
 
-		private readonly ClassicTumblerParameters _Parameters;
 		public ClassicTumblerParameters Parameters
 		{
 			get
 			{
-				return _Parameters;
+				return _Runtime.ClassicTumblerParameters;
 			}
 		}
 
@@ -133,7 +126,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 			if(!cycle.IsInPhase(CyclePhase.ClientChannelEstablishment, height))
 				return BadRequest("incorrect-phase");
 
-			AliceServerChannelNegotiation aliceNegotiation = new AliceServerChannelNegotiation(Parameters, Tumbler.TumblerKey, Tumbler.VoucherKey);
+			AliceServerChannelNegotiation aliceNegotiation = new AliceServerChannelNegotiation(Parameters, Runtime.TumblerKey, Runtime.VoucherKey);
 			var key = Repository.GetKey(cycle.Start, request.KeyReference);
 			if(key.PubKey != request.TumblerEscrowPubKey)
 				return BadRequest("incorrect-escrowpubkey");
@@ -232,7 +225,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 
 		private BobServerChannelNegotiation CreateBobServerChannelNegotiation(int cycleStart)
 		{
-			return new BobServerChannelNegotiation(Parameters, Tumbler.TumblerKey, Tumbler.VoucherKey, cycleStart);
+			return new BobServerChannelNegotiation(Parameters, Runtime.TumblerKey, Runtime.VoucherKey, cycleStart);
 		}
 
 		[HttpPost("api/v1/tumblers/0/channels/{cycleId}/{channelId}/signhashes")]

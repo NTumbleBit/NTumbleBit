@@ -12,30 +12,28 @@ namespace NTumbleBit.TumblerServer
 {
 	public class ClassicTumblerRepository
 	{
-		public ClassicTumblerRepository(TumblerConfiguration config, IRepository repository)
+		public ClassicTumblerRepository(TumblerRuntime runtime)
 		{
-			if(config == null)
-				throw new ArgumentNullException(nameof(config));
-			_Configuration = config;
-			_Repository = repository;
+			if(runtime == null)
+				throw new ArgumentNullException(nameof(runtime));
+			_Runtime = runtime;
 		}
 
 
-		private readonly IRepository _Repository;
-		public IRepository Repository
+		IRepository Repository
 		{
 			get
 			{
-				return _Repository;
+				return _Runtime.Repository;
 			}
 		}
 
-		private readonly TumblerConfiguration _Configuration;
-		public TumblerConfiguration Configuration
+		private readonly TumblerRuntime _Runtime;
+		public TumblerRuntime Runtime
 		{
 			get
 			{
-				return _Configuration;
+				return _Runtime;
 			}
 		}
 
@@ -67,7 +65,7 @@ namespace NTumbleBit.TumblerServer
 			if(session == null)
 				return null;
 			return new PromiseServerSession(session,
-				_Configuration.CreateClassicTumblerParameters().CreatePromiseParamaters());
+				_Runtime.ClassicTumblerParameters.CreatePromiseParamaters());
 		}
 
 		public SolverServerSession GetSolverServerSession(int cycleId, string id)
@@ -75,8 +73,8 @@ namespace NTumbleBit.TumblerServer
 			var session = Repository.Get<SolverServerSession.State>(GetCyclePartition(cycleId), id);
 			if(session == null)
 				return null;
-			return new SolverServerSession(_Configuration.TumblerKey,
-				_Configuration.CreateClassicTumblerParameters().CreateSolverParamaters(),
+			return new SolverServerSession(_Runtime.TumblerKey,
+				_Runtime.ClassicTumblerParameters.CreateSolverParamaters(),
 				session);
 		}
 

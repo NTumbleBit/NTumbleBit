@@ -43,95 +43,17 @@ namespace NTumbleBit.TumblerServer
 		{
 			return new ActionResultException(actionResult);
 		}
-		public static IWebHostBuilder UseAppConfiguration(this IWebHostBuilder builder, TumblerConfiguration configuration)
+		public static IWebHostBuilder UseAppConfiguration(this IWebHostBuilder builder, TumblerRuntime runtime)
 		{
 			builder.ConfigureServices(services =>
 			{
 				services.AddSingleton(provider =>
 				 {
-					 var conf = provider.GetRequiredService<TumblerConfiguration>();
-					 var repo = provider.GetRequiredService<IRepository>();
-					 return new ClassicTumblerRepository(conf, repo);
+					 return runtime;
 				 });
-
-				services.AddSingleton<IRepository>(provider =>
-				{
-					var conf = provider.GetRequiredService<TumblerConfiguration>();
-					var dbreeze = new DBreezeRepository(Path.Combine(conf.DataDir, "db"));
-					return dbreeze;
-				});
-
-				services.AddSingleton<Tracker>(provider =>
-				{
-					var repo = provider.GetRequiredService<IRepository>();
-					return new Tracker(repo);
-				});
-
-				services.AddSingleton((provider) =>
-				{
-					var conf = provider.GetRequiredService<TumblerConfiguration>();
-					var repo = provider.GetRequiredService<IRepository>();
-					var tracker = provider.GetRequiredService<Tracker>();
-					return ExternalServices.CreateFromRPCClient(conf.RPCClient, repo, tracker);
-				});
-				services.AddSingleton((provider) =>
-				{
-					var conf = provider.GetRequiredService<TumblerConfiguration>();
-					return conf.CreateClassicTumblerParameters();
-				});
-				services.AddSingleton((provider) =>
-				{
-					var conf = configuration ?? new TumblerConfiguration().LoadArgs(new string[0]);
-
-					var rsaFile = Path.Combine(conf.DataDir, "Tumbler.pem");
-
-					if(conf.TumblerKey == null)
-					{
-						if(!File.Exists(rsaFile))
-						{
-							Logs.Configuration.LogWarning("RSA private key not found, please backup it. Creating...");
-							conf.TumblerKey = new RsaKey();
-							File.WriteAllBytes(rsaFile, conf.TumblerKey.ToBytes());
-							Logs.Configuration.LogInformation("RSA key saved (" + rsaFile + ")");
-						}
-						else
-						{
-							Logs.Configuration.LogInformation("RSA private key found (" + rsaFile + ")");
-							conf.TumblerKey = new RsaKey(File.ReadAllBytes(rsaFile));
-						}
-					}
-
-					if(conf.VoucherKey == null)
-					{
-						var voucherFile = Path.Combine(conf.DataDir, "Voucher.pem");
-						if(!File.Exists(voucherFile))
-						{
-							Logs.Configuration.LogWarning("Creation of Voucher Key");
-							conf.VoucherKey = new RsaKey();
-							File.WriteAllBytes(voucherFile, conf.VoucherKey.ToBytes());
-							Logs.Configuration.LogInformation("RSA key saved (" + voucherFile + ")");
-						}
-						else
-						{
-							Logs.Configuration.LogInformation("Voucher key found (" + voucherFile + ")");
-							conf.VoucherKey = new RsaKey(File.ReadAllBytes(voucherFile));
-						}
-					}
-
-					try
-					{
-
-						conf.RPCClient = conf.RPCClient ?? conf.RPC.ConfigureRPCClient(conf.Network);
-					}
-					catch
-					{
-						throw new ConfigException("Please, fix rpc settings in " + conf.ConfigurationFile);
-					}
-					return configuration;
-				});
 			});
 
-			builder.UseUrls(configuration.GetUrls());
+			builder.UseUrls(runtime.Source.GetUrls());
 
 			return builder;
 		}

@@ -56,7 +56,7 @@ namespace NTumbleBit.TumblerServer
 			var builder = serviceProvider.GetService<ConfigurationBuilder>() ?? new ConfigurationBuilder();
 			Configuration = builder.Build();
 
-			var config = serviceProvider.GetService<TumblerConfiguration>();
+			var config = serviceProvider.GetService<TumblerRuntime>();
 			var options = GetMVCOptions(serviceProvider);
 			Serializer.RegisterFrontConverters(options.SerializerSettings, config.Network);
 		}

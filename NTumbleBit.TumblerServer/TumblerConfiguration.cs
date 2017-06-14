@@ -29,16 +29,7 @@ namespace NTumbleBit.TumblerServer
 		{
 			get; set;
 		}
-
-		public RsaKey TumblerKey
-		{
-			get; set;
-		}
-
-		public RsaKey VoucherKey
-		{
-			get; set;
-		}
+		
 		public Network Network
 		{
 			get
@@ -49,11 +40,6 @@ namespace NTumbleBit.TumblerServer
 			{
 				ClassicTumblerParameters.Network = value;
 			}
-		}
-		public RPCClient RPCClient
-		{
-			get;
-			set;
 		}
 
 		public ClassicTumblerParameters ClassicTumblerParameters
@@ -169,7 +155,7 @@ namespace NTumbleBit.TumblerServer
 
 			RPC = RPCArgs.Parse(config, Network);
 			return this;
-		}
+		}		
 
 		public string GetDefaultConfigurationFile()
 		{
@@ -226,15 +212,7 @@ namespace NTumbleBit.TumblerServer
 			if(!File.Exists(ConfigurationFile))
 				throw new ConfigurationException("Configuration file does not exists");
 		}
-
-		public ClassicTumblerParameters CreateClassicTumblerParameters()
-		{
-			var clone = Serializer.Clone(ClassicTumblerParameters);
-			clone.ServerKey = TumblerKey.PubKey;
-			clone.VoucherKey = VoucherKey.PubKey;
-			return clone;
-		}
-
+		
 		public void OpenBrowser(string url)
 		{
 			try
