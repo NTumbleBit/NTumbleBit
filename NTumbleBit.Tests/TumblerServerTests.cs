@@ -111,9 +111,7 @@ namespace NTumbleBit.Tests
 				server.ServerContext.TumblerConfiguration.Cooperative = cooperativeTumbler;
 
 				server.AliceNode.FindBlock(1);
-				server.SyncNodes();
 				server.TumblerNode.FindBlock(1);
-				server.SyncNodes();
 				server.BobNode.FindBlock(103);
 				server.SyncNodes();
 
@@ -128,7 +126,7 @@ namespace NTumbleBit.Tests
 				var cycle = machine.ClientChannelNegotiation.GetCycle();
 
 				server.MineTo(server.AliceNode, cycle, CyclePhase.ClientChannelEstablishment);
-				server.SyncNodes();
+				
 				
 
 				var escrow1 = machine.AliceClient.RequestTumblerEscrowKey(machine.StartCycle);
@@ -163,7 +161,7 @@ namespace NTumbleBit.Tests
 
 
 				server.MineTo(server.AliceNode, cycle, CyclePhase.TumblerChannelEstablishment);
-				server.SyncNodes();
+				
 
 				machine.Update();
 
@@ -174,16 +172,25 @@ namespace NTumbleBit.Tests
 				clientTracker.AssertKnown(TransactionType.TumblerEscrow, machine.PromiseClientSession.EscrowedCoin.Outpoint.Hash);
 
 				server.MineTo(server.TumblerNode, cycle, CyclePhase.PaymentPhase);
-				server.SyncNodes();
+				
 
 				machine.Update();
+				Block block = server.TumblerNode.FindBlock(1).First();
 
-				Block block = null;
 				if(cooperativeClient && cooperativeTumbler)
-					block = server.TumblerNode.FindBlock(1).First();
+				{
+					//Escape should be mined
+					Assert.Equal(2, block.Transactions.Count);
+
+					serverTracker.AssertKnown(TumblerServer.TransactionType.ClientEscape, block.Transactions[1].GetHash());
+					serverTracker.AssertKnown(TumblerServer.TransactionType.ClientEscape, block.Transactions[1].Outputs[0].ScriptPubKey);
+				}
+				else
+				{
+					Assert.Equal(1, block.Transactions.Count);
+				}
 
 				server.MineTo(server.TumblerNode, cycle, CyclePhase.PaymentPhase, true);
-				server.SyncNodes();
 
 				Transaction[] transactions = null;
 				Transaction unmalleatedOffer = null;
@@ -201,8 +208,9 @@ namespace NTumbleBit.Tests
 					unmalleatedOffer = transactions[0];
 					server.TumblerNode.Malleate(transactions[0].GetHash());
 					block = server.TumblerNode.FindBlock(1).First();
-					Assert.Equal(2, block.Transactions.Count); //Offer get mined
 					server.SyncNodes();
+					Assert.Equal(2, block.Transactions.Count); //Offer get mined
+					
 					var malleatedOffer = block.Transactions[1];
 
 					//Fulfill get resigned and broadcasted
@@ -218,17 +226,9 @@ namespace NTumbleBit.Tests
 					serverTracker.AssertNotKnown(malleatedOffer.GetHash()); //Offer got sneakily malleated, so the server did not broadcasted this version
 					serverTracker.AssertKnown(TumblerServer.TransactionType.ClientFulfill, malleatedFulfill.GetHash());
 				}
-				else
-				{
-					//Escape should be broadcasted
-					Assert.Equal(2, block.Transactions.Count);
-
-					serverTracker.AssertKnown(TumblerServer.TransactionType.ClientEscape, block.Transactions[1].GetHash());
-					serverTracker.AssertKnown(TumblerServer.TransactionType.ClientEscape, block.Transactions[1].Outputs[0].ScriptPubKey);
-				}
 
 				server.MineTo(server.TumblerNode, cycle, CyclePhase.ClientCashoutPhase);
-				server.SyncNodes();
+				
 				machine.Update();
 
 				if(cooperativeTumbler)
@@ -316,10 +316,8 @@ namespace NTumbleBit.Tests
 		{
 			using(var server = TumblerServerTester.Create())
 			{
-				server.AliceNode.FindBlock(1);
-				server.SyncNodes();
-				server.TumblerNode.FindBlock(1);
-				server.SyncNodes();
+				server.AliceNode.FindBlock(1);				
+				server.TumblerNode.FindBlock(1);				
 				server.BobNode.FindBlock(103);
 				server.SyncNodes();
 
@@ -328,7 +326,7 @@ namespace NTumbleBit.Tests
 				var cycle = machine.ClientChannelNegotiation.GetCycle();
 
 				server.MineTo(server.AliceNode, cycle, CyclePhase.ClientChannelEstablishment);
-				server.SyncNodes();
+				
 
 				machine.Update();
 
@@ -349,7 +347,7 @@ namespace NTumbleBit.Tests
 						.Count());
 
 				server.MineTo(server.AliceNode, cycle, CyclePhase.TumblerChannelEstablishment);
-				server.SyncNodes();
+				
 
 				machine.Update();
 

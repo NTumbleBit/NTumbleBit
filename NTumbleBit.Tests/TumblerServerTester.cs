@@ -208,7 +208,7 @@ namespace NTumbleBit.Tests
 				return;
 
 			node.FindBlock(blocksToFind);
-			RefreshWalletCache();
+			SyncNodes();
 		}
 
 		public void RefreshWalletCache()
