@@ -127,7 +127,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				tx.Transaction.LockTime.Height > currentHeight &&
 				tx.Transaction.Inputs.Any(i => i.Sequence != Sequence.Final);
 
-			if(isNonFinal)
+			if(isNonFinal || IsDoubleSpend(tx.Transaction))
 				return false;
 
 			try
@@ -149,6 +149,26 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				   !error.EndsWith("Missing inputs", StringComparison.OrdinalIgnoreCase))
 				{
 					remove = false;
+				}
+			}
+			return false;
+		}
+
+		private bool IsDoubleSpend(Transaction tx)
+		{
+			var spentInputs = new HashSet<OutPoint>(tx.Inputs.Select(txin => txin.PrevOut));
+			foreach(var entry in _Cache.GetEntries())
+			{
+				if(entry.Confirmations > 0)
+				{
+					var walletTransaction = _Cache.GetTransaction(entry.TransactionId);
+					foreach(var input in walletTransaction.Inputs)
+					{
+						if(spentInputs.Contains(input.PrevOut))
+						{
+							return true;
+						}
+					}
 				}
 			}
 			return false;
