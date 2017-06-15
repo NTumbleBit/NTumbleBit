@@ -131,7 +131,7 @@ namespace NTumbleBit.CLI
 
 				try
 				{
-					cycle = TumblerParameters.CycleGenerator.GetCycle(options.CycleId.Value);
+					cycle = TumblerParameters?.CycleGenerator?.GetCycle(options.CycleId.Value);
 				}
 				catch
 				{
@@ -152,22 +152,26 @@ namespace NTumbleBit.CLI
 					CyclePhase.ClientCashoutPhase
 				};
 
-				Console.WriteLine("Phases:");
-				var periods = cycle.GetPeriods();
-				foreach(var phase in phases)
+				if(cycle != null)
 				{
-					var period = periods.GetPeriod(phase);
-					if(period.IsInPeriod(currentHeight))
-						builder.Append("(");
-					builder.Append(phase.ToString());
-					if(period.IsInPeriod(currentHeight))
-						builder.Append($" {(period.End - currentHeight)} blocks left)");
+					Console.WriteLine("Phases:");
+					var periods = cycle.GetPeriods();
+					foreach(var phase in phases)
+					{
+						var period = periods.GetPeriod(phase);
+						if(period.IsInPeriod(currentHeight))
+							builder.Append("(");
+						builder.Append(phase.ToString());
+						if(period.IsInPeriod(currentHeight))
+							builder.Append($" {(period.End - currentHeight)} blocks left)");
 
-					if(phase != CyclePhase.ClientCashoutPhase)
-						builder.Append("-");
+						if(phase != CyclePhase.ClientCashoutPhase)
+							builder.Append("-");
+					}
+					Console.WriteLine(builder.ToString());
+					Console.WriteLine();
 				}
-				Console.WriteLine(builder.ToString());
-				Console.WriteLine();
+
 				Console.WriteLine("Records:");
 				foreach(var correlationGroup in records.GroupBy(r => r.Correlation).OrderBy(o => (int)o.Key))
 				{

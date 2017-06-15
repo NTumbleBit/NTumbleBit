@@ -2,6 +2,7 @@
 using NBitcoin.RPC;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -92,6 +93,8 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			return tx;
 		}
 
+		ConcurrentDictionary<uint256, Transaction> _TransactionsByTxId = new ConcurrentDictionary<uint256, Transaction>();
+
 
 		private Transaction FetchTransaction(uint256 txId)
 		{
@@ -122,12 +125,26 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 
 		private void PutCached(Transaction tx)
 		{
+			tx.CacheHashes();
 			_Repo.UpdateOrInsert("CachedTransactions", tx.GetHash().ToString(), tx, (a, b) => b);
+			lock(_TransactionsByTxId)
+			{
+				_TransactionsByTxId.TryAdd(tx.GetHash(), tx);
+			}
 		}
 
 		private Transaction GetCachedTransaction(uint256 txId)
 		{
-			return _Repo.Get<Transaction>("CachedTransactions", txId.ToString());
+
+			Transaction tx = null;
+			if(_TransactionsByTxId.TryGetValue(txId, out tx))
+			{
+				return tx;
+			}
+			var cached = _Repo.Get<Transaction>("CachedTransactions", txId.ToString());
+			if(cached != null)
+				_TransactionsByTxId.TryAdd(txId, cached);
+			return cached;
 		}
 
 
@@ -137,6 +154,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		{
 			List<RPCWalletEntry> array = new List<RPCWalletEntry>();
 			knownTransactions = new HashSet<uint256>();
+			var removeFromCache = new HashSet<uint256>(_TransactionsByTxId.Values.Select(tx => tx.GetHash()));
 			int count = 100;
 			int skip = 0;
 			int highestConfirmation = 0;
@@ -153,8 +171,11 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 					var entry = new RPCWalletEntry();
 					entry.Confirmations = obj["confirmations"] == null ? 0 : (int)obj["confirmations"];
 					entry.TransactionId = new uint256((string)obj["txid"]);
+					removeFromCache.Remove(entry.TransactionId);
 					if(knownTransactions.Add(entry.TransactionId))
+					{
 						array.Add(entry);
+					}
 					if(obj["confirmations"] != null)
 					{
 						highestConfirmation = Math.Max(highestConfirmation, (int)obj["confirmations"]);
@@ -162,6 +183,11 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				}
 				if(transactions.Count < count || highestConfirmation >= 1400)
 					break;
+			}
+			foreach(var remove in removeFromCache)
+			{
+				Transaction opt;
+				_TransactionsByTxId.TryRemove(remove, out opt);
 			}
 			return array;
 		}

@@ -145,7 +145,8 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				var error = ex.RPCResult.Error.Message;
 				if(ex.RPCResult.Error.Code != RPCErrorCode.RPC_TRANSACTION_ALREADY_IN_CHAIN &&
 				   !error.EndsWith("bad-txns-inputs-spent", StringComparison.OrdinalIgnoreCase) &&
-				   !error.EndsWith("txn-mempool-conflict", StringComparison.OrdinalIgnoreCase))
+				   !error.EndsWith("txn-mempool-conflict", StringComparison.OrdinalIgnoreCase) &&
+				   !error.EndsWith("Missing inputs", StringComparison.OrdinalIgnoreCase))
 				{
 					remove = false;
 				}
@@ -156,7 +157,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		private void RemoveRecord(Record tx)
 		{
 			Repository.Delete<Record>("Broadcasts", tx.Transaction.GetHash().ToString());
-			Repository.UpdateOrInsert("BroadcastsArchived", tx.Transaction.GetHash().ToString(), tx, (a, b) => a);
+			Repository.UpdateOrInsert<Transaction>("CachedTransactions", tx.Transaction.GetHash().ToString(), tx.Transaction, (a, b) => a);
 		}
 
 		public bool Broadcast(Transaction transaction)
@@ -173,7 +174,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		public Transaction GetKnownTransaction(uint256 txId)
 		{
 			return Repository.Get<Record>("Broadcasts", txId.ToString())?.Transaction ??
-				   Repository.Get<Record>("BroadcastsArchived", txId.ToString())?.Transaction;
+				   Repository.Get<Transaction>("CachedTransactions", txId.ToString());
 		}
 	}
 }
