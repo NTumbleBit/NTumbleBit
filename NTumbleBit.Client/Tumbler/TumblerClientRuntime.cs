@@ -14,9 +14,10 @@ namespace NTumbleBit.Client.Tumbler
 {
 	public class TumblerClientRuntime : IDisposable
 	{
-		public static TumblerClientRuntime FromConfiguration(TumblerClientConfiguration configuration, out bool needUserConfirmation)
+		public static TumblerClientRuntime FromConfiguration(TumblerClientConfiguration configuration, out ClassicTumblerParameters parametersToConfirm)
 		{
-			needUserConfirmation = false;
+			parametersToConfirm = null;
+			bool needUserConfirmation = false;
 			var runtime = new TumblerClientRuntime();
 			try
 			{
@@ -73,9 +74,12 @@ namespace NTumbleBit.Client.Tumbler
 					}
 					else
 					{
-						dbreeze.UpdateOrInsert("Configuration", configuration.TumblerServer.AbsoluteUri, parameters, (o, n) => n);
+						needUserConfirmation = true;
 					}
-					runtime.TumblerParameters = parameters;
+					if(needUserConfirmation)
+						parametersToConfirm = parameters;
+					else
+						runtime.TumblerParameters = parameters;
 				}
 				else
 				{
@@ -88,6 +92,12 @@ namespace NTumbleBit.Client.Tumbler
 				throw;
 			}
 			return runtime;
+		}
+
+		public void Confirm(ClassicTumblerParameters parameters)
+		{
+			Repository.UpdateOrInsert("Configuration", TumblerClient.Address.AbsoluteUri, parameters, (o, n) => n);
+			TumblerParameters = parameters;
 		}
 
 		public BroadcasterJob CreateBroadcasterJob()

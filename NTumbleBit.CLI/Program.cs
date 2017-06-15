@@ -37,8 +37,18 @@ namespace NTumbleBit.CLI
 				config.LoadArgs(args);
 				Network = config.Network;
 
-				bool needUserConfirmation;
-				var runtime = TumblerClientRuntime.FromConfiguration(config, out needUserConfirmation);
+				ClassicTumblerParameters toConfirm;
+				var runtime = TumblerClientRuntime.FromConfiguration(config, out toConfirm);
+				if(toConfirm != null)
+				{
+					if(!PromptConfirmation(toConfirm))
+					{
+						runtime.Confirm(toConfirm);
+						Logs.Main.LogInformation("New tumbler parameters refused");
+						return;
+					}
+				}
+
 				Tracker = runtime.Tracker;
 				Services = runtime.Services;
 
@@ -78,6 +88,19 @@ namespace NTumbleBit.CLI
 			}
 		}
 
-		
+		private bool PromptConfirmation(ClassicTumblerParameters toConfirm)
+		{
+			Console.WriteLine("Do you confirm the following tumbler settings? (type 'yes' to accept)");
+			Console.WriteLine("------");
+			Console.WriteLine(Serializer.ToString(toConfirm));
+			Console.WriteLine("--");
+			Console.WriteLine("Tumbler Fee: " + toConfirm.Fee.ToString());
+			Console.WriteLine("Denomination: " + toConfirm.Denomination.ToString());
+			var periods = toConfirm.CycleGenerator.FirstCycle.GetPeriods();
+			Console.WriteLine("Total cycle length: " + (periods.Total.End - periods.Total.Start) + " blocks");
+			Console.WriteLine("------");
+			var response = Console.ReadLine();
+			return response.Equals("yes", StringComparison.OrdinalIgnoreCase);
+		}
 	}
 }
