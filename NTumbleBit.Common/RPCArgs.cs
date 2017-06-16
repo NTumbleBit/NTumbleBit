@@ -70,19 +70,26 @@ namespace NTumbleBit.Common
 			Logs.Configuration.LogInformation("Testing RPC connection to " + rpcClient.Address.AbsoluteUri);
 			try
 			{
-				rpcClient.SendCommand("whatever");
-			}
-			catch(RPCException ex)
-			{
-				if(ex.RPCCode != RPCErrorCode.RPC_METHOD_NOT_FOUND)
+				var address = new Key().PubKey.GetAddress(network);
+				var isValid = ((JObject)rpcClient.SendCommand("validateaddress", address.ToString()).Result)["isvalid"].Value<bool>();
+				if(!isValid)
 				{
-					Logs.Configuration.LogError("Received unexpected response from RPC server: " + ex.Message);
+					Logs.Configuration.LogError("The RPC Server is on a different blockchain than the one configured for tumbling");
 					throw new ConfigException();
 				}
 			}
+			catch(ConfigException)
+			{
+				throw;
+			}
+			catch(RPCException ex)
+			{
+				Logs.Configuration.LogError("Invalid response from RPC server " + ex.Message);
+				throw new ConfigException();
+			}
 			catch(Exception ex)
 			{
-				Logs.Configuration.LogError("Error connecting to RPC " + ex.Message);
+				Logs.Configuration.LogError("Error connecting to RPC server " + ex.Message);
 				throw new ConfigException();
 			}
 			Logs.Configuration.LogInformation("RPC connection successfull");
@@ -109,7 +116,7 @@ namespace NTumbleBit.Common
 		}
 
 		const int MIN_CORE_VERSION = 130100;
-		public static RPCClient ConfigureRPCClient(TextFileConfiguration confArgs, Network network, string prefix= null)
+		public static RPCClient ConfigureRPCClient(TextFileConfiguration confArgs, Network network, string prefix = null)
 		{
 			RPCArgs args = Parse(confArgs, network, prefix);
 			return args.ConfigureRPCClient(network);
