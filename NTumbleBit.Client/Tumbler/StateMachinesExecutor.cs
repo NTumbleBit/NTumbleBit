@@ -114,7 +114,16 @@ namespace NTumbleBit.Client.Tumbler
 							}
 							catch(Exception ex)
 							{
-								Logger.LogError("Error while executing state machine " + machine.StartCycle + ": " + ex.ToString());
+								var invalidPhase = ex.Message.IndexOf("invalid-phase", StringComparison.OrdinalIgnoreCase) >= 0;
+
+								if(invalidPhase)
+									machine.InvalidPhaseCount++;
+
+								if(!invalidPhase || machine.InvalidPhaseCount > 2)
+								{
+									Logger.LogError("Error while executing state machine " + machine.StartCycle + ": " + ex.ToString());
+								}
+
 							}
 							Save(machine, machine.StartCycle);
 						}

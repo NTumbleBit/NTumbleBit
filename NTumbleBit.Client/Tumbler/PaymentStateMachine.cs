@@ -49,6 +49,12 @@ namespace NTumbleBit.Client.Tumbler
 				PromiseClientSession = new PromiseClientSession(parameters.CreatePromiseParamaters(), state.PromiseClientState);
 			if(state.SolverClientState != null)
 				SolverClientSession = new SolverClientSession(parameters.CreateSolverParamaters(), state.SolverClientState);
+			InvalidPhaseCount = state.InvalidPhaseCount;
+		}
+
+		public int InvalidPhaseCount
+		{
+			get; set;
 		}
 
 		public Tracker Tracker
@@ -117,6 +123,10 @@ namespace NTumbleBit.Client.Tumbler
 				get;
 				set;
 			}
+			public int InvalidPhaseCount
+			{
+				get; set;
+			}
 		}
 
 		public State GetInternalState()
@@ -128,6 +138,7 @@ namespace NTumbleBit.Client.Tumbler
 				s.PromiseClientState = PromiseClientSession.GetInternalState();
 			if(ClientChannelNegotiation != null)
 				s.NegotiationClientState = ClientChannelNegotiation.GetInternalState();
+			s.InvalidPhaseCount = InvalidPhaseCount;
 			return s;
 		}
 
@@ -300,11 +311,10 @@ namespace NTumbleBit.Client.Tumbler
 							var offerInformation = AliceClient.CheckBlindFactors(cycle.Start, SolverClientSession.Id, blindFactors);
 							var offerSignature = SolverClientSession.SignOffer(offerInformation);
 
-							var offerRedeemAddress = Services.WalletService.GenerateAddress();
-							var offerRedeem = SolverClientSession.CreateOfferRedeemTransaction(feeRate, offerRedeemAddress.ScriptPubKey);
+							var offerRedeem = SolverClientSession.CreateOfferRedeemTransaction(feeRate);
 							//May need to find solution in the fulfillment transaction
 							Services.BlockExplorerService.Track(offerRedeem.PreviousScriptPubKey);
-							Tracker.AddressCreated(cycle.Start, TransactionType.ClientOfferRedeem, offerRedeemAddress.ScriptPubKey, correlation);
+							Tracker.AddressCreated(cycle.Start, TransactionType.ClientOfferRedeem, SolverClientSession.GetInternalState().RedeemDestination, correlation);
 							Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.ClientOfferRedeem, correlation, offerRedeem);
 							logger.LogInformation("Offer redeem " + offerRedeem.Transaction.GetHash() + " locked until " + offerRedeem.Transaction.LockTime.Height);
 							try

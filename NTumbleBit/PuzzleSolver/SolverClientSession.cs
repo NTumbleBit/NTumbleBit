@@ -175,7 +175,7 @@ namespace NTumbleBit.PuzzleSolver
 			{
 				get;
 				set;
-			}
+			}			
 		}
 
 
@@ -338,7 +338,7 @@ namespace NTumbleBit.PuzzleSolver
 			return tx;
 		}
 
-		public TrustedBroadcastRequest CreateOfferRedeemTransaction(FeeRate feeRate, Script redeemDestination)
+		public TrustedBroadcastRequest CreateOfferRedeemTransaction(FeeRate feeRate)
 		{
 			var coin = CreateUnsignedOfferTransaction().Outputs.AsCoins().First().ToScriptCoin(CreateOfferScript());
 
@@ -347,7 +347,7 @@ namespace NTumbleBit.PuzzleSolver
 			tx.LockTime = CreateOfferScriptParameters().Expiration;
 			tx.Inputs.Add(new TxIn(unknownOutpoints));
 			tx.Inputs[0].Sequence = 0;
-			tx.Outputs.Add(new TxOut(coin.Amount, redeemDestination));
+			tx.Outputs.Add(new TxOut(coin.Amount, InternalState.RedeemDestination));
 			tx.Inputs[0].ScriptSig = new Script(OpcodeType.OP_0) + Op.GetPushOp(coin.Redeem.ToBytes());
 
 			var vSize = tx.GetVirtualSize() + 80; // Size without signature + the signature size

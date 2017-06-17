@@ -13,6 +13,8 @@ namespace NTumbleBit.Client.Tumbler
 		RPCClient _RPC;
 		public RPCDestinationWallet(RPCClient client)
 		{
+			if(client == null)
+				throw new ArgumentNullException("client");
 			_RPC = client;
 		}
 

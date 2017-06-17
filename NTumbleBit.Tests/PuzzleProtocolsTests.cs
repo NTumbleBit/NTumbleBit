@@ -295,7 +295,7 @@ namespace NTumbleBit.Tests
 
 			//Verify if the scripts are correctly created
 			var fulfill = server.FulfillOffer(clientOfferSig, new Key().ScriptPubKey, FeeRate);
-			var offerRedeem = client.CreateOfferRedeemTransaction(FeeRate, clientRedeem.ScriptPubKey);
+			var offerRedeem = client.CreateOfferRedeemTransaction(FeeRate);
 
 			var offerTransaction = server.GetSignedOfferTransaction();
 			var offerCoin = offerTransaction.Transaction.Outputs.AsCoins().First();

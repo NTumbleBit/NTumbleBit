@@ -35,6 +35,11 @@ namespace NTumbleBit
 				get;
 				set;
 			}
+			public Script RedeemDestination
+			{
+				get;
+				set;
+			}
 		}
 
 		protected State InternalState
@@ -82,6 +87,7 @@ namespace NTumbleBit
 				PreviousScriptPubKey = coin.Redeem.Hash.ScriptPubKey,
 				Transaction = tx
 			};
+			InternalState.RedeemDestination = redeemDestination;
 			//Strip redeem script information so we check if TrustedBroadcastRequest can sign correctly
 			redeemTransaction.Transaction = redeemTransaction.ReSign(new Coin(coin.Outpoint, coin.TxOut));
 			return redeemTransaction;
