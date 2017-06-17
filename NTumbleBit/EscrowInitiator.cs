@@ -47,7 +47,7 @@ namespace NTumbleBit
 			get; set;
 		}
 
-		public virtual void ConfigureEscrowedCoin(ScriptCoin escrowedCoin, Key escrowKey, Key redeemKey)
+		public virtual void ConfigureEscrowedCoin(ScriptCoin escrowedCoin, Key escrowKey, Key redeemKey, Script redeemDestination)
 		{
 			if(escrowedCoin == null)
 				throw new ArgumentNullException(nameof(escrowedCoin));
@@ -55,15 +55,18 @@ namespace NTumbleBit
 				throw new ArgumentNullException(nameof(escrowKey));
 			if(redeemKey == null)
 				throw new ArgumentNullException(nameof(redeemKey));
+			if(redeemDestination == null)
+				throw new ArgumentNullException(nameof(redeemDestination));
 			var escrow = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(escrowedCoin.Redeem);
 			if(escrow == null || !escrow.EscrowKeys.Any(e => e == escrowKey.PubKey))
 				throw new PuzzleException("Invalid escrow");
 			InternalState.EscrowedCoin = escrowedCoin;
 			InternalState.EscrowKey = escrowKey;
 			InternalState.RedeemKey = redeemKey;
+			InternalState.RedeemDestination = redeemDestination;
 		}
 
-		public TrustedBroadcastRequest CreateRedeemTransaction(FeeRate feeRate, Script redeemDestination)
+		public TrustedBroadcastRequest CreateRedeemTransaction(FeeRate feeRate)
 		{
 			if(feeRate == null)
 				throw new ArgumentNullException(nameof(feeRate));
@@ -75,7 +78,7 @@ namespace NTumbleBit
 			tx.LockTime = escrow.LockTime;
 			tx.Inputs.Add(new TxIn(coin.Outpoint));
 			tx.Inputs[0].Sequence = 0;
-			tx.Outputs.Add(new TxOut(coin.Amount, redeemDestination));
+			tx.Outputs.Add(new TxOut(coin.Amount, InternalState.RedeemDestination));
 			tx.Inputs[0].ScriptSig = EscrowScriptBuilder.GenerateScriptSig(new TransactionSignature[] { null }) + Op.GetPushOp(coin.Redeem.ToBytes());
 
 			var vSize = tx.GetVirtualSize() + 80; // Size without signature + the signature size
@@ -87,7 +90,6 @@ namespace NTumbleBit
 				PreviousScriptPubKey = coin.Redeem.Hash.ScriptPubKey,
 				Transaction = tx
 			};
-			InternalState.RedeemDestination = redeemDestination;
 			//Strip redeem script information so we check if TrustedBroadcastRequest can sign correctly
 			redeemTransaction.Transaction = redeemTransaction.ReSign(new Coin(coin.Outpoint, coin.TxOut));
 			return redeemTransaction;

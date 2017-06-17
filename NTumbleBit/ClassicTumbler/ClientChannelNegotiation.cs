@@ -176,13 +176,13 @@ namespace NTumbleBit.ClassicTumbler
 			return InternalState.ClientEscrowInformation.CreateEscrow(GetCycle().GetClientLockTime());
 		}
 
-		public SolverClientSession SetClientSignedTransaction(Transaction transaction)
+		public SolverClientSession SetClientSignedTransaction(Transaction transaction, Script redeemDestination)
 		{
 			AssertState(TumblerClientSessionStates.WaitingClientTransaction);
 			var expectedTxout = BuildClientEscrowTxOut();
 			var output = transaction.Outputs.AsIndexedOutputs().Single(o => o.TxOut.ScriptPubKey == expectedTxout.ScriptPubKey && o.TxOut.Value == expectedTxout.Value);
 			var solver = new SolverClientSession(Parameters.CreateSolverParamaters());
-			solver.ConfigureEscrowedCoin(new Coin(output).ToScriptCoin(CreateClientEscrowScript()), InternalState.ClientEscrowKey, InternalState.ClientRedeemKey);
+			solver.ConfigureEscrowedCoin(new Coin(output).ToScriptCoin(CreateClientEscrowScript()), InternalState.ClientEscrowKey, InternalState.ClientRedeemKey, redeemDestination);
 			InternalState.Status = TumblerClientSessionStates.WaitingSolvedVoucher;
 			return solver;
 		}

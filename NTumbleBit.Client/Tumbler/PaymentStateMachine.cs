@@ -216,7 +216,8 @@ namespace NTumbleBit.Client.Tumbler
 							break;
 						}
 
-						SolverClientSession = ClientChannelNegotiation.SetClientSignedTransaction(clientEscrowTx);
+						var redeemDestination = Services.WalletService.GenerateAddress().ScriptPubKey;
+						SolverClientSession = ClientChannelNegotiation.SetClientSignedTransaction(clientEscrowTx, redeemDestination);
 
 
 						correlation = GetCorrelation(SolverClientSession.EscrowedCoin.ScriptPubKey);
@@ -226,10 +227,9 @@ namespace NTumbleBit.Client.Tumbler
 						Services.BlockExplorerService.Track(escrowTxOut.ScriptPubKey);
 
 
-						var redeemDestination = Services.WalletService.GenerateAddress().ScriptPubKey;
-						var redeemTx = SolverClientSession.CreateRedeemTransaction(feeRate, redeemDestination);
-
+						var redeemTx = SolverClientSession.CreateRedeemTransaction(feeRate);
 						Tracker.AddressCreated(cycle.Start, TransactionType.ClientRedeem, redeemDestination, correlation);
+
 						//redeemTx does not be to be recorded to the tracker, this is TrustedBroadcastService job
 
 						Services.BroadcastService.Broadcast(clientEscrowTx);

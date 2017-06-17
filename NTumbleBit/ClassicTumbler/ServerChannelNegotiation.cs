@@ -295,7 +295,7 @@ namespace NTumbleBit.ClassicTumbler
 				GetCycle().GetTumblerLockTime());
 		}
 
-		public PromiseServerSession SetSignedTransaction(Transaction transaction)
+		public PromiseServerSession SetSignedTransaction(Transaction transaction, Script redeemDestination)
 		{
 			AssertState(BobServerChannelNegotiationStates.WaitingSignedTransaction);
 			var escrow = BuildEscrowTxOut();
@@ -303,7 +303,7 @@ namespace NTumbleBit.ClassicTumbler
 				.Single(o => o.TxOut.ScriptPubKey == escrow.ScriptPubKey && o.TxOut.Value == escrow.Value);
 			var escrowedCoin = new Coin(output).ToScriptCoin(CreateEscrowScript());
 			PromiseServerSession session = new PromiseServerSession(Parameters.CreatePromiseParamaters());
-			session.ConfigureEscrowedCoin(escrowedCoin, InternalState.EscrowKey, InternalState.RedeemKey);
+			session.ConfigureEscrowedCoin(escrowedCoin, InternalState.EscrowKey, InternalState.RedeemKey, redeemDestination);
 			InternalState.EscrowKey = null;
 			InternalState.RedeemKey = null;
 			InternalState.Status = BobServerChannelNegotiationStates.Completed;

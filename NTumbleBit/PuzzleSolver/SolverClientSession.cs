@@ -203,10 +203,10 @@ namespace NTumbleBit.PuzzleSolver
 			}
 		}
 
-		public override void ConfigureEscrowedCoin(ScriptCoin escrowedCoin, Key escrowKey, Key redeemKey)
+		public override void ConfigureEscrowedCoin(ScriptCoin escrowedCoin, Key escrowKey, Key redeemKey, Script redeemDestination)
 		{
 			AssertState(SolverClientStates.WaitingEscrow);
-			base.ConfigureEscrowedCoin(escrowedCoin, escrowKey, redeemKey);
+			base.ConfigureEscrowedCoin(escrowedCoin, escrowKey, redeemKey, redeemDestination);
 			InternalState.Status = SolverClientStates.WaitingPuzzle;
 		}
 

@@ -182,7 +182,7 @@ namespace NTumbleBit.Tests
 			RoundTrip(ref client, parameters);
 			RoundTrip(ref request);
 
-			server.ConfigureEscrowedCoin(coin, serverEscrow, serverRedeem);
+			server.ConfigureEscrowedCoin(coin, serverEscrow, serverRedeem, new Key().ScriptPubKey);
 			PuzzlePromise.ServerCommitment[] commitments = server.SignHashes(request);
 			RoundTrip(ref server, parameters);
 			RoundTrip(ref commitments);
@@ -206,7 +206,7 @@ namespace NTumbleBit.Tests
 
 
 			// In case things do not go well and timeout is hit...
-			var redeemTransaction = server.CreateRedeemTransaction(FeeRate, new Key().ScriptPubKey);
+			var redeemTransaction = server.CreateRedeemTransaction(FeeRate);
 			TransactionBuilder bb = new TransactionBuilder();
 			bb.AddCoins(server.GetInternalState().EscrowedCoin);
 			Assert.True(bb.Verify(redeemTransaction.Transaction));
@@ -262,9 +262,11 @@ namespace NTumbleBit.Tests
 			var clientRedeem = new Key();
 
 			var escrow = CreateEscrowCoin(clientEscrow.PubKey, serverEscrow.PubKey, clientRedeem.PubKey);
-			client.ConfigureEscrowedCoin(escrow, clientEscrow, clientRedeem);
+			var redeemDestination = new Key().ScriptPubKey;
+			client.ConfigureEscrowedCoin(escrow, clientEscrow, clientRedeem, redeemDestination);
 			client.AcceptPuzzle(puzzle.PuzzleValue);
 			RoundTrip(ref client, parameters);
+			Assert.True(client.GetInternalState().RedeemDestination == redeemDestination);
 			PuzzleValue[] puzzles = client.GeneratePuzzles();
 			RoundTrip(ref client, parameters);
 			RoundTrip(ref puzzles);

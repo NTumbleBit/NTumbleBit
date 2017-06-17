@@ -192,11 +192,11 @@ namespace NTumbleBit.TumblerServer.Controllers
 				Tracker.TransactionCreated(cycle.Start, TransactionType.TumblerEscrow, tx.GetHash(), correlation);
 				Services.BroadcastService.Broadcast(tx);
 				Logs.Server.LogInformation($"Cycle {cycle.Start} Channel created " + tx.GetHash());
-				var promiseServerSession = session.SetSignedTransaction(tx);
+				var redeem = Services.WalletService.GenerateAddress();
+				var promiseServerSession = session.SetSignedTransaction(tx, redeem.ScriptPubKey);
 				Repository.Save(cycle.Start, promiseServerSession);
 
-				var redeem = Services.WalletService.GenerateAddress();
-				var redeemTx = promiseServerSession.CreateRedeemTransaction(fee, redeem.ScriptPubKey);
+				var redeemTx = promiseServerSession.CreateRedeemTransaction(fee);
 				Tracker.AddressCreated(cycle.Start, TransactionType.TumblerRedeem, redeem.ScriptPubKey, correlation);
 				Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.TumblerRedeem, correlation, redeemTx);
 				return Json(promiseServerSession.EscrowedCoin);
