@@ -39,9 +39,8 @@ namespace NTumbleBit.Client.Tumbler
 				runtime.Tracker = new Tracker(dbreeze);
 				runtime.Services = ExternalServices.CreateFromRPCClient(rpc, dbreeze, runtime.Tracker);
 
-
 				if(configuration.OutputWallet.RootKey != null && configuration.OutputWallet.KeyPath != null)
-					runtime.DestinationWallet = new ClientDestinationWallet("", configuration.OutputWallet.RootKey, configuration.OutputWallet.KeyPath, dbreeze);
+					runtime.DestinationWallet = new ClientDestinationWallet(configuration.OutputWallet.RootKey, configuration.OutputWallet.KeyPath, dbreeze);
 				else if(configuration.OutputWallet.RPCArgs != null)
 				{
 					try

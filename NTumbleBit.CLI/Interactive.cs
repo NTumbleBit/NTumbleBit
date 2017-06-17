@@ -49,6 +49,13 @@ namespace NTumbleBit.CLI
 			get; set;
 		}
 
+#if CLIENT
+		public IDestinationWallet DestinationWallet
+		{
+			get; set;
+		}
+#endif
+
 		void StartInteractive()
 		{
 			Console.Write(Assembly.GetEntryAssembly().GetName().Name
@@ -198,12 +205,10 @@ namespace NTumbleBit.CLI
 			{
 				var txId = new uint256(options.TxId);
 				var result = Tracker.Search(txId);
-				if(result == null)
-					Console.WriteLine("Not found");
-				else
+				foreach(var record in result)
 				{
-					Console.WriteLine("Cycle " + result.Cycle);
-					Console.WriteLine("Type " + result.TransactionType);
+					Console.WriteLine("Cycle " + record.Cycle);
+					Console.WriteLine("Type " + record.TransactionType);
 				}
 
 				var knownTransaction = Services.TrustedBroadcastService.GetKnownTransaction(txId);
@@ -242,14 +247,19 @@ namespace NTumbleBit.CLI
 			{
 				var address = BitcoinAddress.Create(options.Address, TumblerParameters.Network);
 				var result = Tracker.Search(address.ScriptPubKey);
-				if(result == null)
-					Console.WriteLine("Not found");
-				else
+				foreach(var record in result)
 				{
-					Console.WriteLine("Cycle " + result.Cycle);
-					Console.WriteLine("Type " + result.TransactionType);
+					Console.WriteLine("Cycle " + record.Cycle);
+					Console.WriteLine("Type " + record.TransactionType);
 				}
-				//TODO ask to other objects for more info
+#if CLIENT
+				if(DestinationWallet != null)
+				{
+					var keyPath = DestinationWallet.GetKeyPath(address.ScriptPubKey);
+					if(keyPath != null)
+						Console.WriteLine("KeyPath: " + keyPath.ToString());
+				}
+#endif
 			}
 		}
 	}

@@ -182,16 +182,18 @@ namespace NTumbleBit.Client.Tumbler.Services
 			return Serializer.ToObject<T>(Encoding.UTF8.GetString(row.Value));
 		}
 
-		public void Delete<T>(string partitionKey, string rowKey)
+		public bool Delete<T>(string partitionKey, string rowKey)
 		{
 			lock(_EnginesByParitionKey)
 			{
+				bool removed = false;
 				var engine = GetEngine(partitionKey);
 				using(var tx = engine.GetTransaction())
 				{
-					tx.RemoveKey(GetTableName<T>(), rowKey);
+					tx.RemoveKey(GetTableName<T>(), rowKey, out removed);
 					tx.Commit();
 				}
+				return removed;
 			}
 		}
 

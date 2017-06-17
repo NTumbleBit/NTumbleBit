@@ -13,7 +13,7 @@ namespace NTumbleBit.Client.Tumbler.Services
 	{
 		void UpdateOrInsert<T>(string partitionKey, string rowKey, T data, Func<T, T, T> update);
 		T[] List<T>(string partitionKey);
-		void Delete<T>(string partitionKey, string rowKey);
+		bool Delete<T>(string partitionKey, string rowKey);
 		void Delete(string partitionKey);
 		T Get<T>(string partitionKey, string rowKey);
 	}

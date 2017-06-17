@@ -153,6 +153,9 @@ namespace NTumbleBit.Client.Tumbler
 				}
 			}
 
+			if(OutputWallet.KeyPath.ToString().Contains("'"))
+				throw new ConfigException("outputwallet.keypath should not contain any hardened derivation");
+
 			if(OutputWallet.RootKey != null && OutputWallet.RootKey.Network != Network)
 				throw new ConfigException("outputwallet.extpubkey is pointing an incorrect network");
 

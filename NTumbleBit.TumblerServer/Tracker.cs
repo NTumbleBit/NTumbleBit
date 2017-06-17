@@ -130,20 +130,20 @@ namespace NTumbleBit.Client.Tumbler
 			return RandomUtils.GetUInt64().ToString();
 		}
 
-		public TrackerRecord Search(Script script)
+		public TrackerRecord[] Search(Script script)
 		{
 			var row = _Repo.Get<int>("Search", "t:" + script.Hash);
 			if(row == 0)
 				return null;
-			return GetRecords(row).Where(r => r.RecordType == RecordType.ScriptPubKey && r.ScriptPubKey == script).FirstOrDefault();
+			return GetRecords(row).Where(r => r.RecordType == RecordType.ScriptPubKey && r.ScriptPubKey == script).ToArray();
 		}
 
-		public TrackerRecord Search(uint256 txId)
+		public TrackerRecord[] Search(uint256 txId)
 		{
 			var row = _Repo.Get<int>("Search", "t:" + txId);
 			if(row == 0)
 				return null;
-			return GetRecords(row).Where(r => r.RecordType == RecordType.Transaction && r.TransactionId == txId).FirstOrDefault();
+			return GetRecords(row).Where(r => r.RecordType == RecordType.Transaction && r.TransactionId == txId).ToArray();
 		}
 
 		public TrackerRecord[] GetRecords(int cycleId)

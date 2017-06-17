@@ -29,7 +29,7 @@ namespace NTumbleBit.Tests
 			PaymentMachineState = new PaymentStateMachine(
 				parameters,
 				tumblerClient,
-				new ClientDestinationWallet("", new ExtKey().Neuter().GetWif(rpcClient.Network), new KeyPath(), clientRepository),
+				new ClientDestinationWallet(new ExtKey().Neuter().GetWif(rpcClient.Network), new KeyPath(), clientRepository),
 				Client.Tumbler.Services.ExternalServices.CreateFromRPCClient(rpcClient, clientRepository, tracker),
 				new Client.Tumbler.Tracker(clientRepository)
 				);

@@ -1,8 +1,11 @@
 ﻿using NBitcoin;
+using NBitcoin.Crypto;
+using NBitcoin.DataEncoders;
 using NTumbleBit.Client.Tumbler.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace NTumbleBit.Client.Tumbler
@@ -10,53 +13,30 @@ namespace NTumbleBit.Client.Tumbler
 	public interface IDestinationWallet
 	{
 		Script GetNewDestination();
+		KeyPath GetKeyPath(Script script);
 	}
 	public class ClientDestinationWallet : IDestinationWallet
 	{
-		public class WalletDescription
+		ExtPubKey _ExtPubKey;
+		KeyPath _DerivationPath;
+
+		public ClientDestinationWallet(BitcoinExtPubKey extPubKey, KeyPath derivationPath, IRepository repository)
 		{
-			public BitcoinExtPubKey Key
-			{
-				get; set;
-			}
-			public KeyPath DerivationPath
-			{
-				get; set;
-			}
-			public string Name
-			{
-				get; set;
-			}
-		}
-		public ClientDestinationWallet(string walletName, BitcoinExtPubKey extPubKey, KeyPath derivationPath, IRepository repository)
-		{
-			walletName = walletName ?? "";
-			repository.UpdateOrInsert(GetPartition(walletName), "", new WalletDescription
-			{
-				Name = walletName,
-				DerivationPath = derivationPath,
-				Key = extPubKey
-			}, (o, n) => n);
+			if(derivationPath == null)
+				throw new ArgumentNullException("derivationPath");
+			if(extPubKey == null)
+				throw new ArgumentNullException("extPubKey");
+			if(repository == null)
+				throw new ArgumentNullException("repository");
 			_Repository = repository;
-			_WalletName = walletName;
-		}
-
-
-		private readonly string _WalletName;
-		public string WalletName
-		{
-			get
-			{
-				return _WalletName;
-			}
-		}
-
-		private WalletDescription GetWalletDescription()
-		{
-			return Repository.Get<WalletDescription>(GetPartition(_WalletName), "");
+			_ExtPubKey = extPubKey.ExtPubKey.Derive(derivationPath);
+			_DerivationPath = derivationPath;
+			_WalletId = "Wallet_" + Encoders.Base58.EncodeData(Hashes.Hash160(Encoding.UTF8.GetBytes(_ExtPubKey.ToString() + "-" + derivationPath.ToString())).ToBytes());
 		}
 
 		private readonly IRepository _Repository;
+		private readonly string _WalletId;
+
 		public IRepository Repository
 		{
 			get
@@ -74,20 +54,26 @@ namespace NTumbleBit.Client.Tumbler
 		{
 			while(true)
 			{
-				var walletDescription = GetWalletDescription();
-				var index = Repository.Get<int>(GetPartition(WalletName), "");
-				var address = walletDescription.Key.ExtPubKey.Derive(walletDescription.DerivationPath).Derive((uint)index).PubKey.Hash.ScriptPubKey;
+				var index = Repository.Get<int>(_WalletId, "");
+				var address = _ExtPubKey.Derive((uint)index).PubKey.Hash.ScriptPubKey;
 				index++;
 				bool conflict = false;
-				Repository.UpdateOrInsert(GetPartition(WalletName), "", index, (o, n) =>
+				Repository.UpdateOrInsert(_WalletId, "", index, (o, n) =>
 				{
 					conflict = o + 1 != n;
 					return n;
 				});
 				if(conflict)
 					continue;
+				Repository.UpdateOrInsert(_WalletId, address.Hash.ToString(), (uint)index, (o, n) => n);
 				return address;
 			}
+		}
+
+		public KeyPath GetKeyPath(Script script)
+		{
+			var index = Repository.Get<uint>(_WalletId, script.Hash.ToString());
+			return _DerivationPath.Derive(index);
 		}
 	}
 }

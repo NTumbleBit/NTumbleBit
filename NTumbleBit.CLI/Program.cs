@@ -51,6 +51,7 @@ namespace NTumbleBit.CLI
 
 				Tracker = runtime.Tracker;
 				Services = runtime.Services;
+				DestinationWallet = runtime.DestinationWallet;
 
 				var broadcaster = runtime.CreateBroadcasterJob();
 				broadcaster.Start(BroadcasterToken.Token);
