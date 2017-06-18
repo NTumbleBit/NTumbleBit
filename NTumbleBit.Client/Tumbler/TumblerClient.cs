@@ -180,6 +180,11 @@ namespace NTumbleBit.Client.Tumbler
 			return SolvePuzzlesAsync(cycleId, channelId, puzzles).GetAwaiter().GetResult();
 		}
 
+		public void SetHttpHandler(HttpClientHandler handler)
+		{
+			Client = new HttpClient(handler);
+		}
+
 		public Task<PuzzleSolver.ServerCommitment[]> SolvePuzzlesAsync(int cycleId, string channelId, PuzzleValue[] puzzles)
 		{
 			return SendAsync<PuzzleSolver.ServerCommitment[]>(HttpMethod.Post, puzzles, "api/v1/tumblers/0/clientchannels/{0}/{1}/solvepuzzles", cycleId, channelId);

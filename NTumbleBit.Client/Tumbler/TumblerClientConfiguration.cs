@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using NTumbleBit.Common;
 using NTumbleBit.Common.Logging;
 using NTumbleBit.Client.Tumbler.Services;
+using System.Net;
 
 namespace NTumbleBit.Client.Tumbler
 {
@@ -24,6 +25,18 @@ namespace NTumbleBit.Client.Tumbler
 		}
 
 		public RPCArgs RPCArgs
+		{
+			get; set;
+		}
+	}
+
+	public class ConnectionSettings
+	{
+		public Uri Proxy
+		{
+			get; set;
+		}
+		public NetworkCredential Credentials
 		{
 			get; set;
 		}
@@ -68,6 +81,16 @@ namespace NTumbleBit.Client.Tumbler
 			set;
 		}
 
+		public ConnectionSettings BobConnectionSettings
+		{
+			get; set;
+		} = new ConnectionSettings();
+
+		public ConnectionSettings AliceConnectionSettings
+		{
+			get; set;
+		} = new ConnectionSettings();
+
 		public OutputWalletConfiguration OutputWallet
 		{
 			get; set;
@@ -77,6 +100,11 @@ namespace NTumbleBit.Client.Tumbler
 		{
 			get; set;
 		} = new RPCArgs();
+		public bool AllowInsecure
+		{
+			get;
+			set;
+		} = false;
 
 		public TumblerClientConfiguration LoadArgs(String[] args)
 		{
@@ -167,7 +195,29 @@ namespace NTumbleBit.Client.Tumbler
 
 			OutputWallet.RPCArgs = RPCArgs.Parse(config, Network, "outputwallet");
 
+			AliceConnectionSettings = ParseConnectionSettings("alice", config);
+			BobConnectionSettings = ParseConnectionSettings("bob", config);
+
+			AllowInsecure = config.GetOrDefault<bool>("allowinsecure", IsTest(Network));
 			return this;
+		}
+
+		private bool IsTest(Network network)
+		{
+			return network == Network.TestNet || network == Network.RegTest;
+		}
+
+		private ConnectionSettings ParseConnectionSettings(string prefix, TextFileConfiguration config)
+		{
+			ConnectionSettings settings = new ConnectionSettings();
+			var server = config.GetOrDefault<Uri>(prefix + ".proxy.server", null);
+			if(server != null)
+				settings.Proxy = server;
+			var user = config.GetOrDefault<string>(prefix + ".proxy.username", null);
+			var pass = config.GetOrDefault<string>(prefix + ".proxy.password", null);
+			if(user != null && pass != null)
+				settings.Credentials = new NetworkCredential(user, pass);
+			return settings;
 		}
 
 		public static string GetDefaultConfigurationFile(string dataDirectory, Network network)

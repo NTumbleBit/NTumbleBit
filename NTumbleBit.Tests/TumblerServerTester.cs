@@ -97,6 +97,7 @@ namespace NTumbleBit.Tests
 
 				var clientConfig = new TumblerClientConfiguration();
 				clientConfig.DataDir = Path.Combine(directory, "client");
+				clientConfig.AllowInsecure = true;
 				Directory.CreateDirectory(clientConfig.DataDir);
 				clientConfig.Network = conf.Network;
 				clientConfig.CheckIp = false;
