@@ -134,7 +134,7 @@ namespace NTumbleBit.Client.Tumbler
 		{
 			var row = _Repo.Get<int>("Search", "t:" + script.Hash);
 			if(row == 0)
-				return null;
+				return new TrackerRecord[0];
 			return GetRecords(row).Where(r => r.RecordType == RecordType.ScriptPubKey && r.ScriptPubKey == script).ToArray();
 		}
 
@@ -142,7 +142,7 @@ namespace NTumbleBit.Client.Tumbler
 		{
 			var row = _Repo.Get<int>("Search", "t:" + txId);
 			if(row == 0)
-				return null;
+				return new TrackerRecord[0];
 			return GetRecords(row).Where(r => r.RecordType == RecordType.Transaction && r.TransactionId == txId).ToArray();
 		}
 
