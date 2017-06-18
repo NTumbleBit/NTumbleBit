@@ -53,8 +53,6 @@ namespace NTumbleBit.TumblerServer
 				 });
 			});
 
-			builder.UseUrls(runtime.Source.GetUrls());
-
 			return builder;
 		}
 	}

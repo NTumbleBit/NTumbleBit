@@ -85,6 +85,7 @@ namespace NTumbleBit.Tests
 					.UseContentRoot(Path.GetFullPath(directory))
 					.UseIISIntegration()
 					.UseStartup<Startup>()
+					.UseUrls(conf.GetUrls())
 					.Build();
 
 				_Host.Start();

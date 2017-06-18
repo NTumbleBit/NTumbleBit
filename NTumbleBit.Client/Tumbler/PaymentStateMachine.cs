@@ -15,40 +15,36 @@ namespace NTumbleBit.Client.Tumbler
 {
 	public class PaymentStateMachine
 	{
-		public PaymentStateMachine(
-			ClassicTumblerParameters parameters,
-			TumblerClient client,
-			IDestinationWallet destinationWallet,
-			ExternalServices services,
-			Tracker tracker)
+		public TumblerClientRuntime Runtime
 		{
-			Parameters = parameters;
-			AliceClient = client;
-			BobClient = client;
-			Services = services;
-			DestinationWallet = destinationWallet;
-			Tracker = tracker;
+			get; set;
+		}
+		public PaymentStateMachine(
+			TumblerClientRuntime runtime)
+		{
+			if(runtime == null)
+				throw new ArgumentNullException("runtime");
+			Runtime = runtime;
 		}
 
+		
+
 
 		public PaymentStateMachine(
-			ClassicTumblerParameters parameters,
-			TumblerClient client,
-			IDestinationWallet destinationWallet,
-			ExternalServices services,
-			State state, Tracker tracker) : this(parameters, client, destinationWallet, services, tracker)
+			TumblerClientRuntime runtime,
+			State state) : this(runtime)
 		{
 			if(state == null)
 				return;
 			if(state.NegotiationClientState != null)
 			{
 				StartCycle = state.NegotiationClientState.CycleStart;
-				ClientChannelNegotiation = new ClientChannelNegotiation(parameters, state.NegotiationClientState);
+				ClientChannelNegotiation = new ClientChannelNegotiation(runtime.TumblerParameters, state.NegotiationClientState);
 			}
 			if(state.PromiseClientState != null)
-				PromiseClientSession = new PromiseClientSession(parameters.CreatePromiseParamaters(), state.PromiseClientState);
+				PromiseClientSession = new PromiseClientSession(runtime.TumblerParameters.CreatePromiseParamaters(), state.PromiseClientState);
 			if(state.SolverClientState != null)
-				SolverClientSession = new SolverClientSession(parameters.CreateSolverParamaters(), state.SolverClientState);
+				SolverClientSession = new SolverClientSession(runtime.TumblerParameters.CreateSolverParamaters(), state.SolverClientState);
 			InvalidPhaseCount = state.InvalidPhaseCount;
 		}
 
@@ -59,23 +55,38 @@ namespace NTumbleBit.Client.Tumbler
 
 		public Tracker Tracker
 		{
-			get; set;
+			get
+			{
+				return Runtime.Tracker;
+			}
 		}
 		public ExternalServices Services
 		{
-			get; set;
+			get
+			{
+				return Runtime.Services;
+			}
 		}
 		public TumblerClient BobClient
 		{
-			get; set;
+			get
+			{
+				return Runtime.BobTumblerClient;
+			}
 		}
 		public TumblerClient AliceClient
 		{
-			get; set;
+			get
+			{
+				return Runtime.AliceTumblerClient;
+			}
 		}
 		public ClassicTumblerParameters Parameters
 		{
-			get; set;
+			get
+			{
+				return Runtime.TumblerParameters;
+			}
 		}
 		public int StartCycle
 		{
@@ -97,13 +108,17 @@ namespace NTumbleBit.Client.Tumbler
 		}
 		public IDestinationWallet DestinationWallet
 		{
-			get;
-			private set;
+			get
+			{
+				return Runtime.DestinationWallet;
+			}
 		}
 		public bool Cooperative
 		{
-			get;
-			set;
+			get
+			{
+				return Runtime.Cooperative;
+			}
 		}
 
 		public class State

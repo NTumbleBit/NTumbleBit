@@ -58,10 +58,10 @@ namespace NTumbleBit.Client.Tumbler
 				var existingConfig = dbreeze.Get<ClassicTumbler.ClassicTumblerParameters>("Configuration", configuration.TumblerServer.AbsoluteUri);
 				if(!configuration.OnlyMonitor)
 				{
-					runtime.TumblerClient = new TumblerClient(runtime.Network, configuration.TumblerServer);
-
+					runtime.AliceTumblerClient = new TumblerClient(runtime.Network, configuration.TumblerServer);
+					runtime.BobTumblerClient = runtime.AliceTumblerClient; //Temporary, should setup TOR for Alice
 					Logs.Configuration.LogInformation("Downloading tumbler information of " + configuration.TumblerServer.AbsoluteUri);
-					var parameters = Retry(3, () => runtime.TumblerClient.GetTumblerParameters());
+					var parameters = Retry(3, () => runtime.AliceTumblerClient.GetTumblerParameters());
 					Logs.Configuration.LogInformation("Tumbler Server Connection successfull");
 
 					if(existingConfig != null)
@@ -95,7 +95,7 @@ namespace NTumbleBit.Client.Tumbler
 
 		public void Confirm(ClassicTumblerParameters parameters)
 		{
-			Repository.UpdateOrInsert("Configuration", TumblerClient.Address.AbsoluteUri, parameters, (o, n) => n);
+			Repository.UpdateOrInsert("Configuration", AliceTumblerClient.Address.AbsoluteUri, parameters, (o, n) => n);
 			TumblerParameters = parameters;
 		}
 
@@ -111,10 +111,7 @@ namespace NTumbleBit.Client.Tumbler
 
 		public StateMachinesExecutor CreateStateMachineJob()
 		{
-			return new StateMachinesExecutor(TumblerParameters, TumblerClient, DestinationWallet, Services, Repository, Logs.Main, Tracker)
-			{
-				Cooperative = Cooperative
-			};
+			return new StateMachinesExecutor(this, Logs.Main);
 		}
 
 		private static T Retry<T>(int count, Func<T> act)
@@ -164,7 +161,12 @@ namespace NTumbleBit.Client.Tumbler
 			get;
 			set;
 		}
-		public TumblerClient TumblerClient
+		public TumblerClient AliceTumblerClient
+		{
+			get;
+			set;
+		}
+		public TumblerClient BobTumblerClient
 		{
 			get;
 			set;

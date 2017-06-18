@@ -43,6 +43,7 @@ namespace NTumbleBit.TumblerServer
 					.UseContentRoot(Directory.GetCurrentDirectory())
 					.UseIISIntegration()
 					.UseStartup<Startup>()
+					.UseUrls(config.GetUrls())
 					.Build();
 				}
 

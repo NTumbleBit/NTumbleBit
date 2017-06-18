@@ -89,7 +89,7 @@ namespace NTumbleBit.Tests
 				Assert.Equal(3, tracker.GetRecords(1).Length);
 
 				Assert.NotNull(tracker.Search(address));
-				Assert.Null(tracker.Search(address3));
+				Assert.True(tracker.Search(address3).Length == 0);
 			}
 		}
 
@@ -133,7 +133,8 @@ namespace NTumbleBit.Tests
 		{
 			using(var server = TumblerServerTester.Create())
 			{
-				server.ServerRuntime.Source.Cooperative = cooperativeTumbler;
+				server.ServerRuntime.Cooperative = cooperativeTumbler;
+				server.ClientRuntime.Cooperative = cooperativeClient;
 
 				server.AliceNode.FindBlock(1);
 				server.TumblerNode.FindBlock(1);
@@ -141,7 +142,6 @@ namespace NTumbleBit.Tests
 				server.SyncNodes();
 
 				var machine = server.CreateStateMachine();
-				machine.Cooperative = cooperativeClient;
 
 				var serverTracker = server.ServerRuntime.Tracker;
 				var clientTracker = machine.Tracker;

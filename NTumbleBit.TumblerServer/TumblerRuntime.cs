@@ -21,7 +21,7 @@ namespace NTumbleBit.TumblerServer
 			if(conf == null)
 				throw new ArgumentNullException("conf");
 			TumblerRuntime runtime = new TumblerRuntime();
-			runtime.Source = conf;
+			runtime.Cooperative = conf.Cooperative;
 			runtime.ClassicTumblerParameters = Serializer.Clone(conf.ClassicTumblerParameters);
 			runtime.Network = conf.Network;
 			RPCClient rpcClient = null;
@@ -97,10 +97,11 @@ namespace NTumbleBit.TumblerServer
 			get; set;
 		}
 
-		public TumblerConfiguration Source
+		public bool Cooperative
 		{
 			get; set;
 		}
+
 		public RsaKey TumblerKey
 		{
 			get;

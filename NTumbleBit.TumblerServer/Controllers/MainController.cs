@@ -63,14 +63,6 @@ namespace NTumbleBit.TumblerServer.Controllers
 			}
 		}
 
-		public TumblerConfiguration Tumbler
-		{
-			get
-			{
-				return _Runtime.Source;
-			}
-		}
-
 
 		public ClassicTumblerParameters Parameters
 		{
@@ -333,7 +325,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 				Tracker.AddressCreated(cycle.Start, TransactionType.ClientFulfill, cashout.ScriptPubKey, correlation);
 				Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.ClientFulfill, correlation, fulfill);
 
-				return Json(Tumbler.Cooperative ? session.GetSolutionKeys() : new SolutionKey[0]);
+				return Json(Runtime.Cooperative ? session.GetSolutionKeys() : new SolutionKey[0]);
 			}
 			catch(PuzzleException ex)
 			{

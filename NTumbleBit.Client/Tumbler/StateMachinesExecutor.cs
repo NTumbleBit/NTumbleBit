@@ -13,65 +13,25 @@ namespace NTumbleBit.Client.Tumbler
 	public class StateMachinesExecutor
 	{
 		public StateMachinesExecutor(
-			ClassicTumblerParameters parameters,
-			TumblerClient client,
-			IDestinationWallet destinationWallet,
-			ExternalServices services,
-			IRepository repository,
-			ILogger logger,
-			Tracker tracker)
+			TumblerClientRuntime runtime, ILogger logger)
 		{
-			Parameters = parameters;
-			AliceClient = client;
-			BobClient = client;
-			Services = services;
-			DestinationWallet = destinationWallet;
+			if(runtime == null)
+				throw new ArgumentNullException("runtime");
+			Runtime = runtime;
 			Logger = logger;
-			Repository = repository;
-			Tracker = tracker;
 		}
 
-		public Tracker Tracker
+
+		public TumblerClientRuntime Runtime
 		{
 			get; set;
 		}
-		public IRepository Repository
-		{
-			get; set;
-		}
-
 		public ILogger Logger
 		{
 			get; set;
 		}
 
-		public ExternalServices Services
-		{
-			get; set;
-		}
-		public TumblerClient BobClient
-		{
-			get; set;
-		}
-		public TumblerClient AliceClient
-		{
-			get; set;
-		}
-		public ClassicTumblerParameters Parameters
-		{
-			get; set;
-		}
-		public IDestinationWallet DestinationWallet
-		{
-			get;
-			private set;
-		}
-		public bool Cooperative
-		{
-			get;
-			set;
-		}
-
+		
 		private CancellationToken _Stop;
 		public void Start(CancellationToken cancellation)
 		{
@@ -86,16 +46,16 @@ namespace NTumbleBit.Client.Tumbler
 					Exception unhandled = null;
 					try
 					{
-						lastBlock = Services.BlockExplorerService.WaitBlock(lastBlock, _Stop);
-						var height = Services.BlockExplorerService.GetCurrentHeight();
+						lastBlock = Runtime.Services.BlockExplorerService.WaitBlock(lastBlock, _Stop);
+						var height = Runtime.Services.BlockExplorerService.GetCurrentHeight();
 						Logger.LogInformation("New block of height " + height);
-						var cycle = Parameters.CycleGenerator.GetRegistratingCycle(height);
+						var cycle = Runtime.TumblerParameters.CycleGenerator.GetRegistratingCycle(height);
 						if(lastCycle != cycle.Start)
 						{
 							lastCycle = cycle.Start;
 							Logger.LogInformation("New registering cycle " + cycle.Start);
 
-							var state = Repository.Get<PaymentStateMachine.State>(GetPartitionKey(cycle.Start), cycle.Start.ToString());
+							var state = Runtime.Repository.Get<PaymentStateMachine.State>(GetPartitionKey(cycle.Start), cycle.Start.ToString());
 							if(state == null)
 							{
 								var stateMachine = CreateStateMachine(null);
@@ -104,8 +64,8 @@ namespace NTumbleBit.Client.Tumbler
 							}
 						}
 
-						var cycles = Parameters.CycleGenerator.GetCycles(height);
-						foreach(var state in cycles.SelectMany(c => Repository.List<PaymentStateMachine.State>(GetPartitionKey(c.Start))))
+						var cycles = Runtime.TumblerParameters.CycleGenerator.GetCycles(height);
+						foreach(var state in cycles.SelectMany(c => Runtime.Repository.List<PaymentStateMachine.State>(GetPartitionKey(c.Start))))
 						{
 							var machine = CreateStateMachine(state);
 							try
@@ -160,12 +120,12 @@ namespace NTumbleBit.Client.Tumbler
 		}
 		private void Save(PaymentStateMachine stateMachine, int cycle)
 		{
-			Repository.UpdateOrInsert(GetPartitionKey(cycle), "", stateMachine.GetInternalState(), (o, n) => n);
+			Runtime.Repository.UpdateOrInsert(GetPartitionKey(cycle), "", stateMachine.GetInternalState(), (o, n) => n);
 		}
 
 		public PaymentStateMachine CreateStateMachine(PaymentStateMachine.State state)
 		{
-			return new PaymentStateMachine(Parameters, AliceClient, DestinationWallet, Services, state, Tracker) { Cooperative = Cooperative };
+			return new PaymentStateMachine(Runtime, state);
 		}
 	}
 }
