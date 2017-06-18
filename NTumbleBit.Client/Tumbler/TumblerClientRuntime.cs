@@ -12,6 +12,17 @@ using NTumbleBit.ClassicTumbler;
 
 namespace NTumbleBit.Client.Tumbler
 {
+	public class TumblerClients
+	{
+		public TumblerClient Alice
+		{
+			get; set;
+		}
+		public TumblerClient Bob
+		{
+			get; set;
+		}
+	}
 	public class TumblerClientRuntime : IDisposable
 	{
 		public static TumblerClientRuntime FromConfiguration(TumblerClientConfiguration configuration, out ClassicTumblerParameters parametersToConfirm)
@@ -22,6 +33,7 @@ namespace NTumbleBit.Client.Tumbler
 			try
 			{
 				runtime.Network = configuration.Network;
+				runtime.TumblerServer = configuration.TumblerServer;
 				RPCClient rpc = null;
 				try
 				{
@@ -58,10 +70,9 @@ namespace NTumbleBit.Client.Tumbler
 				var existingConfig = dbreeze.Get<ClassicTumbler.ClassicTumblerParameters>("Configuration", configuration.TumblerServer.AbsoluteUri);
 				if(!configuration.OnlyMonitor)
 				{
-					runtime.AliceTumblerClient = new TumblerClient(runtime.Network, configuration.TumblerServer);
-					runtime.BobTumblerClient = runtime.AliceTumblerClient; //Temporary, should setup TOR for Alice
+					var client = runtime.CreateTumblerClients().Alice;
 					Logs.Configuration.LogInformation("Downloading tumbler information of " + configuration.TumblerServer.AbsoluteUri);
-					var parameters = Retry(3, () => runtime.AliceTumblerClient.GetTumblerParameters());
+					var parameters = Retry(3, () => client.GetTumblerParameters());
 					Logs.Configuration.LogInformation("Tumbler Server Connection successfull");
 
 					if(existingConfig != null)
@@ -95,7 +106,7 @@ namespace NTumbleBit.Client.Tumbler
 
 		public void Confirm(ClassicTumblerParameters parameters)
 		{
-			Repository.UpdateOrInsert("Configuration", AliceTumblerClient.Address.AbsoluteUri, parameters, (o, n) => n);
+			Repository.UpdateOrInsert("Configuration", TumblerServer.AbsoluteUri, parameters, (o, n) => n);
 			TumblerParameters = parameters;
 		}
 
@@ -107,6 +118,21 @@ namespace NTumbleBit.Client.Tumbler
 		public bool Cooperative
 		{
 			get; set;
+		}
+
+		public Uri TumblerServer
+		{
+			get; set;
+		}
+
+		public TumblerClients CreateTumblerClients()
+		{
+			return new TumblerClients()
+			{
+				// TODO: configure Alice and Bob properly (Alice might be under TOR)
+				Alice = new TumblerClient(Network, TumblerServer),
+				Bob = new TumblerClient(Network, TumblerServer)
+			};
 		}
 
 		public StateMachinesExecutor CreateStateMachineJob()
@@ -157,16 +183,6 @@ namespace NTumbleBit.Client.Tumbler
 			set;
 		}
 		public Tracker Tracker
-		{
-			get;
-			set;
-		}
-		public TumblerClient AliceTumblerClient
-		{
-			get;
-			set;
-		}
-		public TumblerClient BobTumblerClient
 		{
 			get;
 			set;

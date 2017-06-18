@@ -67,18 +67,23 @@ namespace NTumbleBit.Client.Tumbler
 				return Runtime.Services;
 			}
 		}
+
+		public TumblerClients Clients
+		{
+			get; set;
+		}
 		public TumblerClient BobClient
 		{
 			get
 			{
-				return Runtime.BobTumblerClient;
+				return Clients.Bob;
 			}
 		}
 		public TumblerClient AliceClient
 		{
 			get
 			{
-				return Runtime.AliceTumblerClient;
+				return Clients.Alice;
 			}
 		}
 		public ClassicTumblerParameters Parameters
@@ -165,6 +170,7 @@ namespace NTumbleBit.Client.Tumbler
 		public void Update(ILogger logger)
 		{
 			logger = logger ?? new NullLogger();
+			Clients = Clients ?? Runtime.CreateTumblerClients();
 			int height = Services.BlockExplorerService.GetCurrentHeight();
 			CycleParameters cycle;
 			CyclePhase phase;
