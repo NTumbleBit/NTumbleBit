@@ -77,6 +77,7 @@ namespace NTumbleBit.TumblerServer
 		{
 			foreach(var resource in _Resources)
 				resource.Dispose();
+			_Resources.Clear();
 		}
 
 		List<IDisposable> _Resources = new List<IDisposable>();

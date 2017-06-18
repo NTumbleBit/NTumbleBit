@@ -54,7 +54,7 @@ namespace NTumbleBit.Client.Tumbler
 		{
 			while(true)
 			{
-				var index = Repository.Get<int>(_WalletId, "");
+				var index = Repository.Get<uint>(_WalletId, "");
 				var address = _ExtPubKey.Derive((uint)index).PubKey.Hash.ScriptPubKey;
 				index++;
 				bool conflict = false;
@@ -65,15 +65,17 @@ namespace NTumbleBit.Client.Tumbler
 				});
 				if(conflict)
 					continue;
-				Repository.UpdateOrInsert(_WalletId, address.Hash.ToString(), (uint)index, (o, n) => n);
+				Repository.UpdateOrInsert<uint?>(_WalletId, address.Hash.ToString(), (uint)(index - 1), (o, n) => n);
 				return address;
 			}
 		}
 
 		public KeyPath GetKeyPath(Script script)
 		{
-			var index = Repository.Get<uint>(_WalletId, script.Hash.ToString());
-			return _DerivationPath.Derive(index);
+			var index = Repository.Get<uint?>(_WalletId, script.Hash.ToString());
+			if(index == null)
+				return null;
+			return _DerivationPath.Derive(index.Value);
 		}
 	}
 }

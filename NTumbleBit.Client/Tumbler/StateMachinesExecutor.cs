@@ -160,7 +160,7 @@ namespace NTumbleBit.Client.Tumbler
 			Repository.UpdateOrInsert(GetPartitionKey(cycle), "", stateMachine.GetInternalState(), (o, n) => n);
 		}
 
-		private PaymentStateMachine CreateStateMachine(PaymentStateMachine.State state)
+		public PaymentStateMachine CreateStateMachine(PaymentStateMachine.State state)
 		{
 			return new PaymentStateMachine(Parameters, AliceClient, DestinationWallet, Services, state, Tracker) { Cooperative = Cooperative };
 		}

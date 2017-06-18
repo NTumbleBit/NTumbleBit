@@ -140,6 +140,7 @@ namespace NTumbleBit.Client.Tumbler
 		{
 			foreach(var disposable in _Disposables)
 				disposable.Dispose();
+			_Disposables.Clear();
 		}
 
 

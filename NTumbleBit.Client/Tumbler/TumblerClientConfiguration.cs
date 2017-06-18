@@ -70,7 +70,7 @@ namespace NTumbleBit.Client.Tumbler
 		public RPCArgs RPCArgs
 		{
 			get; set;
-		}
+		} = new RPCArgs();
 
 		public TumblerClientConfiguration LoadArgs(String[] args)
 		{

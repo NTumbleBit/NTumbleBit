@@ -104,6 +104,31 @@ namespace NTumbleBit.Tests
 		}
 
 
+		[Fact]
+		public void CanGenerateAddress()
+		{
+			using(var server = TumblerServerTester.Create())
+			{
+				var key = new ExtKey().GetWif(Network.RegTest);
+				var w = new ClientDestinationWallet(key.Neuter(), new KeyPath("0/1"), server.ClientRuntime.Repository);
+
+				var k1 = w.GetNewDestination();
+				var k2 = w.GetNewDestination();
+				Assert.Equal(new KeyPath("0/1/0"), w.GetKeyPath(k1));
+				Assert.Equal(new KeyPath("0/1/1"), w.GetKeyPath(k2));
+				Assert.Null(w.GetKeyPath(new Key().ScriptPubKey));
+
+				var wrpc = new RPCDestinationWallet(server.AliceNode.CreateRPCClient());
+
+				k1 = wrpc.GetNewDestination();
+				k2 = wrpc.GetNewDestination();
+
+				Assert.Equal(new KeyPath("0'/0'/1'"), wrpc.GetKeyPath(k1));
+				Assert.Equal(new KeyPath("0'/0'/2'"), wrpc.GetKeyPath(k2));
+				Assert.Null(w.GetKeyPath(new Key().ScriptPubKey));
+			}
+		}
+
 		public void CanCompleteCycleWithMachineStateCore(bool cooperativeClient, bool cooperativeTumbler)
 		{
 			using(var server = TumblerServerTester.Create())
@@ -115,7 +140,7 @@ namespace NTumbleBit.Tests
 				server.BobNode.FindBlock(103);
 				server.SyncNodes();
 
-				var machine = server.ClientContext.PaymentMachineState;
+				var machine = server.CreateStateMachine();
 				machine.Cooperative = cooperativeClient;
 
 				var serverTracker = server.ServerRuntime.Tracker;
@@ -126,8 +151,8 @@ namespace NTumbleBit.Tests
 				var cycle = machine.ClientChannelNegotiation.GetCycle();
 
 				server.MineTo(server.AliceNode, cycle, CyclePhase.ClientChannelEstablishment);
-				
-				
+
+
 
 				var escrow1 = machine.AliceClient.RequestTumblerEscrowKey(machine.StartCycle);
 				var escrow2 = machine.AliceClient.RequestTumblerEscrowKey(machine.StartCycle);
@@ -161,7 +186,7 @@ namespace NTumbleBit.Tests
 
 
 				server.MineTo(server.AliceNode, cycle, CyclePhase.TumblerChannelEstablishment);
-				
+
 
 				machine.Update();
 
@@ -172,7 +197,7 @@ namespace NTumbleBit.Tests
 				clientTracker.AssertKnown(TransactionType.TumblerEscrow, machine.PromiseClientSession.EscrowedCoin.Outpoint.Hash);
 
 				server.MineTo(server.TumblerNode, cycle, CyclePhase.PaymentPhase);
-				
+
 
 				machine.Update();
 				Block block = server.TumblerNode.FindBlock(1).First();
@@ -210,7 +235,7 @@ namespace NTumbleBit.Tests
 					block = server.TumblerNode.FindBlock(1).First();
 					server.SyncNodes();
 					Assert.Equal(2, block.Transactions.Count); //Offer get mined
-					
+
 					var malleatedOffer = block.Transactions[1];
 
 					//Fulfill get resigned and broadcasted
@@ -228,15 +253,15 @@ namespace NTumbleBit.Tests
 				}
 
 				server.MineTo(server.TumblerNode, cycle, CyclePhase.ClientCashoutPhase);
-				
+
 				machine.Update();
 
 				if(cooperativeTumbler)
 					//Received the solution out of blockchain, so the transaction should have been planned in advance
-					transactions = server.ClientContext.TrustedBroadcastService.TryBroadcast();
+					transactions = server.ClientRuntime.Services.TrustedBroadcastService.TryBroadcast();
 				else
 					//Received the solution from theblockchain, the transaction has not been planned in advance
-					transactions = server.ClientContext.UntrustedBroadcaster.TryBroadcast();
+					transactions = server.ClientRuntime.Services.BroadcastService.TryBroadcast();
 				Assert.Equal(1, transactions.Length);
 				block = server.AliceNode.FindBlock().First();
 				//Should contains TumblerCashout
@@ -246,7 +271,7 @@ namespace NTumbleBit.Tests
 				clientTracker.AssertKnown(TransactionType.TumblerCashout, block.Transactions[1].Outputs[0].ScriptPubKey);
 
 				//Just a sanity tests, this one contains escrow redeem and offer redeem, both of which should not be available now
-				transactions = server.ClientContext.UntrustedBroadcaster.TryBroadcast();
+				transactions = server.ClientRuntime.Services.BroadcastService.TryBroadcast();
 				Assert.Equal(0, transactions.Length);
 
 
@@ -291,7 +316,7 @@ namespace NTumbleBit.Tests
 					if(txId != null)
 					{
 						var tx = allTransactions.TryGet(txId.TransactionId) ??
-							server.ClientContext.TrustedBroadcastService.GetKnownTransaction(txId.TransactionId)?.Transaction ?? server.ClientContext.UntrustedBroadcaster.GetKnownTransaction(txId.TransactionId);
+							server.ClientRuntime.Services.TrustedBroadcastService.GetKnownTransaction(txId.TransactionId)?.Transaction ?? server.ClientRuntime.Services.BroadcastService.GetKnownTransaction(txId.TransactionId);
 						if(tx != null
 							 && tx.Inputs[0].PrevOut.Hash != uint256.Zero) //Client offer redeem, as it is broadcasted to the trusted broadcaster before offer is known
 							AssertRate(allTransactions, expectedRate, tx);
@@ -316,17 +341,17 @@ namespace NTumbleBit.Tests
 		{
 			using(var server = TumblerServerTester.Create())
 			{
-				server.AliceNode.FindBlock(1);				
-				server.TumblerNode.FindBlock(1);				
+				server.AliceNode.FindBlock(1);
+				server.TumblerNode.FindBlock(1);
 				server.BobNode.FindBlock(103);
 				server.SyncNodes();
 
-				var machine = server.ClientContext.PaymentMachineState;
+				var machine = server.CreateStateMachine();
 				machine.Update();
 				var cycle = machine.ClientChannelNegotiation.GetCycle();
 
 				server.MineTo(server.AliceNode, cycle, CyclePhase.ClientChannelEstablishment);
-				
+
 
 				machine.Update();
 
@@ -347,16 +372,16 @@ namespace NTumbleBit.Tests
 						.Count());
 
 				server.MineTo(server.AliceNode, cycle, CyclePhase.TumblerChannelEstablishment);
-				
+
 
 				machine.Update();
 
 				//Client Refund broadcasted exactly when we are at ClientCashoutPhase + SafetyPeriodDuration
 				server.MineTo(server.AliceNode, cycle, CyclePhase.ClientCashoutPhase, offset: cycle.SafetyPeriodDuration - 1);
-				var broadcasted = server.ClientContext.TrustedBroadcastService.TryBroadcast();
+				var broadcasted = server.ClientRuntime.Services.TrustedBroadcastService.TryBroadcast();
 				Assert.Equal(0, broadcasted.Length);
 				server.MineTo(server.AliceNode, cycle, CyclePhase.ClientCashoutPhase, offset: cycle.SafetyPeriodDuration);
-				broadcasted = server.ClientContext.TrustedBroadcastService.TryBroadcast();
+				broadcasted = server.ClientRuntime.Services.TrustedBroadcastService.TryBroadcast();
 				Assert.Equal(1, broadcasted.Length);
 				////////////////////////////////////////////////////////////////////////////////
 
