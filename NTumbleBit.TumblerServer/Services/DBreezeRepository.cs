@@ -4,6 +4,7 @@ using NBitcoin.DataEncoders;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -39,14 +40,43 @@ namespace NTumbleBit.Client.Tumbler.Services
 					var existingRow = tx.Select<string, byte[]>(GetTableName<T>(), rowKey);
 					if(existingRow != null && existingRow.Exists)
 					{
-						var existing = Serializer.ToObject<T>(Encoding.UTF8.GetString(existingRow.Value));
+						var existing = Serializer.ToObject<T>(Unzip(existingRow.Value));
 						if(existing != null)
 							newValue = update(existing, newValue);
 					}
-					var bytes = Encoding.UTF8.GetBytes(Serializer.ToString(newValue));
-					tx.Insert(GetTableName<T>(), rowKey, bytes);
+					tx.Insert(GetTableName<T>(), rowKey, Zip(Serializer.ToString(newValue)));
 					tx.Commit();
 				}
+			}
+		}
+
+		private byte[] Zip(string unzipped)
+		{
+			MemoryStream ms = new MemoryStream();
+			using(GZipStream gzip = new GZipStream(ms, CompressionMode.Compress))
+			{
+				StreamWriter writer = new StreamWriter(gzip, Encoding.UTF8);
+				writer.Write(unzipped);
+				writer.Flush();
+			}
+			return ms.ToArray();
+		}
+
+		private string Unzip(byte[] bytes)
+		{
+			try
+			{
+				MemoryStream ms = new MemoryStream(bytes);
+				using(GZipStream gzip = new GZipStream(ms, CompressionMode.Decompress))
+				{
+					StreamReader reader = new StreamReader(gzip, Encoding.UTF8);
+					var unzipped = reader.ReadToEnd();
+					return unzipped;
+				}
+			}
+			catch(InvalidDataException) //Temporary, old deployment have non zipped data
+			{
+				return Encoding.UTF8.GetString(bytes);
 			}
 		}
 
@@ -83,13 +113,13 @@ namespace NTumbleBit.Client.Tumbler.Services
 		}
 
 		Queue<DBreezeEngineReference> _EngineReferences = new Queue<DBreezeEngineReference>();
-		
+
 		public int OpenedEngine
 		{
 			get
 			{
 				lock(_EnginesByParitionKey)
-				{				
+				{
 					return _EngineReferences.Count;
 				}
 			}
@@ -150,7 +180,7 @@ namespace NTumbleBit.Client.Tumbler.Services
 				{
 					foreach(var row in tx.SelectForward<string, byte[]>(GetTableName<T>()))
 					{
-						result.Add(Serializer.ToObject<T>(Encoding.UTF8.GetString(row.Value)));
+						result.Add(Serializer.ToObject<T>(Unzip(row.Value)));
 					}
 				}
 				return result.ToArray();
@@ -179,7 +209,7 @@ namespace NTumbleBit.Client.Tumbler.Services
 			var row = tx.Select<string, byte[]>(GetTableName<T>(), rowKey);
 			if(row == null || !row.Exists)
 				return default(T);
-			return Serializer.ToObject<T>(Encoding.UTF8.GetString(row.Value));
+			return Serializer.ToObject<T>(Unzip(row.Value));
 		}
 
 		public bool Delete<T>(string partitionKey, string rowKey)
