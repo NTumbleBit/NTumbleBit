@@ -165,13 +165,21 @@ namespace NTumbleBit.TumblerServer
 			{
 				Logs.Configuration.LogInformation("Creating configuration file");
 				StringBuilder builder = new StringBuilder();
+				builder.AppendLine("####Common Commands####");
+				builder.AppendLine("#Connection to the input wallet. TumbleBit.CLI will try to autoconfig based on default settings of Bitcoin Core.");
 				builder.AppendLine("#rpc.url=http://localhost:" + Network.RPCPort + "/");
 				builder.AppendLine("#rpc.user=bitcoinuser");
 				builder.AppendLine("#rpc.password=bitcoinpassword");
 				builder.AppendLine("#rpc.cookiefile=yourbitcoinfolder/.cookie");
 
-				builder.AppendLine("####Advanced Comands");
+				builder.AppendLine();
+				builder.AppendLine();
+
+				builder.AppendLine("####Debug Commands####");
+				builder.AppendLine("#Whether or not the tumbler deliver puzzle's solution off chain to the client (default: true)");
 				builder.AppendLine("#cooperative=false");
+				builder.AppendLine("#Whether or not IP sharing between Bob and Alice is authorized (default: true for testnets, false for mainnet)");
+				builder.AppendLine("#allowinsecure=true");
 				File.WriteAllText(config, builder.ToString());
 			}
 			return config;

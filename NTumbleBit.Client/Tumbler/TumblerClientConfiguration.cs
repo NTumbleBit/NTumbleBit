@@ -228,17 +228,39 @@ namespace NTumbleBit.Client.Tumbler
 			{
 				Logs.Configuration.LogInformation("Creating configuration file");
 				StringBuilder builder = new StringBuilder();
+				builder.AppendLine("####Common Commands####");
+				builder.AppendLine("#Connection to the input wallet. TumbleBit.CLI will try to autoconfig based on default settings of Bitcoin Core.");
 				builder.AppendLine("#rpc.url=http://localhost:" + network.RPCPort + "/");
 				builder.AppendLine("#rpc.user=bitcoinuser");
 				builder.AppendLine("#rpc.password=bitcoinpassword");
 				builder.AppendLine("#rpc.cookiefile=yourbitcoinfolder/.cookie");
-				builder.AppendLine("#tumbler.server=");
-				builder.AppendLine("#outputwallet.extpubkey=");
-				builder.AppendLine("#outputwallet.keypath=");
 
-				builder.AppendLine("####Advanced Comands");
+				builder.AppendLine("#Tumbler server to connect to");
+				builder.AppendLine("#tumbler.server=");
+				builder.AppendLine();
+				builder.AppendLine("#Configuration of the output wallet");
+				builder.AppendLine("#outputwallet.extpubkey=xpub");
+				builder.AppendLine("#outputwallet.keypath=0");
+				builder.AppendLine();
+				builder.AppendLine();
+				builder.AppendLine("####Connection Commands####");
+				builder.AppendLine("#A TumbleBit client should use the Tumbler under two different identity. We recommend to make Alice using a HTTP proxy masking her real IP address. (For example privoxy with TOR)");
+				builder.AppendLine("#alice.proxy.server=http://127.0.0.1:8118/");
+				builder.AppendLine("#bob.proxy.server=http://127.0.0.1:8118/");
+				builder.AppendLine("#alice.proxy.username=dpowqkwkpd");
+				builder.AppendLine("#bob.proxy.username=dpowqkwkpd");
+				builder.AppendLine("#alice.proxy.password=padeiwmnfw");
+				builder.AppendLine("#bob.proxy.password=padeiwmnfw");
+
+				builder.AppendLine();
+				builder.AppendLine();
+
+				builder.AppendLine("####Debug Commands####");
+				builder.AppendLine("#Whether or not signature for the escape transaction is transmitted to the Tumbler (default: true)");
 				builder.AppendLine("#cooperative=false");
-				File.WriteAllText(config, builder.ToString());
+				builder.AppendLine("#Whether or not IP sharing between Bob and Alice is authorized (default: true for testnets, false for mainnet)");
+				builder.AppendLine("#allowinsecure=true");
+				File.WriteAllText(config, builder.ToString());				
 			}
 			return config;
 		}
