@@ -104,7 +104,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 			int keyIndex;
 			var key = Repository.GetNextKey(cycle.Start, out keyIndex);
 			if(!cycle.IsInPhase(CyclePhase.ClientChannelEstablishment, height))
-				return BadRequest("incorrect-phase");
+				return BadRequest("invalid-phase");
 			return Json(new TumblerEscrowKeyResponse { PubKey = key.PubKey, KeyIndex = keyIndex });
 		}
 
@@ -124,7 +124,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 			var cycle = Parameters.CycleGenerator.GetCycle(request.ClientEscrowInformation.Cycle);
 			var height = Services.BlockExplorerService.GetCurrentHeight();
 			if(!cycle.IsInPhase(CyclePhase.ClientChannelEstablishment, height))
-				return BadRequest("incorrect-phase");
+				return BadRequest("invalid-phase");
 
 			AliceServerChannelNegotiation aliceNegotiation = new AliceServerChannelNegotiation(Parameters, Runtime.TumblerKey, Runtime.VoucherKey);
 			var key = Repository.GetKey(cycle.Start, request.KeyReference);
@@ -172,7 +172,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 			BobServerChannelNegotiation session = CreateBobServerChannelNegotiation(request.CycleStart);
 			var cycle = session.GetCycle();
 			if(!cycle.IsInPhase(CyclePhase.TumblerChannelEstablishment, height))
-				return BadRequest("incorrect-phase");
+				return BadRequest("invalid-phase");
 			var fee = Services.FeeService.GetFeeRate();
 			try
 			{
