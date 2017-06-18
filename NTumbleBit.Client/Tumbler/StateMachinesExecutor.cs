@@ -111,6 +111,7 @@ namespace NTumbleBit.Client.Tumbler
 							try
 							{
 								machine.Update(Logger);
+								machine.InvalidPhaseCount = 0;
 							}
 							catch(Exception ex)
 							{
@@ -118,6 +119,8 @@ namespace NTumbleBit.Client.Tumbler
 
 								if(invalidPhase)
 									machine.InvalidPhaseCount++;
+								else
+									machine.InvalidPhaseCount = 0;
 
 								if(!invalidPhase || machine.InvalidPhaseCount > 2)
 								{
