@@ -9,6 +9,8 @@ using NBitcoin.RPC;
 using NTumbleBit.Common.Logging;
 using Microsoft.Extensions.Logging;
 using NTumbleBit.ClassicTumbler;
+using System.Net;
+using System.Threading.Tasks;
 
 namespace NTumbleBit.Client.Tumbler
 {
@@ -70,10 +72,23 @@ namespace NTumbleBit.Client.Tumbler
 				var existingConfig = dbreeze.Get<ClassicTumbler.ClassicTumblerParameters>("Configuration", configuration.TumblerServer.AbsoluteUri);
 				if(!configuration.OnlyMonitor)
 				{
-					var client = runtime.CreateTumblerClients().Alice;
+					var clients = runtime.CreateTumblerClients();
+					var client = clients.Alice;
 					Logs.Configuration.LogInformation("Downloading tumbler information of " + configuration.TumblerServer.AbsoluteUri);
 					var parameters = Retry(3, () => client.GetTumblerParameters());
 					Logs.Configuration.LogInformation("Tumbler Server Connection successfull");
+
+					if(configuration.CheckIp)
+					{
+						var ip1 = GetExternalIp(clients.Alice, "https://myexternalip.com/raw");
+						var ip2 = GetExternalIp(clients.Bob, "https://icanhazip.com/");
+						var aliceIp = ip1.GetAwaiter().GetResult();
+						var bobIp = ip2.GetAwaiter().GetResult();
+						if(aliceIp.Equals(bobIp))
+							Logs.Configuration.LogWarning("Same IP detected for Bob and Alice, the tumbler can link input address to output address");
+						else
+							Logs.Configuration.LogInformation("Alice and Bob have different IP configured");
+					}
 
 					if(existingConfig != null)
 					{
@@ -102,6 +117,13 @@ namespace NTumbleBit.Client.Tumbler
 				throw;
 			}
 			return runtime;
+		}
+
+		private static async Task<IPAddress> GetExternalIp(TumblerClient client, string url)
+		{
+			var result = await client.Client.GetAsync(url).ConfigureAwait(false);
+			var content = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
+			return IPAddress.Parse(content.Replace("\n", string.Empty));
 		}
 
 		public void Confirm(ClassicTumblerParameters parameters)

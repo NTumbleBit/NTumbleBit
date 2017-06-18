@@ -99,6 +99,7 @@ namespace NTumbleBit.Tests
 				clientConfig.DataDir = Path.Combine(directory, "client");
 				Directory.CreateDirectory(clientConfig.DataDir);
 				clientConfig.Network = conf.Network;
+				clientConfig.CheckIp = false;
 				clientConfig.OutputWallet.KeyPath = new KeyPath("0");
 				clientConfig.OutputWallet.RootKey = new ExtKey().Neuter().GetWif(conf.Network);
 				clientConfig.RPCArgs.Url = AliceNode.CreateRPCClient().Address;

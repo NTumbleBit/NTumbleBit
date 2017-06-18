@@ -45,7 +45,9 @@ namespace NTumbleBit.Client.Tumbler
 			}
 		}
 
-	    private static readonly HttpClient Client = new HttpClient();
+	    private static readonly HttpClient SharedClient = new HttpClient();
+		internal HttpClient Client = SharedClient;
+
 		public Task<ClassicTumblerParameters> GetTumblerParametersAsync()
 		{
 			return GetAsync<ClassicTumblerParameters>("api/v1/tumblers/0/parameters");

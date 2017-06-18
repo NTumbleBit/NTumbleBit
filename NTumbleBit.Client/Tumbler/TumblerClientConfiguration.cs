@@ -51,6 +51,12 @@ namespace NTumbleBit.Client.Tumbler
 		{
 			get; set;
 		}
+
+		public bool CheckIp
+		{
+			get; set;
+		} = true;
+
 		public bool Cooperative
 		{
 			get;
