@@ -33,7 +33,6 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 
 		IRepository _Repo;
 		private readonly RPCClient _RPCClient;
-		private bool supportReceivedByAddress = true;
 
 		public RPCClient RPCClient
 		{
@@ -71,24 +70,9 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			if(address == null)
 				return new TransactionInformation[0];
 
-			List<TransactionInformation> results = null;
-			if(supportReceivedByAddress)
-			{
-				try
-				{
-					results = QueryWithListReceivedByAddress(withProof, address);
-				}
-				catch(RPCException)
-				{
-					supportReceivedByAddress = false;
-				}
-			}
+			var walletTransactions = _Cache.GetEntries();
+			List<TransactionInformation> results = Filter(walletTransactions, !withProof, address);
 
-			if(results == null)
-			{
-				var walletTransactions = _Cache.GetEntries();
-				results = Filter(walletTransactions, !withProof, address);
-			}
 			if(withProof)
 			{
 				foreach(var tx in results.ToList())
