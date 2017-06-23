@@ -176,11 +176,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 
 		public void Track(Script scriptPubkey)
 		{
-			var address = scriptPubkey.GetDestinationAddress(RPCClient.Network);
-			if(address != null)
-			{
-				RPCClient.ImportAddress(address, "", false);
-			}
+			RPCClient.ImportAddress(scriptPubkey, "", false);
 		}
 
 		public int GetBlockConfirmations(uint256 blockId)
