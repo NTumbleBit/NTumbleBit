@@ -43,10 +43,10 @@ namespace NTumbleBit.CLI
 				{
 					if(!PromptConfirmation(toConfirm))
 					{
-						runtime.Confirm(toConfirm);
 						Logs.Main.LogInformation("New tumbler parameters refused");
 						return;
 					}
+					runtime.Confirm(toConfirm);
 				}
 
 				Tracker = runtime.Tracker;
@@ -100,6 +100,7 @@ namespace NTumbleBit.CLI
 			var periods = toConfirm.CycleGenerator.FirstCycle.GetPeriods();
 			Console.WriteLine("Total cycle length: " + (periods.Total.End - periods.Total.Start) + " blocks");
 			Console.WriteLine("------");
+			Console.WriteLine("Do you confirm the following tumbler settings? (type 'yes' to accept)");
 			var response = Console.ReadLine();
 			return response.Equals("yes", StringComparison.OrdinalIgnoreCase);
 		}
