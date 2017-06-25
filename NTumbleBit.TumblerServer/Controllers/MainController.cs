@@ -84,7 +84,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 			var height = Services.BlockExplorerService.GetCurrentHeight();
 			var cycleParameters = Parameters.CycleGenerator.GetRegistratingCycle(height);
 			PuzzleSolution solution = null;
-			var puzzle = Parameters.VoucherKey.GeneratePuzzle(ref solution);			
+			var puzzle = Parameters.VoucherKey.GeneratePuzzle(ref solution);
 			uint160 nonce;
 			var cycle = cycleParameters.Start;
 			var signature = Runtime.VoucherKey.Sign(NBitcoin.Utils.ToBytes((uint)cycle, true), out nonce);
@@ -206,7 +206,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 				var escrow = new EscrowScriptPubKeyParameters();
 				escrow.LockTime = cycle.GetTumblerLockTime();
 				escrow.Receiver = request.EscrowKey;
-				escrow.Initiator = escrowKey.PubKey;				
+				escrow.Initiator = escrowKey.PubKey;
 
 				Logs.Server.LogInformation($"Cycle {cycle.Start} Asked to open channel");
 				var txOut = new TxOut(Parameters.Denomination, escrow.ToScript().Hash);
@@ -242,7 +242,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 				Logs.Server.LogInformation(ex.Message);
 				return BadRequest("tumbler-insufficient-funds");
 			}
-		}		
+		}
 
 		[HttpPost("api/v1/tumblers/0/channels/{cycleId}/{channelId}/signhashes")]
 		public IActionResult SignHashes(int cycleId, string channelId, [FromBody]SignaturesRequest sigReq)
@@ -313,7 +313,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 			var session = GetSolverServerSession(cycleId, channelId, CyclePhase.PaymentPhase);
 			var feeRate = Services.FeeService.GetFeeRate();
 			var fulfillKey = session.CheckBlindedFactors(blindFactors, feeRate);
-			var cycle = Parameters.CycleGenerator.GetCycle(cycleId);			
+			var cycle = Parameters.CycleGenerator.GetCycle(cycleId);
 			Repository.Save(cycleId, session);
 			return Json(fulfillKey);
 		}
@@ -347,8 +347,11 @@ namespace NTumbleBit.TumblerServer.Controllers
 				Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.ClientOffer, correlation, signedOffer);
 
 				Tracker.AddressCreated(cycle.Start, TransactionType.ClientFulfill, cashout.ScriptPubKey, correlation);
-				Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.ClientFulfill, correlation, fulfill);
 
+				if(!Runtime.NoFulFill)
+				{
+					Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.ClientFulfill, correlation, fulfill);
+				}
 				return Json(Runtime.Cooperative ? session.GetSolutionKeys() : new SolutionKey[0]);
 			}
 			catch(PuzzleException ex)

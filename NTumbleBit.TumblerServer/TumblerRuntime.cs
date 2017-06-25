@@ -122,5 +122,14 @@ namespace NTumbleBit.TumblerServer
 			get;
 			set;
 		}
+
+		/// <summary>
+		/// Test property, the tumbler does not broadcast the fulfill transaction
+		/// </summary>
+		public bool NoFulFill
+		{
+			get;
+			set;
+		}
 	}
 }
