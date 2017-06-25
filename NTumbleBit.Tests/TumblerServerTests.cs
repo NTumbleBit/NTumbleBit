@@ -260,7 +260,7 @@ namespace NTumbleBit.Tests
 					//Received the solution out of blockchain, so the transaction should have been planned in advance
 					transactions = server.ClientRuntime.Services.TrustedBroadcastService.TryBroadcast();
 				else
-					//Received the solution from theblockchain, the transaction has not been planned in advance
+					//Received the solution from the blockchain, the transaction has not been planned in advance
 					transactions = server.ClientRuntime.Services.BroadcastService.TryBroadcast();
 				Assert.Equal(1, transactions.Length);
 				block = server.AliceNode.FindBlock().First();

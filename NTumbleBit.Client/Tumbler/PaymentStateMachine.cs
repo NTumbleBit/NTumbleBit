@@ -197,7 +197,7 @@ namespace NTumbleBit.Client.Tumbler
 			}
 
 			logger.LogInformation("Cycle " + cycle.Start + " in phase " + Enum.GetName(typeof(CyclePhase), phase) + ", ending in " + (cycle.GetPeriods().GetPeriod(phase).End - height) + " blocks");
-			var correlation = SolverClientSession == null ? 0 : GetCorrelation(SolverClientSession.EscrowedCoin.ScriptPubKey);
+			var correlation = SolverClientSession == null ? 0 : GetCorrelation(SolverClientSession.EscrowedCoin);
 
 			FeeRate feeRate = null;
 			switch(phase)
@@ -241,7 +241,7 @@ namespace NTumbleBit.Client.Tumbler
 						SolverClientSession = ClientChannelNegotiation.SetClientSignedTransaction(clientEscrowTx, redeemDestination);
 
 
-						correlation = GetCorrelation(SolverClientSession.EscrowedCoin.ScriptPubKey);
+						correlation = GetCorrelation(SolverClientSession.EscrowedCoin);
 
 						Tracker.AddressCreated(cycle.Start, TransactionType.ClientEscrow, escrowTxOut.ScriptPubKey, correlation);
 						Tracker.TransactionCreated(cycle.Start, TransactionType.ClientEscrow, clientEscrowTx.GetHash(), correlation);
@@ -267,14 +267,14 @@ namespace NTumbleBit.Client.Tumbler
 						if(clientTx != null && clientTx.Confirmations >= cycle.SafetyPeriodDuration)
 						{
 							//Client asks the public key of the Tumbler and sends its own
-							var aliceEscrowInformation = ClientChannelNegotiation.GenerateClientTransactionKeys();
 							var voucher = AliceClient.SignVoucher(new Models.SignVoucherRequest
 							{
 								MerkleProof = clientTx.MerkleProof,
 								Transaction = clientTx.Transaction,
 								KeyReference = state.TumblerEscrowKeyReference,
-								ClientEscrowInformation = aliceEscrowInformation,
-								TumblerEscrowPubKey = state.ClientEscrowInformation.OtherEscrowKey
+								UnsignedVoucher = state.BlindedVoucher,
+								Cycle = cycle.Start,
+								ClientEscrowKey = state.ClientEscrowKey.PubKey
 							});
 							ClientChannelNegotiation.CheckVoucherSolution(voucher);
 							logger.LogInformation("Voucher solution obtained");
@@ -330,6 +330,7 @@ namespace NTumbleBit.Client.Tumbler
 							var solutionKeys = AliceClient.CheckRevelation(cycle.Start, SolverClientSession.Id, revelation2);
 							var blindFactors = SolverClientSession.GetBlindFactors(solutionKeys);
 							var offerInformation = AliceClient.CheckBlindFactors(cycle.Start, SolverClientSession.Id, blindFactors);
+
 							var offerSignature = SolverClientSession.SignOffer(offerInformation);
 
 							var offerRedeem = SolverClientSession.CreateOfferRedeemTransaction(feeRate);
@@ -345,7 +346,6 @@ namespace NTumbleBit.Client.Tumbler
 
 								var tumblingSolution = SolverClientSession.GetSolution();
 								var transaction = PromiseClientSession.GetSignedTransaction(tumblingSolution);
-
 								Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.TumblerCashout, correlation, new TrustedBroadcastRequest()
 								{
 									BroadcastAt = cycle.GetPeriods().ClientCashout.Start,
@@ -374,7 +374,7 @@ namespace NTumbleBit.Client.Tumbler
 						//If the tumbler is uncooperative, he published solutions on the blockchain
 						if(SolverClientSession.Status == SolverClientStates.WaitingPuzzleSolutions)
 						{
-							var transactions = Services.BlockExplorerService.GetTransactions(SolverClientSession.GetOfferScriptPubKey(), false);
+							var transactions = Services.BlockExplorerService.GetTransactions(SolverClientSession.GetInternalState().OfferCoin.ScriptPubKey, false);
 							if(transactions.Length == 0)
 							{
 								logger.LogInformation("Solution of puzzle not on the blockchain");
@@ -396,16 +396,16 @@ namespace NTumbleBit.Client.Tumbler
 			}
 		}
 
-		private uint GetCorrelation(Script scriptPubKey)
+		private uint GetCorrelation(ScriptCoin escrowCoin)
 		{
-			return new uint160(scriptPubKey.Hash.ToString()).GetLow32();
+			return new uint160(escrowCoin.Redeem.Hash.ToString()).GetLow32();
 		}
 
 		private TransactionInformation GetTransactionInformation(ICoin coin, bool withProof)
 		{
 			var tx = Services.BlockExplorerService
 				.GetTransactions(coin.TxOut.ScriptPubKey, withProof)
-				.FirstOrDefault(t => t.Transaction.GetHash() == coin.Outpoint.Hash);
+				.FirstOrDefault(t => t.Transaction.Outputs.AsCoins().Any(c=> c.Outpoint == coin.Outpoint));
 			return tx;
 		}
 

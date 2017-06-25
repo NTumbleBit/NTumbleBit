@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using NTumbleBit.ClassicTumbler;
+using NBitcoin.BuilderExtensions;
 
 namespace NTumbleBit
 {
@@ -14,7 +15,6 @@ namespace NTumbleBit
 		{
 			get;
 		}
-		LockTime GetLockTime(CycleParameters cycle);
 	}
     public abstract class EscrowInitiator : IEscrow
     {
@@ -26,11 +26,6 @@ namespace NTumbleBit
 				set;
 			}
 			public Key EscrowKey
-			{
-				get;
-				set;
-			}
-			public Key RedeemKey
 			{
 				get;
 				set;
@@ -47,22 +42,20 @@ namespace NTumbleBit
 			get; set;
 		}
 
-		public virtual void ConfigureEscrowedCoin(ScriptCoin escrowedCoin, Key escrowKey, Key redeemKey, Script redeemDestination)
+		public virtual void ConfigureEscrowedCoin(ScriptCoin escrowedCoin, Key escrowKey, Script redeemDestination)
 		{
 			if(escrowedCoin == null)
 				throw new ArgumentNullException(nameof(escrowedCoin));
 			if(escrowKey == null)
 				throw new ArgumentNullException(nameof(escrowKey));
-			if(redeemKey == null)
-				throw new ArgumentNullException(nameof(redeemKey));
 			if(redeemDestination == null)
 				throw new ArgumentNullException(nameof(redeemDestination));
-			var escrow = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(escrowedCoin.Redeem);
-			if(escrow == null || !escrow.EscrowKeys.Any(e => e == escrowKey.PubKey))
+			var escrow = EscrowScriptPubKeyParameters.GetFromScript(escrowedCoin.Redeem);
+			if(escrow == null || 
+				escrow.Initiator != escrowKey.PubKey)
 				throw new PuzzleException("Invalid escrow");
 			InternalState.EscrowedCoin = escrowedCoin;
 			InternalState.EscrowKey = escrowKey;
-			InternalState.RedeemKey = redeemKey;
 			InternalState.RedeemDestination = redeemDestination;
 		}
 
@@ -71,27 +64,27 @@ namespace NTumbleBit
 			if(feeRate == null)
 				throw new ArgumentNullException(nameof(feeRate));
 
-			var coin = InternalState.EscrowedCoin;
-			var escrow = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(coin.Redeem);
-
+			var escrow = EscrowScriptPubKeyParameters.GetFromScript(InternalState.EscrowedCoin.Redeem);
+			var escrowCoin = InternalState.EscrowedCoin;
 			Transaction tx = new Transaction();
 			tx.LockTime = escrow.LockTime;
-			tx.Inputs.Add(new TxIn(coin.Outpoint));
+			tx.Inputs.Add(new TxIn());
+			//Put a dummy signature and the redeem script
+			tx.Inputs[0].ScriptSig = 
+				new Script(
+					Op.GetPushOp(TrustedBroadcastRequest.PlaceholderSignature), 
+					Op.GetPushOp(escrowCoin.Redeem.ToBytes()));
 			tx.Inputs[0].Sequence = 0;
-			tx.Outputs.Add(new TxOut(coin.Amount, InternalState.RedeemDestination));
-			tx.Inputs[0].ScriptSig = EscrowScriptBuilder.GenerateScriptSig(new TransactionSignature[] { null }) + Op.GetPushOp(coin.Redeem.ToBytes());
-
-			var vSize = tx.GetVirtualSize() + 80; // Size without signature + the signature size
-			tx.Outputs[0].Value -= feeRate.GetFee(vSize);
+			
+			tx.Outputs.Add(new TxOut(escrowCoin.Amount, InternalState.RedeemDestination));			
+			tx.Outputs[0].Value -= feeRate.GetFee(tx.GetVirtualSize());
 
 			var redeemTransaction =  new TrustedBroadcastRequest
 			{
-				Key = InternalState.RedeemKey,
-				PreviousScriptPubKey = coin.Redeem.Hash.ScriptPubKey,
+				Key = InternalState.EscrowKey,
+				PreviousScriptPubKey = escrowCoin.ScriptPubKey,
 				Transaction = tx
 			};
-			//Strip redeem script information so we check if TrustedBroadcastRequest can sign correctly
-			redeemTransaction.Transaction = redeemTransaction.ReSign(new Coin(coin.Outpoint, coin.TxOut));
 			return redeemTransaction;
 		}
 

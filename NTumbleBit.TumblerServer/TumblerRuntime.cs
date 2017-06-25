@@ -65,7 +65,7 @@ namespace NTumbleBit.TumblerServer
 			runtime.ClassicTumblerParameters.ServerKey = runtime.TumblerKey.PubKey;
 			runtime.ClassicTumblerParameters.VoucherKey = runtime.VoucherKey.PubKey;
 
-			var dbreeze = new DBreezeRepository(Path.Combine(conf.DataDir, "db"));
+			var dbreeze = new DBreezeRepository(Path.Combine(conf.DataDir, "db2"));
 			runtime.Repository = dbreeze;
 			runtime._Resources.Add(dbreeze);
 			runtime.Tracker = new Tracker(dbreeze);			

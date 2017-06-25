@@ -83,8 +83,18 @@ namespace NTumbleBit.TumblerServer.Controllers
 		{
 			var height = Services.BlockExplorerService.GetCurrentHeight();
 			var cycleParameters = Parameters.CycleGenerator.GetRegistratingCycle(height);
-			BobServerChannelNegotiation session = CreateBobServerChannelNegotiation(cycleParameters.Start);
-			return session.GenerateUnsignedVoucher();
+			PuzzleSolution solution = null;
+			var puzzle = Parameters.VoucherKey.GeneratePuzzle(ref solution);			
+			uint160 nonce;
+			var cycle = cycleParameters.Start;
+			var signature = Runtime.VoucherKey.Sign(NBitcoin.Utils.ToBytes((uint)cycle, true), out nonce);
+			return new UnsignedVoucherInformation
+			{
+				CycleStart = cycle,
+				Nonce = nonce,
+				Puzzle = puzzle.PuzzleValue,
+				EncryptedSignature = new XORKey(solution).XOR(signature)
+			};
 		}
 
 
@@ -103,39 +113,57 @@ namespace NTumbleBit.TumblerServer.Controllers
 		[HttpPost("api/v1/tumblers/0/clientchannels/confirm")]
 		public IActionResult SignVoucher([FromBody]SignVoucherRequest request)
 		{
+			if(request.UnsignedVoucher == null)
+				return BadRequest("Missing UnsignedVoucher");
+			if(request.MerkleProof == null)
+				return BadRequest("Missing MerkleProof");
+			if(request.Transaction == null)
+				return BadRequest("Missing Transaction");
+			if(request.ClientEscrowKey == null)
+				return BadRequest("Missing ClientEscrowKey");
+
 			if(request.MerkleProof.PartialMerkleTree
 				.GetMatchedTransactions()
 				.FirstOrDefault() != request.Transaction.GetHash() || !request.MerkleProof.Header.CheckProofOfWork())
 				return BadRequest("invalid-merkleproof");
 
+			var confirmations = Services.BlockExplorerService.GetBlockConfirmations(request.MerkleProof.Header.GetHash());
+			if((confirmations < Parameters.CycleGenerator.FirstCycle.SafetyPeriodDuration))
+				return BadRequest("not-enough-confirmation");
 
 			var transaction = request.Transaction;
 			if(transaction.Outputs.Count > 2)
 				return BadRequest("invalid-transaction");
 
-			var cycle = Parameters.CycleGenerator.GetCycle(request.ClientEscrowInformation.Cycle);
+			var cycle = Parameters.CycleGenerator.GetCycle(request.Cycle);
 			var height = Services.BlockExplorerService.GetCurrentHeight();
 			if(!cycle.IsInPhase(CyclePhase.ClientChannelEstablishment, height))
 				return BadRequest("invalid-phase");
 
-			AliceServerChannelNegotiation aliceNegotiation = new AliceServerChannelNegotiation(Parameters, Runtime.TumblerKey, Runtime.VoucherKey);
-			var key = Repository.GetKey(cycle.Start, request.KeyReference);
-			if(key.PubKey != request.TumblerEscrowPubKey)
-				return BadRequest("incorrect-escrowpubkey");
 
-			aliceNegotiation.ReceiveClientEscrowInformation(request.ClientEscrowInformation, key);
+			var key = Repository.GetKey(cycle.Start, request.KeyReference);
+
+			var expectedEscrow = new EscrowScriptPubKeyParameters(request.ClientEscrowKey, key.PubKey, cycle.GetClientLockTime());
+
+			var expectedTxOut = new TxOut(Parameters.Denomination + Parameters.Fee, expectedEscrow.ToScript().Hash);
+			var escrowedCoin =
+				transaction
+				.Outputs
+				.AsCoins()
+				.Where(c => c.TxOut.Value == expectedTxOut.Value
+							&& c.TxOut.ScriptPubKey == expectedTxOut.ScriptPubKey)
+				.Select(c => c.ToScriptCoin(expectedEscrow.ToScript()))
+				.FirstOrDefault();
+
+			if(escrowedCoin == null)
+				return BadRequest("invalid-transaction");
 
 			try
 			{
-				var expectedTxOut = aliceNegotiation.BuildEscrowTxOut();
-				PuzzleSolution voucher;
-				var solverServerSession = aliceNegotiation.ConfirmClientEscrow(transaction, out voucher);
+				var solverServerSession = new SolverServerSession(Runtime.TumblerKey, Parameters.CreateSolverParamaters());
+				solverServerSession.ConfigureEscrowedCoin(escrowedCoin, key);
 
-				var confirmations = Services.BlockExplorerService.GetBlockConfirmations(request.MerkleProof.Header.GetHash());
-				if((confirmations < Parameters.CycleGenerator.FirstCycle.SafetyPeriodDuration))
-					return BadRequest("not-enough-confirmation");
-
-				Services.BlockExplorerService.Track(expectedTxOut.ScriptPubKey);
+				Services.BlockExplorerService.Track(escrowedCoin.ScriptPubKey);
 				if(!Services.BlockExplorerService.TrackPrunedTransaction(request.Transaction, request.MerkleProof))
 					return BadRequest("invalid-merkleproof");
 
@@ -144,12 +172,11 @@ namespace NTumbleBit.TumblerServer.Controllers
 				Repository.Save(cycle.Start, solverServerSession);
 				Logs.Server.LogInformation($"Cycle {cycle.Start} Proof of Escrow signed for " + transaction.GetHash());
 
-
 				var correlation = GetCorrelation(solverServerSession);
-				Tracker.AddressCreated(cycle.Start, TransactionType.ClientEscrow, expectedTxOut.ScriptPubKey, correlation);
+				Tracker.AddressCreated(cycle.Start, TransactionType.ClientEscrow, escrowedCoin.ScriptPubKey, correlation);
 				Tracker.TransactionCreated(cycle.Start, TransactionType.ClientEscrow, request.Transaction.GetHash(), correlation);
-
-				return Json(voucher);
+				var solution = request.UnsignedVoucher.WithRsaKey(Runtime.VoucherKey.PubKey).Solve(Runtime.VoucherKey);
+				return Json(solution);
 			}
 			catch(PuzzleException)
 			{
@@ -161,37 +188,50 @@ namespace NTumbleBit.TumblerServer.Controllers
 		public IActionResult OpenChannel([FromBody] OpenChannelRequest request)
 		{
 			var height = Services.BlockExplorerService.GetCurrentHeight();
-			BobServerChannelNegotiation session = CreateBobServerChannelNegotiation(request.CycleStart);
-			var cycle = session.GetCycle();
+			var cycle = Parameters.CycleGenerator.GetCycle(request.CycleStart);
 			if(!cycle.IsInPhase(CyclePhase.TumblerChannelEstablishment, height))
 				return BadRequest("invalid-phase");
 			var fee = Services.FeeService.GetFeeRate();
 			try
 			{
-				session.ReceiveBobEscrowInformation(request);
+				if(!Parameters.VoucherKey.Verify(request.Signature, NBitcoin.Utils.ToBytes((uint)request.CycleStart, true), request.Nonce))
+					return BadRequest("incorrect-voucher");
 				if(!Repository.MarkUsedNonce(request.CycleStart, request.Nonce))
 				{
 					return BadRequest("nonce-already-used");
 				}
+
+				var escrowKey = new Key();
+
+				var escrow = new EscrowScriptPubKeyParameters();
+				escrow.LockTime = cycle.GetTumblerLockTime();
+				escrow.Receiver = request.EscrowKey;
+				escrow.Initiator = escrowKey.PubKey;				
+
 				Logs.Server.LogInformation($"Cycle {cycle.Start} Asked to open channel");
-				var txOut = session.BuildEscrowTxOut();
+				var txOut = new TxOut(Parameters.Denomination, escrow.ToScript().Hash);
 				var tx = Services.WalletService.FundTransaction(txOut, fee);
-				var correlation = GetCorrelation(session);
+				var correlation = escrow.GetCorrelation();
 				var escrowTumblerLabel = $"Cycle {cycle.Start} Tumbler Escrow";
 				Services.BlockExplorerService.Track(txOut.ScriptPubKey);
 
 				Tracker.AddressCreated(cycle.Start, TransactionType.TumblerEscrow, txOut.ScriptPubKey, correlation);
 				Tracker.TransactionCreated(cycle.Start, TransactionType.TumblerEscrow, tx.GetHash(), correlation);
-				Services.BroadcastService.Broadcast(tx);
 				Logs.Server.LogInformation($"Cycle {cycle.Start} Channel created " + tx.GetHash());
-				var redeem = Services.WalletService.GenerateAddress();
-				var promiseServerSession = session.SetSignedTransaction(tx, redeem.ScriptPubKey);
-				Repository.Save(cycle.Start, promiseServerSession);
 
-				var redeemTx = promiseServerSession.CreateRedeemTransaction(fee);
+				var coin = tx.Outputs.AsCoins().First(o => o.ScriptPubKey == txOut.ScriptPubKey && o.TxOut.Value == txOut.Value);
+
+				var session = new PromiseServerSession(Parameters.CreatePromiseParamaters());
+				var redeem = Services.WalletService.GenerateAddress();
+				session.ConfigureEscrowedCoin(coin.ToScriptCoin(escrow.ToScript()), escrowKey, redeem.ScriptPubKey);
+				Repository.Save(cycle.Start, session);
+
+				Services.BroadcastService.Broadcast(tx);
+
+				var redeemTx = session.CreateRedeemTransaction(fee);
 				Tracker.AddressCreated(cycle.Start, TransactionType.TumblerRedeem, redeem.ScriptPubKey, correlation);
 				Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.TumblerRedeem, correlation, redeemTx);
-				return Json(promiseServerSession.EscrowedCoin);
+				return Json(session.EscrowedCoin);
 			}
 			catch(PuzzleException)
 			{
@@ -202,23 +242,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 				Logs.Server.LogInformation(ex.Message);
 				return BadRequest("tumbler-insufficient-funds");
 			}
-		}
-
-		private uint GetCorrelation(BobServerChannelNegotiation session)
-		{
-			return new uint160(session.GetInternalState().EscrowKey.ScriptPubKey.Hash.ToString()).GetLow32();
-		}
-
-		private uint GetCorrelation(SolverServerSession session)
-		{
-			return new uint160(session.EscrowedCoin.ScriptPubKey.Hash.ToString()).GetLow32();
-		}
-
-
-		private BobServerChannelNegotiation CreateBobServerChannelNegotiation(int cycleStart)
-		{
-			return new BobServerChannelNegotiation(Parameters, Runtime.TumblerKey, Runtime.VoucherKey, cycleStart);
-		}
+		}		
 
 		[HttpPost("api/v1/tumblers/0/channels/{cycleId}/{channelId}/signhashes")]
 		public IActionResult SignHashes(int cycleId, string channelId, [FromBody]SignaturesRequest sigReq)
@@ -289,18 +313,16 @@ namespace NTumbleBit.TumblerServer.Controllers
 			var session = GetSolverServerSession(cycleId, channelId, CyclePhase.PaymentPhase);
 			var feeRate = Services.FeeService.GetFeeRate();
 			var fulfillKey = session.CheckBlindedFactors(blindFactors, feeRate);
-			var cycle = Parameters.CycleGenerator.GetCycle(cycleId);
-			//later we will track it for fulfillment
-
-			var offerScriptPubKey = session.GetOfferScriptPubKey();
-			Services.BlockExplorerService.Track(offerScriptPubKey);
+			var cycle = Parameters.CycleGenerator.GetCycle(cycleId);			
 			Repository.Save(cycleId, session);
 			return Json(fulfillKey);
 		}
 
 		[HttpPost("api/v1/tumblers/0/clientchannels/{cycleId}/{channelId}/offer")]
-		public IActionResult FulfillOffer(int cycleId, string channelId, [FromBody]TransactionSignature clientSignature)
+		public IActionResult FulfillOffer(int cycleId, string channelId, [FromBody]TransactionSignature signature)
 		{
+			if(signature == null)
+				return BadRequest("Missing Signature");
 			var session = GetSolverServerSession(cycleId, channelId, CyclePhase.TumblerCashoutPhase);
 			var feeRate = Services.FeeService.GetFeeRate();
 			if(session.Status != SolverServerStates.WaitingFulfillment)
@@ -310,16 +332,18 @@ namespace NTumbleBit.TumblerServer.Controllers
 				var cycle = Parameters.CycleGenerator.GetCycle(cycleId);
 				var cashout = Services.WalletService.GenerateAddress();
 
-				var fulfill = session.FulfillOffer(clientSignature, cashout.ScriptPubKey, feeRate);
+				var fulfill = session.FulfillOffer(signature, cashout.ScriptPubKey, feeRate);
 				fulfill.BroadcastAt = new LockTime(cycle.GetPeriods().Payment.End - 1);
 				Repository.Save(cycle.Start, session);
 
 				var signedOffer = session.GetSignedOfferTransaction();
 				signedOffer.BroadcastAt = fulfill.BroadcastAt - 1;
+				uint correlation = GetCorrelation(session);
 
-				var correlation = GetCorrelation(session);
+				var offerScriptPubKey = session.GetInternalState().OfferCoin.ScriptPubKey;
+				Services.BlockExplorerService.Track(offerScriptPubKey);
 
-				Tracker.AddressCreated(cycle.Start, TransactionType.ClientOffer, session.GetOfferScriptPubKey(), correlation);
+				Tracker.AddressCreated(cycle.Start, TransactionType.ClientOffer, offerScriptPubKey, correlation);
 				Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.ClientOffer, correlation, signedOffer);
 
 				Tracker.AddressCreated(cycle.Start, TransactionType.ClientFulfill, cashout.ScriptPubKey, correlation);
@@ -333,7 +357,11 @@ namespace NTumbleBit.TumblerServer.Controllers
 			}
 		}
 
-		
+		private static uint GetCorrelation(SolverServerSession session)
+		{
+			return EscrowScriptPubKeyParameters.GetFromScript(session.EscrowedCoin.Redeem).GetCorrelation();
+		}
+
 
 		[HttpPost("api/v1/tumblers/0/clientchannels/{cycleId}/{channelId}/escape")]
 		public IActionResult GiveEscapeKey(int cycleId, string channelId, [FromBody]TransactionSignature clientSignature)
@@ -342,10 +370,11 @@ namespace NTumbleBit.TumblerServer.Controllers
 			if(session.Status != SolverServerStates.WaitingEscape)
 				return BadRequest("invalid-state");
 
+			var fee = Services.FeeService.GetFeeRate();
 			try
 			{
 				var cashout = Services.WalletService.GenerateAddress();
-				var tx = session.GetSignedEscapeTransaction(clientSignature, cashout.ScriptPubKey);
+				var tx = session.GetSignedEscapeTransaction(clientSignature, fee, cashout.ScriptPubKey);
 
 				var correlation = GetCorrelation(session);
 				Tracker.AddressCreated(cycleId, TransactionType.ClientEscape, cashout.ScriptPubKey, correlation);

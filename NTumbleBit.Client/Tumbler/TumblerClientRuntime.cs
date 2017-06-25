@@ -49,7 +49,7 @@ namespace NTumbleBit.Client.Tumbler
 					throw new ConfigException("Please, fix rpc settings in " + configuration.ConfigurationFile);
 				}
 
-				var dbreeze = new DBreezeRepository(Path.Combine(configuration.DataDir, "db"));
+				var dbreeze = new DBreezeRepository(Path.Combine(configuration.DataDir, "db2"));
 				runtime.Cooperative = configuration.Cooperative;
 				runtime.Repository = dbreeze;
 				runtime._Disposables.Add(dbreeze);

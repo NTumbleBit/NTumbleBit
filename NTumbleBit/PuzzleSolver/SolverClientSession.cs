@@ -166,16 +166,11 @@ namespace NTumbleBit.PuzzleSolver
 				get;
 				set;
 			}
-			public PubKey FulfillKey
+			public ScriptCoin OfferCoin
 			{
 				get;
 				set;
 			}
-			public Money OfferTransactionFee
-			{
-				get;
-				set;
-			}			
 		}
 
 
@@ -203,10 +198,10 @@ namespace NTumbleBit.PuzzleSolver
 			}
 		}
 
-		public override void ConfigureEscrowedCoin(ScriptCoin escrowedCoin, Key escrowKey, Key redeemKey, Script redeemDestination)
+		public override void ConfigureEscrowedCoin(ScriptCoin escrowedCoin, Key escrowKey, Script redeemDestination)
 		{
 			AssertState(SolverClientStates.WaitingEscrow);
-			base.ConfigureEscrowedCoin(escrowedCoin, escrowKey, redeemKey, redeemDestination);
+			base.ConfigureEscrowedCoin(escrowedCoin, escrowKey, redeemDestination);
 			InternalState.Status = SolverClientStates.WaitingPuzzle;
 		}
 
@@ -310,10 +305,30 @@ namespace NTumbleBit.PuzzleSolver
 			if(offerInformation == null)
 				throw new ArgumentNullException(nameof(offerInformation));
 			AssertState(SolverClientStates.WaitingOffer);
-			InternalState.FulfillKey = offerInformation.FulfillKey;
-			InternalState.OfferTransactionFee = offerInformation.Fee;
-			Transaction tx = CreateUnsignedOfferTransaction();
-			var signature = tx.Inputs.AsIndexedInputs().First().Sign(InternalState.EscrowKey, InternalState.EscrowedCoin, SigHash.All);
+
+			var offerScript = new OfferScriptPubKeyParameters
+			{
+				Hashes = _PuzzleElements.OfType<RealPuzzle>().Select(p => p.Commitment.KeyHash).ToArray(),
+				FulfillKey = offerInformation.FulfillKey,
+				Expiration = EscrowScriptPubKeyParameters.GetFromScript(InternalState.EscrowedCoin.Redeem).LockTime,
+				RedeemKey = InternalState.EscrowKey.PubKey
+			}.ToScript();
+
+			var escrowCoin = InternalState.EscrowedCoin;
+			var txOut = new TxOut(escrowCoin.Amount - offerInformation.Fee, offerScript.Hash);
+			var offerCoin = new Coin(escrowCoin.Outpoint, txOut).ToScriptCoin(offerScript);
+
+
+			Transaction tx = new Transaction();
+			tx.Inputs.Add(new TxIn(escrowCoin.Outpoint));
+			tx.Outputs.Add(offerCoin.TxOut);
+
+			var escrow = EscrowScriptPubKeyParameters.GetFromScript(escrowCoin.Redeem);
+			escrowCoin = escrowCoin.Clone();
+			escrowCoin.OverrideScriptCode(escrow.GetInitiatorScriptCode());
+			var signature = tx.Inputs.AsIndexedInputs().First().Sign(InternalState.EscrowKey, escrowCoin, SigHash.All);
+
+			InternalState.OfferCoin = offerCoin;
 			InternalState.Status = SolverClientStates.WaitingPuzzleSolutions;
 			return signature;
 		}
@@ -324,66 +339,32 @@ namespace NTumbleBit.PuzzleSolver
 			var dummy = new Transaction();
 			dummy.Inputs.Add(new TxIn(InternalState.EscrowedCoin.Outpoint));
 			dummy.Outputs.Add(new TxOut());
-			return dummy.SignInput(InternalState.EscrowKey, InternalState.EscrowedCoin, SigHash.None | SigHash.AnyoneCanPay);
-		}
 
-		private Transaction CreateUnsignedOfferTransaction()
-		{
-			Script offer = CreateOfferScript();
-			var coin = InternalState.EscrowedCoin;
-			var tx = new Transaction();
-			tx.Inputs.Add(new TxIn(coin.Outpoint));
-			tx.Outputs.Add(new TxOut(coin.Amount, offer.Hash));
-			tx.Outputs[0].Value -= InternalState.OfferTransactionFee;
-			return tx;
+			var escrow = EscrowScriptPubKeyParameters.GetFromScript(InternalState.EscrowedCoin.Redeem);
+			var coin = InternalState.EscrowedCoin.Clone();
+			coin.OverrideScriptCode(escrow.GetInitiatorScriptCode());
+			return dummy.SignInput(InternalState.EscrowKey, coin, SigHash.None | SigHash.AnyoneCanPay);
 		}
 
 		public TrustedBroadcastRequest CreateOfferRedeemTransaction(FeeRate feeRate)
 		{
-			var coin = CreateUnsignedOfferTransaction().Outputs.AsCoins().First().ToScriptCoin(CreateOfferScript());
-
-			var unknownOutpoints = new OutPoint(uint256.Zero, 0);
 			Transaction tx = new Transaction();
-			tx.LockTime = CreateOfferScriptParameters().Expiration;
-			tx.Inputs.Add(new TxIn(unknownOutpoints));
+			tx.LockTime = EscrowScriptPubKeyParameters.GetFromScript(InternalState.EscrowedCoin.Redeem).LockTime;
+			tx.Inputs.Add(new TxIn());
 			tx.Inputs[0].Sequence = 0;
-			tx.Outputs.Add(new TxOut(coin.Amount, InternalState.RedeemDestination));
-			tx.Inputs[0].ScriptSig = new Script(OpcodeType.OP_0) + Op.GetPushOp(coin.Redeem.ToBytes());
-
-			var vSize = tx.GetVirtualSize() + 80; // Size without signature + the signature size
-			tx.Outputs[0].Value -= feeRate.GetFee(vSize);
+			tx.Outputs.Add(new TxOut(InternalState.OfferCoin.Amount, InternalState.RedeemDestination));
+			tx.Inputs[0].ScriptSig = new Script(
+				Op.GetPushOp(TrustedBroadcastRequest.PlaceholderSignature),
+				Op.GetPushOp(InternalState.OfferCoin.Redeem.ToBytes()));
+			tx.Outputs[0].Value -= feeRate.GetFee(tx.GetVirtualSize());
 
 			var redeemTransaction = new TrustedBroadcastRequest
 			{
-				Key = InternalState.RedeemKey,
-				PreviousScriptPubKey = coin.Redeem.Hash.ScriptPubKey,
+				Key = InternalState.EscrowKey,
+				PreviousScriptPubKey = InternalState.OfferCoin.ScriptPubKey,
 				Transaction = tx
 			};
-			//Strip redeem script information so we check if TrustedBroadcastRequest can sign correctly
-			redeemTransaction.Transaction = redeemTransaction.ReSign(new Coin(unknownOutpoints, coin.TxOut));
 			return redeemTransaction;
-		}
-
-
-		private Script CreateOfferScript()
-		{
-			return SolverScriptBuilder.CreateOfferScript(CreateOfferScriptParameters());
-		}
-
-		private OfferScriptPubKeyParameters CreateOfferScriptParameters()
-		{
-			return new OfferScriptPubKeyParameters
-			{
-				Hashes = _PuzzleElements.OfType<RealPuzzle>().Select(p => p.Commitment.KeyHash).ToArray(),
-				FulfillKey = InternalState.FulfillKey,
-				RedeemKey = InternalState.RedeemKey.PubKey,
-				Expiration = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(InternalState.EscrowedCoin.Redeem).LockTime
-			};
-		}
-
-		public Script GetOfferScriptPubKey()
-		{
-			return CreateOfferScript().Hash.ScriptPubKey;
 		}
 
 		public void CheckSolutions(Transaction[] transactions)

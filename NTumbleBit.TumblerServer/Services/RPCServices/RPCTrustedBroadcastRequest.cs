@@ -91,12 +91,15 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 		{
 			if(broadcast == null)
 				throw new ArgumentNullException(nameof(broadcast));
+			if(broadcast.Key != null && !broadcast.Transaction.Inputs.Any(i => i.PrevOut.IsNull))
+				throw new InvalidOperationException("One of the input should be null");
+
 			var address = broadcast.PreviousScriptPubKey?.GetDestinationAddress(RPCClient.Network);
 			if(address != null && TrackPreviousScriptPubKey)
 				RPCClient.ImportAddress(address, "", false);
+			
 			var height = _Cache.BlockCount;
 			var record = new Record();
-
 			//3 days expiration after now or broadcast date
 			var expirationBase = Math.Max(height, broadcast.BroadcastAt.Height);
 			expirationBase = Math.Max(expirationBase, broadcast.Transaction.LockTime.Height);
@@ -107,11 +110,6 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			record.Cycle = cycleStart;
 			record.Correlation = correlation;
 			AddBroadcast(record);
-			if(height < broadcast.BroadcastAt.Height)
-				return;
-
-			_Tracker.TransactionCreated(record.Cycle, record.TransactionType, broadcast.Transaction.GetHash(), record.Correlation);
-			_Broadcaster.Broadcast(broadcast.Transaction);
 		}
 
 		private void AddBroadcast(Record broadcast)

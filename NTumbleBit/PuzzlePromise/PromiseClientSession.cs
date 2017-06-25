@@ -54,7 +54,10 @@ namespace NTumbleBit.PuzzlePromise
 
 			public override uint256 GetHash()
 			{
-				return GetTransaction().GetSignatureHash(_Escrow);
+				var escrow = EscrowScriptPubKeyParameters.GetFromScript(_Escrow.Redeem);
+				var coin = _Escrow.Clone();
+				coin.OverrideScriptCode(escrow.GetInitiatorScriptCode());
+				return GetTransaction().GetSignatureHash(coin, SigHash.All);
 			}
 
 			public Transaction GetTransaction()
@@ -243,15 +246,14 @@ namespace NTumbleBit.PuzzlePromise
 			AssertState(PromiseClientStates.WaitingSignatureRequest);
 
 			Transaction cashout = new Transaction();
-			cashout.AddInput(new TxIn(InternalState.EscrowedCoin.Outpoint, Script.Empty));
-			cashout.AddOutput(new TxOut(Money.Zero, cashoutDestination));
-			
-			var tb = new TransactionBuilder();
-			tb.Extensions.Add(new EscrowBuilderExtension());
-			tb.AddCoins(InternalState.EscrowedCoin);
-			var size = tb.EstimateSize(cashout, true);
-			var fee = feeRate.GetFee(size);
-			cashout.Outputs[0].Value = InternalState.EscrowedCoin.Amount - fee;
+			cashout.AddInput(new TxIn(InternalState.EscrowedCoin.Outpoint));
+			cashout.Inputs[0].ScriptSig = new Script(
+				Op.GetPushOp(TrustedBroadcastRequest.PlaceholderSignature),
+				Op.GetPushOp(TrustedBroadcastRequest.PlaceholderSignature),
+				Op.GetPushOp(InternalState.EscrowedCoin.Redeem.ToBytes())
+				);
+			cashout.AddOutput(new TxOut(InternalState.EscrowedCoin.Amount, cashoutDestination));
+			cashout.Outputs[0].Value -= feeRate.GetFee(cashout.GetVirtualSize());
 
 
 			List<HashBase> hashes = new List<HashBase>();
@@ -289,14 +291,6 @@ namespace NTumbleBit.PuzzlePromise
 			InternalState.Status = PromiseClientStates.WaitingCommitments;
 			InternalState.FakeIndexes = fakeIndices;
 			return request;
-		}
-
-		private PubKey[] GetExpectedSigners()
-		{
-			var parameters = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(InternalState.EscrowedCoin.GetScriptCode());
-			if(parameters == null)
-				throw new ArgumentException("Invalid escrow");
-			return parameters.EscrowKeys;
 		}
 
 		public ClientRevelation Reveal(ServerCommitment[] commitments)
@@ -344,10 +338,9 @@ namespace NTumbleBit.PuzzlePromise
 
 				if(!new Puzzle(Parameters.ServerKey, fakeHash.Commitment.Puzzle).Verify(solution))
 					throw new PuzzleException("Invalid puzzle solution");
-
-				PubKey signer;
+				
 				ECDSASignature sig;
-				if(!IsValidSignature(solution, fakeHash, out signer, out sig))
+				if(!IsValidSignature(solution, fakeHash, out sig))
 					throw new PuzzleException("Invalid ECDSA signature");
 			}
 
@@ -375,23 +368,18 @@ namespace NTumbleBit.PuzzlePromise
 			return blindedPuzzle.PuzzleValue;
 		}
 
-		private bool IsValidSignature(PuzzleSolution solution, HashBase hash, out PubKey signer, out ECDSASignature signature)
+		private bool IsValidSignature(PuzzleSolution solution, HashBase hash, out ECDSASignature signature)
 		{
-			signer = null;
 			signature = null;
+			var escrow = EscrowScriptPubKeyParameters.GetFromScript(InternalState.EscrowedCoin.Redeem);
 			try
 			{
 				var key = new XORKey(solution);
 				signature = new ECDSASignature(key.XOR(hash.Commitment.Promise));
-				foreach(var sig in GetExpectedSigners())
-				{
-					if(sig.Verify(hash.GetHash(), signature))
-					{
-						signer = sig;
-						return true;
-					}
-				}
-				return false;
+				var ok = escrow.Initiator.Verify(hash.GetHash(), signature);
+				if(!ok)
+					signature = null;
+				return ok;
 			}
 			catch
 			{
@@ -414,19 +402,18 @@ namespace NTumbleBit.PuzzlePromise
 				var quotient = i == 0 ? BigInteger.One : InternalState.Quotients[i - 1]._Value;
 				cumul = cumul.Multiply(quotient).Mod(Parameters.ServerKey._Key.Modulus);
 				solution = new PuzzleSolution(cumul);
-				ECDSASignature signature;
-				PubKey signer;
-				if(!IsValidSignature(solution, hash, out signer, out signature))
+				ECDSASignature tumblerSig;
+				if(!IsValidSignature(solution, hash, out tumblerSig))
 					continue;
-
 				var transaction = hash.GetTransaction();
-				TransactionBuilder txBuilder = new TransactionBuilder();
-				txBuilder.Extensions.Add(new EscrowBuilderExtension());
-				txBuilder.AddCoins(InternalState.EscrowedCoin);
-				txBuilder.AddKeys(InternalState.EscrowKey);
-				txBuilder.AddKnownSignature(signer, signature);
-				txBuilder.SignTransactionInPlace(transaction);
-				yield return transaction;
+				var bobSig = transaction.SignInput(InternalState.EscrowKey, InternalState.EscrowedCoin);
+				transaction.Inputs[0].ScriptSig = new Script(
+					Op.GetPushOp(new TransactionSignature(tumblerSig, SigHash.All).ToBytes()),
+					Op.GetPushOp(bobSig.ToBytes()),
+					Op.GetPushOp(InternalState.EscrowedCoin.Redeem.ToBytes())
+					);
+				if(transaction.Inputs.AsIndexedInputs().First().VerifyScript(InternalState.EscrowedCoin))
+					yield return transaction;
 			}
 		}
 
@@ -462,11 +449,6 @@ namespace NTumbleBit.PuzzlePromise
 		{
 			if(state != InternalState.Status)
 				throw new InvalidOperationException("Invalid state, actual " + InternalState.Status + " while expected is " + state);
-		}
-
-		public override LockTime GetLockTime(CycleParameters cycle)
-		{
-			return cycle.GetTumblerLockTime();
 		}
 	}
 }

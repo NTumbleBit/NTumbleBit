@@ -197,14 +197,14 @@ namespace NTumbleBit.Client.Tumbler
 			return SignHashesAsync(cycleId, channelId, sigReq).GetAwaiter().GetResult();
 		}
 
-		public SolutionKey[] FulfillOffer(int cycleId, string channelId, TransactionSignature clientSignature)
+		public SolutionKey[] FulfillOffer(int cycleId, string channelId, TransactionSignature signature)
 		{
-			return FulfillOfferAsync(cycleId, channelId, clientSignature).GetAwaiter().GetResult();
+			return FulfillOfferAsync(cycleId, channelId, signature).GetAwaiter().GetResult();
 		}
 
-		public Task<SolutionKey[]> FulfillOfferAsync(int cycleId, string channelId, TransactionSignature clientSignature)
+		public Task<SolutionKey[]> FulfillOfferAsync(int cycleId, string channelId, TransactionSignature signature)
 		{
-			return SendAsync<SolutionKey[]>(HttpMethod.Post, clientSignature, "api/v1/tumblers/0/clientchannels/{0}/{1}/offer", cycleId, channelId);
+			return SendAsync<SolutionKey[]>(HttpMethod.Post, signature, "api/v1/tumblers/0/clientchannels/{0}/{1}/offer", cycleId, channelId);
 		}
 
 		public void GiveEscapeKey(int cycleId, string channelId, TransactionSignature signature)

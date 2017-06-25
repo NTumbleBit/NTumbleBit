@@ -21,7 +21,7 @@ namespace NTumbleBit
 			{
 				get;
 				set;
-			}
+			}			
 		}
 
 		protected State InternalState
@@ -43,12 +43,7 @@ namespace NTumbleBit
 				throw new ArgumentNullException(nameof(escrowedCoin));
 			if(escrowKey == null)
 				throw new ArgumentNullException(nameof(escrowKey));
-			var redeem = EscrowScriptBuilder.ExtractEscrowScriptPubKeyParameters(escrowedCoin.Redeem);
-			if(redeem == null)
-				throw new PuzzleException("Invalid escrow");
-			if(!redeem.EscrowKeys.Contains(escrowKey.PubKey))
-				throw new PuzzleException("Invalid escrow");
-
+						
 			InternalState.EscrowKey = escrowKey;
 			InternalState.EscrowedCoin = escrowedCoin;
 		}
@@ -60,7 +55,5 @@ namespace NTumbleBit
 				return InternalState.EscrowedCoin;
 			}
 		}
-
-		public abstract LockTime GetLockTime(CycleParameters cycle);
 	}
 }

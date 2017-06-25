@@ -13,19 +13,23 @@ namespace NTumbleBit.Client.Tumbler.Models
 {
 	public class SignVoucherRequest
 	{
+		public int Cycle
+		{
+			get; set;
+		}
 		public int KeyReference
 		{
 			get; set;
 		}
-		public PubKey TumblerEscrowPubKey
-		{
-			get; set;
-		}
-		public ClientEscrowInformation ClientEscrowInformation
+		public PuzzleValue UnsignedVoucher
 		{
 			get; set;
 		}
 		public MerkleBlock MerkleProof
+		{
+			get; set;
+		}
+		public PubKey ClientEscrowKey
 		{
 			get; set;
 		}

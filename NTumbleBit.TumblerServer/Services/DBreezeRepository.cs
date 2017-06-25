@@ -64,19 +64,12 @@ namespace NTumbleBit.Client.Tumbler.Services
 
 		private string Unzip(byte[] bytes)
 		{
-			try
+			MemoryStream ms = new MemoryStream(bytes);
+			using(GZipStream gzip = new GZipStream(ms, CompressionMode.Decompress))
 			{
-				MemoryStream ms = new MemoryStream(bytes);
-				using(GZipStream gzip = new GZipStream(ms, CompressionMode.Decompress))
-				{
-					StreamReader reader = new StreamReader(gzip, Encoding.UTF8);
-					var unzipped = reader.ReadToEnd();
-					return unzipped;
-				}
-			}
-			catch(InvalidDataException) //Temporary, old deployment have non zipped data
-			{
-				return Encoding.UTF8.GetString(bytes);
+				StreamReader reader = new StreamReader(gzip, Encoding.UTF8);
+				var unzipped = reader.ReadToEnd();
+				return unzipped;
 			}
 		}
 

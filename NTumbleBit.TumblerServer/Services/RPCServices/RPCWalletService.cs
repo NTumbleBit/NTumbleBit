@@ -51,7 +51,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			Transaction tx = new Transaction();
 			tx.Outputs.Add(txOut);
 
-			var changeAddress = BitcoinAddress.Create(_RPCClient.SendCommand("getrawchangeaddress").ResultString, _RPCClient.Network);
+			var changeAddress = _RPCClient.GetRawChangeAddress();
 
 			FundRawTransactionResponse response = null;
 			try

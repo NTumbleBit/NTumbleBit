@@ -6,13 +6,53 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit
 {
+	//<Bob.PubKey>
+	//OP_DEPTH OP_3 OP_EQUAL
+	//OP_IF
+
+	//	OP_SWAP
+	//	<Alice.PubKey> OP_CHECKSIGVERIFY OP_CODESEPARATOR
+	//OP_ELSE
+	//    0 OP_CLTV OP_DROP
+	//OP_ENDIF
+	//OP_CHECKSIG
 	public class EscrowScriptPubKeyParameters
 	{
-		public PubKey[] EscrowKeys
+
+		public EscrowScriptPubKeyParameters()
+		{
+
+		}
+
+		public EscrowScriptPubKeyParameters(PubKey initiator, PubKey receiver, LockTime lockTime)
+		{
+			this.Initiator = initiator;
+			this.Receiver = receiver;
+			this.LockTime = lockTime;
+		}
+
+		public static EscrowScriptPubKeyParameters GetFromScript(Script script)
+		{
+			EscrowScriptPubKeyParameters parameters = new EscrowScriptPubKeyParameters();
+			try
+			{
+				var data = script.ToOps().Where(o => o.PushData != null).ToArray();
+				parameters.Initiator = new PubKey(data[0].PushData);
+				parameters.Receiver = new PubKey(data[2].PushData);
+				parameters.LockTime = new LockTime(data[3].GetInt().Value);
+				//Verify it is the same as if we had done it
+				if(parameters.ToScript() != script)
+					throw new Exception();
+				return parameters;
+			}
+			catch { return null; }
+		}
+		public PubKey Initiator
 		{
 			get; set;
-		}
-		public PubKey RedeemKey
+		}		
+
+		public PubKey Receiver
 		{
 			get; set;
 		}
@@ -20,117 +60,76 @@ namespace NTumbleBit
 		{
 			get; set;
 		}
-	}
-	public class EscrowScriptBuilder
-	{
-		public static Script CreateEscrow(PubKey[] keys, PubKey redeem, LockTime timeout)
+
+		public uint GetCorrelation()
 		{
-			keys = keys.OrderBy(o => o.ToHex()).ToArray();
+			return new uint160(ToScript().Hash.ToString()).GetLow32();
+		}
+
+		public Script ToScript()
+		{
+			if(Initiator == null || Receiver == null || LockTime == default(LockTime))
+				throw new InvalidOperationException("Parameters are incomplete");
+			EscrowScriptPubKeyParameters parameters = new EscrowScriptPubKeyParameters();
 			List<Op> ops = new List<Op>();
+			ops.Add(Op.GetPushOp(Initiator.ToBytes()));
 			ops.Add(OpcodeType.OP_DEPTH);
 			ops.Add(OpcodeType.OP_3);
 			ops.Add(OpcodeType.OP_EQUAL);
 			ops.Add(OpcodeType.OP_IF);
-			ops.Add(OpcodeType.OP_2);
-			ops.Add(Op.GetPushOp(keys[0].ToBytes()));
-			ops.Add(Op.GetPushOp(keys[1].ToBytes()));
-			ops.Add(OpcodeType.OP_2);
-			ops.Add(OpcodeType.OP_CHECKMULTISIG);
+			{
+				ops.Add(OpcodeType.OP_SWAP);
+				ops.Add(Op.GetPushOp(Receiver.ToBytes()));
+				ops.Add(OpcodeType.OP_CHECKSIGVERIFY);
+				ops.Add(OpcodeType.OP_CODESEPARATOR);
+			}
 			ops.Add(OpcodeType.OP_ELSE);
-			ops.Add(Op.GetPushOp(timeout));
-			ops.Add(OpcodeType.OP_CHECKLOCKTIMEVERIFY);
-			ops.Add(OpcodeType.OP_DROP);
-			ops.Add(Op.GetPushOp(redeem.ToBytes()));
-			ops.Add(OpcodeType.OP_CHECKSIG);
+			{
+				ops.Add(Op.GetPushOp(LockTime));
+				ops.Add(OpcodeType.OP_DROP);
+			}
 			ops.Add(OpcodeType.OP_ENDIF);
+			ops.Add(OpcodeType.OP_CHECKSIG);
 			return new Script(ops.ToArray());
 		}
-		public static EscrowScriptPubKeyParameters ExtractEscrowScriptPubKeyParameters(Script script)
+
+		public Script GetInitiatorScriptCode()
 		{
-			var ops = script.ToOps().ToArray();
-			if(ops.Length != 16)
-				return null;
-			try
+			List<Op> ops = new List<Op>();
+			ops.Add(OpcodeType.OP_ELSE);
 			{
-				if(ops[0].Code != OpcodeType.OP_DEPTH ||
-					ops[1].Code != OpcodeType.OP_3 ||
-					ops[2].Code != OpcodeType.OP_EQUAL ||
-					ops[3].Code != OpcodeType.OP_IF ||
-					ops[4].Code != OpcodeType.OP_2)
-					return null;
-
-				var k1 = new PubKey(ops[5].PushData);
-				var k2 = new PubKey(ops[6].PushData);
-
-				if(ops[7].Code != OpcodeType.OP_2 ||
-					ops[8].Code != OpcodeType.OP_CHECKMULTISIG ||
-					ops[9].Code != OpcodeType.OP_ELSE)
-					return null;
-
-				var timeout = new LockTime((uint)ops[10].GetLong().Value);
-
-				if(ops[11].Code != OpcodeType.OP_CHECKLOCKTIMEVERIFY ||
-					ops[12].Code != OpcodeType.OP_DROP)
-					return null;
-
-				var redeem = new PubKey(ops[13].PushData);
-
-				if(ops[14].Code != OpcodeType.OP_CHECKSIG ||
-					ops[15].Code != OpcodeType.OP_ENDIF)
-					return null;
-				var keys = new[] { k1, k2 };
-				var orderedKeys = keys.OrderBy(o => o.ToHex()).ToArray();
-				if(!keys.SequenceEqual(orderedKeys))
-					return null;
-				return new EscrowScriptPubKeyParameters
-				{
-					EscrowKeys = new[] { k1, k2 },
-					LockTime = timeout,
-					RedeemKey = redeem
-				};
+				ops.Add(Op.GetPushOp(LockTime));
+				ops.Add(OpcodeType.OP_DROP);
 			}
-			catch
-			{
-				return null;
-			}
+			ops.Add(OpcodeType.OP_ENDIF);
+			ops.Add(OpcodeType.OP_CHECKSIG);
+			return new Script(ops.ToArray());
 		}
 
-		public static TransactionSignature[] ExtractScriptSigParameters(Script scriptSig)
+		public override bool Equals(object obj)
 		{
-			var ops = scriptSig.ToOps().ToArray();
-			if(ops.Length == 3)
-			{
-				return PayToMultiSigTemplate.Instance.ExtractScriptSigParameters(scriptSig);
-			}
-			else if(ops.Length == 1)
-			{
-				var sig = new TransactionSignature[1];
-				try
-				{
-					if(ops[0].Code != OpcodeType.OP_0)
-						sig[0] = new TransactionSignature(ops[0].PushData);
-				}
-				catch { return null; }
-				return sig;
-			}
-			else
-				return null;
+			EscrowScriptPubKeyParameters item = obj as EscrowScriptPubKeyParameters;
+			if(item == null)
+				return false;
+			return ToScript().Equals(item.ToScript());
+		}
+		public static bool operator ==(EscrowScriptPubKeyParameters a, EscrowScriptPubKeyParameters b)
+		{
+			if(System.Object.ReferenceEquals(a, b))
+				return true;
+			if(((object)a == null) || ((object)b == null))
+				return false;
+			return a.ToScript() == b.ToScript();
 		}
 
-		public static Script GenerateScriptSig(TransactionSignature[] signatures)
+		public static bool operator !=(EscrowScriptPubKeyParameters a, EscrowScriptPubKeyParameters b)
 		{
-			if(signatures.Length == 2)
-			{
-				return PayToMultiSigTemplate.Instance.GenerateScriptSig(signatures);
-			}
-			else if(signatures.Length == 1)
-			{
-				if(signatures[0] == null)
-					return new Script(OpcodeType.OP_0);
-				return PayToPubkeyTemplate.Instance.GenerateScriptSig(signatures[0]);
-			}
-			else
-				throw new ArgumentException("Invalid signature count");
+			return !(a == b);
+		}
+
+		public override int GetHashCode()
+		{
+			return ToScript().GetHashCode();
 		}
 	}
 }

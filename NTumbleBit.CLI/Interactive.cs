@@ -218,8 +218,6 @@ namespace NTumbleBit.CLI
 				{
 					if(knownTransaction.BroadcastAt != 0)
 						Console.WriteLine("Planned for " + knownTransaction.BroadcastAt.ToString());
-					if(tx.Inputs[0].PrevOut.Hash == uint256.Zero)
-						Console.WriteLine("Parent transaction yet unknown");
 				}
 				if(tx == null)
 				{

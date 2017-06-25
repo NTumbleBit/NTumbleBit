@@ -21,9 +21,5 @@ namespace NTumbleBit.PuzzleSolver
 		{
 			get; set;
 		}
-		public TransactionSignature Signature
-		{
-			get; set;
-		}
 	}
 }

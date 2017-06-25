@@ -1,4 +1,5 @@
-﻿using NBitcoin.RPC;
+﻿using NBitcoin;
+using NBitcoin.RPC;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -16,6 +17,11 @@ namespace NTumbleBit
 				Method = commandName,
 				Params = parameters
 			}, throwIfRPCError: false);
+		}
+
+		public static ScriptCoin Clone(this ScriptCoin scriptCoin)
+		{
+			return new ScriptCoin(scriptCoin, scriptCoin.Redeem);
 		}
 	}
 }

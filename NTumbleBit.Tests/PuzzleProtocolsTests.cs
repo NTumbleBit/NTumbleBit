@@ -163,7 +163,6 @@ namespace NTumbleBit.Tests
 			RsaKey key = TestKeys.Default;
 
 			Key serverEscrow = new Key();
-			Key serverRedeem = new Key();
 			Key clientEscrow = new Key();
 
 			var parameters = new PromiseParameters(key.PubKey)
@@ -175,14 +174,14 @@ namespace NTumbleBit.Tests
 			var client = new PromiseClientSession(parameters);
 			var server = new PromiseServerSession(parameters);
 
-			var coin = CreateEscrowCoin(serverEscrow.PubKey, clientEscrow.PubKey, serverRedeem.PubKey);
+			var coin = CreateEscrowCoin(serverEscrow.PubKey, clientEscrow.PubKey);
 
 			client.ConfigureEscrowedCoin(coin, clientEscrow);
 			SignaturesRequest request = client.CreateSignatureRequest(clientEscrow.PubKey.Hash, FeeRate);
 			RoundTrip(ref client, parameters);
 			RoundTrip(ref request);
 
-			server.ConfigureEscrowedCoin(coin, serverEscrow, serverRedeem, new Key().ScriptPubKey);
+			server.ConfigureEscrowedCoin(coin, serverEscrow, new Key().ScriptPubKey);
 			PuzzlePromise.ServerCommitment[] commitments = server.SignHashes(request);
 			RoundTrip(ref server, parameters);
 			RoundTrip(ref commitments);
@@ -205,33 +204,26 @@ namespace NTumbleBit.Tests
 			Assert.True(transactions.Length == parameters.RealTransactionCount);
 
 
+			var escrow = server.GetInternalState().EscrowedCoin;
 			// In case things do not go well and timeout is hit...
 			var redeemTransaction = server.CreateRedeemTransaction(FeeRate);
+			var resigned = redeemTransaction.ReSign(escrow);
 			TransactionBuilder bb = new TransactionBuilder();
 			bb.AddCoins(server.GetInternalState().EscrowedCoin);
-			Assert.True(bb.Verify(redeemTransaction.Transaction));
+			Assert.True(bb.Verify(resigned));
 
 			//Check can ve reclaimed if malleated
 			bb = new TransactionBuilder();
-			var escrow = server.GetInternalState().EscrowedCoin;
 			escrow.Outpoint = new OutPoint(escrow.Outpoint.Hash, 10);
 			bb.AddCoins(escrow);
-			var resigned = redeemTransaction.ReSign(escrow);
+			resigned = redeemTransaction.ReSign(escrow);
 			Assert.False(bb.Verify(redeemTransaction.Transaction));
 			Assert.True(bb.Verify(resigned));
-
-			foreach(var tx in transactions)
-			{
-				TransactionBuilder builder = new TransactionBuilder();
-				builder.Extensions.Add(new EscrowBuilderExtension());
-				builder.AddCoins(coin);
-				Assert.True(builder.Verify(tx));
-			}
 		}
 
-		private ScriptCoin CreateEscrowCoin(PubKey escrow1, PubKey escrow2, PubKey redeemKey)
+		private ScriptCoin CreateEscrowCoin(PubKey initiator, PubKey receiver)
 		{
-			var redeem = EscrowScriptBuilder.CreateEscrow(new[] { escrow1, escrow2 }, redeemKey, new LockTime(10));
+			var redeem = new EscrowScriptPubKeyParameters(initiator, receiver, new LockTime(10)).ToScript();
 			var scriptCoin = new Coin(new OutPoint(new uint256(RandomUtils.GetBytes(32)), 0),
 				new TxOut
 				{
@@ -259,11 +251,10 @@ namespace NTumbleBit.Tests
 
 			var clientEscrow = new Key();
 			var serverEscrow = new Key();
-			var clientRedeem = new Key();
 
-			var escrow = CreateEscrowCoin(clientEscrow.PubKey, serverEscrow.PubKey, clientRedeem.PubKey);
+			var escrow = CreateEscrowCoin(clientEscrow.PubKey, serverEscrow.PubKey);
 			var redeemDestination = new Key().ScriptPubKey;
-			client.ConfigureEscrowedCoin(escrow, clientEscrow, clientRedeem, redeemDestination);
+			client.ConfigureEscrowedCoin(escrow, clientEscrow, redeemDestination);
 			client.AcceptPuzzle(puzzle.PuzzleValue);
 			RoundTrip(ref client, parameters);
 			Assert.True(client.GetInternalState().RedeemDestination == redeemDestination);
@@ -293,51 +284,41 @@ namespace NTumbleBit.Tests
 			RoundTrip(ref server, parameters, key);
 
 			var clientOfferSig = client.SignOffer(offerInformation);
-			
+
 
 			//Verify if the scripts are correctly created
-			var fulfill = server.FulfillOffer(clientOfferSig, new Key().ScriptPubKey, FeeRate);
+			var fulfill = server.FulfillOffer(clientOfferSig, new Key().ScriptPubKey, FeeRate);			
 			var offerRedeem = client.CreateOfferRedeemTransaction(FeeRate);
 
 			var offerTransaction = server.GetSignedOfferTransaction();
 			var offerCoin = offerTransaction.Transaction.Outputs.AsCoins().First();
+			var resigned = offerTransaction.ReSign(client.EscrowedCoin);
 
 			TransactionBuilder txBuilder = new TransactionBuilder();
 			txBuilder.AddCoins(client.EscrowedCoin);
-			Assert.True(txBuilder.Verify(offerTransaction.Transaction));
+			Assert.True(txBuilder.Verify(resigned));
 
+			resigned = fulfill.ReSign(offerCoin);
 			txBuilder = new TransactionBuilder();
 			txBuilder.AddCoins(offerCoin);
-			Assert.True(txBuilder.Verify(fulfill.Transaction));
+			Assert.True(txBuilder.Verify(resigned));
 
 			var offerRedeemTx = offerRedeem.ReSign(offerCoin);
 			txBuilder = new TransactionBuilder();
 			txBuilder.AddCoins(offerCoin);
 			Assert.True(txBuilder.Verify(offerRedeemTx));
 
-			//Check if can resign fulfill in case offer get malleated
-			offerTransaction.Transaction.LockTime = new LockTime(1);
-			offerCoin = offerTransaction.Transaction.Outputs.AsCoins().First();
-
-			fulfill.Transaction.Inputs[0].PrevOut = offerCoin.Outpoint;
-			txBuilder = new TransactionBuilder();
-			txBuilder.Extensions.Add(new OfferBuilderExtension());
-			txBuilder.AddKeys(server.GetInternalState().FulfillKey);
-			txBuilder.AddCoins(offerCoin);
-			txBuilder.SignTransactionInPlace(fulfill.Transaction);
-			Assert.True(txBuilder.Verify(fulfill.Transaction));
-
-			offerRedeemTx.Inputs[0].PrevOut = offerCoin.Outpoint;
-			txBuilder = new TransactionBuilder();
-			txBuilder.Extensions.Add(new OfferBuilderExtension());
-			txBuilder.AddKeys(offerRedeem.Key);
-			txBuilder.AddCoins(offerCoin);
-			txBuilder.SignTransactionInPlace(offerRedeemTx);
-			Assert.True(txBuilder.Verify(offerRedeemTx));
-			////////////////////////////////////////////////			
 
 			client.CheckSolutions(fulfill.Transaction);
 			RoundTrip(ref client, parameters);
+
+			var clientEscapeSignature = client.SignEscape();
+			var escapeTransaction = server.GetSignedEscapeTransaction(clientEscapeSignature, FeeRate, new Key().ScriptPubKey);
+
+			txBuilder = new TransactionBuilder();
+			txBuilder.AddCoins(client.EscrowedCoin);
+			Assert.True(txBuilder.Verify(escapeTransaction));
+
 			var solution = client.GetSolution();
 			RoundTrip(ref client, parameters);
 			Assert.True(solution == expectedSolution);
