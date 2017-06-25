@@ -208,7 +208,7 @@ namespace NTumbleBit.ClassicTumbler
 		public PromiseClientSession ReceiveTumblerEscrowedCoin(ScriptCoin escrowedCoin)
 		{
 			AssertState(TumblerClientSessionStates.WaitingTumblerEscrow);
-			var escrow = EscrowScriptPubKeyParameters.GetFromScript(escrowedCoin.Redeem);
+			var escrow = EscrowScriptPubKeyParameters.GetFromCoin(escrowedCoin);
 			var expectedEscrow = new EscrowScriptPubKeyParameters()
 			{
 				Initiator = escrow?.Initiator,

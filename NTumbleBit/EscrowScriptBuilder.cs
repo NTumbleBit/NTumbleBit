@@ -30,8 +30,11 @@ namespace NTumbleBit
 			this.Receiver = receiver;
 			this.LockTime = lockTime;
 		}
-
-		public static EscrowScriptPubKeyParameters GetFromScript(Script script)
+		public static EscrowScriptPubKeyParameters GetFromCoin(ScriptCoin coin)
+		{
+			return GetFromScript(coin.Redeem);
+		}
+		private static EscrowScriptPubKeyParameters GetFromScript(Script script)
 		{
 			EscrowScriptPubKeyParameters parameters = new EscrowScriptPubKeyParameters();
 			try
@@ -50,7 +53,7 @@ namespace NTumbleBit
 		public PubKey Initiator
 		{
 			get; set;
-		}		
+		}
 
 		public PubKey Receiver
 		{

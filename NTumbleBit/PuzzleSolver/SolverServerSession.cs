@@ -86,7 +86,7 @@ namespace NTumbleBit.PuzzleSolver
 
 			public PubKey GetClientEscrowPubKey()
 			{
-				return EscrowScriptPubKeyParameters.GetFromScript(EscrowedCoin.Redeem).Initiator;
+				return EscrowScriptPubKeyParameters.GetFromCoin(EscrowedCoin).Initiator;
 			}
 		}
 
@@ -261,7 +261,7 @@ namespace NTumbleBit.PuzzleSolver
 
 
 			var escrow = InternalState.EscrowedCoin;
-			var escrowInformation = EscrowScriptPubKeyParameters.GetFromScript(InternalState.EscrowedCoin.Redeem);
+			var escrowInformation = EscrowScriptPubKeyParameters.GetFromCoin(InternalState.EscrowedCoin);
 			var redeem = new OfferScriptPubKeyParameters
 			{
 				Hashes = InternalState.SolvedPuzzles.Select(p => p.SolutionKey.GetHash()).ToArray(),
@@ -368,7 +368,7 @@ namespace NTumbleBit.PuzzleSolver
 
 		private PubKey AssertValidSignature(TransactionSignature clientSignature, Transaction offer)
 		{
-			var escrow = EscrowScriptPubKeyParameters.GetFromScript(InternalState.EscrowedCoin.Redeem);
+			var escrow = EscrowScriptPubKeyParameters.GetFromCoin(InternalState.EscrowedCoin);
 			var coin = InternalState.EscrowedCoin.Clone();
 			coin.OverrideScriptCode(escrow.GetInitiatorScriptCode());
 			var signedHash = offer.Inputs.AsIndexedInputs().First().GetSignatureHash(coin, clientSignature.SigHash);
@@ -411,7 +411,7 @@ namespace NTumbleBit.PuzzleSolver
 
 		private OfferScriptPubKeyParameters CreateOfferScriptParameters()
 		{
-			var escrow = EscrowScriptPubKeyParameters.GetFromScript(InternalState.EscrowedCoin.Redeem);
+			var escrow = EscrowScriptPubKeyParameters.GetFromCoin(InternalState.EscrowedCoin);
 			return new OfferScriptPubKeyParameters
 			{
 				Hashes = InternalState.SolvedPuzzles.Select(p => p.SolutionKey.GetHash()).ToArray(),

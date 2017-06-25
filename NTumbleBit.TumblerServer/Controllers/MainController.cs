@@ -359,7 +359,7 @@ namespace NTumbleBit.TumblerServer.Controllers
 
 		private static uint GetCorrelation(SolverServerSession session)
 		{
-			return EscrowScriptPubKeyParameters.GetFromScript(session.EscrowedCoin.Redeem).GetCorrelation();
+			return EscrowScriptPubKeyParameters.GetFromCoin(session.EscrowedCoin).GetCorrelation();
 		}
 
 

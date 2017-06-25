@@ -54,7 +54,7 @@ namespace NTumbleBit.PuzzlePromise
 
 			public override uint256 GetHash()
 			{
-				var escrow = EscrowScriptPubKeyParameters.GetFromScript(_Escrow.Redeem);
+				var escrow = EscrowScriptPubKeyParameters.GetFromCoin(_Escrow);
 				var coin = _Escrow.Clone();
 				coin.OverrideScriptCode(escrow.GetInitiatorScriptCode());
 				return GetTransaction().GetSignatureHash(coin, SigHash.All);
@@ -371,7 +371,7 @@ namespace NTumbleBit.PuzzlePromise
 		private bool IsValidSignature(PuzzleSolution solution, HashBase hash, out ECDSASignature signature)
 		{
 			signature = null;
-			var escrow = EscrowScriptPubKeyParameters.GetFromScript(InternalState.EscrowedCoin.Redeem);
+			var escrow = EscrowScriptPubKeyParameters.GetFromCoin(InternalState.EscrowedCoin);
 			try
 			{
 				var key = new XORKey(solution);

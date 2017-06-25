@@ -50,7 +50,7 @@ namespace NTumbleBit
 				throw new ArgumentNullException(nameof(escrowKey));
 			if(redeemDestination == null)
 				throw new ArgumentNullException(nameof(redeemDestination));
-			var escrow = EscrowScriptPubKeyParameters.GetFromScript(escrowedCoin.Redeem);
+			var escrow = EscrowScriptPubKeyParameters.GetFromCoin(escrowedCoin);
 			if(escrow == null || 
 				escrow.Initiator != escrowKey.PubKey)
 				throw new PuzzleException("Invalid escrow");
@@ -64,7 +64,7 @@ namespace NTumbleBit
 			if(feeRate == null)
 				throw new ArgumentNullException(nameof(feeRate));
 
-			var escrow = EscrowScriptPubKeyParameters.GetFromScript(InternalState.EscrowedCoin.Redeem);
+			var escrow = EscrowScriptPubKeyParameters.GetFromCoin(InternalState.EscrowedCoin);
 			var escrowCoin = InternalState.EscrowedCoin;
 			Transaction tx = new Transaction();
 			tx.LockTime = escrow.LockTime;

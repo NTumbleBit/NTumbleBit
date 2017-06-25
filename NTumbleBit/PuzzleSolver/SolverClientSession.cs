@@ -310,7 +310,7 @@ namespace NTumbleBit.PuzzleSolver
 			{
 				Hashes = _PuzzleElements.OfType<RealPuzzle>().Select(p => p.Commitment.KeyHash).ToArray(),
 				FulfillKey = offerInformation.FulfillKey,
-				Expiration = EscrowScriptPubKeyParameters.GetFromScript(InternalState.EscrowedCoin.Redeem).LockTime,
+				Expiration = EscrowScriptPubKeyParameters.GetFromCoin(InternalState.EscrowedCoin).LockTime,
 				RedeemKey = InternalState.EscrowKey.PubKey
 			}.ToScript();
 
@@ -323,7 +323,7 @@ namespace NTumbleBit.PuzzleSolver
 			tx.Inputs.Add(new TxIn(escrowCoin.Outpoint));
 			tx.Outputs.Add(offerCoin.TxOut);
 
-			var escrow = EscrowScriptPubKeyParameters.GetFromScript(escrowCoin.Redeem);
+			var escrow = EscrowScriptPubKeyParameters.GetFromCoin(escrowCoin);
 			escrowCoin = escrowCoin.Clone();
 			escrowCoin.OverrideScriptCode(escrow.GetInitiatorScriptCode());
 			var signature = tx.Inputs.AsIndexedInputs().First().Sign(InternalState.EscrowKey, escrowCoin, SigHash.All);
@@ -340,7 +340,7 @@ namespace NTumbleBit.PuzzleSolver
 			dummy.Inputs.Add(new TxIn(InternalState.EscrowedCoin.Outpoint));
 			dummy.Outputs.Add(new TxOut());
 
-			var escrow = EscrowScriptPubKeyParameters.GetFromScript(InternalState.EscrowedCoin.Redeem);
+			var escrow = EscrowScriptPubKeyParameters.GetFromCoin(InternalState.EscrowedCoin);
 			var coin = InternalState.EscrowedCoin.Clone();
 			coin.OverrideScriptCode(escrow.GetInitiatorScriptCode());
 			return dummy.SignInput(InternalState.EscrowKey, coin, SigHash.None | SigHash.AnyoneCanPay);
@@ -349,7 +349,7 @@ namespace NTumbleBit.PuzzleSolver
 		public TrustedBroadcastRequest CreateOfferRedeemTransaction(FeeRate feeRate)
 		{
 			Transaction tx = new Transaction();
-			tx.LockTime = EscrowScriptPubKeyParameters.GetFromScript(InternalState.EscrowedCoin.Redeem).LockTime;
+			tx.LockTime = EscrowScriptPubKeyParameters.GetFromCoin(InternalState.EscrowedCoin).LockTime;
 			tx.Inputs.Add(new TxIn());
 			tx.Inputs[0].Sequence = 0;
 			tx.Outputs.Add(new TxOut(InternalState.OfferCoin.Amount, InternalState.RedeemDestination));
