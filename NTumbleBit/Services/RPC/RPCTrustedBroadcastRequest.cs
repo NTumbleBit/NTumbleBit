@@ -152,11 +152,13 @@ namespace NTumbleBit.Services.RPC
 			var height = _Cache.BlockCount;
 
 			DateTimeOffset startTime = DateTimeOffset.UtcNow;
+			int totalEntries = 0;
 			HashSet<uint256> knownBroadcastedSet = new HashSet<uint256>(knownBroadcasted ?? new uint256[0]);
 
 			List<Transaction> broadcasted = new List<Transaction>();
 			foreach(var broadcast in GetRequests())
 			{
+				totalEntries++;
 				if(broadcast.Request.PreviousScriptPubKey == null)
 				{
 					var transaction = broadcast.Request.Transaction;
@@ -206,6 +208,8 @@ namespace NTumbleBit.Services.RPC
 			}
 
 			knownBroadcasted = knownBroadcastedSet.ToArray();
+
+			Logs.Broadcasters.LogInformation($"Trusted Broadcaster is monitoring {totalEntries} entries in {(long)(DateTimeOffset.UtcNow - startTime).TotalSeconds} seconds");
 			return broadcasted.ToArray();
 		}
 
