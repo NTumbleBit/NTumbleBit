@@ -1,9 +1,11 @@
 ﻿using NBitcoin.RPC;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using NBitcoin;
+using NTumbleBit.Logging;
 
 namespace NTumbleBit.Services.RPC
 {
@@ -76,6 +78,8 @@ namespace NTumbleBit.Services.RPC
 		}
 		public Transaction[] TryBroadcast(ref uint256[] knownBroadcasted)
 		{
+			var startTime = DateTimeOffset.UtcNow;
+			int totalEntries = 0;
 			List<Transaction> broadcasted = new List<Transaction>();
 
 			HashSet<uint256> knownBroadcastedSet = new HashSet<uint256>(knownBroadcasted ?? new uint256[0]);
@@ -88,6 +92,7 @@ namespace NTumbleBit.Services.RPC
 
 			foreach(var tx in GetTransactions())
 			{
+				totalEntries++;
 				if(!knownBroadcastedSet.Contains(tx.Transaction.GetHash()) &&
 					TryBroadcastCore(tx, height))
 				{
@@ -95,8 +100,8 @@ namespace NTumbleBit.Services.RPC
 				}
 				knownBroadcastedSet.Add(tx.Transaction.GetHash());
 			}
-
 			knownBroadcasted = knownBroadcastedSet.ToArray();
+			Logs.Broadcasters.LogInformation($"Broadcasted {broadcasted.Count} transaction(s), monitoring {totalEntries} entries in {(long)(DateTimeOffset.UtcNow - startTime).TotalSeconds} seconds");
 			return broadcasted.ToArray();
 		}
 
@@ -125,6 +130,7 @@ namespace NTumbleBit.Services.RPC
 			{
 				RPCClient.SendRawTransaction(tx.Transaction);
 				_Cache.ImportTransaction(tx.Transaction, 0);
+				Logs.Broadcasters.LogInformation($"Broadcasted {tx.Transaction.GetHash()}");
 				return true;
 			}
 			catch(RPCException ex)

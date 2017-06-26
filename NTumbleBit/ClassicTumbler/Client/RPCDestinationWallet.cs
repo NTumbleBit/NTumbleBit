@@ -1,10 +1,12 @@
 ﻿using NBitcoin.RPC;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using NBitcoin;
 using Newtonsoft.Json.Linq;
+using NTumbleBit.Logging;
 
 namespace NTumbleBit.ClassicTumbler.Client
 {
@@ -26,7 +28,9 @@ namespace NTumbleBit.ClassicTumbler.Client
 			var result = (JObject)_RPC.SendCommand(RPCOperations.validateaddress, address.ToString()).Result;
 			if(result["hdkeypath"] == null)
 				return null;
-			return new KeyPath(result["hdkeypath"].Value<string>());
+			var path = new KeyPath(result["hdkeypath"].Value<string>());
+			Logs.Wallet.LogInformation($"Created address {address} of with HD path {path}");
+			return path;
 		}
 
 		public Script GetNewDestination()

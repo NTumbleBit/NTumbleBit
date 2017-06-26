@@ -1,5 +1,7 @@
 ﻿using NBitcoin;
+using Microsoft.Extensions.Logging;
 using NBitcoin.DataEncoders;
+using NTumbleBit.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -75,11 +77,24 @@ namespace NTumbleBit.Services
 		}
 		private readonly IRepository _Repo;
 
-		public Tracker(IRepository repo)
+		public Tracker(IRepository repo, Network network)
 		{
 			if(repo == null)
 				throw new ArgumentNullException("repo");
+			if(network == null)
+				throw new ArgumentNullException("network");
 			_Repo = repo;
+			_Network = network;
+		}
+
+
+		private readonly Network _Network;
+		public Network Network
+		{
+			get
+			{
+				return _Network;
+			}
 		}
 
 		private static string GetCyclePartition(int cycleId)
@@ -98,8 +113,10 @@ namespace NTumbleBit.Services
 				Correlation = correlation,
 			};
 
+			Logs.Tracker.LogInformation($"Tracking transaction {type} of cycle {cycleId} with correlation {correlation} ({txId})");
+
 			_Repo.UpdateOrInsert(GetCyclePartition(cycleId), txId.GetLow64().ToString(), record, (a, b) => b);
-			_Repo.UpdateOrInsert("Search", "t:" + txId.ToString(), cycleId, (a, b) => b);
+			_Repo.UpdateOrInsert("Search", "t:" + txId.ToString(), cycleId, (a, b) => b);			
 		}
 
 		public void AddressCreated(int cycleId, TransactionType type, Script scriptPubKey, uint correlation)
@@ -112,6 +129,9 @@ namespace NTumbleBit.Services
 				ScriptPubKey = scriptPubKey,
 				Correlation = correlation
 			};
+
+			Logs.Tracker.LogInformation($"Tracking address {type} of cycle {cycleId} with correlation {correlation} ({scriptPubKey.GetDestinationAddress(Network)})");
+
 			_Repo.UpdateOrInsert(GetCyclePartition(cycleId), Rand(), record, (a, b) => b);
 			_Repo.UpdateOrInsert("Search", "t:" + scriptPubKey.Hash.ToString(), cycleId, (a, b) => b);
 		}

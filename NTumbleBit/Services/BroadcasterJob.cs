@@ -82,8 +82,24 @@ namespace NTumbleBit.Services
 		{
 			uint256[] knownBroadcasted = null;
 			List<Transaction> broadcasted = new List<Transaction>();
-			broadcasted.AddRange(BroadcasterService.TryBroadcast(ref knownBroadcasted));
-			broadcasted.AddRange(TrustedBroadcasterService.TryBroadcast(ref knownBroadcasted));
+			try
+			{
+				broadcasted.AddRange(BroadcasterService.TryBroadcast(ref knownBroadcasted));
+			}
+			catch(Exception ex)
+			{
+				Logs.Broadcasters.LogError("Exception on Broadcaster");
+				Logs.Broadcasters.LogError(ex.ToString());
+			}
+			try
+			{
+				broadcasted.AddRange(TrustedBroadcasterService.TryBroadcast(ref knownBroadcasted));
+			}
+			catch(Exception ex)
+			{
+				Logs.Broadcasters.LogError("Exception on TrustedBroadcaster");
+				Logs.Broadcasters.LogError(ex.ToString());
+			}
 			return broadcasted.ToArray();
 		}
 	}

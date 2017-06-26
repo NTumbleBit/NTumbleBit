@@ -68,7 +68,7 @@ namespace NTumbleBit.ClassicTumbler.Server
 			var dbreeze = new DBreezeRepository(Path.Combine(conf.DataDir, "db2"));
 			runtime.Repository = dbreeze;
 			runtime._Resources.Add(dbreeze);
-			runtime.Tracker = new Tracker(dbreeze);			
+			runtime.Tracker = new Tracker(dbreeze, runtime.Network);			
 			runtime.Services = ExternalServices.CreateFromRPCClient(rpcClient, dbreeze, runtime.Tracker);
 			return runtime;
 		}

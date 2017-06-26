@@ -1,9 +1,11 @@
 ﻿using NBitcoin;
 using NBitcoin.RPC;
+using NTumbleBit.Logging;
 using NTumbleBit.PuzzleSolver;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
 
 namespace NTumbleBit.Services.RPC
@@ -121,6 +123,7 @@ namespace NTumbleBit.Services.RPC
 
 		private void AddBroadcast(Record broadcast)
 		{
+			Logs.Broadcasters.LogInformation($"Planning to broadcast {broadcast.TransactionType} of cycle {broadcast.Cycle} on block {broadcast.Request.BroadcastableHeight}");
 			Repository.UpdateOrInsert("TrustedBroadcasts", broadcast.Request.Transaction.GetHash().ToString(), broadcast, (o, n) => n);
 		}
 
@@ -147,6 +150,8 @@ namespace NTumbleBit.Services.RPC
 		public Transaction[] TryBroadcast(ref uint256[] knownBroadcasted)
 		{
 			var height = _Cache.BlockCount;
+
+			DateTimeOffset startTime = DateTimeOffset.UtcNow;
 			HashSet<uint256> knownBroadcastedSet = new HashSet<uint256>(knownBroadcasted ?? new uint256[0]);
 
 			List<Transaction> broadcasted = new List<Transaction>();
@@ -163,6 +168,7 @@ namespace NTumbleBit.Services.RPC
 						&& broadcast.Request.IsBroadcastableAt(height)
 						&& _Broadcaster.Broadcast(transaction))
 					{
+						LogBroadcasted(broadcast);
 						broadcasted.Add(transaction);
 					}
 					knownBroadcastedSet.Add(txHash);
@@ -185,6 +191,7 @@ namespace NTumbleBit.Services.RPC
 									&& broadcast.Request.IsBroadcastableAt(height)
 									&& _Broadcaster.Broadcast(transaction))
 								{
+									LogBroadcasted(broadcast);
 									broadcasted.Add(transaction);
 								}
 								knownBroadcastedSet.Add(txHash);
@@ -200,6 +207,11 @@ namespace NTumbleBit.Services.RPC
 
 			knownBroadcasted = knownBroadcastedSet.ToArray();
 			return broadcasted.ToArray();
+		}
+
+		private void LogBroadcasted(Record broadcast)
+		{
+			Logs.Broadcasters.LogInformation($"Broadcasted {broadcast.TransactionType} of cycle {broadcast.Cycle} planned on block {broadcast.Request.BroadcastableHeight}");
 		}
 
 		private void RecordMaping(Record broadcast, Transaction transaction, uint256 txHash)

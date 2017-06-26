@@ -19,6 +19,8 @@ namespace NTumbleBit.Logging
 			Tumbler = factory.CreateLogger("Tumbler");
 			Client = factory.CreateLogger("Client");
 			Broadcasters = factory.CreateLogger("Broadcasters");
+			Tracker = factory.CreateLogger("Tracker");
+			Wallet = factory.CreateLogger("Wallet");
 		}
 		public static ILogger Tumbler
 		{
@@ -28,7 +30,15 @@ namespace NTumbleBit.Logging
 		{
 			get; set;
 		}
+		public static ILogger Tracker
+		{
+			get; set;
+		}
 		public static ILogger Broadcasters
+		{
+			get; set;
+		}
+		public static ILogger Wallet
 		{
 			get; set;
 		}

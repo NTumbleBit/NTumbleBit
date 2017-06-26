@@ -1,8 +1,10 @@
 ﻿using NBitcoin;
 using NBitcoin.Crypto;
 using NBitcoin.DataEncoders;
+using NTumbleBit.Logging;
 using NTumbleBit.Services;
 using System;
+using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -66,6 +68,9 @@ namespace NTumbleBit.ClassicTumbler.Client
 				if(conflict)
 					continue;
 				Repository.UpdateOrInsert<uint?>(_WalletId, address.Hash.ToString(), (uint)(index - 1), (o, n) => n);
+
+				var path = _DerivationPath.Derive((uint)(index - 1));
+				Logs.Wallet.LogInformation($"Created address {address} of with HD path {path}");
 				return address;
 			}
 		}

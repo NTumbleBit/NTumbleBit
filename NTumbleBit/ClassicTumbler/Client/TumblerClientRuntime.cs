@@ -53,7 +53,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 				runtime.Cooperative = configuration.Cooperative;
 				runtime.Repository = dbreeze;
 				runtime._Disposables.Add(dbreeze);
-				runtime.Tracker = new Tracker(dbreeze);
+				runtime.Tracker = new Tracker(dbreeze, runtime.Network);
 				runtime.Services = ExternalServices.CreateFromRPCClient(rpc, dbreeze, runtime.Tracker);
 
 				if(configuration.OutputWallet.RootKey != null && configuration.OutputWallet.KeyPath != null)
