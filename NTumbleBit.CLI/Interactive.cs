@@ -107,7 +107,7 @@ namespace NTumbleBit.CLI
 
 		void GetStatus(StatusOptions options)
 		{
-			options.Query = options.Query.Trim();
+			options.Query = options?.Query?.Trim() ?? String.Empty;
 			if(!string.IsNullOrWhiteSpace(options.Query))
 			{
 				bool parsed = false;
