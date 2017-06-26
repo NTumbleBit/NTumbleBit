@@ -34,6 +34,21 @@ namespace NTumbleBit
 			return height >= BroadcastAt.Height && Transaction.IsFinal(DateTimeOffset.UtcNow, height + 1);
 		}
 
+		/// <summary>
+		/// Use BroadcastAt and Transaction locktime to know what a transaction can be broadcasted
+		/// </summary>
+		public int BroadcastableHeight
+		{
+			get
+			{
+				if(!Transaction.LockTime.IsHeightLock)
+					return BroadcastAt.IsHeightLock ? BroadcastAt.Height : 0;
+				if(!BroadcastAt.IsHeightLock)
+					return Transaction.LockTime.Height;
+				return Math.Max(Transaction.LockTime.Height, BroadcastAt.Height);
+			}
+		}
+
 		public Transaction ReSign(Coin coin)
 		{
 			var transaction = Transaction.Clone();

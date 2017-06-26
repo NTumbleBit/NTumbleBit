@@ -216,8 +216,8 @@ namespace NTumbleBit.CLI
 				Transaction tx = knownTransaction?.Transaction;
 				if(knownTransaction != null)
 				{
-					if(knownTransaction.BroadcastAt != 0)
-						Console.WriteLine("Planned for " + knownTransaction.BroadcastAt.ToString());
+					if(knownTransaction.BroadcastableHeight != 0)
+						Console.WriteLine("Planned for " + knownTransaction.BroadcastableHeight.ToString());
 				}
 				if(tx == null)
 				{
@@ -236,7 +236,6 @@ namespace NTumbleBit.CLI
 
 				if(tx != null)
 				{
-					Console.WriteLine("Timelock " + tx.LockTime.ToString());
 					Console.WriteLine("Hex " + tx.ToHex());
 				}
 				//TODO ask to other objects for more info
