@@ -145,16 +145,14 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			List<Transaction> broadcasted = new List<Transaction>();
 			foreach(var broadcast in GetRequests())
 			{
-				if(height < broadcast.Request.BroadcastAt.Height)
-					continue;
-
 				if(broadcast.Request.PreviousScriptPubKey == null)
 				{
 					var transaction = broadcast.Request.Transaction;
 					var txHash = transaction.GetHash();
 					_Tracker.TransactionCreated(broadcast.Cycle, broadcast.TransactionType, txHash, broadcast.Correlation);
-					if(!knownBroadcastedSet.Contains(txHash) &&
-									_Broadcaster.Broadcast(transaction))
+					if(!knownBroadcastedSet.Contains(txHash) 
+						&& broadcast.Request.IsBroadcastableAt(height)
+						&& _Broadcaster.Broadcast(transaction))
 					{
 						broadcasted.Add(transaction);
 					}
@@ -172,8 +170,9 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 								var txHash = transaction.GetHash();
 								_Tracker.TransactionCreated(broadcast.Cycle, broadcast.TransactionType, txHash, broadcast.Correlation);
 
-								if(!knownBroadcastedSet.Contains(txHash) &&
-									_Broadcaster.Broadcast(transaction))
+								if(!knownBroadcastedSet.Contains(txHash) 
+									&& broadcast.Request.IsBroadcastableAt(height)
+									&& _Broadcaster.Broadcast(transaction))
 								{
 									broadcasted.Add(transaction);
 								}

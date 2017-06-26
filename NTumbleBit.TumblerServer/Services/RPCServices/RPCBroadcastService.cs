@@ -121,13 +121,8 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			if(tx.Transaction.Inputs.Count == 0 || tx.Transaction.Inputs[0].PrevOut.Hash == uint256.Zero)
 				return false;
 
-			//Make the broadcast a bit faster
-			var isNonFinal =
-				tx.Transaction.LockTime.IsHeightLock &&
-				tx.Transaction.LockTime.Height > currentHeight &&
-				tx.Transaction.Inputs.Any(i => i.Sequence != Sequence.Final);
-
-			if(isNonFinal || IsDoubleSpend(tx.Transaction))
+			bool isFinal = tx.Transaction.IsFinal(DateTimeOffset.UtcNow, currentHeight + 1);
+			if(!isFinal || IsDoubleSpend(tx.Transaction))
 				return false;
 
 			try
@@ -152,7 +147,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 				}
 			}
 			return false;
-		}
+		}		
 
 		private bool IsDoubleSpend(Transaction tx)
 		{

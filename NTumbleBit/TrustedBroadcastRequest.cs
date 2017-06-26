@@ -28,6 +28,12 @@ namespace NTumbleBit
 			get;
 			set;
 		}
+		
+		public bool IsBroadcastableAt(int height)
+		{
+			return height >= BroadcastAt.Height && Transaction.IsFinal(DateTimeOffset.UtcNow, height + 1);
+		}
+
 		public Transaction ReSign(Coin coin)
 		{
 			var transaction = Transaction.Clone();
