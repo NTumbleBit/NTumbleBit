@@ -118,7 +118,7 @@ namespace NTumbleBit.Tests
 
 		public PaymentStateMachine CreateStateMachine()
 		{
-			return ClientRuntime.CreateStateMachineJob().CreateStateMachine(null);
+			return new PaymentStateMachine(ClientRuntime);
 		}
 
 		private Tuple<string, string> ExtractCredentials(string config)

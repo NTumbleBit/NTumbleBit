@@ -42,26 +42,25 @@ namespace NTumbleBit.ClassicTumbler.Client
 					{
 						lastBlock = Runtime.Services.BlockExplorerService.WaitBlock(lastBlock, _Stop);
 						var height = Runtime.Services.BlockExplorerService.GetCurrentHeight();
-						Logs.Client.LogInformation("New block of height " + height);
+						Logs.Client.LogInformation("New Block: " + height);
 						var cycle = Runtime.TumblerParameters.CycleGenerator.GetRegistratingCycle(height);
 						if(lastCycle != cycle.Start)
 						{
 							lastCycle = cycle.Start;
-							Logs.Client.LogInformation("New registering cycle " + cycle.Start);
+							Logs.Client.LogInformation("New Cycle: " + cycle.Start);
 
 							var state = Runtime.Repository.Get<PaymentStateMachine.State>(GetPartitionKey(cycle.Start), cycle.Start.ToString());
 							if(state == null)
 							{
-								var stateMachine = CreateStateMachine(null);
+								var stateMachine = new PaymentStateMachine(Runtime, null);
 								Save(stateMachine, cycle.Start);
-								Logs.Client.LogInformation("New state machine created");
 							}
 						}
 
 						var cycles = Runtime.TumblerParameters.CycleGenerator.GetCycles(height);
 						foreach(var state in cycles.SelectMany(c => Runtime.Repository.List<PaymentStateMachine.State>(GetPartitionKey(c.Start))))
 						{
-							var machine = CreateStateMachine(state);
+							var machine = new PaymentStateMachine(Runtime);
 							try
 							{
 								machine.Update();
@@ -78,7 +77,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 								if(!invalidPhase || machine.InvalidPhaseCount > 2)
 								{
-									Logs.Client.LogError("Error while executing state machine " + machine.StartCycle + ": " + ex.ToString());
+									Logs.Client.LogError("StateMachine Error: " + ex.ToString());
 								}
 
 							}
@@ -101,7 +100,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 					}
 					if(unhandled != null)
 					{
-						Logs.Client.LogError("Uncaught exception StateMachineExecutor : " + unhandled.ToString());
+						Logs.Client.LogError("StateMachineExecutor Error: " + unhandled.ToString());
 						_Stop.WaitHandle.WaitOne(5000);
 					}
 				}
@@ -115,11 +114,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 		private void Save(PaymentStateMachine stateMachine, int cycle)
 		{
 			Runtime.Repository.UpdateOrInsert(GetPartitionKey(cycle), "", stateMachine.GetInternalState(), (o, n) => n);
-		}
-
-		public PaymentStateMachine CreateStateMachine(PaymentStateMachine.State state)
-		{
-			return new PaymentStateMachine(Runtime, state);
 		}
 	}
 }
