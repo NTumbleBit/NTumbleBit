@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using NBitcoin;
 using NTumbleBit.ClassicTumbler;
+using NTumbleBit.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,12 +13,11 @@ namespace NTumbleBit.ClassicTumbler.Client
 	public class StateMachinesExecutor
 	{
 		public StateMachinesExecutor(
-			TumblerClientRuntime runtime, ILogger logger)
+			TumblerClientRuntime runtime)
 		{
 			if(runtime == null)
 				throw new ArgumentNullException("runtime");
 			Runtime = runtime;
-			Logger = logger;
 		}
 
 
@@ -25,11 +25,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 		{
 			get; set;
 		}
-		public ILogger Logger
-		{
-			get; set;
-		}
-
 		
 		private CancellationToken _Stop;
 		public void Start(CancellationToken cancellation)
@@ -37,7 +32,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 			_Stop = cancellation;
 			new Thread(() =>
 			{
-
+				Logs.Client.LogInformation("State machines started");			
 				uint256 lastBlock = uint256.Zero;
 				int lastCycle = 0;
 				while(true)
@@ -47,19 +42,19 @@ namespace NTumbleBit.ClassicTumbler.Client
 					{
 						lastBlock = Runtime.Services.BlockExplorerService.WaitBlock(lastBlock, _Stop);
 						var height = Runtime.Services.BlockExplorerService.GetCurrentHeight();
-						Logger.LogInformation("New block of height " + height);
+						Logs.Client.LogInformation("New block of height " + height);
 						var cycle = Runtime.TumblerParameters.CycleGenerator.GetRegistratingCycle(height);
 						if(lastCycle != cycle.Start)
 						{
 							lastCycle = cycle.Start;
-							Logger.LogInformation("New registering cycle " + cycle.Start);
+							Logs.Client.LogInformation("New registering cycle " + cycle.Start);
 
 							var state = Runtime.Repository.Get<PaymentStateMachine.State>(GetPartitionKey(cycle.Start), cycle.Start.ToString());
 							if(state == null)
 							{
 								var stateMachine = CreateStateMachine(null);
 								Save(stateMachine, cycle.Start);
-								Logger.LogInformation("New state machine created");
+								Logs.Client.LogInformation("New state machine created");
 							}
 						}
 
@@ -69,7 +64,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 							var machine = CreateStateMachine(state);
 							try
 							{
-								machine.Update(Logger);
+								machine.Update();
 								machine.InvalidPhaseCount = 0;
 							}
 							catch(Exception ex)
@@ -83,7 +78,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 								if(!invalidPhase || machine.InvalidPhaseCount > 2)
 								{
-									Logger.LogError("Error while executing state machine " + machine.StartCycle + ": " + ex.ToString());
+									Logs.Client.LogError("Error while executing state machine " + machine.StartCycle + ": " + ex.ToString());
 								}
 
 							}
@@ -94,7 +89,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 					{
 						if(_Stop.IsCancellationRequested)
 						{
-							Logger.LogInformation("Mixer stopped");
+							Logs.Client.LogInformation("Mixer stopped");
 							break;
 						}
 						else
@@ -106,7 +101,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 					}
 					if(unhandled != null)
 					{
-						Logger.LogError("Uncaught exception StateMachineExecutor : " + unhandled.ToString());
+						Logs.Client.LogError("Uncaught exception StateMachineExecutor : " + unhandled.ToString());
 						_Stop.WaitHandle.WaitOne(5000);
 					}
 				}

@@ -16,14 +16,19 @@ namespace NTumbleBit.Logging
 		public static void Configure(ILoggerFactory factory)
 		{
 			Configuration = factory.CreateLogger("Configuration");
-			Main = factory.CreateLogger("Main");
-			Server = factory.CreateLogger("Server");
+			Tumbler = factory.CreateLogger("Tumbler");
+			Client = factory.CreateLogger("Client");
+			Broadcasters = factory.CreateLogger("Broadcasters");
 		}
-		public static ILogger Main
+		public static ILogger Tumbler
 		{
 			get; set;
 		}
-		public static ILogger Server
+		public static ILogger Client
+		{
+			get; set;
+		}
+		public static ILogger Broadcasters
 		{
 			get; set;
 		}

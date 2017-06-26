@@ -37,7 +37,7 @@ namespace NTumbleBit.ClassicTumbler.Client.CLI
 					{
 						if(!PromptConfirmation(toConfirm))
 						{
-							Logs.Main.LogInformation("New tumbler parameters refused");
+							Logs.Configuration.LogInformation("New tumbler parameters refused");
 							return;
 						}
 						runtime.Confirm(toConfirm);
@@ -48,14 +48,12 @@ namespace NTumbleBit.ClassicTumbler.Client.CLI
 
 					var broadcaster = runtime.CreateBroadcasterJob();
 					broadcaster.Start(interactive.BroadcasterCancellationToken);
-					Logs.Main.LogInformation("BroadcasterJob started");
 
 					if(!config.OnlyMonitor)
 					{
 						var client = new TumblerClient(runtime.Network, config.TumblerServer);
 						var stateMachine = runtime.CreateStateMachineJob();
 						stateMachine.Start(interactive.MixingCancellationToken);
-						Logs.Main.LogInformation("State machines started");
 					}
 
 

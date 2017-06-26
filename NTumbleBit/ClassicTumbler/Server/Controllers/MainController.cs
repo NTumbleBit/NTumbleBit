@@ -170,7 +170,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 				if(!Repository.MarkUsedNonce(cycle.Start, new uint160(key.PubKey.Hash.ToBytes())))
 					return BadRequest("invalid-transaction");
 				Repository.Save(cycle.Start, solverServerSession);
-				Logs.Server.LogInformation($"Cycle {cycle.Start} Proof of Escrow signed for " + transaction.GetHash());
+				Logs.Tumbler.LogInformation($"Cycle {cycle.Start} Proof of Escrow signed for " + transaction.GetHash());
 
 				var correlation = GetCorrelation(solverServerSession);
 				Tracker.AddressCreated(cycle.Start, TransactionType.ClientEscrow, escrowedCoin.ScriptPubKey, correlation);
@@ -208,7 +208,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 				escrow.Receiver = request.EscrowKey;
 				escrow.Initiator = escrowKey.PubKey;
 
-				Logs.Server.LogInformation($"Cycle {cycle.Start} Asked to open channel");
+				Logs.Tumbler.LogInformation($"Cycle {cycle.Start} Asked to open channel");
 				var txOut = new TxOut(Parameters.Denomination, escrow.ToScript().Hash);
 				var tx = Services.WalletService.FundTransaction(txOut, fee);
 				var correlation = escrow.GetCorrelation();
@@ -217,7 +217,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 
 				Tracker.AddressCreated(cycle.Start, TransactionType.TumblerEscrow, txOut.ScriptPubKey, correlation);
 				Tracker.TransactionCreated(cycle.Start, TransactionType.TumblerEscrow, tx.GetHash(), correlation);
-				Logs.Server.LogInformation($"Cycle {cycle.Start} Channel created " + tx.GetHash());
+				Logs.Tumbler.LogInformation($"Cycle {cycle.Start} Channel created " + tx.GetHash());
 
 				var coin = tx.Outputs.AsCoins().First(o => o.ScriptPubKey == txOut.ScriptPubKey && o.TxOut.Value == txOut.Value);
 
@@ -239,7 +239,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			}
 			catch(NotEnoughFundsException ex)
 			{
-				Logs.Server.LogInformation(ex.Message);
+				Logs.Tumbler.LogInformation(ex.Message);
 				return BadRequest("tumbler-insufficient-funds");
 			}
 		}

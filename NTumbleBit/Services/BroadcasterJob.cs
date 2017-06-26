@@ -12,12 +12,11 @@ namespace NTumbleBit.Services
 {
 	public class BroadcasterJob
 	{
-		public BroadcasterJob(ExternalServices services, ILogger logger = null)
+		public BroadcasterJob(ExternalServices services)
 		{
 			BroadcasterService = services.BroadcastService;
 			TrustedBroadcasterService = services.TrustedBroadcastService;
 			BlockExplorerService = services.BlockExplorerService;
-			Logger = logger ?? NullLogger.Instance;
 		}
 
 		public IBroadcastService BroadcasterService
@@ -37,17 +36,13 @@ namespace NTumbleBit.Services
 			private set;
 		}
 
-		public ILogger Logger
-		{
-			get; set;
-		}
-
 		private CancellationToken _Stop;
 		public void Start(CancellationToken cancellation)
 		{
 			_Stop = cancellation;
 			new Thread(() =>
 			{
+				Logs.Broadcasters.LogInformation("BroadcasterJob started");
 				while(true)
 				{
 					Exception unhandled = null;
@@ -57,39 +52,14 @@ namespace NTumbleBit.Services
 						while(true)
 						{
 							lastBlock = BlockExplorerService.WaitBlock(lastBlock, _Stop);
-							var height = BlockExplorerService.GetCurrentHeight();
-							uint256[] knownBroadcasted = null;
-							try
-							{
-								var transactions = BroadcasterService.TryBroadcast(ref knownBroadcasted);
-								foreach(var tx in transactions)
-								{
-									Logger.LogInformation("Broadcaster broadcasted  " + tx.GetHash());
-								}
-							}
-							catch(Exception ex)
-							{
-								Logger.LogError("Error while running Broadcaster: " + ex.ToString());
-							}
-							try
-							{
-								var transactions = TrustedBroadcasterService.TryBroadcast(ref knownBroadcasted);
-								foreach(var tx in transactions)
-								{
-									Logger.LogInformation("TrustedBroadcaster broadcasted " + tx.GetHash());
-								}
-							}
-							catch(Exception ex)
-							{
-								Logger.LogError("Error while running TrustedBroadcaster: " + ex.ToString());
-							}
+							TryBroadcast();
 						}
 					}
 					catch(OperationCanceledException ex)
 					{
 						if(_Stop.IsCancellationRequested)
 						{
-							Logger.LogInformation("BroadcasterJob stopped");
+							Logs.Broadcasters.LogInformation("BroadcasterJob stopped");
 							break;
 						}
 						else
@@ -101,11 +71,20 @@ namespace NTumbleBit.Services
 					}
 					if(unhandled != null)
 					{
-						Logger.LogError("Uncaught exception BroadcasterJob : " + unhandled.ToString());
+						Logs.Broadcasters.LogError("Uncaught exception BroadcasterJob : " + unhandled.ToString());
 						_Stop.WaitHandle.WaitOne(5000);
 					}
 				}
 			}).Start();
+		}
+
+		public Transaction[] TryBroadcast()
+		{
+			uint256[] knownBroadcasted = null;
+			List<Transaction> broadcasted = new List<Transaction>();
+			broadcasted.AddRange(BroadcasterService.TryBroadcast(ref knownBroadcasted));
+			broadcasted.AddRange(TrustedBroadcasterService.TryBroadcast(ref knownBroadcasted));
+			return broadcasted.ToArray();
 		}
 	}
 }

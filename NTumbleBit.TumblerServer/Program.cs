@@ -48,9 +48,8 @@ namespace NTumbleBit.ClassicTumbler.Server.CLI
 						.Build();
 					}
 
-					var job = new BroadcasterJob(interactive.Runtime.Services, Logs.Main);
+					var job = new BroadcasterJob(interactive.Runtime.Services);
 					job.Start(interactive.BroadcasterCancellationToken);
-					Logs.Main.LogInformation("BroadcasterJob started");
 
 					if(!config.OnlyMonitor)
 						new Thread(() =>
@@ -62,22 +61,22 @@ namespace NTumbleBit.ClassicTumbler.Server.CLI
 							catch(Exception ex)
 							{
 								if(!interactive.MixingCancellationToken.IsCancellationRequested)
-									Logs.Server.LogCritical(1, ex, "Error while starting the host");
+									Logs.Tumbler.LogCritical(1, ex, "Error while starting the host");
 							}
 							if(interactive.MixingCancellationToken.IsCancellationRequested)
-								Logs.Server.LogInformation("Server stopped");
+								Logs.Tumbler.LogInformation("Server stopped");
 						}).Start();
 					interactive.StartInteractive();
 				}
 				catch(ConfigException ex)
 				{
 					if(!string.IsNullOrEmpty(ex.Message))
-						Logs.Main.LogError(ex.Message);
+						Logs.Configuration.LogError(ex.Message);
 				}
 				catch(Exception exception)
 				{
-					Logs.Main.LogError("Exception thrown while running the server");
-					Logs.Main.LogError(exception.ToString());
+					Logs.Tumbler.LogError("Exception thrown while running the server");
+					Logs.Tumbler.LogError(exception.ToString());
 				}
 			}
 		}

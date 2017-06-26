@@ -149,7 +149,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 		public BroadcasterJob CreateBroadcasterJob()
 		{
-			return new BroadcasterJob(Services, Logs.Main);
+			return new BroadcasterJob(Services);
 		}
 
 		public ConnectionSettings BobSettings
@@ -226,7 +226,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 		public StateMachinesExecutor CreateStateMachineJob()
 		{
-			return new StateMachinesExecutor(this, Logs.Main);
+			return new StateMachinesExecutor(this);
 		}
 
 		private static T Retry<T>(int count, Func<T> act)

@@ -163,15 +163,9 @@ namespace NTumbleBit.ClassicTumbler.Client
 			s.InvalidPhaseCount = InvalidPhaseCount;
 			return s;
 		}
-
-
+		
 		public void Update()
 		{
-			Update(null);
-		}
-		public void Update(ILogger logger)
-		{
-			logger = logger ?? NullLogger.Instance;
 			Clients = Clients ?? Runtime.CreateTumblerClients();
 			int height = Services.BlockExplorerService.GetCurrentHeight();
 			CycleParameters cycle;
@@ -198,7 +192,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 				phase = phases.First(p => cycle.IsInPhase(p, height));
 			}
 
-			logger.LogInformation("Cycle " + cycle.Start + " in phase " + Enum.GetName(typeof(CyclePhase), phase) + ", ending in " + (cycle.GetPeriods().GetPeriod(phase).End - height) + " blocks");
+			Logs.Client.LogInformation("Cycle " + cycle.Start + " in phase " + Enum.GetName(typeof(CyclePhase), phase) + ", ending in " + (cycle.GetPeriods().GetPeriod(phase).End - height) + " blocks");
 			var correlation = SolverClientSession == null ? 0 : GetCorrelation(SolverClientSession.EscrowedCoin);
 
 			FeeRate feeRate = null;
@@ -216,7 +210,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 						StartCycle = cycle.Start;
 						ClientChannelNegotiation = new ClientChannelNegotiation(Parameters, cycle.Start);
 						ClientChannelNegotiation.ReceiveUnsignedVoucher(voucherResponse);
-						logger.LogInformation("Registration Complete");
+						Logs.Client.LogInformation("Registration Complete");
 					}
 					break;
 				case CyclePhase.ClientChannelEstablishment:
@@ -235,7 +229,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 						}
 						catch(NotEnoughFundsException ex)
 						{
-							logger.LogInformation($"Not enough funds in the wallet to tumble. Missing about {ex.Missing}. Denomination is {Parameters.Denomination}.");
+							Logs.Client.LogInformation($"Not enough funds in the wallet to tumble. Missing about {ex.Missing}. Denomination is {Parameters.Denomination}.");
 							break;
 						}
 
@@ -259,8 +253,8 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 						Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.ClientRedeem, correlation, redeemTx);
 
-						logger.LogInformation("Client escrow broadcasted " + clientEscrowTx.GetHash());
-						logger.LogInformation("Client escrow redeem " + redeemTx.Transaction.GetHash() + " will be broadcast later if tumbler unresponsive");
+						Logs.Client.LogInformation("Client escrow broadcasted " + clientEscrowTx.GetHash());
+						Logs.Client.LogInformation("Client escrow redeem " + redeemTx.Transaction.GetHash() + " will be broadcast later if tumbler unresponsive");
 					}
 					else if(ClientChannelNegotiation.Status == TumblerClientSessionStates.WaitingSolvedVoucher)
 					{
@@ -279,7 +273,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 								ClientEscrowKey = state.ClientEscrowKey.PubKey
 							});
 							ClientChannelNegotiation.CheckVoucherSolution(voucher);
-							logger.LogInformation("Voucher solution obtained");
+							Logs.Client.LogInformation("Voucher solution obtained");
 						}
 					}
 					break;
@@ -306,7 +300,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 						var proof = BobClient.CheckRevelation(cycle.Start, PromiseClientSession.Id, revelation);
 						var puzzle = PromiseClientSession.CheckCommitmentProof(proof);
 						SolverClientSession.AcceptPuzzle(puzzle);
-						logger.LogInformation("Tumbler escrow broadcasted " + PromiseClientSession.EscrowedCoin.Outpoint.Hash);
+						Logs.Client.LogInformation("Tumbler escrow broadcasted " + PromiseClientSession.EscrowedCoin.Outpoint.Hash);
 					}
 					break;
 				case CyclePhase.PaymentPhase:
@@ -317,14 +311,14 @@ namespace NTumbleBit.ClassicTumbler.Client
 						if(tumblerTx == null || tumblerTx.Confirmations < cycle.SafetyPeriodDuration)
 						{
 							if(tumblerTx != null)
-								logger.LogInformation("Tumbler escrow " + tumblerTx.Transaction.GetHash() + " expecting " + cycle.SafetyPeriodDuration + " current is " + tumblerTx.Confirmations);
+								Logs.Client.LogInformation("Tumbler escrow " + tumblerTx.Transaction.GetHash() + " expecting " + cycle.SafetyPeriodDuration + " current is " + tumblerTx.Confirmations);
 							else
-								logger.LogInformation("Tumbler escrow not found");
+								Logs.Client.LogInformation("Tumbler escrow not found");
 							return;
 						}
 						if(SolverClientSession.Status == SolverClientStates.WaitingGeneratePuzzles)
 						{
-							logger.LogInformation("Tumbler escrow confirmed " + tumblerTx.Transaction.GetHash());
+							Logs.Client.LogInformation("Tumbler escrow confirmed " + tumblerTx.Transaction.GetHash());
 							feeRate = GetFeeRate();
 							var puzzles = SolverClientSession.GeneratePuzzles();
 							var commmitments = AliceClient.SolvePuzzles(cycle.Start, SolverClientSession.Id, puzzles);
@@ -340,7 +334,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 							Services.BlockExplorerService.Track(offerRedeem.PreviousScriptPubKey);
 							Tracker.AddressCreated(cycle.Start, TransactionType.ClientOfferRedeem, SolverClientSession.GetInternalState().RedeemDestination, correlation);
 							Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.ClientOfferRedeem, correlation, offerRedeem);
-							logger.LogInformation("Offer redeem " + offerRedeem.Transaction.GetHash() + " locked until " + offerRedeem.Transaction.LockTime.Height);
+							Logs.Client.LogInformation("Offer redeem " + offerRedeem.Transaction.GetHash() + " locked until " + offerRedeem.Transaction.LockTime.Height);
 							try
 							{
 								solutionKeys = AliceClient.FulfillOffer(cycle.Start, SolverClientSession.Id, offerSignature);
@@ -359,14 +353,14 @@ namespace NTumbleBit.ClassicTumbler.Client
 									AliceClient.GiveEscapeKey(cycle.Start, SolverClientSession.Id, signature);
 								}
 
-								logger.LogInformation("Solution recovered from cooperative tumbler");
+								Logs.Client.LogInformation("Solution recovered from cooperative tumbler");
 							}
 							catch(Exception ex)
 							{
-								logger.LogWarning("Uncooperative tumbler detected, keep connection open.");
-								logger.LogWarning(ex.ToString());
+								Logs.Client.LogWarning("Uncooperative tumbler detected, keep connection open.");
+								Logs.Client.LogWarning(ex.ToString());
 							}
-							logger.LogInformation("Payment completed");
+							Logs.Client.LogInformation("Payment completed");
 						}
 					}
 					break;
@@ -379,18 +373,18 @@ namespace NTumbleBit.ClassicTumbler.Client
 							var transactions = Services.BlockExplorerService.GetTransactions(SolverClientSession.GetInternalState().OfferCoin.ScriptPubKey, false);
 							if(transactions.Length == 0)
 							{
-								logger.LogInformation("Solution of puzzle not on the blockchain");
+								Logs.Client.LogInformation("Solution of puzzle not on the blockchain");
 							}
 							else
 							{
 								SolverClientSession.CheckSolutions(transactions.Select(t => t.Transaction).ToArray());
-								logger.LogInformation("Solution recovered from blockchain transaction");
+								Logs.Client.LogInformation("Solution recovered from blockchain transaction");
 
 								var tumblingSolution = SolverClientSession.GetSolution();
 								var transaction = PromiseClientSession.GetSignedTransaction(tumblingSolution);
 								Tracker.TransactionCreated(cycle.Start, TransactionType.TumblerCashout, transaction.GetHash(), correlation);
 								Services.BroadcastService.Broadcast(transaction);
-								logger.LogInformation("Client Cashout completed " + transaction.GetHash());
+								Logs.Client.LogInformation("Client Cashout completed " + transaction.GetHash());
 							}
 						}
 					}
