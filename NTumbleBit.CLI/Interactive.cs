@@ -222,9 +222,9 @@ namespace NTumbleBit.CLI
 						var blockLeft = (knownTransaction.BroadcastableHeight - currentHeight);
 						Console.Write("Planned for " + knownTransaction.BroadcastableHeight.ToString());
 						if(blockLeft > 0)
-							Console.Write($"({blockLeft} blocks left)");
+							Console.WriteLine($" ({blockLeft} blocks left)");
 						else
-							Console.Write($"({-blockLeft} blocks ago)");
+							Console.WriteLine($" ({-blockLeft} blocks ago)");
 					}
 				}
 				if(tx == null)
