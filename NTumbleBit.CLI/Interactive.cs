@@ -204,6 +204,7 @@ namespace NTumbleBit.CLI
 
 			if(options.TxId != null)
 			{
+				var currentHeight = Services.BlockExplorerService.GetCurrentHeight();
 				var txId = new uint256(options.TxId);
 				var result = Tracker.Search(txId);
 				foreach(var record in result)
@@ -217,7 +218,14 @@ namespace NTumbleBit.CLI
 				if(knownTransaction != null)
 				{
 					if(knownTransaction.BroadcastableHeight != 0)
-						Console.WriteLine("Planned for " + knownTransaction.BroadcastableHeight.ToString());
+					{
+						var blockLeft = (knownTransaction.BroadcastableHeight - currentHeight);
+						Console.Write("Planned for " + knownTransaction.BroadcastableHeight.ToString());
+						if(blockLeft > 0)
+							Console.Write($"({blockLeft} blocks left)");
+						else
+							Console.Write($"({-blockLeft} blocks ago)");
+					}
 				}
 				if(tx == null)
 				{
