@@ -225,6 +225,12 @@ namespace NTumbleBit.Tests
 					//Offer + Fulfill should be broadcasted
 					transactions = server.ServerRuntime.Services.TrustedBroadcastService.TryBroadcast();
 					Assert.Equal(2, transactions.Length);
+
+					//Sanity check if trusted broadcaster know about this
+					var knownTx = server.ServerRuntime.Services.TrustedBroadcastService.GetKnownTransaction(transactions[0].GetHash());
+					Assert.NotNull(knownTx);
+					Assert.Equal(transactions[0].GetHash(), knownTx.Transaction.GetHash());
+
 					var unmalleatedTransactions = transactions;
 
 					serverTracker.AssertKnown(TumblerServer.TransactionType.ClientOffer, transactions[0].GetHash());

@@ -47,6 +47,18 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			}
 		}
 
+		public class TxToRecord
+		{
+			public uint256 RecordHash
+			{
+				get; set;
+			}
+			public Transaction Transaction
+			{
+				get; set;
+			}
+		}
+
 		public RPCTrustedBroadcastService(RPCClient rpc, IBroadcastService innerBroadcast, IBlockExplorerService explorer, IRepository repository, RPCWalletCache cache, Tracker tracker)
 		{
 			if(rpc == null)
@@ -97,7 +109,7 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			var address = broadcast.PreviousScriptPubKey?.GetDestinationAddress(RPCClient.Network);
 			if(address != null && TrackPreviousScriptPubKey)
 				RPCClient.ImportAddress(address, "", false);
-			
+
 			var height = _Cache.BlockCount;
 			var record = new Record();
 			//3 days expiration after now or broadcast date
@@ -149,7 +161,9 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 					var transaction = broadcast.Request.Transaction;
 					var txHash = transaction.GetHash();
 					_Tracker.TransactionCreated(broadcast.Cycle, broadcast.TransactionType, txHash, broadcast.Correlation);
-					if(!knownBroadcastedSet.Contains(txHash) 
+					RecordMaping(broadcast, transaction, txHash);
+
+					if(!knownBroadcastedSet.Contains(txHash)
 						&& broadcast.Request.IsBroadcastableAt(height)
 						&& _Broadcaster.Broadcast(transaction))
 					{
@@ -169,7 +183,9 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 								var txHash = transaction.GetHash();
 								_Tracker.TransactionCreated(broadcast.Cycle, broadcast.TransactionType, txHash, broadcast.Correlation);
 
-								if(!knownBroadcastedSet.Contains(txHash) 
+								RecordMaping(broadcast, transaction, txHash);
+
+								if(!knownBroadcastedSet.Contains(txHash)
 									&& broadcast.Request.IsBroadcastableAt(height)
 									&& _Broadcaster.Broadcast(transaction))
 								{
@@ -190,9 +206,26 @@ namespace NTumbleBit.Client.Tumbler.Services.RPCServices
 			return broadcasted.ToArray();
 		}
 
+		private void RecordMaping(Record broadcast, Transaction transaction, uint256 txHash)
+		{
+			var txToRecord = new TxToRecord()
+			{
+				RecordHash = broadcast.Request.Transaction.GetHash(),
+				Transaction = transaction
+			};
+			Repository.UpdateOrInsert<TxToRecord>("TxToRecord", txHash.ToString(), txToRecord, (a, b) => a);
+		}
+
 		public TrustedBroadcastRequest GetKnownTransaction(uint256 txId)
 		{
-			return Repository.Get<Record>("TrustedBroadcasts", txId.ToString())?.Request;
+			var mapping = Repository.Get<TxToRecord>("TxToRecord", txId.ToString());
+			if(mapping == null)
+				return null;
+			var record = Repository.Get<Record>("TrustedBroadcasts", mapping.RecordHash.ToString()).Request;
+			if(record == null)
+				return null;
+			record.Transaction = mapping.Transaction;
+			return record;
 		}
 
 		private readonly IBlockExplorerService _BlockExplorer;
