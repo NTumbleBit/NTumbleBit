@@ -7,11 +7,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NTumbleBit", "NTumbleBit\NTumbleBit.csproj", "{A2355F14-C404-46A4-B070-E6EC18800AA0}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NTumbleBit.ClassicTumbler.Client.CLI", "NTumbleBit.CLI\NTumbleBit.ClassicTumbler.Client.CLI.csproj", "{A83E2C39-E636-449D-9982-629808E12A66}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NTumbleBit.ClassicTumbler.Client.CLI", "NTumbleBit.ClassicTumbler.Client.CLI\NTumbleBit.ClassicTumbler.Client.CLI.csproj", "{A83E2C39-E636-449D-9982-629808E12A66}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NTumbleBit.Tests", "NTumbleBit.Tests\NTumbleBit.Tests.csproj", "{EB9354FF-C608-497A-9C8B-F7633252DF73}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NTumbleBit.ClassicTumbler.Server.CLI", "NTumbleBit.TumblerServer\NTumbleBit.ClassicTumbler.Server.CLI.csproj", "{C22A679F-BE97-4789-A2BE-17F6AF4A17AD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NTumbleBit.ClassicTumbler.Server.CLI", "NTumbleBit.ClassicTumbler.Server.CLI\NTumbleBit.ClassicTumbler.Server.CLI.csproj", "{C22A679F-BE97-4789-A2BE-17F6AF4A17AD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
