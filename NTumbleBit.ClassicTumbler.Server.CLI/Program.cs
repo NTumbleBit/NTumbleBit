@@ -35,7 +35,7 @@ namespace NTumbleBit.ClassicTumbler.Server.CLI
 				try
 				{
 					var runtime = TumblerRuntime.FromConfiguration(config);
-
+					interactive.Runtime = new ServerInteractiveRuntime(runtime);
 					IWebHost host = null;
 					if(!config.OnlyMonitor)
 					{
