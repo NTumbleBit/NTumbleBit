@@ -1,23 +1,17 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using NBitcoin;
-using NTumbleBit.Common;
-using System.IO;
-using NTumbleBit.Client.Tumbler.Services;
-using NTumbleBit.Client.Tumbler;
-using System.Threading;
-using NTumbleBit.Common.Logging;
+using NTumbleBit.Logging;
 using System.Text;
 using NBitcoin.RPC;
 using CommandLine;
 using System.Reflection;
 using NTumbleBit.ClassicTumbler;
+using NTumbleBit.Configuration;
+using NTumbleBit.ClassicTumbler.Client;
+using NTumbleBit.ClassicTumbler.CLI;
 
-namespace NTumbleBit.CLI
+namespace NTumbleBit.ClassicTumbler.Client.CLI
 {
 	public partial class Program
 	{
@@ -28,64 +22,55 @@ namespace NTumbleBit.CLI
 		public void Run(string[] args)
 		{
 			Logs.Configure(new FuncLoggerFactory(i => new ConsoleLogger(i, (a, b) => true, false)));
-			BroadcasterToken = new CancellationTokenSource();
-			MixingToken = new CancellationTokenSource();
-			DBreezeRepository dbreeze = null;
-			try
-			{
-				var config = new TumblerClientConfiguration();
-				config.LoadArgs(args);
-				Network = config.Network;
 
-				ClassicTumblerParameters toConfirm;
-				var runtime = TumblerClientRuntime.FromConfiguration(config, out toConfirm);
-				if(toConfirm != null)
+			using(var interactive = new Interactive())
+			{
+
+				try
 				{
-					if(!PromptConfirmation(toConfirm))
+					var config = new TumblerClientConfiguration();
+					config.LoadArgs(args);
+
+					ClassicTumblerParameters toConfirm;
+					var runtime = TumblerClientRuntime.FromConfiguration(config, out toConfirm);
+					if(toConfirm != null)
 					{
-						Logs.Main.LogInformation("New tumbler parameters refused");
-						return;
+						if(!PromptConfirmation(toConfirm))
+						{
+							Logs.Main.LogInformation("New tumbler parameters refused");
+							return;
+						}
+						runtime.Confirm(toConfirm);
 					}
-					runtime.Confirm(toConfirm);
+
+					interactive.Runtime = new ClientInteractiveRuntime(runtime);
+					
+
+					var broadcaster = runtime.CreateBroadcasterJob();
+					broadcaster.Start(interactive.BroadcasterCancellationToken);
+					Logs.Main.LogInformation("BroadcasterJob started");
+
+					if(!config.OnlyMonitor)
+					{
+						var client = new TumblerClient(runtime.Network, config.TumblerServer);
+						var stateMachine = runtime.CreateStateMachineJob();
+						stateMachine.Start(interactive.MixingCancellationToken);
+						Logs.Main.LogInformation("State machines started");
+					}
+
+
+					interactive.StartInteractive();
 				}
-
-				Tracker = runtime.Tracker;
-				Services = runtime.Services;
-				DestinationWallet = runtime.DestinationWallet;
-
-				var broadcaster = runtime.CreateBroadcasterJob();
-				broadcaster.Start(BroadcasterToken.Token);
-				Logs.Main.LogInformation("BroadcasterJob started");
-
-				if(!config.OnlyMonitor)
+				catch(ConfigException ex)
 				{
-					var client = new TumblerClient(Network, config.TumblerServer);
-					TumblerParameters = runtime.TumblerParameters;
-					var stateMachine = runtime.CreateStateMachineJob();
-					stateMachine.Start(MixingToken.Token);
-					Logs.Main.LogInformation("State machines started");
+					if(!string.IsNullOrEmpty(ex.Message))
+						Logs.Configuration.LogError(ex.Message);
 				}
-
-
-				StartInteractive();
-			}
-			catch(ConfigException ex)
-			{
-				if(!string.IsNullOrEmpty(ex.Message))
+				catch(Exception ex)
+				{
 					Logs.Configuration.LogError(ex.Message);
-			}
-			catch(Exception ex)
-			{
-				Logs.Configuration.LogError(ex.Message);
-				Logs.Configuration.LogDebug(ex.StackTrace);
-			}
-			finally
-			{
-				if(!MixingToken.IsCancellationRequested)
-					MixingToken.Cancel();
-				if(!BroadcasterToken.IsCancellationRequested)
-					BroadcasterToken.Cancel();
-				dbreeze?.Dispose();
+					Logs.Configuration.LogDebug(ex.StackTrace);
+				}
 			}
 		}
 

@@ -6,18 +6,20 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using NBitcoin;
-using NTumbleBit.Common;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Logging;
-using NTumbleBit.TumblerServer.Services;
+using NTumbleBit.Services;
 using System.Threading;
-using NTumbleBit.Common.Logging;
+using NTumbleBit.Logging;
 using NTumbleBit.ClassicTumbler;
+using NTumbleBit.Configuration;
+using NTumbleBit.ClassicTumbler.Server;
+using NTumbleBit.ClassicTumbler.CLI;
 
-namespace NTumbleBit.TumblerServer
+namespace NTumbleBit.ClassicTumbler.Server.CLI
 {
 	public partial class Program
-	{		
+	{
 		public static void Main(string[] args)
 		{
 			new Program().Run(args);
@@ -25,68 +27,58 @@ namespace NTumbleBit.TumblerServer
 		public void Run(string[] args)
 		{
 			Logs.Configure(new FuncLoggerFactory(i => new ConsoleLogger(i, (a, b) => true, false)));
-			BroadcasterToken = new CancellationTokenSource();
-			MixingToken = new CancellationTokenSource();
-			var config = new TumblerConfiguration();
-			config.LoadArgs(args);
-			try
+
+			using(var interactive = new Interactive())
 			{
-				var runtime = TumblerRuntime.FromConfiguration(config);
-				Services = runtime.Services;
-				Tracker = runtime.Tracker;
-				IWebHost host = null;
-				if(!config.OnlyMonitor)
+				var config = new TumblerConfiguration();
+				config.LoadArgs(args);
+				try
 				{
-					host = new WebHostBuilder()
-					.UseKestrel()
-					.UseAppConfiguration(runtime)
-					.UseContentRoot(Directory.GetCurrentDirectory())
-					.UseIISIntegration()
-					.UseStartup<Startup>()
-					.UseUrls(config.GetUrls())
-					.Build();
-				}
+					var runtime = TumblerRuntime.FromConfiguration(config);
 
-				var job = new BroadcasterJob(Services, Logs.Main);
-				job.Start(BroadcasterToken.Token);
-				Logs.Main.LogInformation("BroadcasterJob started");
-
-				TumblerParameters = config.ClassicTumblerParameters;
-				Network = config.Network;
-
-				if(!config.OnlyMonitor)
-					new Thread(() =>
+					IWebHost host = null;
+					if(!config.OnlyMonitor)
 					{
-						try
+						host = new WebHostBuilder()
+						.UseKestrel()
+						.UseAppConfiguration(runtime)
+						.UseContentRoot(Directory.GetCurrentDirectory())
+						.UseStartup<Startup>()
+						.UseUrls(config.GetUrls())
+						.Build();
+					}
+
+					var job = new BroadcasterJob(interactive.Runtime.Services, Logs.Main);
+					job.Start(interactive.BroadcasterCancellationToken);
+					Logs.Main.LogInformation("BroadcasterJob started");
+
+					if(!config.OnlyMonitor)
+						new Thread(() =>
 						{
-							host.Run(MixingToken.Token);
-						}
-						catch(Exception ex)
-						{
-							if(!MixingToken.IsCancellationRequested)
-								Logs.Server.LogCritical(1, ex, "Error while starting the host");
-						}
-						if(MixingToken.IsCancellationRequested)
-							Logs.Server.LogInformation("Server stopped");
-					}).Start();
-				StartInteractive();
-			}
-			catch(ConfigException ex)
-			{
-				if(!string.IsNullOrEmpty(ex.Message))
-					Logs.Main.LogError(ex.Message);
-			}
-			catch(Exception exception)
-			{
-				Logs.Main.LogError("Exception thrown while running the server");
-				Logs.Main.LogError(exception.ToString());
-			}
-			finally
-			{
-				if(!MixingToken.IsCancellationRequested)
-					MixingToken.Cancel();
-				if(!BroadcasterToken.IsCancellationRequested)
-					BroadcasterToken.Cancel();
+							try
+							{
+								host.Run(interactive.MixingCancellationToken);
+							}
+							catch(Exception ex)
+							{
+								if(!interactive.MixingCancellationToken.IsCancellationRequested)
+									Logs.Server.LogCritical(1, ex, "Error while starting the host");
+							}
+							if(interactive.MixingCancellationToken.IsCancellationRequested)
+								Logs.Server.LogInformation("Server stopped");
+						}).Start();
+					interactive.StartInteractive();
+				}
+				catch(ConfigException ex)
+				{
+					if(!string.IsNullOrEmpty(ex.Message))
+						Logs.Main.LogError(ex.Message);
+				}
+				catch(Exception exception)
+				{
+					Logs.Main.LogError("Exception thrown while running the server");
+					Logs.Main.LogError(exception.ToString());
+				}
 			}
 		}
 	}

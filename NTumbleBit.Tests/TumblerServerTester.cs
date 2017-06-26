@@ -2,22 +2,18 @@
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Server.Kestrel;
-using Microsoft.Extensions.Configuration;
 using NBitcoin;
-using NBitcoin.RPC;
 using NTumbleBit.ClassicTumbler;
-using NTumbleBit.Client.Tumbler;
-using NTumbleBit.TumblerServer;
-using NTumbleBit.TumblerServer.Services;
+using NTumbleBit.ClassicTumbler.Client;
+using NTumbleBit.ClassicTumbler.Server;
+using NTumbleBit.Services.RPC;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace NTumbleBit.Tests
 {
@@ -83,7 +79,6 @@ namespace NTumbleBit.Tests
 					.UseKestrel()
 					.UseAppConfiguration(runtime)
 					.UseContentRoot(Path.GetFullPath(directory))
-					.UseIISIntegration()
 					.UseStartup<Startup>()
 					.UseUrls(conf.GetUrls())
 					.Build();
@@ -92,7 +87,7 @@ namespace NTumbleBit.Tests
 				ServerRuntime = runtime;
 
 				//Overrides server fee
-				((TumblerServer.Services.RPCServices.RPCFeeService)runtime.Services.FeeService).FallBackFeeRate = new FeeRate(Money.Satoshis(100), 1);
+				((RPCFeeService)runtime.Services.FeeService).FallBackFeeRate = new FeeRate(Money.Satoshis(100), 1);
 
 
 				var clientConfig = new TumblerClientConfiguration();
@@ -116,7 +111,7 @@ namespace NTumbleBit.Tests
 				ClientRuntime.Confirm(p);
 
 				//Overrides client fee
-				((Client.Tumbler.Services.RPCServices.RPCFeeService)ClientRuntime.Services.FeeService).FallBackFeeRate = new FeeRate(Money.Satoshis(50), 1);
+				((RPCFeeService)ClientRuntime.Services.FeeService).FallBackFeeRate = new FeeRate(Money.Satoshis(50), 1);
 			}
 			catch { Dispose(); throw; }
 		}
