@@ -21,7 +21,7 @@ namespace NTumbleBit.ClassicTumbler.Client.CLI
 		}
 		public void Run(string[] args)
 		{
-			Logs.Configure(new FuncLoggerFactory(i => new ConsoleLogger(i, (a, b) => true, false)));
+			Logs.Configure(new FuncLoggerFactory(i => new CustomerConsoleLogger(i, (a, b) => true, false)));
 
 			using(var interactive = new Interactive())
 			{
