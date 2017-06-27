@@ -171,6 +171,14 @@ namespace NTumbleBit.ClassicTumbler.Server
 				builder.AppendLine();
 				builder.AppendLine();
 
+				builder.AppendLine("####Server Commands####");
+				builder.AppendLine("#port=37123");
+				builder.AppendLine("#listen=0.0.0.0");
+
+
+				builder.AppendLine();
+				builder.AppendLine();
+
 				builder.AppendLine("####Debug Commands####");
 				builder.AppendLine("#Whether or not the tumbler deliver puzzle's solution off chain to the client (default: true)");
 				builder.AppendLine("#cooperative=false");
