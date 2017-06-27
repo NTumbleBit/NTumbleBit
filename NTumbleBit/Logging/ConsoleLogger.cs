@@ -152,7 +152,7 @@ namespace NTumbleBit.Logging
 			logBuilder.Append(logName);
 			logBuilder.Append(": ");
 			var lenAfter = logBuilder.ToString().Length;
-			while(lenAfter++ < 12)
+			while(lenAfter++ < 18)
 				logBuilder.Append(" ");
 			// scope information
 			if(IncludeScopes)
@@ -163,7 +163,7 @@ namespace NTumbleBit.Logging
 			if(!string.IsNullOrEmpty(message))
 			{
 				// message
-				logBuilder.Append(_messagePadding);
+				//logBuilder.Append(_messagePadding);
 
 				var len = logBuilder.Length;
 				logBuilder.AppendLine(message);
