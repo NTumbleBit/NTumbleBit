@@ -102,7 +102,7 @@ namespace NTumbleBit.Tests
 			using(var server = TumblerServerTester.Create())
 			{
 				var key = new ExtKey().GetWif(Network.RegTest);
-				var w = new ClientDestinationWallet(key.Neuter(), new KeyPath("0/1"), server.ClientRuntime.Repository);
+				var w = new ClientDestinationWallet(key.Neuter(), new KeyPath("0/1"), server.ClientRuntime.Repository, server.ClientRuntime.Network);
 
 				var k1 = w.GetNewDestination();
 				var k2 = w.GetNewDestination();

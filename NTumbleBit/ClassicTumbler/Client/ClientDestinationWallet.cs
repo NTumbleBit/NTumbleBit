@@ -21,8 +21,9 @@ namespace NTumbleBit.ClassicTumbler.Client
 	{
 		ExtPubKey _ExtPubKey;
 		KeyPath _DerivationPath;
+		Network _Network;
 
-		public ClientDestinationWallet(BitcoinExtPubKey extPubKey, KeyPath derivationPath, IRepository repository)
+		public ClientDestinationWallet(BitcoinExtPubKey extPubKey, KeyPath derivationPath, IRepository repository, Network network)
 		{
 			if(derivationPath == null)
 				throw new ArgumentNullException("derivationPath");
@@ -30,6 +31,9 @@ namespace NTumbleBit.ClassicTumbler.Client
 				throw new ArgumentNullException("extPubKey");
 			if(repository == null)
 				throw new ArgumentNullException("repository");
+			if(network == null)
+				throw new ArgumentNullException("network");
+			_Network = network;
 			_Repository = repository;
 			_ExtPubKey = extPubKey.ExtPubKey.Derive(derivationPath);
 			_DerivationPath = derivationPath;
@@ -70,7 +74,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 				Repository.UpdateOrInsert<uint?>(_WalletId, address.Hash.ToString(), (uint)(index - 1), (o, n) => n);
 
 				var path = _DerivationPath.Derive((uint)(index - 1));
-				Logs.Wallet.LogInformation($"Created address {address} of with HD path {path}");
+				Logs.Wallet.LogInformation($"Created address {address.GetDestinationAddress(_Network)} of with HD path {path}");
 				return address;
 			}
 		}
