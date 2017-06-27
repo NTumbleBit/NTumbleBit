@@ -13,9 +13,9 @@ using NTumbleBit.Configuration;
 
 namespace NTumbleBit.ClassicTumbler.Server
 {
-    public class TumblerRuntime : IDisposable
-    {
-		
+	public class TumblerRuntime : IDisposable
+	{
+
 		public static TumblerRuntime FromConfiguration(TumblerConfiguration conf)
 		{
 			if(conf == null)
@@ -68,16 +68,21 @@ namespace NTumbleBit.ClassicTumbler.Server
 			var dbreeze = new DBreezeRepository(Path.Combine(conf.DataDir, "db2"));
 			runtime.Repository = dbreeze;
 			runtime._Resources.Add(dbreeze);
-			runtime.Tracker = new Tracker(dbreeze, runtime.Network);			
+			runtime.Tracker = new Tracker(dbreeze, runtime.Network);
 			runtime.Services = ExternalServices.CreateFromRPCClient(rpcClient, dbreeze, runtime.Tracker);
 			return runtime;
 		}
 
 		public void Dispose()
 		{
-			foreach(var resource in _Resources)
-				resource.Dispose();
-			_Resources.Clear();
+			//TODO: This is called by both the webhost and the interactive console
+			//      but webhost should not take care of cleaning up
+			lock(_Resources)
+			{
+				foreach(var resource in _Resources)
+					resource.Dispose();
+				_Resources.Clear();
+			}
 		}
 
 		List<IDisposable> _Resources = new List<IDisposable>();
