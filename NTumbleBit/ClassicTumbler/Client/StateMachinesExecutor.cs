@@ -49,7 +49,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 							lastCycle = cycle.Start;
 							Logs.Client.LogInformation("New Cycle: " + cycle.Start);
 
-							var state = Runtime.Repository.Get<PaymentStateMachine.State>(GetPartitionKey(cycle.Start), cycle.Start.ToString());
+							var state = Runtime.Repository.Get<PaymentStateMachine.State>(GetPartitionKey(cycle.Start), "");
 							if(state == null)
 							{
 								var stateMachine = new PaymentStateMachine(Runtime, null);
@@ -60,7 +60,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 						var cycles = Runtime.TumblerParameters.CycleGenerator.GetCycles(height);
 						foreach(var state in cycles.SelectMany(c => Runtime.Repository.List<PaymentStateMachine.State>(GetPartitionKey(c.Start))))
 						{
-							var machine = new PaymentStateMachine(Runtime);
+							var machine = new PaymentStateMachine(Runtime, state);
 							try
 							{
 								machine.Update();
