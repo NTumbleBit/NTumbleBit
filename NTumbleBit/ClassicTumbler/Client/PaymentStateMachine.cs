@@ -192,7 +192,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 				phase = phases.First(p => cycle.IsInPhase(p, height));
 			}
 
-			Logs.Client.LogInformation("Updating cycle " + cycle.Start);
+			Logs.Client.LogInformation("[[[Updating cycle " + cycle.Start + "]]]");
 
 			Logs.Client.LogInformation("Phase " + Enum.GetName(typeof(CyclePhase), phase) + ", ending in " + (cycle.GetPeriods().GetPeriod(phase).End - height) + " blocks");
 

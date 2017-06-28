@@ -45,6 +45,7 @@ namespace NTumbleBit.Services.RPC
 		{
 			while(true)
 			{
+				cancellation.ThrowIfCancellationRequested();
 				var h = _RPCClient.GetBestBlockHash();
 				if(h != currentBlock)
 				{
@@ -52,7 +53,6 @@ namespace NTumbleBit.Services.RPC
 					return h;
 				}
 				cancellation.WaitHandle.WaitOne(5000);
-				cancellation.ThrowIfCancellationRequested();
 			}
 		}
 
