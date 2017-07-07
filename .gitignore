@@ -243,3 +243,5 @@ ModelManifest.xml
 Tumbler.pem
 Seed.dat
 TestData/
+TorData
+/NTumbleBit.ClassicTumbler.Client.CLI/torchangelog.txt

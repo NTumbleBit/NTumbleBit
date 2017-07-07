@@ -15,17 +15,6 @@ using NTumbleBit.Configuration;
 
 namespace NTumbleBit.ClassicTumbler.Client
 {
-	public class TumblerClients
-	{
-		public TumblerClient Alice
-		{
-			get; set;
-		}
-		public TumblerClient Bob
-		{
-			get; set;
-		}
-	}
 	public class TumblerClientRuntime : IDisposable
 	{
 		public static TumblerClientRuntime FromConfiguration(TumblerClientConfiguration configuration, out ClassicTumblerParameters parametersToConfirm)
@@ -37,8 +26,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 			{
 				runtime.Network = configuration.Network;
 				runtime.TumblerServer = configuration.TumblerServer;
-				runtime.BobSettings = configuration.BobConnectionSettings;
-				runtime.AliceSettings = configuration.AliceConnectionSettings;
 				RPCClient rpc = null;
 				try
 				{
@@ -75,34 +62,10 @@ namespace NTumbleBit.ClassicTumbler.Client
 				var existingConfig = dbreeze.Get<ClassicTumbler.ClassicTumblerParameters>("Configuration", configuration.TumblerServer.AbsoluteUri);
 				if(!configuration.OnlyMonitor)
 				{
-					var clients = runtime.CreateTumblerClients();
-					if(configuration.CheckIp)
-					{
-						var ip1 = GetExternalIp(clients.Alice, "https://myexternalip.com/raw");
-						var ip2 = GetExternalIp(clients.Bob, "https://icanhazip.com/");
-						var aliceIp = ip1.GetAwaiter().GetResult();
-						var bobIp = ip2.GetAwaiter().GetResult();
-						if(aliceIp.Equals(bobIp))
-						{
-							var error = "Same IP detected for Bob and Alice, the tumbler can link input address to output address";
+					var client = runtime.CreateTumblerClient();
 
-							if(configuration.AllowInsecure)
-							{
-								Logs.Configuration.LogWarning(error);
-							}
-							else
-							{
-								throw new ConfigException(error + ", use parameter -allowinsecure or allowinsecure=true in config file to ignore.");
-							}
-						}
-						else
-							Logs.Configuration.LogInformation("Alice and Bob have different IP configured");
-					}
-
-
-					var client = clients.Alice;
 					Logs.Configuration.LogInformation("Downloading tumbler information of " + configuration.TumblerServer.AbsoluteUri);
-					var parameters = Retry(3, () => client.GetTumblerParameters());
+					var parameters = Retry(3, () => client.GetTumblerParameters(new Identity(Role.Alice, -1)));
 					Logs.Configuration.LogInformation("Tumbler Server Connection successfull");
 
 					if(existingConfig != null)
@@ -152,16 +115,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 			return new BroadcasterJob(Services);
 		}
 
-		public ConnectionSettings BobSettings
-		{
-			get; set;
-		}
-
-		public ConnectionSettings AliceSettings
-		{
-			get; set;
-		}
-
 		public bool Cooperative
 		{
 			get; set;
@@ -172,54 +125,12 @@ namespace NTumbleBit.ClassicTumbler.Client
 			get; set;
 		}
 
-		public TumblerClients CreateTumblerClients()
-		{
-			return new TumblerClients()
-			{
-				Alice = CreateTumblerClients(AliceSettings),
-				Bob = CreateTumblerClients(BobSettings)
-			};
-		}
-
-		class CustomProxy : IWebProxy
-		{
-			private Uri _Address;
-
-			public CustomProxy(Uri address)
-			{
-				if(address == null)
-					throw new ArgumentNullException("address");
-				_Address = address;
-			}
-
-			public Uri GetProxy(Uri destination)
-			{
-				return _Address;
-			}
-
-			public bool IsBypassed(Uri host)
-			{
-				return false;
-			}
-
-			public ICredentials Credentials
-			{
-				get; set;
-			}
-		}
-
-		private TumblerClient CreateTumblerClients(ConnectionSettings settings)
+		public TumblerClient CreateTumblerClient()
 		{
 			var client = new TumblerClient(Network, TumblerServer);
-			if(settings?.Proxy != null)
+			if (Tor.UseTor)
 			{
-				CustomProxy proxy = new CustomProxy(settings.Proxy);
-				proxy.Credentials = settings.Credentials;
-				HttpClientHandler handler = new HttpClientHandler();
-				handler.UseDefaultCredentials = false;
-				handler.PreAuthenticate = settings.Credentials != null;
-				handler.Proxy = proxy;
-				client.SetHttpHandler(handler);
+				client.SetHttpHandler(Tor.SocksPortHandler);
 			}
 			return client;
 		}

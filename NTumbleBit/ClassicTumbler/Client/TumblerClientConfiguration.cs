@@ -29,18 +29,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 		}
 	}
 
-	public class ConnectionSettings
-	{
-		public Uri Proxy
-		{
-			get; set;
-		}
-		public NetworkCredential Credentials
-		{
-			get; set;
-		}
-	}
-
 	public class TumblerClientConfiguration
 	{
 		public string ConfigurationFile
@@ -64,11 +52,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 			get; set;
 		}
 
-		public bool CheckIp
-		{
-			get; set;
-		} = true;
-
 		public bool Cooperative
 		{
 			get;
@@ -80,16 +63,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 			set;
 		}
 
-		public ConnectionSettings BobConnectionSettings
-		{
-			get; set;
-		} = new ConnectionSettings();
-
-		public ConnectionSettings AliceConnectionSettings
-		{
-			get; set;
-		} = new ConnectionSettings();
-
 		public OutputWalletConfiguration OutputWallet
 		{
 			get; set;
@@ -99,11 +72,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 		{
 			get; set;
 		} = new RPCArgs();
-		public bool AllowInsecure
-		{
-			get;
-			set;
-		} = false;
 
 		public TumblerClientConfiguration LoadArgs(String[] args)
 		{
@@ -194,29 +162,12 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 			OutputWallet.RPCArgs = RPCArgs.Parse(config, Network, "outputwallet");
 
-			AliceConnectionSettings = ParseConnectionSettings("alice", config);
-			BobConnectionSettings = ParseConnectionSettings("bob", config);
-
-			AllowInsecure = config.GetOrDefault<bool>("allowinsecure", IsTest(Network));
 			return this;
 		}
 
 		private bool IsTest(Network network)
 		{
 			return network == Network.TestNet || network == Network.RegTest;
-		}
-
-		private ConnectionSettings ParseConnectionSettings(string prefix, TextFileConfiguration config)
-		{
-			ConnectionSettings settings = new ConnectionSettings();
-			var server = config.GetOrDefault<Uri>(prefix + ".proxy.server", null);
-			if(server != null)
-				settings.Proxy = server;
-			var user = config.GetOrDefault<string>(prefix + ".proxy.username", null);
-			var pass = config.GetOrDefault<string>(prefix + ".proxy.password", null);
-			if(user != null && pass != null)
-				settings.Credentials = new NetworkCredential(user, pass);
-			return settings;
 		}
 
 		public static string GetDefaultConfigurationFile(string dataDirectory, Network network)
@@ -240,16 +191,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 				builder.AppendLine("#Configuration of the output wallet");
 				builder.AppendLine("#outputwallet.extpubkey=xpub");
 				builder.AppendLine("#outputwallet.keypath=0");
-				builder.AppendLine();
-				builder.AppendLine();
-				builder.AppendLine("####Connection Commands####");
-				builder.AppendLine("#A TumbleBit client should use the Tumbler under two different identity. We recommend to make Alice using a HTTP proxy masking her real IP address. (For example privoxy with TOR)");
-				builder.AppendLine("#alice.proxy.server=http://127.0.0.1:8118/");
-				builder.AppendLine("#bob.proxy.server=http://127.0.0.1:8118/");
-				builder.AppendLine("#alice.proxy.username=dpowqkwkpd");
-				builder.AppendLine("#bob.proxy.username=dpowqkwkpd");
-				builder.AppendLine("#alice.proxy.password=padeiwmnfw");
-				builder.AppendLine("#bob.proxy.password=padeiwmnfw");
 
 				builder.AppendLine();
 				builder.AppendLine();
@@ -257,8 +198,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 				builder.AppendLine("####Debug Commands####");
 				builder.AppendLine("#Whether or not signature for the escape transaction is transmitted to the Tumbler (default: true)");
 				builder.AppendLine("#cooperative=false");
-				builder.AppendLine("#Whether or not IP sharing between Bob and Alice is authorized (default: true for testnets, false for mainnet)");
-				builder.AppendLine("#allowinsecure=true");
 				File.WriteAllText(config, builder.ToString());				
 			}
 			return config;

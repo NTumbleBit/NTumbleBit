@@ -29,7 +29,7 @@ namespace NTumbleBit.Tests
 			{
 
 				var rootTestData = "TestData";
-				directory = rootTestData + "/" + directory;
+				directory = Path.Combine(rootTestData, directory);
 				_Directory = directory;
 				if(!Directory.Exists(rootTestData))
 					Directory.CreateDirectory(rootTestData);
@@ -92,10 +92,8 @@ namespace NTumbleBit.Tests
 
 				var clientConfig = new TumblerClientConfiguration();
 				clientConfig.DataDir = Path.Combine(directory, "client");
-				clientConfig.AllowInsecure = true;
 				Directory.CreateDirectory(clientConfig.DataDir);
 				clientConfig.Network = conf.Network;
-				clientConfig.CheckIp = false;
 				clientConfig.OutputWallet.KeyPath = new KeyPath("0");
 				clientConfig.OutputWallet.RootKey = new ExtKey().Neuter().GetWif(conf.Network);
 				clientConfig.RPCArgs.Url = AliceNode.CreateRPCClient().Address;

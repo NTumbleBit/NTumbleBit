@@ -17,7 +17,7 @@ namespace NTumbleBit.Tests
 			using(var server = TumblerServerTester.Create())
 			{
 				var client = server.CreateTumblerClient();
-				var parameters = client.GetTumblerParameters();
+				var parameters = client.GetTumblerParameters(Identity.DoesntMatter);
 				Assert.NotNull(parameters.ServerKey);
 				Assert.NotEqual(0, parameters.RealTransactionCount);
 				Assert.NotEqual(0, parameters.FakeTransactionCount);
@@ -146,8 +146,8 @@ namespace NTumbleBit.Tests
 
 
 
-				var escrow1 = machine.AliceClient.RequestTumblerEscrowKey(machine.StartCycle);
-				var escrow2 = machine.AliceClient.RequestTumblerEscrowKey(machine.StartCycle);
+				var escrow1 = machine.Client.RequestTumblerEscrowKey(Identity.DoesntMatter, machine.StartCycle);
+				var escrow2 = machine.Client.RequestTumblerEscrowKey(Identity.DoesntMatter, machine.StartCycle);
 				Assert.Equal(0, escrow1.KeyIndex);
 				Assert.Equal(1, escrow2.KeyIndex);
 				machine.Update();
