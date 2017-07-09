@@ -21,16 +21,12 @@ namespace NTumbleBit.ClassicTumbler.Client
 		{
 			get; set;
 		}
+
 		public PaymentStateMachine(
 			TumblerClientRuntime runtime)
 		{
-			if(runtime == null)
-				throw new ArgumentNullException("runtime");
-			Runtime = runtime;
+			Runtime = runtime ?? throw new ArgumentNullException("runtime");
 		}
-
-
-
 
 		public PaymentStateMachine(
 			TumblerClientRuntime runtime,
@@ -70,24 +66,8 @@ namespace NTumbleBit.ClassicTumbler.Client
 			}
 		}
 
-		public TumblerClients Clients
-		{
-			get; set;
-		}
-		public TumblerClient BobClient
-		{
-			get
-			{
-				return Clients.Bob;
-			}
-		}
-		public TumblerClient AliceClient
-		{
-			get
-			{
-				return Clients.Alice;
-			}
-		}
+		public TumblerClient Client { get; private set; }
+
 		public ClassicTumblerParameters Parameters
 		{
 			get
@@ -166,7 +146,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 		public void Update()
 		{
-			Clients = Clients ?? Runtime.CreateTumblerClients();
+			Client = Client ?? Runtime.CreateTumblerClient();
 			int height = Services.BlockExplorerService.GetCurrentHeight();
 			CycleParameters cycle;
 			CyclePhase phase;
@@ -206,7 +186,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 					if(ClientChannelNegotiation == null)
 					{
 						//Client asks for voucher
-						var voucherResponse = BobClient.AskUnsignedVoucher();
+						var voucherResponse = Client.AskUnsignedVoucher(new Identity(Role.Bob, cycle.Start));
 						//Client ensures he is in the same cycle as the tumbler (would fail if one tumbler or client's chain isn't sync)
 						var tumblerCycle = Parameters.CycleGenerator.GetCycle(voucherResponse.CycleStart);
 						Assert(tumblerCycle.Start == cycle.Start, "invalid-phase");
@@ -220,7 +200,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 				case CyclePhase.ClientChannelEstablishment:
 					if(ClientChannelNegotiation.Status == TumblerClientSessionStates.WaitingTumblerClientTransactionKey)
 					{
-						var key = AliceClient.RequestTumblerEscrowKey(cycle.Start);
+						var key = Client.RequestTumblerEscrowKey(new Identity(Role.Alice, cycle.Start),cycle.Start);
 						ClientChannelNegotiation.ReceiveTumblerEscrowKey(key.PubKey, key.KeyIndex);
 						//Client create the escrow
 						var escrowTxOut = ClientChannelNegotiation.BuildClientEscrowTxOut();
@@ -267,7 +247,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 						{
 							Logs.Client.LogInformation($"Client escrow reached {cycle.SafetyPeriodDuration} confirmations");
 							//Client asks the public key of the Tumbler and sends its own
-							var voucher = AliceClient.SignVoucher(new SignVoucherRequest
+							var voucher = Client.SignVoucher(new Identity(Role.Alice, cycle.Start), new SignVoucherRequest
 							{
 								MerkleProof = clientTx.MerkleProof,
 								Transaction = clientTx.Transaction,
@@ -286,7 +266,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 					{
 						//Client asks the Tumbler to make a channel
 						var bobEscrowInformation = ClientChannelNegotiation.GetOpenChannelRequest();
-						var tumblerInformation = BobClient.OpenChannel(bobEscrowInformation);
+						var tumblerInformation = Client.OpenChannel(new Identity(Role.Bob, cycle.Start), bobEscrowInformation);
 						PromiseClientSession = ClientChannelNegotiation.ReceiveTumblerEscrowedCoin(tumblerInformation);
 						Logs.Client.LogInformation("Tumbler escrow broadcasted");
 						//Tell to the block explorer we need to track that address (for checking if it is confirmed in payment phase)
@@ -300,9 +280,9 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 						feeRate = GetFeeRate();
 						var sigReq = PromiseClientSession.CreateSignatureRequest(cashoutDestination, feeRate);
-						var commiments = BobClient.SignHashes(cycle.Start, PromiseClientSession.Id, sigReq);
+						var commiments = Client.SignHashes(new Identity(Role.Bob, cycle.Start), cycle.Start, PromiseClientSession.Id, sigReq);
 						var revelation = PromiseClientSession.Reveal(commiments);
-						var proof = BobClient.CheckRevelation(cycle.Start, PromiseClientSession.Id, revelation);
+						var proof = Client.CheckRevelation(new Identity(Role.Bob, cycle.Start), cycle.Start, PromiseClientSession.Id, revelation);
 						var puzzle = PromiseClientSession.CheckCommitmentProof(proof);
 						SolverClientSession.AcceptPuzzle(puzzle);
 						Logs.Client.LogInformation("Tumbler escrow puzzle obtained");
@@ -321,11 +301,11 @@ namespace NTumbleBit.ClassicTumbler.Client
 							{
 								feeRate = GetFeeRate();
 								var puzzles = SolverClientSession.GeneratePuzzles();
-								var commmitments = AliceClient.SolvePuzzles(cycle.Start, SolverClientSession.Id, puzzles);
+								var commmitments = Client.SolvePuzzles(new Identity(Role.Alice, cycle.Start), cycle.Start, SolverClientSession.Id, puzzles);
 								var revelation2 = SolverClientSession.Reveal(commmitments);
-								var solutionKeys = AliceClient.CheckRevelation(cycle.Start, SolverClientSession.Id, revelation2);
+								var solutionKeys = Client.CheckRevelation(new Identity(Role.Alice, cycle.Start), cycle.Start, SolverClientSession.Id, revelation2);
 								var blindFactors = SolverClientSession.GetBlindFactors(solutionKeys);
-								var offerInformation = AliceClient.CheckBlindFactors(cycle.Start, SolverClientSession.Id, blindFactors);
+								var offerInformation = Client.CheckBlindFactors(new Identity(Role.Alice, cycle.Start), cycle.Start, SolverClientSession.Id, blindFactors);
 
 								var offerSignature = SolverClientSession.SignOffer(offerInformation);
 
@@ -336,7 +316,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 								Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.ClientOfferRedeem, correlation, offerRedeem);
 								try
 								{
-									solutionKeys = AliceClient.FulfillOffer(cycle.Start, SolverClientSession.Id, offerSignature);
+									solutionKeys = Client.FulfillOffer(new Identity(Role.Alice, cycle.Start), cycle.Start, SolverClientSession.Id, offerSignature);
 									SolverClientSession.CheckSolutions(solutionKeys);
 									var tumblingSolution = SolverClientSession.GetSolution();
 									var transaction = PromiseClientSession.GetSignedTransaction(tumblingSolution);
@@ -349,7 +329,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 									if(Cooperative)
 									{
 										var signature = SolverClientSession.SignEscape();
-										AliceClient.GiveEscapeKey(cycle.Start, SolverClientSession.Id, signature);
+										Client.GiveEscapeKey(new Identity(Role.Alice, cycle.Start), cycle.Start, SolverClientSession.Id, signature);
 										Logs.Client.LogInformation("Gave escape signature to the tumbler");
 									}
 								}
