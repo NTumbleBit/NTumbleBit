@@ -125,22 +125,28 @@ namespace NTumbleBit.ClassicTumbler.Client
 			{
 				message.Content = new StringContent(Serializer.ToString(body, Network), Encoding.UTF8, "application/json");
 			}
-
+			
 			if (Tor.UseTor)
 			{
+				// torchangelog.txt for testing only, before merge to master it should be deleted
+				if(who == new Identity(Role.Alice, -1))
+				{
+					File.AppendAllText("torchangelog.txt", Environment.NewLine + Environment.NewLine + "//RESTART" + Environment.NewLine);
+				}
+
 				if (who != CurrentIdentity)
 				{
 					var start = DateTime.Now;
 					Logs.Client.LogInformation($"Changing identity to {who}");
 					await Tor.ControlPortClient.ChangeCircuitAsync().ConfigureAwait(false);
-					var takelong = start - DateTime.Now;
+					var takelong = DateTime.Now - start;
 					File.AppendAllText("torchangelog.txt", Environment.NewLine + Environment.NewLine + $"CHANGE IP: {(int)takelong.TotalSeconds} sec" + Environment.NewLine);
 				}
 				CurrentIdentity = who;
+				File.AppendAllText("torchangelog.txt", '\t' + who.ToString() + Environment.NewLine);
+				File.AppendAllText("torchangelog.txt", '\t' + message.Method.Method + " " + message.RequestUri.AbsolutePath + Environment.NewLine);
 			}
 
-			File.AppendAllText("torchangelog.txt", '\t' + who.ToString() + Environment.NewLine);
-			File.AppendAllText("torchangelog.txt", '\t' + message.Method.Method + " " + message.RequestUri.AbsolutePath + Environment.NewLine);
 			HttpResponseMessage result;
 			try
 			{
