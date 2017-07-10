@@ -45,7 +45,8 @@ namespace NTumbleBit.ClassicTumbler.Client
 			}
 		}
 
-	    private static readonly HttpClient SharedClient = new HttpClient();
+	    private static readonly HttpClient SharedClient = new HttpClient(Normalize(new HttpClientHandler()));
+
 		internal HttpClient Client = SharedClient;
 
 		public Task<ClassicTumblerParameters> GetTumblerParametersAsync()
@@ -182,7 +183,21 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 		public void SetHttpHandler(HttpClientHandler handler)
 		{
-			Client = new HttpClient(handler);
+			Client = new HttpClient(Normalize(handler));
+		}
+
+		private static HttpMessageHandler Normalize(HttpClientHandler handler)
+		{
+			handler.AllowAutoRedirect = false;
+			handler.UseCookies = false;
+			handler.AutomaticDecompression = DecompressionMethods.None;
+			handler.CheckCertificateRevocationList = false;
+			handler.ClientCertificateOptions = ClientCertificateOption.Manual;
+			handler.ClientCertificates.Clear();
+			handler.CookieContainer = null;
+			handler.Credentials = null;
+			handler.PreAuthenticate = false;
+			return handler;
 		}
 
 		public Task<PuzzleSolver.ServerCommitment[]> SolvePuzzlesAsync(int cycleId, string channelId, PuzzleValue[] puzzles)
