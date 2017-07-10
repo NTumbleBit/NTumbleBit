@@ -51,7 +51,6 @@ namespace NTumbleBit.ClassicTumbler.Client.CLI
 
 					if(!config.OnlyMonitor)
 					{
-						var client = new TumblerClient(runtime.Network, config.TumblerServer);
 						var stateMachine = runtime.CreateStateMachineJob();
 						stateMachine.Start(interactive.MixingCancellationToken);
 					}

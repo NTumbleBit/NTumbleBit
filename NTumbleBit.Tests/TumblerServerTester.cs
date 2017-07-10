@@ -227,11 +227,6 @@ namespace NTumbleBit.Tests
 			}
 		}
 
-		public TumblerClient CreateTumblerClient()
-		{
-			return new TumblerClient(ServerRuntime.Network, Address);
-		}
-
 		private readonly string _Directory;
 		private readonly CoreNode _AliceNode;
 		public CoreNode AliceNode

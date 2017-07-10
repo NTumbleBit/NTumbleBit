@@ -15,16 +15,11 @@ using NTumbleBit.Configuration;
 
 namespace NTumbleBit.ClassicTumbler.Client
 {
-	public class TumblerClients
+	public enum Identity
 	{
-		public TumblerClient Alice
-		{
-			get; set;
-		}
-		public TumblerClient Bob
-		{
-			get; set;
-		}
+		Alice,
+		Bob,
+		Random
 	}
 	public class TumblerClientRuntime : IDisposable
 	{
@@ -75,11 +70,10 @@ namespace NTumbleBit.ClassicTumbler.Client
 				var existingConfig = dbreeze.Get<ClassicTumbler.ClassicTumblerParameters>("Configuration", configuration.TumblerServer.AbsoluteUri);
 				if(!configuration.OnlyMonitor)
 				{
-					var clients = runtime.CreateTumblerClients();
 					if(configuration.CheckIp)
 					{
-						var ip1 = GetExternalIp(clients.Alice, "https://myexternalip.com/raw");
-						var ip2 = GetExternalIp(clients.Bob, "https://icanhazip.com/");
+						var ip1 = GetExternalIp(runtime.CreateTumblerClient(0, Identity.Alice), "https://myexternalip.com/raw");
+						var ip2 = GetExternalIp(runtime.CreateTumblerClient(0, Identity.Bob), "https://icanhazip.com/");
 						var aliceIp = ip1.GetAwaiter().GetResult();
 						var bobIp = ip2.GetAwaiter().GetResult();
 						if(aliceIp.Equals(bobIp))
@@ -100,7 +94,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 					}
 
 
-					var client = clients.Alice;
+					var client = runtime.CreateTumblerClient(0, Identity.Random);
 					Logs.Configuration.LogInformation("Downloading tumbler information of " + configuration.TumblerServer.AbsoluteUri);
 					var parameters = Retry(3, () => client.GetTumblerParameters());
 					Logs.Configuration.LogInformation("Tumbler Server Connection successfull");
@@ -172,13 +166,11 @@ namespace NTumbleBit.ClassicTumbler.Client
 			get; set;
 		}
 
-		public TumblerClients CreateTumblerClients()
+		public TumblerClient CreateTumblerClient(int cycle, Identity identity)
 		{
-			return new TumblerClients()
-			{
-				Alice = CreateTumblerClients(AliceSettings),
-				Bob = CreateTumblerClients(BobSettings)
-			};
+			if(identity == Identity.Random)
+				identity = RandomUtils.GetUInt32() % 2 == 0 ? Identity.Alice : Identity.Bob;
+			return CreateTumblerClient(cycle, identity == Identity.Alice ? AliceSettings : BobSettings);
 		}
 
 		class CustomProxy : IWebProxy
@@ -208,9 +200,9 @@ namespace NTumbleBit.ClassicTumbler.Client
 			}
 		}
 
-		private TumblerClient CreateTumblerClients(ConnectionSettings settings)
+		private TumblerClient CreateTumblerClient(int cycleId, ConnectionSettings settings)
 		{
-			var client = new TumblerClient(Network, TumblerServer);
+			var client = new TumblerClient(Network, TumblerServer, cycleId);
 			if(settings?.Proxy != null)
 			{
 				CustomProxy proxy = new CustomProxy(settings.Proxy);
