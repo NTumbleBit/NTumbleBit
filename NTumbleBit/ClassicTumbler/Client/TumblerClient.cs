@@ -13,7 +13,7 @@ using NTumbleBit.ClassicTumbler.Server.Models;
 
 namespace NTumbleBit.ClassicTumbler.Client
 {
-    public class TumblerClient
+    public class TumblerClient : IDisposable
     {
 		public TumblerClient(Network network, Uri serverAddress, int cycleId)
 		{
@@ -47,7 +47,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 			}
 		}
 
-	    private static readonly HttpClient SharedClient = new HttpClient(Normalize(new HttpClientHandler()));
+	    private static readonly HttpClient SharedClient = new HttpClient(Utils.SetAntiFingerprint(new HttpClientHandler()));
 
 		internal HttpClient Client = SharedClient;
 
@@ -183,23 +183,9 @@ namespace NTumbleBit.ClassicTumbler.Client
 			return SolvePuzzlesAsync(channelId, puzzles).GetAwaiter().GetResult();
 		}
 
-		public void SetHttpHandler(HttpClientHandler handler)
+		public void SetHttpHandler(HttpMessageHandler handler)
 		{
-			Client = new HttpClient(Normalize(handler));
-		}
-
-		private static HttpMessageHandler Normalize(HttpClientHandler handler)
-		{
-			handler.AllowAutoRedirect = false;
-			handler.UseCookies = false;
-			handler.AutomaticDecompression = DecompressionMethods.None;
-			handler.CheckCertificateRevocationList = false;
-			handler.ClientCertificateOptions = ClientCertificateOption.Manual;
-			handler.ClientCertificates.Clear();
-			handler.CookieContainer = null;
-			handler.Credentials = null;
-			handler.PreAuthenticate = false;
-			return handler;
+			Client = new HttpClient(handler);
 		}
 
 		public Task<PuzzleSolver.ServerCommitment[]> SolvePuzzlesAsync(string channelId, PuzzleValue[] puzzles)
@@ -231,6 +217,12 @@ namespace NTumbleBit.ClassicTumbler.Client
 		public Task GiveEscapeKeyAsync(string channelId, TransactionSignature signature)
 		{
 			return SendAsync<string>(HttpMethod.Post, signature, "api/v1/tumblers/0/clientchannels/{0}/{1}/escape", cycleId, channelId);
+		}
+
+		public void Dispose()
+		{
+			if(Client != SharedClient)
+				Client.Dispose();
 		}
 	}
 }

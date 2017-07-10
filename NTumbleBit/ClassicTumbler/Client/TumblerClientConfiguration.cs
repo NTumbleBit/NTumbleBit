@@ -8,6 +8,9 @@ using Microsoft.Extensions.Logging;
 using NTumbleBit.Logging;
 using System.Net;
 using NTumbleBit.Configuration;
+using System.Net.Sockets;
+using System.Net.Http;
+using DotNetTor.SocksPort;
 
 namespace NTumbleBit.ClassicTumbler.Client
 {
@@ -31,6 +34,40 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 	public class ConnectionSettings
 	{
+		public virtual HttpMessageHandler CreateHttpHandler(int cycleId)
+		{
+			return null;
+		}
+	}
+
+	public class HttpConnectionSettings : ConnectionSettings
+	{
+		class CustomProxy : IWebProxy
+		{
+			private Uri _Address;
+
+			public CustomProxy(Uri address)
+			{
+				if(address == null)
+					throw new ArgumentNullException("address");
+				_Address = address;
+			}
+
+			public Uri GetProxy(Uri destination)
+			{
+				return _Address;
+			}
+
+			public bool IsBypassed(Uri host)
+			{
+				return false;
+			}
+
+			public ICredentials Credentials
+			{
+				get; set;
+			}
+		}
 		public Uri Proxy
 		{
 			get; set;
@@ -38,6 +75,29 @@ namespace NTumbleBit.ClassicTumbler.Client
 		public NetworkCredential Credentials
 		{
 			get; set;
+		}
+
+		public override HttpMessageHandler CreateHttpHandler(int cycleId)
+		{
+			CustomProxy proxy = new CustomProxy(Proxy);
+			proxy.Credentials = Credentials;
+			HttpClientHandler handler = new HttpClientHandler();
+			handler.Proxy = proxy;
+			Utils.SetAntiFingerprint(handler);
+			return handler;
+		}
+	}
+	public class SocksConnectionSettings : ConnectionSettings
+	{
+		public IPEndPoint Proxy
+		{
+			get; set;
+		}
+
+		public override HttpMessageHandler CreateHttpHandler(int cycleId)
+		{
+			SocksPortHandler handler = new SocksPortHandler(Proxy);
+			return handler;
 		}
 	}
 
@@ -206,17 +266,37 @@ namespace NTumbleBit.ClassicTumbler.Client
 			return network == Network.TestNet || network == Network.RegTest;
 		}
 
-		private ConnectionSettings ParseConnectionSettings(string prefix, TextFileConfiguration config)
+		private ConnectionSettings ParseConnectionSettings(string prefix, TextFileConfiguration config, string defaultType = "none")
 		{
-			ConnectionSettings settings = new ConnectionSettings();
-			var server = config.GetOrDefault<Uri>(prefix + ".proxy.server", null);
-			if(server != null)
+			var type = config.GetOrDefault<string>(prefix + ".proxy.type", defaultType);
+			if(type.Equals("none", StringComparison.OrdinalIgnoreCase))
+			{
+				return new ConnectionSettings();
+			}
+			else if(type.Equals("http", StringComparison.OrdinalIgnoreCase))
+			{
+
+				HttpConnectionSettings settings = new HttpConnectionSettings();
+				var server = config.GetOrDefault<Uri>(prefix + ".proxy.server", null);
+				if(server != null)
+					settings.Proxy = server;
+				var user = config.GetOrDefault<string>(prefix + ".proxy.username", null);
+				var pass = config.GetOrDefault<string>(prefix + ".proxy.password", null);
+				if(user != null && pass != null)
+					settings.Credentials = new NetworkCredential(user, pass);
+				return settings;
+			}
+			else if(type.Equals("socks", StringComparison.OrdinalIgnoreCase))
+			{
+				SocksConnectionSettings settings = new SocksConnectionSettings();
+				var server = config.GetOrDefault<IPEndPoint>(prefix + ".proxy.server", null);
+				if(server == null)
+					throw new ConfigException(prefix + ".proxy.server should be specified (SOCKS enpoint)");
 				settings.Proxy = server;
-			var user = config.GetOrDefault<string>(prefix + ".proxy.username", null);
-			var pass = config.GetOrDefault<string>(prefix + ".proxy.password", null);
-			if(user != null && pass != null)
-				settings.Credentials = new NetworkCredential(user, pass);
-			return settings;
+				return settings;
+			}
+			else
+				throw new ConfigException(prefix + ".proxy.type is not supported, should be socks or http");
 		}
 
 		public static string GetDefaultConfigurationFile(string dataDirectory, Network network)
@@ -259,7 +339,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 				builder.AppendLine("#cooperative=false");
 				builder.AppendLine("#Whether or not IP sharing between Bob and Alice is authorized (default: true for testnets, false for mainnet)");
 				builder.AppendLine("#allowinsecure=true");
-				File.WriteAllText(config, builder.ToString());				
+				File.WriteAllText(config, builder.ToString());
 			}
 			return config;
 		}

@@ -171,48 +171,14 @@ namespace NTumbleBit.ClassicTumbler.Client
 			if(identity == Identity.Random)
 				identity = RandomUtils.GetUInt32() % 2 == 0 ? Identity.Alice : Identity.Bob;
 			return CreateTumblerClient(cycle, identity == Identity.Alice ? AliceSettings : BobSettings);
-		}
-
-		class CustomProxy : IWebProxy
-		{
-			private Uri _Address;
-
-			public CustomProxy(Uri address)
-			{
-				if(address == null)
-					throw new ArgumentNullException("address");
-				_Address = address;
-			}
-
-			public Uri GetProxy(Uri destination)
-			{
-				return _Address;
-			}
-
-			public bool IsBypassed(Uri host)
-			{
-				return false;
-			}
-
-			public ICredentials Credentials
-			{
-				get; set;
-			}
-		}
+		}		
 
 		private TumblerClient CreateTumblerClient(int cycleId, ConnectionSettings settings)
 		{
 			var client = new TumblerClient(Network, TumblerServer, cycleId);
-			if(settings?.Proxy != null)
-			{
-				CustomProxy proxy = new CustomProxy(settings.Proxy);
-				proxy.Credentials = settings.Credentials;
-				HttpClientHandler handler = new HttpClientHandler();
-				handler.UseDefaultCredentials = false;
-				handler.PreAuthenticate = settings.Credentials != null;
-				handler.Proxy = proxy;
+			var handler = settings.CreateHttpHandler(cycleId);
+			if(handler != null)
 				client.SetHttpHandler(handler);
-			}
 			return client;
 		}
 

@@ -160,6 +160,7 @@ namespace NTumbleBit.Configuration
 		}
 		public T GetOrDefault<T>(string key, T defaultValue)
 		{
+			var notNormalizedKey = key;
 			key = NormalizeKey(key);
 
 			var aliases = _Aliases
@@ -179,7 +180,7 @@ namespace NTumbleBit.Configuration
 				{
 					return ConvertValue<T>(values[0]);
 				}
-				catch(FormatException) { throw new ConfigurationException("Key " + key + " should be of type " + typeof(T).Name); }
+				catch(FormatException) { throw new ConfigurationException("Key " + notNormalizedKey + " should be of type " + typeof(T).Name); }
 			}
 			return defaultValue;
 		}
