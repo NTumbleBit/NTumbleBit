@@ -106,6 +106,7 @@ namespace NTumbleBit.ClassicTumbler.Server
 
 			runtime.ClassicTumblerParameters.ServerKey = runtime.TumblerKey.PubKey;
 			runtime.ClassicTumblerParameters.VoucherKey = runtime.VoucherKey.PubKey;
+			runtime.ClassicTumblerParametersHash = runtime.ClassicTumblerParameters.GetHash();
 
 			var dbreeze = new DBreezeRepository(Path.Combine(conf.DataDir, "db2"));
 			runtime.Repository = dbreeze;
@@ -182,6 +183,11 @@ namespace NTumbleBit.ClassicTumbler.Server
 		{
 			get;
 			set;
+		}
+		public uint160 ClassicTumblerParametersHash
+		{
+			get;
+			internal set;
 		}
 	}
 }

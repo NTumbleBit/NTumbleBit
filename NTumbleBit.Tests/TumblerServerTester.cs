@@ -218,9 +218,10 @@ namespace NTumbleBit.Tests
 		{
 			get
 			{
-
 				var address = ((KestrelServer)(_Host.Services.GetService(typeof(IServer)))).Features.Get<IServerAddressesFeature>().Addresses.FirstOrDefault();
-				return new Uri(address);
+				var builder = new UriBuilder(address);
+				builder.Path = $"api/v1/tumblers/{ServerRuntime.ClassicTumblerParameters.GetHash()}";
+				return builder.Uri;
 			}
 		}
 

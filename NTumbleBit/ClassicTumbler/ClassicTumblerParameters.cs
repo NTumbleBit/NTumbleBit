@@ -1,4 +1,6 @@
 ﻿using NBitcoin;
+using NBitcoin.Crypto;
+using NBitcoin.DataEncoders;
 using NTumbleBit.PuzzlePromise;
 using NTumbleBit.PuzzleSolver;
 using System;
@@ -120,9 +122,12 @@ namespace NTumbleBit.ClassicTumbler
 			return GetHash().Equals(item.GetHash());
 		}
 
-		private string GetHash()
+		public uint160 GetHash()
 		{
-			return Serializer.ToString(this);
+			// Ideally ClassicTumblerParameters should be serialized as a byte array
+			// Because there is no such thing as canonical JSON
+			// For V1, we assume everybody run NTumbleBit, so it should not be a problem
+			return Hashes.Hash160(Encoding.UTF8.GetBytes(Serializer.ToString(this, Network)));
 		}
 
 		public static bool operator ==(ClassicTumblerParameters a, ClassicTumblerParameters b)
@@ -137,6 +142,17 @@ namespace NTumbleBit.ClassicTumbler
 		public static bool operator !=(ClassicTumblerParameters a, ClassicTumblerParameters b)
 		{
 			return !(a == b);
+		}
+
+		public static uint160 ExtractHashFromUrl(Uri serverUrl)
+		{
+			var prefix = "/api/v1/tumblers/";
+			var path = new UriBuilder(serverUrl).Path;
+			if(!path.StartsWith(prefix, StringComparison.Ordinal) || path.Length != prefix.Length + 20 * 2)
+			{
+				throw new FormatException("invalid tumbler uri");
+			}
+			return new uint160(path.Substring(prefix.Length, 20 * 2));
 		}
 
 		public override int GetHashCode()

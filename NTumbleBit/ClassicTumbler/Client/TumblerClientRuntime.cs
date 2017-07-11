@@ -21,7 +21,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 	{
 		Alice,
 		Bob
-	}	
+	}
 
 	public class TumblerClientRuntime : IDisposable
 	{
@@ -80,6 +80,11 @@ namespace NTumbleBit.ClassicTumbler.Client
 					throw new ConfigException("Missing configuration for outputwallet");
 
 				runtime.TumblerParameters = dbreeze.Get<ClassicTumbler.ClassicTumblerParameters>("Configuration", configuration.TumblerServer.AbsoluteUri);
+				var parameterHash = ClassicTumbler.ClassicTumblerParameters.ExtractHashFromUrl(configuration.TumblerServer);
+
+				if(runtime.TumblerParameters != null && runtime.TumblerParameters.GetHash() != parameterHash)
+					runtime.TumblerParameters = null;
+
 				if(!configuration.OnlyMonitor)
 				{
 					if(!torOnly && configuration.CheckIp)
@@ -108,16 +113,20 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 					var client = runtime.CreateTumblerClient(0);
 					Logs.Configuration.LogInformation("Downloading tumbler information of " + configuration.TumblerServer.AbsoluteUri);
-					var parameters = Retry(3, () => client.GetTumblerParameters());
-					if(parameters == null)
-						throw new ConfigException("Unable tumbler's parameters");
-					Logs.Configuration.LogInformation("Tumbler Server Connection successfull");
-
-					if(runtime.TumblerParameters != parameters)
+					if(runtime.TumblerParameters == null)
 					{
+						var parameters = Retry(3, () => client.GetTumblerParameters());
+						if(parameters == null)
+							throw new ConfigException("Unable to download tumbler's parameters");
+
 						await interaction.ConfirmParametersAsync(parameters).ConfigureAwait(false);
 						runtime.Repository.UpdateOrInsert("Configuration", runtime.TumblerServer.AbsoluteUri, parameters, (o, n) => n);
 						runtime.TumblerParameters = parameters;
+
+						if(parameters.GetHash() != parameterHash)
+							throw new ConfigException("The tumbler returned an invalid configuration");
+
+						Logs.Configuration.LogInformation("Tumbler parameters saved");
 					}
 				}
 			}

@@ -24,6 +24,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 			_Address = serverAddress;
 			_Network = network;
 			this.cycleId = cycleId;
+			ClassicTumblerParameters.ExtractHashFromUrl(serverAddress); //Validate
 		}
 
 		private int cycleId;
@@ -39,13 +40,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 
 		private readonly Uri _Address;
-		public Uri Address
-		{
-			get
-			{
-				return _Address;
-			}
-		}
 
 	    private static readonly HttpClient SharedClient = new HttpClient(Utils.SetAntiFingerprint(new HttpClientHandler()));
 
@@ -53,7 +47,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 		public Task<ClassicTumblerParameters> GetTumblerParametersAsync()
 		{
-			return GetAsync<ClassicTumblerParameters>("api/v1/tumblers/0/parameters");
+			return GetAsync<ClassicTumblerParameters>($"parameters");
 		}
 		public ClassicTumblerParameters GetTumblerParameters()
 		{
@@ -72,13 +66,13 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 		public Task<UnsignedVoucherInformation> AskUnsignedVoucherAsync()
 		{
-			return GetAsync<UnsignedVoucherInformation>("api/v1/tumblers/0/vouchers/");
+			return GetAsync<UnsignedVoucherInformation>($"vouchers/");
 		}
 
 
 		public Task<PuzzleSolution> SignVoucherAsync(SignVoucherRequest signVoucherRequest)
 		{
-			return SendAsync<PuzzleSolution>(HttpMethod.Post, signVoucherRequest, "api/v1/tumblers/0/clientchannels/confirm");
+			return SendAsync<PuzzleSolution>(HttpMethod.Post, signVoucherRequest, $"clientchannels/confirm");
 		}
 		public PuzzleSolution SignVoucher(SignVoucherRequest signVoucherRequest)
 		{
@@ -89,7 +83,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 		{
 			if(request == null)
 				throw new ArgumentNullException(nameof(request));
-			return SendAsync<ScriptCoin>(HttpMethod.Post, request, "api/v1/tumblers/0/channels/");
+			return SendAsync<ScriptCoin>(HttpMethod.Post, request, $"channels/");
 		}
 
 		public ScriptCoin OpenChannel(OpenChannelRequest request)
@@ -99,7 +93,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 		public Task<TumblerEscrowKeyResponse> RequestTumblerEscrowKeyAsync()
 		{
-			return SendAsync<TumblerEscrowKeyResponse>(HttpMethod.Post, cycleId, "api/v1/tumblers/0/clientchannels/");
+			return SendAsync<TumblerEscrowKeyResponse>(HttpMethod.Post, cycleId, $"clientchannels/");
 		}
 		public TumblerEscrowKeyResponse RequestTumblerEscrowKey()
 		{
@@ -109,7 +103,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 		private string GetFullUri(string relativePath, params object[] parameters)
 		{
 			relativePath = String.Format(relativePath, parameters ?? new object[0]);
-			var uri = Address.AbsoluteUri;
+			var uri = _Address.AbsoluteUri;
 			if(!uri.EndsWith("/", StringComparison.Ordinal))
 				uri += "/";
 			uri += relativePath;
@@ -151,12 +145,12 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 		private Task<ServerCommitmentsProof> CheckRevelationAsync(string channelId, PuzzlePromise.ClientRevelation revelation)
 		{
-			return SendAsync<ServerCommitmentsProof>(HttpMethod.Post, revelation, "api/v1/tumblers/0/channels/{0}/{1}/checkrevelation", cycleId, channelId);
+			return SendAsync<ServerCommitmentsProof>(HttpMethod.Post, revelation, $"channels/{cycleId}/{channelId}/checkrevelation");
 		}
 
 		public Task<PuzzlePromise.ServerCommitment[]> SignHashesAsync(string channelId, SignaturesRequest sigReq)
 		{
-			return SendAsync<PuzzlePromise.ServerCommitment[]>(HttpMethod.Post, sigReq, "api/v1/tumblers/0/channels/{0}/{1}/signhashes", cycleId, channelId);
+			return SendAsync<PuzzlePromise.ServerCommitment[]>(HttpMethod.Post, sigReq, $"channels/{cycleId}/{channelId}/signhashes");
 		}
 
 		public SolutionKey[] CheckRevelation(string channelId, PuzzleSolver.ClientRevelation revelation)
@@ -165,7 +159,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 		}
 		public Task<SolutionKey[]> CheckRevelationAsync(string channelId, PuzzleSolver.ClientRevelation revelation)
 		{
-			return SendAsync<SolutionKey[]>(HttpMethod.Post, revelation, "api/v1/tumblers/0/clientschannels/{0}/{1}/checkrevelation", cycleId, channelId);
+			return SendAsync<SolutionKey[]>(HttpMethod.Post, revelation, $"clientschannels/{cycleId}/{channelId}/checkrevelation");
 		}
 
 		public OfferInformation CheckBlindFactors(string channelId, BlindFactor[] blindFactors)
@@ -175,7 +169,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 		public Task<OfferInformation> CheckBlindFactorsAsync(string channelId, BlindFactor[] blindFactors)
 		{
-			return SendAsync<OfferInformation>(HttpMethod.Post, blindFactors, "api/v1/tumblers/0/clientschannels/{0}/{1}/checkblindfactors", cycleId, channelId);
+			return SendAsync<OfferInformation>(HttpMethod.Post, blindFactors, $"clientschannels/{cycleId}/{channelId}/checkblindfactors");
 		}
 
 		public PuzzleSolver.ServerCommitment[] SolvePuzzles(string channelId, PuzzleValue[] puzzles)
@@ -190,7 +184,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 		public Task<PuzzleSolver.ServerCommitment[]> SolvePuzzlesAsync(string channelId, PuzzleValue[] puzzles)
 		{
-			return SendAsync<PuzzleSolver.ServerCommitment[]>(HttpMethod.Post, puzzles, "api/v1/tumblers/0/clientchannels/{0}/{1}/solvepuzzles", cycleId, channelId);
+			return SendAsync<PuzzleSolver.ServerCommitment[]>(HttpMethod.Post, puzzles, $"clientchannels/{cycleId}/{channelId}/solvepuzzles");
 		}
 
 
@@ -207,7 +201,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 		public Task<SolutionKey[]> FulfillOfferAsync(int cycleId, string channelId, TransactionSignature signature)
 		{
-			return SendAsync<SolutionKey[]>(HttpMethod.Post, signature, "api/v1/tumblers/0/clientchannels/{0}/{1}/offer", cycleId, channelId);
+			return SendAsync<SolutionKey[]>(HttpMethod.Post, signature, $"clientchannels/{cycleId}/{channelId}/offer");
 		}
 
 		public void GiveEscapeKey(string channelId, TransactionSignature signature)
@@ -216,7 +210,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 		}
 		public Task GiveEscapeKeyAsync(string channelId, TransactionSignature signature)
 		{
-			return SendAsync<string>(HttpMethod.Post, signature, "api/v1/tumblers/0/clientchannels/{0}/{1}/escape", cycleId, channelId);
+			return SendAsync<string>(HttpMethod.Post, signature, $"clientchannels/{cycleId}/{channelId}/escape");
 		}
 
 		public void Dispose()
