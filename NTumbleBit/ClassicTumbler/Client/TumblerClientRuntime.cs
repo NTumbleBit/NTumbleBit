@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using System.Net.Http;
 using NTumbleBit.Services;
 using NTumbleBit.Configuration;
+using NTumbleBit.ClassicTumbler.Client.ConnectionSettings;
 
 namespace NTumbleBit.ClassicTumbler.Client
 {
@@ -149,7 +150,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 			await SetupTorAsync(interaction, BobSettings).ConfigureAwait(false);
 		}
 
-		private Task SetupTorAsync(ClientInteraction interaction, ConnectionSettings settings)
+		private Task SetupTorAsync(ClientInteraction interaction, ConnectionSettingsBase settings)
 		{
 			var tor = settings as TorConnectionSettings;
 			if(tor == null)
@@ -169,12 +170,12 @@ namespace NTumbleBit.ClassicTumbler.Client
 			return new BroadcasterJob(Services);
 		}
 
-		public ConnectionSettings BobSettings
+		public ConnectionSettingsBase BobSettings
 		{
 			get; set;
 		}
 
-		public ConnectionSettings AliceSettings
+		public ConnectionSettingsBase AliceSettings
 		{
 			get; set;
 		}
@@ -196,7 +197,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 			return CreateTumblerClient(cycle, identity == Identity.Alice ? AliceSettings : BobSettings);
 		}
 
-		private TumblerClient CreateTumblerClient(int cycleId, ConnectionSettings settings)
+		private TumblerClient CreateTumblerClient(int cycleId, ConnectionSettingsBase settings)
 		{
 			var client = new TumblerClient(Network, TumblerServer, cycleId);
 			var handler = settings.CreateHttpHandler();
