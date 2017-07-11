@@ -56,6 +56,9 @@ namespace NTumbleBit.ClassicTumbler.Client
 				runtime.TumblerServer = configuration.TumblerServer;
 				runtime.BobSettings = configuration.BobConnectionSettings;
 				runtime.AliceSettings = configuration.AliceConnectionSettings;
+
+				await runtime.SetupTorAsync(interaction).ConfigureAwait(false);
+
 				RPCClient rpc = null;
 				try
 				{
@@ -138,6 +141,20 @@ namespace NTumbleBit.ClassicTumbler.Client
 				throw;
 			}
 			return runtime;
+		}
+
+		private async Task SetupTorAsync(ClientInteraction interaction)
+		{
+			await SetupTorAsync(interaction, AliceSettings).ConfigureAwait(false);
+			await SetupTorAsync(interaction, BobSettings).ConfigureAwait(false);
+		}
+
+		private Task SetupTorAsync(ClientInteraction interaction, ConnectionSettings settings)
+		{
+			var tor = settings as TorConnectionSettings;
+			if(tor == null)
+				return Task.CompletedTask;
+			return tor.SetupAsync();
 		}
 
 		private static async Task<IPAddress> GetExternalIp(TumblerClient client, string url)

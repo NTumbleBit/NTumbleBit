@@ -14,6 +14,7 @@ using DotNetTor.SocksPort;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace NTumbleBit.ClassicTumbler.Client
 {
@@ -102,15 +103,15 @@ namespace NTumbleBit.ClassicTumbler.Client
 		}
 
 		IPEndPoint _SocksEndpoint;
-		public ConnectionTest TryConnect()
+		async Task<ConnectionTest> TryConnectAsync()
 		{
 			var tor = CreateTorClient();
 			try
 			{
-				tor.IsCircuitEstabilishedAsync().GetAwaiter().GetResult();
+				await tor.IsCircuitEstabilishedAsync().ConfigureAwait(false);
 				if(_SocksEndpoint == null)
 				{
-					var result = tor.SendCommandAsync("GETINFO net/listeners/socks", default(CancellationToken)).GetAwaiter().GetResult();
+					var result = await tor.SendCommandAsync("GETINFO net/listeners/socks", default(CancellationToken)).ConfigureAwait(false);
 					var match = Regex.Match(result, @"(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):(\d{1,5})");
 					if(!match.Success)
 						throw new ConfigException("No socks port are exposed by Tor");
@@ -155,6 +156,24 @@ namespace NTumbleBit.ClassicTumbler.Client
 			}
 			else
 				throw new ConfigException("Invalid Tor configuration");
+		}
+
+		internal async Task SetupAsync()
+		{
+			var autoConfig = string.IsNullOrEmpty(Password) && String.IsNullOrEmpty(CookieFile);
+			var connectResult = await TryConnectAsync().ConfigureAwait(false);
+			if(connectResult == TorConnectionSettings.ConnectionTest.SocketError)
+				throw new ConfigException("Unable to connect to tor control port");
+			else if(connectResult == TorConnectionSettings.ConnectionTest.Success)
+				return;
+			else if(!autoConfig && connectResult == TorConnectionSettings.ConnectionTest.AuthError)
+				throw new ConfigException("Unable to authenticate tor control port");
+
+			if(autoConfig)
+				AutoDetectCookieFile();
+			connectResult = await TryConnectAsync().ConfigureAwait(false);
+			if(connectResult != TorConnectionSettings.ConnectionTest.Success)
+				throw new ConfigException("Unable to authenticate tor control port");
 		}
 	}
 
@@ -417,20 +436,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 				settings.Server = config.GetOrDefault<IPEndPoint>(prefix + ".proxy.server", new IPEndPoint(IPAddress.Parse("127.0.0.1"), 9051));
 				settings.Password = config.GetOrDefault<string>(prefix + ".proxy.password", null);
 				settings.CookieFile = config.GetOrDefault<string>(prefix + ".proxy.cookiefile", null);
-
-				var autoConfig = string.IsNullOrEmpty(settings.Password) && String.IsNullOrEmpty(settings.CookieFile);
-				var connectResult = settings.TryConnect();
-				if(connectResult == TorConnectionSettings.ConnectionTest.SocketError)
-					throw new ConfigException("Unable to connect to tor control port");
-				else if(connectResult == TorConnectionSettings.ConnectionTest.Success)
-					return settings;
-				else if(!autoConfig && connectResult == TorConnectionSettings.ConnectionTest.AuthError)
-					throw new ConfigException("Unable to authenticate tor control port");
-
-				if(autoConfig)
-					settings.AutoDetectCookieFile();
-				if(settings.TryConnect() != TorConnectionSettings.ConnectionTest.Success)
-					throw new ConfigException("Unable to authenticate tor control port");
 				return settings;
 			}
 			else
