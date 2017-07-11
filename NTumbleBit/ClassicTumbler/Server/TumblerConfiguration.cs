@@ -175,7 +175,6 @@ namespace NTumbleBit.ClassicTumbler.Server
 				builder.AppendLine("#port=37123");
 				builder.AppendLine("#listen=0.0.0.0");
 
-
 				builder.AppendLine();
 				builder.AppendLine();
 
