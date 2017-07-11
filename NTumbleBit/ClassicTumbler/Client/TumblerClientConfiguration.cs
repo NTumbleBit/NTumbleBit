@@ -82,6 +82,13 @@ namespace NTumbleBit.ClassicTumbler.Client
 			{
 				cookie = new FileInfo("/var/lib/tor/control_auth_cookie");
 				cookie = cookie.Exists ? cookie : new FileInfo("/var/run/tor/control.authcookie");
+
+				var home = Environment.GetEnvironmentVariable("HOME");
+				if(!string.IsNullOrEmpty(home))
+				{
+					cookie = cookie.Exists ? cookie : new FileInfo(Path.Combine(home, ".tor", "control_auth_cookie"));
+					cookie = cookie.Exists ? cookie : new FileInfo(Path.Combine(home, ".tor", "control.authcookie"));
+				}
 			}
 			else
 			{
