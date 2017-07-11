@@ -490,6 +490,12 @@ namespace NTumbleBit.ClassicTumbler.Client
 				builder.AppendLine("#or");
 				builder.AppendLine("#bob.proxy.type=socks");
 				builder.AppendLine("#bob.proxy.server=127.0.0.1:9050");
+				builder.AppendLine();
+				builder.AppendLine("#Disabling any proxy");
+				builder.AppendLine("#alice.proxy.type=none");
+				builder.AppendLine("#or");
+				builder.AppendLine("#bob.proxy.type=none");
+
 
 				builder.AppendLine();
 				builder.AppendLine();
