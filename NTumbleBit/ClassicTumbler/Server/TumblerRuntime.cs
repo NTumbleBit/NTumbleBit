@@ -57,9 +57,7 @@ namespace NTumbleBit.ClassicTumbler.Server
 				else
 					Logs.Configuration.LogWarning("Tor RSA private key not found, please backup it. Creating...");
 
-				var routable = conf.Listen.FirstOrDefault();
-				if(routable.Address == IPAddress.Any)
-					routable = new IPEndPoint(IPAddress.Parse("127.0.0.1"), routable.Port);
+				IPEndPoint routable = GetLocalEndpoint(conf);
 				var command = $"ADD_ONION {privateKey} Port={routable.Port},{routable.Address}:{routable.Port}";
 				var tor = conf.TorSettings.CreateTorClient();
 				var result = await tor.SendCommandAsync(command, default(CancellationToken)).ConfigureAwait(false);
@@ -108,12 +106,29 @@ namespace NTumbleBit.ClassicTumbler.Server
 			runtime.ClassicTumblerParameters.VoucherKey = runtime.VoucherKey.PubKey;
 			runtime.ClassicTumblerParametersHash = runtime.ClassicTumblerParameters.GetHash();
 
+			if(runtime.TorUri != null)
+				runtime.TumblerUri = runtime.CreateTumblerUri(runtime.TorUri);
+			else
+			{
+				var localEndpoint = GetLocalEndpoint(conf);
+				runtime.TumblerUri = runtime.CreateTumblerUri(new Uri($"http://{localEndpoint.Address}:{localEndpoint.Port}"));
+			}
+
+			Logs.Configuration.LogInformation($"The shareable URI of the running tumbler is {runtime.TumblerUri}");
 			var dbreeze = new DBreezeRepository(Path.Combine(conf.DataDir, "db2"));
 			runtime.Repository = dbreeze;
 			runtime._Resources.Add(dbreeze);
 			runtime.Tracker = new Tracker(dbreeze, runtime.Network);
 			runtime.Services = ExternalServices.CreateFromRPCClient(rpcClient, dbreeze, runtime.Tracker);
 			return runtime;
+		}
+
+		private static IPEndPoint GetLocalEndpoint(TumblerConfiguration conf)
+		{
+			var routable = conf.Listen.FirstOrDefault();
+			if(routable.Address == IPAddress.Any)
+				routable = new IPEndPoint(IPAddress.Parse("127.0.0.1"), routable.Port);
+			return routable;
 		}
 
 		public Uri TorUri
@@ -188,6 +203,18 @@ namespace NTumbleBit.ClassicTumbler.Server
 		{
 			get;
 			internal set;
+		}
+		public Uri TumblerUri
+		{
+			get;
+			set;
+		}
+
+		private Uri CreateTumblerUri(Uri baseUri)
+		{
+			var builder = new UriBuilder(baseUri);
+			builder.Path = $"/api/v1/tumblers/{ClassicTumblerParametersHash}";
+			return builder.Uri;
 		}
 	}
 }

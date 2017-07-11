@@ -12,6 +12,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -69,6 +70,7 @@ namespace NTumbleBit.Tests
 				conf.RPC.User = creds.Item1;
 				conf.RPC.Password = creds.Item2;
 				conf.Network = Network.RegTest;
+				conf.Listen.Add(new System.Net.IPEndPoint(IPAddress.Parse("127.0.0.1"), 5000));
 				conf.ClassicTumblerParameters.FakePuzzleCount /= 4;
 				conf.ClassicTumblerParameters.FakeTransactionCount /= 4;
 				conf.ClassicTumblerParameters.RealTransactionCount /= 4;
