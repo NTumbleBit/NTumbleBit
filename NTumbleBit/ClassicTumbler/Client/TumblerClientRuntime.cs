@@ -92,7 +92,8 @@ namespace NTumbleBit.ClassicTumbler.Client
 				runtime.TumblerParameters = dbreeze.Get<ClassicTumbler.ClassicTumblerParameters>("Configuration", configuration.TumblerServer.AbsoluteUri);
 				if(!configuration.OnlyMonitor)
 				{
-					if(configuration.CheckIp)
+					var torOnly = runtime.AliceSettings is TorConnectionSettings && runtime.BobSettings is TorConnectionSettings;
+					if(!torOnly && configuration.CheckIp)
 					{
 						var ip1 = GetExternalIp(runtime.CreateTumblerClient(0, Identity.Alice), "https://myexternalip.com/raw");
 						var ip2 = GetExternalIp(runtime.CreateTumblerClient(0, Identity.Bob), "https://icanhazip.com/");
@@ -181,7 +182,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 		private TumblerClient CreateTumblerClient(int cycleId, ConnectionSettings settings)
 		{
 			var client = new TumblerClient(Network, TumblerServer, cycleId);
-			var handler = settings.CreateHttpHandler(cycleId);
+			var handler = settings.CreateHttpHandler();
 			if(handler != null)
 				client.SetHttpHandler(handler);
 			return client;

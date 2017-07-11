@@ -8,7 +8,7 @@
     <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="DotNetTor" Version="2.2.0.2" />
+    <PackageReference Include="DotNetTor" Version="2.2.1" />
     <PackageReference Include="CommandLineParser" Version="2.1.1-beta" />
     <PackageReference Include="DBreeze" Version="1.84.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="1.1.3" />
