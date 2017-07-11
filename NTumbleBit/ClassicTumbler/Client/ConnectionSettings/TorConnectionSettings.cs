@@ -41,7 +41,13 @@ namespace NTumbleBit.ClassicTumbler.Client.ConnectionSettings
 		{
 			CancellationTokenSource cts = new CancellationTokenSource();
 			cts.CancelAfter(60000);
-			CreateTorClient().ChangeCircuitAsync(cts.Token).GetAwaiter().GetResult();
+			var client = CreateTorClient();
+			client.ChangeCircuitAsync(cts.Token).GetAwaiter().GetResult();
+			while(!client.IsCircuitEstabilishedAsync(cts.Token).GetAwaiter().GetResult())
+			{
+				cts.Token.ThrowIfCancellationRequested();
+				cts.Token.WaitHandle.WaitOne(100);
+			}
 			return new SocksPortHandler(_SocksEndpoint);
 		}
 
