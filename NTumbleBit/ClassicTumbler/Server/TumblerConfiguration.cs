@@ -197,6 +197,9 @@ namespace NTumbleBit.ClassicTumbler.Server
 				builder.AppendLine("#tor.password=mypassword");
 				builder.AppendLine("#tor.cookiefile=/path/to/my/cookie/file");
 
+				builder.AppendLine();
+				builder.AppendLine();
+
 				builder.AppendLine("####Debug Commands####");
 				builder.AppendLine("#Whether or not the tumbler deliver puzzle's solution off chain to the client (default: true)");
 				builder.AppendLine("#cooperative=false");
