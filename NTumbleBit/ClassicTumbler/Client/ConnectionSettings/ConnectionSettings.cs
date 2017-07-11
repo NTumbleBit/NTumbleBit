@@ -38,11 +38,7 @@ namespace NTumbleBit.ClassicTumbler.Client.ConnectionSettings
 			}
 			else if(type.Equals("tor", StringComparison.OrdinalIgnoreCase))
 			{
-				TorConnectionSettings settings = new TorConnectionSettings();
-				settings.Server = config.GetOrDefault<IPEndPoint>(prefix + ".proxy.server", new IPEndPoint(IPAddress.Parse("127.0.0.1"), 9051));
-				settings.Password = config.GetOrDefault<string>(prefix + ".proxy.password", null);
-				settings.CookieFile = config.GetOrDefault<string>(prefix + ".proxy.cookiefile", null);
-				return settings;
+				return TorConnectionSettings.ParseConnectionSettings(prefix + ".proxy", config);
 			}
 			else
 				throw new ConfigException(prefix + ".proxy.type is not supported, should be socks or http");

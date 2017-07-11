@@ -1,4 +1,5 @@
 ﻿using DotNetTor.SocksPort;
+using NTumbleBit.ClassicTumbler.CLI;
 using NTumbleBit.Configuration;
 using System;
 using System.Collections.Generic;
@@ -16,6 +17,14 @@ namespace NTumbleBit.ClassicTumbler.Client.ConnectionSettings
 {
 	public class TorConnectionSettings : ConnectionSettingsBase
 	{
+		public static TorConnectionSettings ParseConnectionSettings(string prefix, TextFileConfiguration config)
+		{
+			TorConnectionSettings settings = new TorConnectionSettings();
+			settings.Server = config.GetOrDefault<IPEndPoint>(prefix + ".server", new IPEndPoint(IPAddress.Parse("127.0.0.1"), 9051));
+			settings.Password = config.GetOrDefault<string>(prefix + ".password", null);
+			settings.CookieFile = config.GetOrDefault<string>(prefix + ".cookiefile", null);
+			return settings;
+		}
 		public enum ConnectionTest
 		{
 			AuthError,
@@ -123,7 +132,7 @@ namespace NTumbleBit.ClassicTumbler.Client.ConnectionSettings
 			return false;
 		}
 
-		DotNetTor.ControlPort.Client CreateTorClient()
+		internal DotNetTor.ControlPort.Client CreateTorClient()
 		{
 			if(string.IsNullOrEmpty(Password) && string.IsNullOrEmpty(CookieFile))
 			{
@@ -141,7 +150,7 @@ namespace NTumbleBit.ClassicTumbler.Client.ConnectionSettings
 				throw new ConfigException("Invalid Tor configuration");
 		}
 
-		internal async Task SetupAsync()
+		internal async Task SetupAsync(ClientInteraction interaction)
 		{
 			var autoConfig = string.IsNullOrEmpty(Password) && String.IsNullOrEmpty(CookieFile);
 			var connectResult = await TryConnectAsync().ConfigureAwait(false);

@@ -10,13 +10,21 @@ using NTumbleBit.Services;
 using NTumbleBit.ClassicTumbler;
 using NBitcoin;
 using NTumbleBit.Configuration;
+using NTumbleBit.ClassicTumbler.Client;
+using NTumbleBit.ClassicTumbler.CLI;
+using System.Text;
+using System.Net;
+using System.Threading;
 
 namespace NTumbleBit.ClassicTumbler.Server
 {
 	public class TumblerRuntime : IDisposable
 	{
-
-		public static TumblerRuntime FromConfiguration(TumblerConfiguration conf)
+		public static TumblerRuntime FromConfiguration(TumblerConfiguration conf, ClientInteraction interaction)
+		{
+			return FromConfigurationAsync(conf, interaction).GetAwaiter().GetResult();
+		}
+		public static async Task<TumblerRuntime> FromConfigurationAsync(TumblerConfiguration conf, ClientInteraction interaction)
 		{
 			if(conf == null)
 				throw new ArgumentNullException("conf");
@@ -33,6 +41,40 @@ namespace NTumbleBit.ClassicTumbler.Server
 			{
 				throw new ConfigException("Please, fix rpc settings in " + conf.ConfigurationFile);
 			}
+
+			if(conf.TorSettings != null)
+			{
+				await conf.TorSettings.SetupAsync(interaction).ConfigureAwait(false);
+				Logs.Configuration.LogInformation("Successfully authenticated to Tor");
+				var torRSA = Path.Combine(conf.DataDir, "Tor.rsa");
+
+				var keyType = "NEW:RSA1024";
+				var privateKey = keyType;
+				if(File.Exists(torRSA))
+				{
+					privateKey = File.ReadAllText(torRSA, Encoding.UTF8);
+				}
+				else
+					Logs.Configuration.LogWarning("Tor RSA private key not found, please backup it. Creating...");
+
+				var routable = conf.Listen.FirstOrDefault();
+				if(routable.Address == IPAddress.Any)
+					routable = new IPEndPoint(IPAddress.Parse("127.0.0.1"), routable.Port);
+				var command = $"ADD_ONION {privateKey} Port={routable.Port},{routable.Address}:{routable.Port}";
+				var tor = conf.TorSettings.CreateTorClient();
+				var result = await tor.SendCommandAsync(command, default(CancellationToken)).ConfigureAwait(false);
+
+				if(privateKey == keyType)
+				{
+					privateKey = System.Text.RegularExpressions.Regex.Match(result, "250-PrivateKey=([^\r]*)").Groups[1].Value;
+					File.WriteAllText(torRSA, privateKey);
+				}
+				var serviceId = System.Text.RegularExpressions.Regex.Match(result, "250-ServiceID=([^\r]*)").Groups[1].Value;
+				runtime.TorUri = new UriBuilder() { Scheme = "http", Host = serviceId + ".onion" }.Uri;
+				Logs.Configuration.LogInformation($"Tor configured on {runtime.TorUri.AbsoluteUri}");
+			}
+			else
+				Logs.Configuration.LogWarning("Tor is turned off");
 
 			var rsaFile = Path.Combine(conf.DataDir, "Tumbler.pem");
 			if(!File.Exists(rsaFile))
@@ -71,6 +113,11 @@ namespace NTumbleBit.ClassicTumbler.Server
 			runtime.Tracker = new Tracker(dbreeze, runtime.Network);
 			runtime.Services = ExternalServices.CreateFromRPCClient(rpcClient, dbreeze, runtime.Tracker);
 			return runtime;
+		}
+
+		public Uri TorUri
+		{
+			get; set;
 		}
 
 		public void Dispose()

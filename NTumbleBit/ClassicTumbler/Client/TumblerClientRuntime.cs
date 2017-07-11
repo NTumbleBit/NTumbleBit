@@ -13,6 +13,7 @@ using System.Net.Http;
 using NTumbleBit.Services;
 using NTumbleBit.Configuration;
 using NTumbleBit.ClassicTumbler.Client.ConnectionSettings;
+using NTumbleBit.ClassicTumbler.CLI;
 
 namespace NTumbleBit.ClassicTumbler.Client
 {
@@ -20,26 +21,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 	{
 		Alice,
 		Bob
-	}
-
-	public class ClientInteractionException : Exception
-	{
-		public ClientInteractionException(string message) : base(message)
-		{
-
-		}
-	}
-	public interface ClientInteraction
-	{
-		Task ConfirmParametersAsync(ClassicTumblerParameters parameters);
-	}
-	public class AcceptAllClientInteraction : ClientInteraction
-	{
-		public Task ConfirmParametersAsync(ClassicTumblerParameters parameters)
-		{
-			return Task.CompletedTask;
-		}
-	}
+	}	
 
 	public class TumblerClientRuntime : IDisposable
 	{
@@ -58,7 +40,11 @@ namespace NTumbleBit.ClassicTumbler.Client
 				runtime.BobSettings = configuration.BobConnectionSettings;
 				runtime.AliceSettings = configuration.AliceConnectionSettings;
 
+				var torOnly = runtime.AliceSettings is TorConnectionSettings && runtime.BobSettings is TorConnectionSettings;
+
 				await runtime.SetupTorAsync(interaction).ConfigureAwait(false);
+				if(torOnly)
+					Logs.Configuration.LogInformation("Successfully authenticated to Tor");
 
 				RPCClient rpc = null;
 				try
@@ -96,7 +82,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 				runtime.TumblerParameters = dbreeze.Get<ClassicTumbler.ClassicTumblerParameters>("Configuration", configuration.TumblerServer.AbsoluteUri);
 				if(!configuration.OnlyMonitor)
 				{
-					var torOnly = runtime.AliceSettings is TorConnectionSettings && runtime.BobSettings is TorConnectionSettings;
 					if(!torOnly && configuration.CheckIp)
 					{
 						var ip1 = GetExternalIp(runtime.CreateTumblerClient(0, Identity.Alice), "https://myexternalip.com/raw");
@@ -155,7 +140,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 			var tor = settings as TorConnectionSettings;
 			if(tor == null)
 				return Task.CompletedTask;
-			return tor.SetupAsync();
+			return tor.SetupAsync(interaction);
 		}
 
 		private static async Task<IPAddress> GetExternalIp(TumblerClient client, string url)

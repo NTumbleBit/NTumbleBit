@@ -1,10 +1,12 @@
-﻿using System;
+﻿using NTumbleBit.ClassicTumbler;
+using NTumbleBit.ClassicTumbler.CLI;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NTumbleBit.ClassicTumbler.Client.CLI
+namespace NTumbleBit
 {
 	public class TextWriterClientInteraction : ClientInteraction
 	{

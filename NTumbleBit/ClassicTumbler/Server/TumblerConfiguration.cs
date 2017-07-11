@@ -10,6 +10,7 @@ using System.Text;
 using System.Runtime.InteropServices;
 using NTumbleBit.Configuration;
 using System.Diagnostics;
+using NTumbleBit.ClassicTumbler.Client.ConnectionSettings;
 
 namespace NTumbleBit.ClassicTumbler.Server
 {
@@ -64,6 +65,12 @@ namespace NTumbleBit.ClassicTumbler.Server
 			set;
 		}
 		public bool Cooperative
+		{
+			get;
+			set;
+		}
+
+		public TorConnectionSettings TorSettings
 		{
 			get;
 			set;
@@ -133,6 +140,12 @@ namespace NTumbleBit.ClassicTumbler.Server
 				Console.WriteLine("Details on the wiki page :  https://github.com/NTumbleBit/NTumbleBit/wiki/Server-Config");
 				OpenBrowser("https://github.com/NTumbleBit/NTumbleBit/wiki/Server-Config");
 				Environment.Exit(0);
+			}
+
+			var noTor = config.GetOrDefault<bool>("noTor", false);
+			if(!noTor)
+			{
+				TorSettings = TorConnectionSettings.ParseConnectionSettings("tor", config);
 			}
 
 			Cooperative = config.GetOrDefault<bool>("cooperative", true);

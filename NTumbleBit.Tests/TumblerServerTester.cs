@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Server.Kestrel;
 using NBitcoin;
 using NTumbleBit.ClassicTumbler;
+using NTumbleBit.ClassicTumbler.CLI;
 using NTumbleBit.ClassicTumbler.Client;
 using NTumbleBit.ClassicTumbler.Server;
 using NTumbleBit.Services.RPC;
@@ -74,7 +75,7 @@ namespace NTumbleBit.Tests
 				conf.ClassicTumblerParameters.RealPuzzleCount /= 4;
 				conf.ClassicTumblerParameters.CycleGenerator.FirstCycle.Start = 105;
 
-				var runtime = TumblerRuntime.FromConfiguration(conf);
+				var runtime = TumblerRuntime.FromConfiguration(conf, new AcceptAllClientInteraction());
 				_Host = new WebHostBuilder()
 					.UseKestrel()
 					.UseAppConfiguration(runtime)
