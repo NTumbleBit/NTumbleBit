@@ -107,14 +107,23 @@ namespace NTumbleBit.ClassicTumbler.Server
 			runtime.ClassicTumblerParametersHash = runtime.ClassicTumblerParameters.GetHash();
 
 			if(runtime.TorUri != null)
-				runtime.TumblerUri = runtime.CreateTumblerUri(runtime.TorUri);
-			else
-			{
-				var localEndpoint = GetLocalEndpoint(conf);
-				runtime.TumblerUri = runtime.CreateTumblerUri(new Uri($"http://{localEndpoint.Address}:{localEndpoint.Port}"));
-			}
+				runtime.TumblerUris.Add(runtime.CreateTumblerUri(runtime.TorUri));
 
-			Logs.Configuration.LogInformation($"The shareable URI of the running tumbler is {runtime.TumblerUri}");
+			foreach(var url in conf.GetUrls())			
+				runtime.TumblerUris.Add(runtime.CreateTumblerUri(new Uri(url, UriKind.Absolute)));
+
+
+			Logs.Configuration.LogInformation("");
+			Logs.Configuration.LogInformation($"--------------------------------");
+			var uris = String.Join(Environment.NewLine, runtime.TumblerUris.ToArray().Select(u => u.AbsoluteUri).ToArray());
+			Logs.Configuration.LogInformation($"Shareable URIs of the running tumbler are:");
+			foreach(var uri in runtime.TumblerUris)
+			{
+				Logs.Configuration.LogInformation(uri.AbsoluteUri);
+			}
+			Logs.Configuration.LogInformation($"--------------------------------");
+			Logs.Configuration.LogInformation("");
+
 			var dbreeze = new DBreezeRepository(Path.Combine(conf.DataDir, "db2"));
 			runtime.Repository = dbreeze;
 			runtime._Resources.Add(dbreeze);
@@ -204,11 +213,11 @@ namespace NTumbleBit.ClassicTumbler.Server
 			get;
 			internal set;
 		}
-		public Uri TumblerUri
+		public List<Uri> TumblerUris
 		{
 			get;
 			set;
-		}
+		} = new List<Uri>();
 
 		private Uri CreateTumblerUri(Uri baseUri)
 		{
