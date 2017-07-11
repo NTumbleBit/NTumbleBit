@@ -142,8 +142,8 @@ namespace NTumbleBit.ClassicTumbler.Server
 				Environment.Exit(0);
 			}
 
-			var noTor = config.GetOrDefault<bool>("noTor", false);
-			if(!noTor)
+			var torEnabled = config.GetOrDefault<bool>("tor.enabled", true);
+			if(torEnabled)
 			{
 				TorSettings = TorConnectionSettings.ParseConnectionSettings("tor", config);
 			}
@@ -191,11 +191,15 @@ namespace NTumbleBit.ClassicTumbler.Server
 				builder.AppendLine();
 				builder.AppendLine();
 
+				builder.AppendLine("####Tor configuration (default is enabled, using cookie auth or no auth on Tor control port 9051)####");
+				builder.AppendLine("#tor.enabled=true");
+				builder.AppendLine("#tor.server=127.0.0.1:9051");
+				builder.AppendLine("#tor.password=mypassword");
+				builder.AppendLine("#tor.cookiefile=/path/to/my/cookie/file");
+
 				builder.AppendLine("####Debug Commands####");
 				builder.AppendLine("#Whether or not the tumbler deliver puzzle's solution off chain to the client (default: true)");
 				builder.AppendLine("#cooperative=false");
-				builder.AppendLine("#Whether or not IP sharing between Bob and Alice is authorized (default: true for testnets, false for mainnet)");
-				builder.AppendLine("#allowinsecure=true");
 				File.WriteAllText(config, builder.ToString());
 			}
 			return config;
