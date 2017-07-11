@@ -16,7 +16,7 @@ namespace NTumbleBit.Tests
 		{
 			using(var server = TumblerServerTester.Create())
 			{
-				var client = server.ClientRuntime.CreateTumblerClient(0, Identity.Random);
+				var client = server.ClientRuntime.CreateTumblerClient(0);
 				var parameters = client.GetTumblerParameters();
 				Assert.NotNull(parameters.ServerKey);
 				Assert.NotEqual(0, parameters.RealTransactionCount);

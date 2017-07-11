@@ -18,8 +18,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 	public enum Identity
 	{
 		Alice,
-		Bob,
-		Random
+		Bob
 	}
 	public class TumblerClientRuntime : IDisposable
 	{
@@ -94,7 +93,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 					}
 
 
-					var client = runtime.CreateTumblerClient(0, Identity.Random);
+					var client = runtime.CreateTumblerClient(0);
 					Logs.Configuration.LogInformation("Downloading tumbler information of " + configuration.TumblerServer.AbsoluteUri);
 					var parameters = Retry(3, () => client.GetTumblerParameters());
 					Logs.Configuration.LogInformation("Tumbler Server Connection successfull");
@@ -166,9 +165,9 @@ namespace NTumbleBit.ClassicTumbler.Client
 			get; set;
 		}
 
-		public TumblerClient CreateTumblerClient(int cycle, Identity identity)
+		public TumblerClient CreateTumblerClient(int cycle, Identity? identity = null)
 		{
-			if(identity == Identity.Random)
+			if(identity == null)
 				identity = RandomUtils.GetUInt32() % 2 == 0 ? Identity.Alice : Identity.Bob;
 			return CreateTumblerClient(cycle, identity == Identity.Alice ? AliceSettings : BobSettings);
 		}		
