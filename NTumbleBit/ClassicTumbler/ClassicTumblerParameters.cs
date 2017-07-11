@@ -4,6 +4,7 @@ using NTumbleBit.PuzzleSolver;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace NTumbleBit.ClassicTumbler
@@ -108,6 +109,39 @@ namespace NTumbleBit.ClassicTumbler
 				RealTransactionCount = RealTransactionCount,
 				ServerKey = ServerKey
 			};
+		}
+
+
+		public override bool Equals(object obj)
+		{
+			ClassicTumblerParameters item = obj as ClassicTumblerParameters;
+			if(item == null)
+				return false;
+			return GetHash().Equals(item.GetHash());
+		}
+
+		private string GetHash()
+		{
+			return Serializer.ToString(this);
+		}
+
+		public static bool operator ==(ClassicTumblerParameters a, ClassicTumblerParameters b)
+		{
+			if(System.Object.ReferenceEquals(a, b))
+				return true;
+			if(((object)a == null) || ((object)b == null))
+				return false;
+			return a.GetHash() == b.GetHash();
+		}
+
+		public static bool operator !=(ClassicTumblerParameters a, ClassicTumblerParameters b)
+		{
+			return !(a == b);
+		}
+
+		public override int GetHashCode()
+		{
+			return GetHash().GetHashCode();
 		}
 	}
 }

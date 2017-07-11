@@ -31,20 +31,9 @@ namespace NTumbleBit.ClassicTumbler.Client.CLI
 					var config = new TumblerClientConfiguration();
 					config.LoadArgs(args);
 
-					ClassicTumblerParameters toConfirm;
-					var runtime = TumblerClientRuntime.FromConfiguration(config, out toConfirm);
-					if(toConfirm != null)
-					{
-						if(!PromptConfirmation(toConfirm))
-						{
-							Logs.Configuration.LogInformation("New tumbler parameters refused");
-							return;
-						}
-						runtime.Confirm(toConfirm);
-					}
-
+					var runtime = TumblerClientRuntime.FromConfiguration(config, new TextWriterClientInteraction(Console.Out, Console.In));
 					interactive.Runtime = new ClientInteractiveRuntime(runtime);
-					
+
 
 					var broadcaster = runtime.CreateBroadcasterJob();
 					broadcaster.Start(interactive.BroadcasterCancellationToken);
@@ -58,6 +47,11 @@ namespace NTumbleBit.ClassicTumbler.Client.CLI
 
 					interactive.StartInteractive();
 				}
+				catch(ClientInteractionException ex)
+				{
+					if(!string.IsNullOrEmpty(ex.Message))
+						Logs.Configuration.LogError(ex.Message);
+				}
 				catch(ConfigException ex)
 				{
 					if(!string.IsNullOrEmpty(ex.Message))
@@ -69,22 +63,6 @@ namespace NTumbleBit.ClassicTumbler.Client.CLI
 					Logs.Configuration.LogDebug(ex.StackTrace);
 				}
 			}
-		}
-
-		private bool PromptConfirmation(ClassicTumblerParameters toConfirm)
-		{
-			Console.WriteLine("Do you confirm the following tumbler settings? (type 'yes' to accept)");
-			Console.WriteLine("------");
-			Console.WriteLine(Serializer.ToString(toConfirm));
-			Console.WriteLine("--");
-			Console.WriteLine("Tumbler Fee: " + toConfirm.Fee.ToString());
-			Console.WriteLine("Denomination: " + toConfirm.Denomination.ToString());
-			var periods = toConfirm.CycleGenerator.FirstCycle.GetPeriods();
-			Console.WriteLine("Total cycle length: " + (periods.Total.End - periods.Total.Start) + " blocks");
-			Console.WriteLine("------");
-			Console.WriteLine("Do you confirm the following tumbler settings? (type 'yes' to accept)");
-			var response = Console.ReadLine();
-			return response.Equals("yes", StringComparison.OrdinalIgnoreCase);
 		}
 	}
 }

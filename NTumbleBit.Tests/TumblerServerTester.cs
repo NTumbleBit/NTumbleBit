@@ -104,11 +104,7 @@ namespace NTumbleBit.Tests
 				clientConfig.RPCArgs.Password = creds.Item2;
 				clientConfig.TumblerServer = Address;
 
-				ClassicTumblerParameters p;
-				ClientRuntime = TumblerClientRuntime.FromConfiguration(clientConfig, out p);
-				if(p == null)
-					throw new Exception("Client should confirm tumbler params");
-				ClientRuntime.Confirm(p);
+				ClientRuntime = TumblerClientRuntime.FromConfiguration(clientConfig, new AcceptAllClientInteraction());
 
 				//Overrides client fee
 				((RPCFeeService)ClientRuntime.Services.FeeService).FallBackFeeRate = new FeeRate(Money.Satoshis(50), 1);

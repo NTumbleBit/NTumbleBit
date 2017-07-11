@@ -20,12 +20,35 @@ namespace NTumbleBit.ClassicTumbler.Client
 		Alice,
 		Bob
 	}
+
+	public class ClientInteractionException : Exception
+	{
+		public ClientInteractionException(string message) : base(message)
+		{
+
+		}
+	}
+	public interface ClientInteraction
+	{
+		Task ConfirmParametersAsync(ClassicTumblerParameters parameters);
+	}
+	public class AcceptAllClientInteraction : ClientInteraction
+	{
+		public Task ConfirmParametersAsync(ClassicTumblerParameters parameters)
+		{
+			return Task.CompletedTask;
+		}
+	}
+
 	public class TumblerClientRuntime : IDisposable
 	{
-		public static TumblerClientRuntime FromConfiguration(TumblerClientConfiguration configuration, out ClassicTumblerParameters parametersToConfirm)
+		public static TumblerClientRuntime FromConfiguration(TumblerClientConfiguration configuration, ClientInteraction interaction)
 		{
-			parametersToConfirm = null;
-			bool needUserConfirmation = false;
+			return FromConfigurationAsync(configuration, interaction).GetAwaiter().GetResult();
+		}
+		public static async Task<TumblerClientRuntime> FromConfigurationAsync(TumblerClientConfiguration configuration, ClientInteraction interaction)
+		{
+			interaction = interaction ?? new AcceptAllClientInteraction();
 			var runtime = new TumblerClientRuntime();
 			try
 			{
@@ -66,7 +89,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 				else
 					throw new ConfigException("Missing configuration for outputwallet");
 
-				var existingConfig = dbreeze.Get<ClassicTumbler.ClassicTumblerParameters>("Configuration", configuration.TumblerServer.AbsoluteUri);
+				runtime.TumblerParameters = dbreeze.Get<ClassicTumbler.ClassicTumblerParameters>("Configuration", configuration.TumblerServer.AbsoluteUri);
 				if(!configuration.OnlyMonitor)
 				{
 					if(configuration.CheckIp)
@@ -96,27 +119,16 @@ namespace NTumbleBit.ClassicTumbler.Client
 					var client = runtime.CreateTumblerClient(0);
 					Logs.Configuration.LogInformation("Downloading tumbler information of " + configuration.TumblerServer.AbsoluteUri);
 					var parameters = Retry(3, () => client.GetTumblerParameters());
+					if(parameters == null)
+						throw new ConfigException("Unable tumbler's parameters");
 					Logs.Configuration.LogInformation("Tumbler Server Connection successfull");
 
-					if(existingConfig != null)
+					if(runtime.TumblerParameters != parameters)
 					{
-						if(Serializer.ToString(existingConfig) != Serializer.ToString(parameters))
-						{
-							needUserConfirmation = true;
-						}
-					}
-					else
-					{
-						needUserConfirmation = true;
-					}
-					if(needUserConfirmation)
-						parametersToConfirm = parameters;
-					else
+						await interaction.ConfirmParametersAsync(parameters).ConfigureAwait(false);
+						runtime.Repository.UpdateOrInsert("Configuration", runtime.TumblerServer.AbsoluteUri, parameters, (o, n) => n);
 						runtime.TumblerParameters = parameters;
-				}
-				else
-				{
-					runtime.TumblerParameters = existingConfig;
+					}
 				}
 			}
 			catch
@@ -132,12 +144,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 			var result = await client.Client.GetAsync(url).ConfigureAwait(false);
 			var content = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
 			return IPAddress.Parse(content.Replace("\n", string.Empty));
-		}
-
-		public void Confirm(ClassicTumblerParameters parameters)
-		{
-			Repository.UpdateOrInsert("Configuration", TumblerServer.AbsoluteUri, parameters, (o, n) => n);
-			TumblerParameters = parameters;
 		}
 
 		public BroadcasterJob CreateBroadcasterJob()
@@ -170,7 +176,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 			if(identity == null)
 				identity = RandomUtils.GetUInt32() % 2 == 0 ? Identity.Alice : Identity.Bob;
 			return CreateTumblerClient(cycle, identity == Identity.Alice ? AliceSettings : BobSettings);
-		}		
+		}
 
 		private TumblerClient CreateTumblerClient(int cycleId, ConnectionSettings settings)
 		{
