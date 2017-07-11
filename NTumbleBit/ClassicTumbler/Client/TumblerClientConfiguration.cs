@@ -323,13 +323,23 @@ namespace NTumbleBit.ClassicTumbler.Client
 				builder.AppendLine();
 				builder.AppendLine();
 				builder.AppendLine("####Connection Commands####");
-				builder.AppendLine("#A TumbleBit client should use the Tumbler under two different identity. We recommend to make Alice using a HTTP proxy masking her real IP address. (For example privoxy with TOR)");
+				builder.AppendLine("#Making Alice or Bob pass through a HTTP Proxy");
+				builder.AppendLine("#alice.proxy.type=http");
 				builder.AppendLine("#alice.proxy.server=http://127.0.0.1:8118/");
-				builder.AppendLine("#bob.proxy.server=http://127.0.0.1:8118/");
 				builder.AppendLine("#alice.proxy.username=dpowqkwkpd");
-				builder.AppendLine("#bob.proxy.username=dpowqkwkpd");
 				builder.AppendLine("#alice.proxy.password=padeiwmnfw");
+				builder.AppendLine("#or");
+				builder.AppendLine("#bob.proxy.type=http");
+				builder.AppendLine("#bob.proxy.server=http://127.0.0.1:8118/");
+				builder.AppendLine("#bob.proxy.username=dpowqkwkpd");
 				builder.AppendLine("#bob.proxy.password=padeiwmnfw");
+				builder.AppendLine();
+				builder.AppendLine("#Making Alice or Bob pass through a SOCKS Proxy");
+				builder.AppendLine("#alice.proxy.type=socks");
+				builder.AppendLine("#alice.proxy.server=127.0.0.1:9050");
+				builder.AppendLine("#or");
+				builder.AppendLine("#bob.proxy.type=socks");
+				builder.AppendLine("#bob.proxy.server=127.0.0.1:9050");
 
 				builder.AppendLine();
 				builder.AppendLine();
