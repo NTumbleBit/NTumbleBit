@@ -23,6 +23,7 @@ namespace NTumbleBit.ClassicTumbler.Client.ConnectionSettings
 			settings.Server = config.GetOrDefault<IPEndPoint>(prefix + ".server", new IPEndPoint(IPAddress.Parse("127.0.0.1"), 9051));
 			settings.Password = config.GetOrDefault<string>(prefix + ".password", null);
 			settings.CookieFile = config.GetOrDefault<string>(prefix + ".cookiefile", null);
+			settings.VirtualPort = config.GetOrDefault<int>(prefix + ".virtualport", 80);
 			return settings;
 		}
 		public enum ConnectionTest
@@ -42,6 +43,11 @@ namespace NTumbleBit.ClassicTumbler.Client.ConnectionSettings
 		}
 
 		public string CookieFile
+		{
+			get; set;
+		}
+
+		public int VirtualPort
 		{
 			get; set;
 		}

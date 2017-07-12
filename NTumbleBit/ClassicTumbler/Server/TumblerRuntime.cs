@@ -62,7 +62,7 @@ namespace NTumbleBit.ClassicTumbler.Server
 						Logs.Configuration.LogWarning("Tor RSA private key not found, please backup it. Creating...");
 
 					IPEndPoint routable = GetLocalEndpoint(conf);
-					var command = $"ADD_ONION {privateKey} Port={routable.Port},{routable.Address}:{routable.Port}";
+					var command = $"ADD_ONION {privateKey} Port={conf.TorSettings.VirtualPort},{routable.Address}:{routable.Port}";
 					var tor = conf.TorSettings.CreateTorClient();
 					var result = await tor.SendCommandAsync(command, default(CancellationToken)).ConfigureAwait(false);
 
@@ -72,7 +72,7 @@ namespace NTumbleBit.ClassicTumbler.Server
 						File.WriteAllText(torRSA, privateKey);
 					}
 					var serviceId = System.Text.RegularExpressions.Regex.Match(result, "250-ServiceID=([^\r]*)").Groups[1].Value;
-					runtime.TorUri = new UriBuilder() { Scheme = "http", Host = serviceId + ".onion" }.Uri;
+					runtime.TorUri = new UriBuilder() { Scheme = "http", Host = serviceId + ".onion", Port = conf.TorSettings.VirtualPort }.Uri;
 					Logs.Configuration.LogInformation($"Tor configured on {runtime.TorUri.AbsoluteUri}");
 					torConfigured = true;
 				}
