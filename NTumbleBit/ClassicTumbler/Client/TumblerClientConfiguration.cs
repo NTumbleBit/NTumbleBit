@@ -95,11 +95,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 		{
 			get; set;
 		} = new RPCArgs();
-		public bool AllowInsecure
-		{
-			get;
-			set;
-		} = false;
 
 		public TumblerClientConfiguration LoadArgs(String[] args)
 		{
@@ -203,7 +198,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 			AliceConnectionSettings = ConnectionSettingsBase.ParseConnectionSettings("alice", config);
 			BobConnectionSettings = ConnectionSettingsBase.ParseConnectionSettings("bob", config);
 
-			AllowInsecure = config.GetOrDefault<bool>("allowinsecure", IsTest(Network));
 			return this;
 		}
 
@@ -247,24 +241,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 				builder.AppendLine("#bob.proxy.server=127.0.0.1:9051");
 				builder.AppendLine("#bob.proxy.password=padeiwmnfw");
 				builder.AppendLine("#bob.proxy.cookiefile=/var/run/tor/control.authcookie");
-				builder.AppendLine();
-				builder.AppendLine("#Making Alice or Bob pass through a HTTP Proxy");
-				builder.AppendLine("#alice.proxy.type=http");
-				builder.AppendLine("#alice.proxy.server=http://127.0.0.1:8118/");
-				builder.AppendLine("#alice.proxy.username=dpowqkwkpd");
-				builder.AppendLine("#alice.proxy.password=padeiwmnfw");
-				builder.AppendLine("#or");
-				builder.AppendLine("#bob.proxy.type=http");
-				builder.AppendLine("#bob.proxy.server=http://127.0.0.1:8118/");
-				builder.AppendLine("#bob.proxy.username=dpowqkwkpd");
-				builder.AppendLine("#bob.proxy.password=padeiwmnfw");
-				builder.AppendLine();
-				builder.AppendLine("#Making Alice or Bob pass through a SOCKS Proxy");
-				builder.AppendLine("#alice.proxy.type=socks");
-				builder.AppendLine("#alice.proxy.server=127.0.0.1:9050");
-				builder.AppendLine("#or");
-				builder.AppendLine("#bob.proxy.type=socks");
-				builder.AppendLine("#bob.proxy.server=127.0.0.1:9050");
+				
 				builder.AppendLine();
 				builder.AppendLine("#Disabling any proxy");
 				builder.AppendLine("#alice.proxy.type=none");
@@ -278,8 +255,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 				builder.AppendLine("####Debug Commands####");
 				builder.AppendLine("#Whether or not signature for the escape transaction is transmitted to the Tumbler (default: true)");
 				builder.AppendLine("#cooperative=false");
-				builder.AppendLine("#Whether or not IP sharing between Bob and Alice is authorized (default: true for testnets, false for mainnet)");
-				builder.AppendLine("#allowinsecure=true");
 				File.WriteAllText(config, builder.ToString());
 			}
 			return config;

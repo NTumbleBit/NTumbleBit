@@ -16,32 +16,12 @@ namespace NTumbleBit.ClassicTumbler.Client.ConnectionSettings
 			{
 				return new ConnectionSettingsBase();
 			}
-			else if(type.Equals("http", StringComparison.OrdinalIgnoreCase))
-			{
-
-				HttpConnectionSettings settings = new HttpConnectionSettings();
-				var server = config.GetOrDefault<Uri>(prefix + ".proxy.server", null);
-				if(server != null)
-					settings.Proxy = server;
-				var user = config.GetOrDefault<string>(prefix + ".proxy.username", null);
-				var pass = config.GetOrDefault<string>(prefix + ".proxy.password", null);
-				if(user != null && pass != null)
-					settings.Credentials = new NetworkCredential(user, pass);
-				return settings;
-			}
-			else if(type.Equals("socks", StringComparison.OrdinalIgnoreCase))
-			{
-				SocksConnectionSettings settings = new SocksConnectionSettings();
-				var server = config.GetOrDefault<IPEndPoint>(prefix + ".proxy.server", new IPEndPoint(IPAddress.Parse("127.0.0.1"), 9050));
-				settings.Proxy = server;
-				return settings;
-			}
 			else if(type.Equals("tor", StringComparison.OrdinalIgnoreCase))
 			{
 				return TorConnectionSettings.ParseConnectionSettings(prefix + ".proxy", config);
 			}
 			else
-				throw new ConfigException(prefix + ".proxy.type is not supported, should be socks or http");
+				throw new ConfigException(prefix + ".proxy.type is not supported, should be tor");
 		}
 		public virtual HttpMessageHandler CreateHttpHandler()
 		{
