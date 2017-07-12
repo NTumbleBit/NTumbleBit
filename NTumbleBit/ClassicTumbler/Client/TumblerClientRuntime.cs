@@ -107,16 +107,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 					var bobIp = ip2.GetAwaiter().GetResult();
 					if(aliceIp.Equals(bobIp))
 					{
-						var error = "Same IP detected for Bob and Alice, the tumbler can link input address to output address";
-
-						if(configuration.AllowInsecure)
-						{
-							Logs.Configuration.LogWarning(error);
-						}
-						else
-						{
-							throw new ConfigException(error + ", use parameter -allowinsecure or allowinsecure=true in config file to ignore.");
-						}
+						throw new ConfigException("Same IP detected for Bob and Alice, the tumbler can link input address to output address");
 					}
 					else
 						Logs.Configuration.LogInformation("Alice and Bob have different IP configured");

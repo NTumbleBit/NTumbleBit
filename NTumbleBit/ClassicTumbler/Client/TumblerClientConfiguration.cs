@@ -95,11 +95,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 		{
 			get; set;
 		} = new RPCArgs();
-		public bool AllowInsecure
-		{
-			get;
-			set;
-		} = false;
 
 		public TumblerClientConfiguration LoadArgs(String[] args)
 		{
@@ -203,7 +198,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 			AliceConnectionSettings = ConnectionSettingsBase.ParseConnectionSettings("alice", config);
 			BobConnectionSettings = ConnectionSettingsBase.ParseConnectionSettings("bob", config);
 
-			AllowInsecure = config.GetOrDefault<bool>("allowinsecure", IsTest(Network));
 			return this;
 		}
 
