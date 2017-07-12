@@ -29,113 +29,120 @@ namespace NTumbleBit.ClassicTumbler.Client
 		{
 			return FromConfigurationAsync(configuration, interaction).GetAwaiter().GetResult();
 		}
+
 		public static async Task<TumblerClientRuntime> FromConfigurationAsync(TumblerClientConfiguration configuration, ClientInteraction interaction)
 		{
-			interaction = interaction ?? new AcceptAllClientInteraction();
-			var runtime = new TumblerClientRuntime();
+			TumblerClientRuntime runtime = new TumblerClientRuntime();
 			try
 			{
-				runtime.Network = configuration.Network;
-				runtime.TumblerServer = configuration.TumblerServer;
-				runtime.BobSettings = configuration.BobConnectionSettings;
-				runtime.AliceSettings = configuration.AliceConnectionSettings;
-
-				var torOnly = runtime.AliceSettings is TorConnectionSettings && runtime.BobSettings is TorConnectionSettings;
-
-				await runtime.SetupTorAsync(interaction).ConfigureAwait(false);
-				if(torOnly)
-					Logs.Configuration.LogInformation("Successfully authenticated to Tor");
-
-				RPCClient rpc = null;
-				try
-				{
-					rpc = configuration.RPCArgs.ConfigureRPCClient(configuration.Network);
-				}
-				catch
-				{
-					throw new ConfigException("Please, fix rpc settings in " + configuration.ConfigurationFile);
-				}
-
-				var dbreeze = new DBreezeRepository(Path.Combine(configuration.DataDir, "db2"));
-				runtime.Cooperative = configuration.Cooperative;
-				runtime.Repository = dbreeze;
-				runtime._Disposables.Add(dbreeze);
-				runtime.Tracker = new Tracker(dbreeze, runtime.Network);
-				runtime.Services = ExternalServices.CreateFromRPCClient(rpc, dbreeze, runtime.Tracker);
-
-				if(configuration.OutputWallet.RootKey != null && configuration.OutputWallet.KeyPath != null)
-					runtime.DestinationWallet = new ClientDestinationWallet(configuration.OutputWallet.RootKey, configuration.OutputWallet.KeyPath, dbreeze, configuration.Network);
-				else if(configuration.OutputWallet.RPCArgs != null)
-				{
-					try
-					{
-						runtime.DestinationWallet = new RPCDestinationWallet(configuration.OutputWallet.RPCArgs.ConfigureRPCClient(runtime.Network));
-					}
-					catch
-					{
-						throw new ConfigException("Please, fix outputwallet rpc settings in " + configuration.ConfigurationFile);
-					}
-				}
-				else
-					throw new ConfigException("Missing configuration for outputwallet");
-
-				runtime.TumblerParameters = dbreeze.Get<ClassicTumbler.ClassicTumblerParameters>("Configuration", configuration.TumblerServer.AbsoluteUri);
-				var parameterHash = ClassicTumbler.ClassicTumblerParameters.ExtractHashFromUrl(configuration.TumblerServer);
-
-				if(runtime.TumblerParameters != null && runtime.TumblerParameters.GetHash() != parameterHash)
-					runtime.TumblerParameters = null;
-
-				if(!configuration.OnlyMonitor)
-				{
-					if(!torOnly && configuration.CheckIp)
-					{
-						var ip1 = GetExternalIp(runtime.CreateTumblerClient(0, Identity.Alice), "https://myexternalip.com/raw");
-						var ip2 = GetExternalIp(runtime.CreateTumblerClient(0, Identity.Bob), "https://icanhazip.com/");
-						var aliceIp = ip1.GetAwaiter().GetResult();
-						var bobIp = ip2.GetAwaiter().GetResult();
-						if(aliceIp.Equals(bobIp))
-						{
-							var error = "Same IP detected for Bob and Alice, the tumbler can link input address to output address";
-
-							if(configuration.AllowInsecure)
-							{
-								Logs.Configuration.LogWarning(error);
-							}
-							else
-							{
-								throw new ConfigException(error + ", use parameter -allowinsecure or allowinsecure=true in config file to ignore.");
-							}
-						}
-						else
-							Logs.Configuration.LogInformation("Alice and Bob have different IP configured");
-					}
-
-
-					var client = runtime.CreateTumblerClient(0);
-					if(runtime.TumblerParameters == null)
-					{
-						Logs.Configuration.LogInformation("Downloading tumbler information of " + configuration.TumblerServer.AbsoluteUri);
-						var parameters = Retry(3, () => client.GetTumblerParameters());
-						if(parameters == null)
-							throw new ConfigException("Unable to download tumbler's parameters");
-
-						await interaction.ConfirmParametersAsync(parameters).ConfigureAwait(false);
-						runtime.Repository.UpdateOrInsert("Configuration", runtime.TumblerServer.AbsoluteUri, parameters, (o, n) => n);
-						runtime.TumblerParameters = parameters;
-
-						if(parameters.GetHash() != parameterHash)
-							throw new ConfigException("The tumbler returned an invalid configuration");
-
-						Logs.Configuration.LogInformation("Tumbler parameters saved");
-					}
-				}
+				await runtime.ConfigureAsync(configuration, interaction).ConfigureAwait(false);
 			}
 			catch
 			{
 				runtime.Dispose();
-				throw;
 			}
 			return runtime;
+		}
+		public async Task ConfigureAsync(TumblerClientConfiguration configuration, ClientInteraction interaction)
+		{
+			interaction = interaction ?? new AcceptAllClientInteraction();
+
+			Network = configuration.Network;
+			TumblerServer = configuration.TumblerServer;
+			BobSettings = configuration.BobConnectionSettings;
+			AliceSettings = configuration.AliceConnectionSettings;
+
+			var torOnly = AliceSettings is TorConnectionSettings && BobSettings is TorConnectionSettings;
+
+			await SetupTorAsync(interaction).ConfigureAwait(false);
+			if(torOnly)
+				Logs.Configuration.LogInformation("Successfully authenticated to Tor");
+
+			RPCClient rpc = null;
+			try
+			{
+				rpc = configuration.RPCArgs.ConfigureRPCClient(configuration.Network);
+			}
+			catch
+			{
+				throw new ConfigException("Please, fix rpc settings in " + configuration.ConfigurationFile);
+			}
+
+			var dbreeze = new DBreezeRepository(Path.Combine(configuration.DataDir, "db2"));
+			Cooperative = configuration.Cooperative;
+			Repository = dbreeze;
+			_Disposables.Add(dbreeze);
+			Tracker = new Tracker(dbreeze, Network);
+			Services = ExternalServices.CreateFromRPCClient(rpc, dbreeze, Tracker);
+
+			if(configuration.OutputWallet.RootKey != null && configuration.OutputWallet.KeyPath != null)
+				DestinationWallet = new ClientDestinationWallet(configuration.OutputWallet.RootKey, configuration.OutputWallet.KeyPath, dbreeze, configuration.Network);
+			else if(configuration.OutputWallet.RPCArgs != null)
+			{
+				try
+				{
+					DestinationWallet = new RPCDestinationWallet(configuration.OutputWallet.RPCArgs.ConfigureRPCClient(Network));
+				}
+				catch
+				{
+					throw new ConfigException("Please, fix outputwallet rpc settings in " + configuration.ConfigurationFile);
+				}
+			}
+			else
+				throw new ConfigException("Missing configuration for outputwallet");
+
+			TumblerParameters = dbreeze.Get<ClassicTumbler.ClassicTumblerParameters>("Configuration", configuration.TumblerServer.AbsoluteUri);
+			var parameterHash = ClassicTumbler.ClassicTumblerParameters.ExtractHashFromUrl(configuration.TumblerServer);
+
+			if(TumblerParameters != null && TumblerParameters.GetHash() != parameterHash)
+				TumblerParameters = null;
+
+			if(!configuration.OnlyMonitor)
+			{
+				if(!torOnly && configuration.CheckIp)
+				{
+					var ip1 = GetExternalIp(CreateTumblerClient(0, Identity.Alice), "https://myexternalip.com/raw");
+					var ip2 = GetExternalIp(CreateTumblerClient(0, Identity.Bob), "https://icanhazip.com/");
+					var aliceIp = ip1.GetAwaiter().GetResult();
+					var bobIp = ip2.GetAwaiter().GetResult();
+					if(aliceIp.Equals(bobIp))
+					{
+						var error = "Same IP detected for Bob and Alice, the tumbler can link input address to output address";
+
+						if(configuration.AllowInsecure)
+						{
+							Logs.Configuration.LogWarning(error);
+						}
+						else
+						{
+							throw new ConfigException(error + ", use parameter -allowinsecure or allowinsecure=true in config file to ignore.");
+						}
+					}
+					else
+						Logs.Configuration.LogInformation("Alice and Bob have different IP configured");
+				}
+
+
+				var client = CreateTumblerClient(0);
+				if(TumblerParameters == null)
+				{
+					Logs.Configuration.LogInformation("Downloading tumbler information of " + configuration.TumblerServer.AbsoluteUri);
+					var parameters = Retry(3, () => client.GetTumblerParameters());
+					if(parameters == null)
+						throw new ConfigException("Unable to download tumbler's parameters");
+
+					await interaction.ConfirmParametersAsync(parameters).ConfigureAwait(false);
+					Repository.UpdateOrInsert("Configuration", TumblerServer.AbsoluteUri, parameters, (o, n) => n);
+					TumblerParameters = parameters;
+
+					if(parameters.GetHash() != parameterHash)
+						throw new ConfigException("The tumbler returned an invalid configuration");
+
+					Logs.Configuration.LogInformation("Tumbler parameters saved");
+				}
+
+				Logs.Configuration.LogInformation($"Using tumbler {TumblerServer.AbsoluteUri}");
+			}
 		}
 
 		private async Task SetupTorAsync(ClientInteraction interaction)
