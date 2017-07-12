@@ -40,6 +40,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 			catch
 			{
 				runtime.Dispose();
+                throw;
 			}
 			return runtime;
 		}
