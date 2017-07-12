@@ -101,43 +101,21 @@ namespace NTumbleBit.ClassicTumbler.Client.ConnectionSettings
 			}
 		}
 
-		IPEndPoint _SocksEndpoint;
 		async Task<ConnectionTest> TryConnectAsync()
 		{
-			var tor = CreateTorClient();
-			try
+			using(var tor = CreateTorClient2())
 			{
-				await tor.IsCircuitEstabilishedAsync().ConfigureAwait(false);
-				if(_SocksEndpoint == null)
+				try
 				{
-					var result = await tor.SendCommandAsync("GETINFO net/listeners/socks", default(CancellationToken)).ConfigureAwait(false);
-					var match = Regex.Match(result, @"(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):(\d{1,5})");
-					if(!match.Success)
-						throw new ConfigException("No socks port are exposed by Tor");
-					_SocksEndpoint = new IPEndPoint(IPAddress.Parse(match.Groups[1].Value), int.Parse(match.Groups[2].Value));
+					await tor.ConnectAsync().ConfigureAwait(false);
 				}
+				catch { return ConnectionTest.SocketError; }
+
+				if(!await tor.AuthenticateAsync().ConfigureAwait(false))
+					return ConnectionTest.AuthError;
 				return ConnectionTest.Success;
 			}
-			catch(Exception ex)
-			{
-				if(IsSocketException(ex))
-				{
-					return ConnectionTest.SocketError;
-				}
-				return ConnectionTest.AuthError;
-			}
-		}
-
-		private bool IsSocketException(Exception ex)
-		{
-			while(ex != null)
-			{
-				if(ex is SocketException)
-					return true;
-				ex = ex.InnerException;
-			}
-			return false;
-		}
+		}		
 
 		internal DotNetTor.ControlPort.Client CreateTorClient()
 		{

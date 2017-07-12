@@ -95,7 +95,7 @@ namespace NTumbleBit.Tor
 			return resp;
 		}
 
-		public async Task AuthenticateAsync(CancellationToken ctsToken = default(CancellationToken))
+		public async Task<bool> AuthenticateAsync(CancellationToken ctsToken = default(CancellationToken))
 		{
 			string authString = "\"\"";
 			if(_authenticationToken != null)
@@ -106,7 +106,8 @@ namespace NTumbleBit.Tor
 			{
 				authString = Util.ByteArrayToString(File.ReadAllBytes(_cookieFilePath));
 			}
-			await SendCommandAsync($"AUTHENTICATE {authString}", ctsToken).ConfigureAwait(false);
+			var result = await SendCommandAsync($"AUTHENTICATE {authString}", ctsToken).ConfigureAwait(false);
+			return result.StartsWith("250 OK", StringComparison.Ordinal);
 		}
 
 		public async Task<string> SendCommandAsync(string command, CancellationToken ctsToken = default(CancellationToken))
