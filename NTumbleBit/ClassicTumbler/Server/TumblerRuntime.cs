@@ -30,9 +30,26 @@ namespace NTumbleBit.ClassicTumbler.Server
 			if(conf == null)
 				throw new ArgumentNullException("conf");
 			TumblerRuntime runtime = new TumblerRuntime();
-			runtime.Cooperative = conf.Cooperative;
-			runtime.ClassicTumblerParameters = Serializer.Clone(conf.ClassicTumblerParameters);
-			runtime.Network = conf.Network;
+			await runtime.ConfigureAsync(conf, interaction).ConfigureAwait(false);
+			return runtime;
+		}
+		public async Task ConfigureAsync(TumblerConfiguration conf, ClientInteraction interaction)
+		{
+			try
+			{
+				await ConfigureAsyncCore(conf, interaction).ConfigureAwait(false);
+			}
+			catch
+			{
+				Dispose();
+				throw;
+			}
+		}
+		async Task ConfigureAsyncCore(TumblerConfiguration conf, ClientInteraction interaction)
+		{
+			Cooperative = conf.Cooperative;
+			ClassicTumblerParameters = Serializer.Clone(conf.ClassicTumblerParameters);
+			Network = conf.Network;
 			RPCClient rpcClient = null;
 			try
 			{
@@ -59,20 +76,20 @@ namespace NTumbleBit.ClassicTumbler.Server
 						privateKey = File.ReadAllText(torRSA, Encoding.UTF8);
 
 					IPEndPoint routable = GetLocalEndpoint(conf);
-					runtime.TorConnection = conf.TorSettings.CreateTorClient2();
-					runtime._Resources.Add(runtime.TorConnection);
+					TorConnection = conf.TorSettings.CreateTorClient2();
+					_Resources.Add(TorConnection);
 
-					await runtime.TorConnection.ConnectAsync().ConfigureAwait(false);
-					await runtime.TorConnection.AuthenticateAsync().ConfigureAwait(false);
-					var result = await runtime.TorConnection.RegisterHiddenServiceAsync(routable, conf.TorSettings.VirtualPort, privateKey).ConfigureAwait(false);
+					await TorConnection.ConnectAsync().ConfigureAwait(false);
+					await TorConnection.AuthenticateAsync().ConfigureAwait(false);
+					var result = await TorConnection.RegisterHiddenServiceAsync(routable, conf.TorSettings.VirtualPort, privateKey).ConfigureAwait(false);
 					if(privateKey == null)
 					{
 						File.WriteAllText(torRSA, result.PrivateKey, Encoding.UTF8);
 						Logs.Configuration.LogWarning($"Tor RSA private key generated to {torRSA}");
 					}
 
-					runtime.TorUri = result.HiddenServiceUri;
-					Logs.Configuration.LogInformation($"Tor configured on {runtime.TorUri.AbsoluteUri}");
+					TorUri = result.HiddenServiceUri;
+					Logs.Configuration.LogInformation($"Tor configured on {TorUri.AbsoluteUri}");
 					torConfigured = true;
 				}
 				catch(ConfigException ex)
@@ -97,46 +114,46 @@ namespace NTumbleBit.ClassicTumbler.Server
 			if(!File.Exists(rsaFile))
 			{
 				Logs.Configuration.LogWarning("RSA private key not found, please backup it. Creating...");
-				runtime.TumblerKey = new RsaKey();
-				File.WriteAllBytes(rsaFile, runtime.TumblerKey.ToBytes());
+				TumblerKey = new RsaKey();
+				File.WriteAllBytes(rsaFile, TumblerKey.ToBytes());
 				Logs.Configuration.LogInformation("RSA key saved (" + rsaFile + ")");
 			}
 			else
 			{
 				Logs.Configuration.LogInformation("RSA private key found (" + rsaFile + ")");
-				runtime.TumblerKey = new RsaKey(File.ReadAllBytes(rsaFile));
+				TumblerKey = new RsaKey(File.ReadAllBytes(rsaFile));
 			}
 
 			var voucherFile = Path.Combine(conf.DataDir, "Voucher.pem");
 			if(!File.Exists(voucherFile))
 			{
 				Logs.Configuration.LogWarning("Creation of Voucher Key");
-				runtime.VoucherKey = new RsaKey();
-				File.WriteAllBytes(voucherFile, runtime.VoucherKey.ToBytes());
+				VoucherKey = new RsaKey();
+				File.WriteAllBytes(voucherFile, VoucherKey.ToBytes());
 				Logs.Configuration.LogInformation("RSA key saved (" + voucherFile + ")");
 			}
 			else
 			{
 				Logs.Configuration.LogInformation("Voucher key found (" + voucherFile + ")");
-				runtime.VoucherKey = new RsaKey(File.ReadAllBytes(voucherFile));
+				VoucherKey = new RsaKey(File.ReadAllBytes(voucherFile));
 			}
 
-			runtime.ClassicTumblerParameters.ServerKey = runtime.TumblerKey.PubKey;
-			runtime.ClassicTumblerParameters.VoucherKey = runtime.VoucherKey.PubKey;
-			runtime.ClassicTumblerParametersHash = runtime.ClassicTumblerParameters.GetHash();
+			ClassicTumblerParameters.ServerKey = TumblerKey.PubKey;
+			ClassicTumblerParameters.VoucherKey = VoucherKey.PubKey;
+			ClassicTumblerParametersHash = ClassicTumblerParameters.GetHash();
 
-			if(runtime.TorUri != null)
-				runtime.TumblerUris.Add(runtime.CreateTumblerUri(runtime.TorUri));
+			if(TorUri != null)
+				TumblerUris.Add(CreateTumblerUri(TorUri));
 
 			foreach(var url in conf.GetUrls())
-				runtime.TumblerUris.Add(runtime.CreateTumblerUri(new Uri(url, UriKind.Absolute)));
+				TumblerUris.Add(CreateTumblerUri(new Uri(url, UriKind.Absolute)));
 
 
 			Logs.Configuration.LogInformation("");
 			Logs.Configuration.LogInformation($"--------------------------------");
-			var uris = String.Join(Environment.NewLine, runtime.TumblerUris.ToArray().Select(u => u.AbsoluteUri).ToArray());
+			var uris = String.Join(Environment.NewLine, TumblerUris.ToArray().Select(u => u.AbsoluteUri).ToArray());
 			Logs.Configuration.LogInformation($"Shareable URIs of the running tumbler are:");
-			foreach(var uri in runtime.TumblerUris)
+			foreach(var uri in TumblerUris)
 			{
 				Logs.Configuration.LogInformation(uri.AbsoluteUri);
 			}
@@ -144,11 +161,10 @@ namespace NTumbleBit.ClassicTumbler.Server
 			Logs.Configuration.LogInformation("");
 
 			var dbreeze = new DBreezeRepository(Path.Combine(conf.DataDir, "db2"));
-			runtime.Repository = dbreeze;
-			runtime._Resources.Add(dbreeze);
-			runtime.Tracker = new Tracker(dbreeze, runtime.Network);
-			runtime.Services = ExternalServices.CreateFromRPCClient(rpcClient, dbreeze, runtime.Tracker);
-			return runtime;
+			Repository = dbreeze;
+			_Resources.Add(dbreeze);
+			Tracker = new Tracker(dbreeze, Network);
+			Services = ExternalServices.CreateFromRPCClient(rpcClient, dbreeze, Tracker);
 		}
 
 		private static IPEndPoint GetLocalEndpoint(TumblerConfiguration conf)
