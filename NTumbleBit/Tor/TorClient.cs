@@ -1,10 +1,12 @@
 ﻿using DotNetTor;
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -108,6 +110,16 @@ namespace NTumbleBit.Tor
 			}
 			var result = await SendCommandAsync($"AUTHENTICATE {authString}", ctsToken).ConfigureAwait(false);
 			return result.StartsWith("250 OK", StringComparison.Ordinal);
+		}
+
+		public async Task<IPEndPoint[]> GetSocksListenersAsync(CancellationToken ctsToken = default(CancellationToken))
+		{
+			var result = await SendCommandAsync("GETINFO net/listeners/socks", ctsToken).ConfigureAwait(false);
+			return Regex
+				.Matches(result, @"(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):(\d{1,5})")
+				.OfType<Match>()
+				.Select(m => new IPEndPoint(IPAddress.Parse(m.Groups[1].Value), int.Parse(m.Groups[2].Value)))
+				.ToArray();
 		}
 
 		public async Task<string> SendCommandAsync(string command, CancellationToken ctsToken = default(CancellationToken))

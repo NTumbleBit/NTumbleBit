@@ -1,4 +1,5 @@
 ﻿using DotNetTor.SocksPort;
+using System.Linq;
 using NTumbleBit.ClassicTumbler.CLI;
 using NTumbleBit.Configuration;
 using NTumbleBit.Tor;
@@ -53,6 +54,11 @@ namespace NTumbleBit.ClassicTumbler.Client.ConnectionSettings
 			get; set;
 		}
 
+		internal IPEndPoint SocksEndpoint
+		{
+			get; set;
+		}
+
 		public override HttpMessageHandler CreateHttpHandler()
 		{
 			CancellationTokenSource cts = new CancellationTokenSource();
@@ -64,7 +70,7 @@ namespace NTumbleBit.ClassicTumbler.Client.ConnectionSettings
 				cts.Token.ThrowIfCancellationRequested();
 				cts.Token.WaitHandle.WaitOne(100);
 			}
-			return new SocksPortHandler(_SocksEndpoint);
+			return new SocksPortHandler(SocksEndpoint);
 		}
 
 		public void AutoDetectCookieFile()
@@ -113,9 +119,16 @@ namespace NTumbleBit.ClassicTumbler.Client.ConnectionSettings
 
 				if(!await tor.AuthenticateAsync().ConfigureAwait(false))
 					return ConnectionTest.AuthError;
+				if(SocksEndpoint == null)
+				{
+					var endpoints = await tor.GetSocksListenersAsync().ConfigureAwait(false);
+					SocksEndpoint = endpoints.FirstOrDefault();
+					if(SocksEndpoint == null)
+						throw new TorException("Tor has no socks listener", "");
+				}
 				return ConnectionTest.Success;
 			}
-		}		
+		}
 
 		internal DotNetTor.ControlPort.Client CreateTorClient()
 		{
