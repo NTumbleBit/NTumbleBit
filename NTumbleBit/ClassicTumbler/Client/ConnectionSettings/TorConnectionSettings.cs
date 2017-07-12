@@ -156,6 +156,24 @@ namespace NTumbleBit.ClassicTumbler.Client.ConnectionSettings
 				throw new ConfigException("Invalid Tor configuration");
 		}
 
+		internal TorClient CreateTorClient2()
+		{
+			if(string.IsNullOrEmpty(Password) && string.IsNullOrEmpty(CookieFile))
+			{
+				return new TorClient(Server.Address.ToString(), Server.Port);
+			}
+			if(!string.IsNullOrEmpty(Password))
+			{
+				return new TorClient(Server.Address.ToString(), Server.Port, Password);
+			}
+			if(!string.IsNullOrEmpty(CookieFile))
+			{
+				return new TorClient(Server.Address.ToString(), Server.Port, new FileInfo(CookieFile));
+			}
+			else
+				throw new ConfigException("Invalid Tor configuration");
+		}
+
 		internal async Task SetupAsync(ClientInteraction interaction)
 		{
 			var autoConfig = string.IsNullOrEmpty(Password) && String.IsNullOrEmpty(CookieFile);

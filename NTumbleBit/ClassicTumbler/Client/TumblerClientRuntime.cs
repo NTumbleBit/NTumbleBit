@@ -112,9 +112,9 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 
 					var client = runtime.CreateTumblerClient(0);
-					Logs.Configuration.LogInformation("Downloading tumbler information of " + configuration.TumblerServer.AbsoluteUri);
 					if(runtime.TumblerParameters == null)
 					{
+						Logs.Configuration.LogInformation("Downloading tumbler information of " + configuration.TumblerServer.AbsoluteUri);
 						var parameters = Retry(3, () => client.GetTumblerParameters());
 						if(parameters == null)
 							throw new ConfigException("Unable to download tumbler's parameters");

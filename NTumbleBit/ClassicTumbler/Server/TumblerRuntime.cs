@@ -47,7 +47,6 @@ namespace NTumbleBit.ClassicTumbler.Server
 			{
 				try
 				{
-
 					await conf.TorSettings.SetupAsync(interaction).ConfigureAwait(false);
 					Logs.Configuration.LogInformation("Successfully authenticated to Tor");
 					var torRSA = Path.Combine(conf.DataDir, "Tor.rsa");
@@ -63,8 +62,12 @@ namespace NTumbleBit.ClassicTumbler.Server
 
 					IPEndPoint routable = GetLocalEndpoint(conf);
 					var command = $"ADD_ONION {privateKey} Port={conf.TorSettings.VirtualPort},{routable.Address}:{routable.Port}";
-					var tor = conf.TorSettings.CreateTorClient();
-					var result = await tor.SendCommandAsync(command, default(CancellationToken)).ConfigureAwait(false);
+					runtime.TorConnection = conf.TorSettings.CreateTorClient2();
+					runtime._Resources.Add(runtime.TorConnection);
+
+					await runtime.TorConnection.ConnectAsync().ConfigureAwait(false);
+					await runtime.TorConnection.AuthenticateAsync().ConfigureAwait(false);
+					var result = await runtime.TorConnection.SendCommandAsync(command).ConfigureAwait(false);
 
 					if(privateKey == keyType)
 					{
@@ -74,6 +77,7 @@ namespace NTumbleBit.ClassicTumbler.Server
 					var serviceId = System.Text.RegularExpressions.Regex.Match(result, "250-ServiceID=([^\r]*)").Groups[1].Value;
 					runtime.TorUri = new UriBuilder() { Scheme = "http", Host = serviceId + ".onion", Port = conf.TorSettings.VirtualPort }.Uri;
 					Logs.Configuration.LogInformation($"Tor configured on {runtime.TorUri.AbsoluteUri}");
+
 					torConfigured = true;
 				}
 				catch(ConfigException ex)
@@ -84,7 +88,7 @@ namespace NTumbleBit.ClassicTumbler.Server
 				{
 				}
 			}
-			
+
 			if(!torConfigured)
 				Logs.Configuration.LogWarning("Tor is turned off");
 
@@ -232,6 +236,11 @@ namespace NTumbleBit.ClassicTumbler.Server
 			get;
 			set;
 		} = new List<Uri>();
+		public TorClient TorConnection
+		{
+			get;
+			private set;
+		}
 
 		private Uri CreateTumblerUri(Uri baseUri)
 		{

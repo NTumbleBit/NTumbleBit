@@ -196,6 +196,7 @@ namespace NTumbleBit.ClassicTumbler.Server
 				builder.AppendLine("#tor.server=127.0.0.1:9051");
 				builder.AppendLine("#tor.password=mypassword");
 				builder.AppendLine("#tor.cookiefile=/path/to/my/cookie/file");
+				builder.AppendLine("#tor.virtualport=80");
 
 				builder.AppendLine();
 				builder.AppendLine();
