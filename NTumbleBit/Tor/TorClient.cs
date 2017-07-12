@@ -8,10 +8,45 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace NTumbleBit.ClassicTumbler.Client
+namespace NTumbleBit.Tor
 {
-    public class TorClient : IDisposable
-    {
+	public class RegisterHiddenServiceResponse
+	{
+		public string PrivateKey
+		{
+			get; set;
+		}
+		public string ServiceID
+		{
+			get; set;
+		}
+		public Uri HiddenServiceUri
+		{
+			get;
+			set;
+		}
+	}
+
+	public class TorException : Exception
+	{
+		public TorException(string message, string response) : base(BuildMessage(message, response))
+		{
+			TorResponse = response;
+		}
+
+		public string TorResponse
+		{
+			get; set;
+		}
+
+		private static string BuildMessage(string message, string result)
+		{
+			return message + ":" + Environment.NewLine + result;
+		}
+	}
+
+	public class TorClient : IDisposable
+	{
 		private readonly byte[] _authenticationToken;
 		private readonly string _cookieFilePath;
 		private readonly IPEndPoint _controlEndPoint;
@@ -36,6 +71,28 @@ namespace NTumbleBit.ClassicTumbler.Client
 		{
 			_socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 			return _socket.ConnectAsync(_controlEndPoint);
+		}
+
+		const string KeyType = "NEW:RSA1024";
+		public async Task<RegisterHiddenServiceResponse> RegisterHiddenServiceAsync(IPEndPoint endpoint, int virtualPort, string privateKey = null, CancellationToken cts = default(CancellationToken))
+		{
+			privateKey = privateKey ?? KeyType;
+			var command = $"ADD_ONION {privateKey} Port={virtualPort},{endpoint.Address}:{endpoint.Port}";
+			var result = await SendCommandAsync(command, cts).ConfigureAwait(false);
+
+			var resp = new RegisterHiddenServiceResponse();
+			var serviceIdMatch = System.Text.RegularExpressions.Regex.Match(result, "250-ServiceID=([^\r]*)");
+			if(serviceIdMatch.Success)
+				resp.ServiceID = serviceIdMatch.Groups[1].Value;
+			var privateKeyMatch = System.Text.RegularExpressions.Regex.Match(result, "250-PrivateKey=([^\r]*)");
+			if(privateKeyMatch.Success)
+				resp.PrivateKey = privateKeyMatch.Groups[1].Value;
+
+			if((resp.PrivateKey == null && privateKey == KeyType) ||
+				resp.ServiceID == null)
+				throw new TorException("Unexpected response when registering hidden service", result);
+			resp.HiddenServiceUri = new UriBuilder() { Scheme = "http", Host = resp.ServiceID + ".onion", Port = virtualPort }.Uri;
+			return resp;
 		}
 
 		public async Task AuthenticateAsync(CancellationToken ctsToken = default(CancellationToken))

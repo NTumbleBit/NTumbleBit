@@ -1,6 +1,7 @@
 ﻿using DotNetTor.SocksPort;
 using NTumbleBit.ClassicTumbler.CLI;
 using NTumbleBit.Configuration;
+using NTumbleBit.Tor;
 using System;
 using System.Collections.Generic;
 using System.IO;
