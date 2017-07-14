@@ -132,10 +132,10 @@ namespace NTumbleBit.ClassicTumbler.Client
 					if(parameters == null)
 						throw new ConfigException("Unable to download tumbler's parameters");
 
-					await interaction.ConfirmParametersAsync(parameters).ConfigureAwait(false);					
-
 					if(parameters.GetHash() != parameterHash)
 						throw new ConfigException("The tumbler returned an invalid configuration");
+
+					await interaction.ConfirmParametersAsync(parameters).ConfigureAwait(false);
 
 					Repository.UpdateOrInsert("Configuration", TumblerServer.AbsoluteUri, parameters, (o, n) => n);
 					TumblerParameters = parameters;
