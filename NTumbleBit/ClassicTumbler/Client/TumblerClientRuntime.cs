@@ -115,7 +115,18 @@ namespace NTumbleBit.ClassicTumbler.Client
 					if(parameters.GetHash() != parameterHash)
 						throw new ConfigException("The tumbler returned an invalid configuration");
 
-					await interaction.ConfirmParametersAsync(parameters).ConfigureAwait(false);
+					var standardCycles = new StandardCycles(configuration.Network);
+					var standardCycle = standardCycles.GetStandardCycle(parameters);
+
+					if(standardCycle == null || !parameters.IsStandard())
+					{
+						Logs.Configuration.LogWarning("This tumbler has non standard parameters");
+						if(!AllowInsecure)
+							throw new ConfigException("This tumbler has non standard parameters");
+						standardCycle = null;
+					}
+
+					await interaction.ConfirmParametersAsync(parameters, standardCycle).ConfigureAwait(false);
 
 					Repository.UpdateOrInsert("Configuration", TumblerServer.AbsoluteUri, parameters, (o, n) => n);
 					TumblerParameters = parameters;

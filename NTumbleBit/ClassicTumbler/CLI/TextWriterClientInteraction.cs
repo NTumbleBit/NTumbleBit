@@ -36,23 +36,43 @@ namespace NTumbleBit
 			return Task.CompletedTask;
 		}
 
-		public Task ConfirmParametersAsync(ClassicTumblerParameters parameters)
+		public Task ConfirmParametersAsync(ClassicTumblerParameters parameters, StandardCycle standardCyle)
 		{
-			_Output.WriteLine("------");
-			_Output.WriteLine("Do you confirm the following tumbler settings? (type 'yes' to accept)");
-			_Output.WriteLine("------");
-			_Output.WriteLine(Serializer.ToString(parameters, parameters.Network, true));
-			_Output.WriteLine("--");
-			_Output.WriteLine("Tumbler Fee: " + parameters.Fee.ToString());
-			_Output.WriteLine("Denomination: " + parameters.Denomination.ToString());
-			var periods = parameters.CycleGenerator.FirstCycle.GetPeriods();
-			_Output.WriteLine("Total cycle length: " + (periods.Total.End - periods.Total.Start) + " blocks");
-			_Output.WriteLine("------");
-			_Output.WriteLine("Do you confirm the following tumbler settings? (type 'yes' to accept)");
+			var feeRate = ((decimal)parameters.Fee.Satoshi / (decimal)parameters.Denomination.Satoshi);
+			if(standardCyle == null)
+			{
+				_Output.WriteLine("------");
+				_Output.WriteLine("Do you confirm the following non standard tumbler settings? (type 'yes' to accept)");
+				_Output.WriteLine("------");
+				_Output.WriteLine(Serializer.ToString(parameters, parameters.Network, true));
+				_Output.WriteLine("--");
+				_Output.WriteLine("Tumbler Fee: " + parameters.Fee.ToString());
+				_Output.WriteLine("Denomination: " + parameters.Denomination.ToString());
+				var periods = parameters.CycleGenerator.FirstCycle.GetPeriods();
+				_Output.WriteLine("Total cycle length: " + (periods.Total.End - periods.Total.Start) + " blocks");
+				_Output.WriteLine("------");
+				_Output.WriteLine("Do you confirm the following non standard tumbler settings? (type 'yes' to accept)");
+			}
+			else
+			{
+				_Output.WriteLine("------");
+				_Output.WriteLine("Do you confirm the following standard tumbler settings? (type 'yes' to accept)");
+				_Output.WriteLine("------");
+				_Output.WriteLine("Tumbler Fee: " + parameters.Fee.ToString() + $" ({feeRate.ToString("0.00")})");
+				_Output.WriteLine("Denomination: " + parameters.Denomination.ToString());
+				_Output.WriteLine("Time to tumble the first coin: " + PrettyPrint(standardCyle.GetLength(true)));
+				_Output.WriteLine("Time to tumble the following coins: " + PrettyPrint(standardCyle.GetLength(false)));
+				_Output.WriteLine("Peak amount tumbled per day: " + standardCyle.CoinsPerDay().ToString());
+			}
 			var response = _Input.ReadLine();
 			if(!response.Equals("yes", StringComparison.OrdinalIgnoreCase))
 				throw new ClientInteractionException("User refused to confirm the parameters");
 			return Task.CompletedTask;
+		}
+
+		private string PrettyPrint(TimeSpan timeSpan)
+		{
+			throw new NotImplementedException();
 		}
 	}
 }

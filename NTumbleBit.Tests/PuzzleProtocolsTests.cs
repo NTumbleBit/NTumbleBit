@@ -81,6 +81,22 @@ namespace NTumbleBit.Tests
 		}
 
 		[Fact]
+		public void CanCalculateStandardPhases()
+		{
+			StandardCycles cycles = new StandardCycles(Network.Main.Consensus, true);
+			Assert.NotNull(cycles.GetStandardCycle("shorty"));
+
+			cycles = new StandardCycles(Network.Main.Consensus, false);
+			Assert.Null(cycles.GetStandardCycle("shorty"));
+
+			var kotori = cycles.GetStandardCycle("kotori");
+			Assert.Equal(Money.Coins(1), kotori.Denomination);
+			Assert.Equal(TimeSpan.FromDays(1), kotori.GetLength(false));
+			Assert.Equal(TimeSpan.FromDays(2), kotori.GetLength(true));
+			Assert.Equal(Money.Coins(1), kotori.CoinsPerDay());
+		}
+
+		[Fact]
 		//https://medium.com/@nicolasdorier/tumblebit-tumbler-mode-ea44e9a2a2ec#.a4wgwa86u
 		public void CanCalculatePhase()
 		{

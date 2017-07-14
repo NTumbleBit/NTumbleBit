@@ -1,4 +1,5 @@
 ﻿using NBitcoin;
+using NBitcoin.Crypto;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -74,6 +75,11 @@ namespace NTumbleBit.ClassicTumbler
 			if(registrationLength > cycle.Start)
 				return null;
 			return GetCycle(cycle.Start - registrationLength);
+		}
+
+		internal uint256 GetHash()
+		{
+			return Hashes.Hash256(this.ToBytes());
 		}
 
 		public CycleParameters GetNextCycle(CycleParameters cycle)

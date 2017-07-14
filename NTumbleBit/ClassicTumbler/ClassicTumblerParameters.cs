@@ -238,6 +238,20 @@ namespace NTumbleBit.ClassicTumbler
 			return GetHash().Equals(item.GetHash());
 		}
 
+		public bool IsStandard()
+		{
+			//TODO check RSA proof for the pubkeys
+			return
+				this.FakePuzzleCount == 285 &&
+				this.RealPuzzleCount == 15 &&
+				this.RealTransactionCount == 42 &&
+				this.FakeTransactionCount == 42 &&
+				this.Fee < this.Denomination &&
+				this.FakeFormat == new uint256(Enumerable.Range(0, 32).Select(o => o == 0 ? (byte)0 : (byte)1).ToArray());
+
+		}
+
+
 		public uint160 GetHash()
 		{
 			return Hashes.Hash160(this.ToBytes());

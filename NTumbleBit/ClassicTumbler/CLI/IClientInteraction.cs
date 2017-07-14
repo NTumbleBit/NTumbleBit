@@ -8,7 +8,7 @@ namespace NTumbleBit.ClassicTumbler.CLI
 {
 	public interface ClientInteraction
 	{
-		Task ConfirmParametersAsync(ClassicTumblerParameters parameters);
+		Task ConfirmParametersAsync(ClassicTumblerParameters parameters, StandardCycle standardCyle);
 		Task AskConnectToTorAsync(string torPath, string args);
 	}
 
@@ -19,7 +19,7 @@ namespace NTumbleBit.ClassicTumbler.CLI
 			return Task.CompletedTask;
 		}
 
-		public Task ConfirmParametersAsync(ClassicTumblerParameters parameters)
+		public Task ConfirmParametersAsync(ClassicTumblerParameters parameters, StandardCycle standardCyle)
 		{
 			return Task.CompletedTask;
 		}

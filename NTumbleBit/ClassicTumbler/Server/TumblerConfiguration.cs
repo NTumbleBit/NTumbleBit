@@ -26,7 +26,7 @@ namespace NTumbleBit.ClassicTumbler.Server
 		{
 			get; set;
 		}
-		
+
 		public Network Network
 		{
 			get
@@ -116,19 +116,6 @@ namespace NTumbleBit.ClassicTumbler.Server
 				ConfigurationFile = GetDefaultConfigurationFile();
 			}
 			Logs.Configuration.LogInformation("Network: " + Network);
-			if(Network == Network.TestNet)
-			{
-				var cycle = ClassicTumblerParameters
-							.CycleGenerator.FirstCycle;
-				cycle.Start = 0;
-				cycle.RegistrationDuration = 3;
-				cycle.ClientChannelEstablishmentDuration = 3;
-				cycle.TumblerChannelEstablishmentDuration = 3;
-				cycle.SafetyPeriodDuration = 2;
-				cycle.PaymentPhaseDuration = 3;
-				cycle.TumblerCashoutDuration = 4;
-				cycle.ClientCashoutDuration = 3;
-			}
 
 			Logs.Configuration.LogInformation("Data directory set to " + DataDir);
 			Logs.Configuration.LogInformation("Configuration file set to " + ConfigurationFile);
@@ -140,12 +127,19 @@ namespace NTumbleBit.ClassicTumbler.Server
 			var config = TextFileConfiguration.Parse(File.ReadAllText(ConfigurationFile));
 			consoleConfig.MergeInto(config, true);
 
-			if (config.Contains("help"))
+			if(config.Contains("help"))
 			{
 				Console.WriteLine("Details on the wiki page :  https://github.com/NTumbleBit/NTumbleBit/wiki/Server-Config");
 				OpenBrowser("https://github.com/NTumbleBit/NTumbleBit/wiki/Server-Config");
 				Environment.Exit(0);
 			}
+
+			var standardCycles = new StandardCycles(Network);
+			var cycleName = config.GetOrDefault<string>("cycle", standardCycles.Debug ? "shorty" : "kotori");
+			
+			ClassicTumblerParameters.CycleGenerator = standardCycles.GetStandardCycle(cycleName)?.Generator;
+			if(ClassicTumblerParameters.CycleGenerator == null)
+				throw new ConfigException($"Invalid cycle name, choose among {String.Join(",", standardCycles.ToEnumerable().Select(c => c.FriendlyName).ToArray())}");
 
 			var torEnabled = config.GetOrDefault<bool>("tor.enabled", true);
 			if(torEnabled)
@@ -170,7 +164,12 @@ namespace NTumbleBit.ClassicTumbler.Server
 			RPC = RPCArgs.Parse(config, Network);
 			TorPath = config.GetOrDefault<string>("torpath", "tor");
 			return this;
-		}		
+		}
+
+		public string CycleName
+		{
+			get; set;
+		}
 
 		public string GetDefaultConfigurationFile()
 		{
@@ -250,20 +249,20 @@ namespace NTumbleBit.ClassicTumbler.Server
 			if(!File.Exists(ConfigurationFile))
 				throw new ConfigurationException("Configuration file does not exists");
 		}
-		
+
 		public void OpenBrowser(string url)
 		{
 			try
 			{
-				if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+				if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 				{
 					Process.Start(new ProcessStartInfo("cmd", $"/c start {url}")); // Works ok on windows
 				}
-				else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+				else if(RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
 				{
 					Process.Start("xdg-open", url);  // Works ok on linux
 				}
-				else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+				else if(RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
 				{
 					Process.Start("open", url); // Not tested
 				}
