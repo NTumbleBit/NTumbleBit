@@ -9,6 +9,8 @@ using NTumbleBit.ClassicTumbler;
 using System.Threading;
 using NTumbleBit.Services;
 using NTumbleBit.ClassicTumbler.Client;
+using System.Threading.Tasks;
+using CommandLine.Text;
 
 namespace NTumbleBit.ClassicTumbler.CLI
 {
@@ -22,6 +24,16 @@ namespace NTumbleBit.ClassicTumbler.CLI
 		{
 			get;
 			set;
+		}
+
+
+		private readonly List<TumblerServiceBase> _Services = new List<TumblerServiceBase>();
+		public List<TumblerServiceBase> Services
+		{
+			get
+			{
+				return _Services;
+			}
 		}
 
 		public void StartInteractive()
@@ -39,44 +51,84 @@ namespace NTumbleBit.ClassicTumbler.CLI
 				try
 				{
 
-					Parser.Default.ParseArguments<StatusOptions, StopOptions, QuitOptions>(split)
+					Parser.Default.ParseArguments<StatusOptions, ServicesOptions, QuitOptions>(split)
 						.WithParsed<StatusOptions>(_ => GetStatus(_))
-						.WithParsed<StopOptions>(_ => Stop(_))
+						.WithParsed<ServicesOptions>(_ => ProcessServices(_))
 						.WithParsed<QuitOptions>(_ =>
 						{
-							Stop(new StopOptions() { Target = "both" });
+							StopAll();
 							quit = true;
 						});
 				}
 				catch(InterruptedConsoleException)
 				{
-					Stop(new StopOptions() { Target = "both" });
+					StopAll();
 					throw;
 				}
 				catch(FormatException)
 				{
 					Console.WriteLine("Invalid format");
+					Parser.Default.ParseArguments<StatusOptions, ServicesOptions, QuitOptions>(new[] { "help", split[0] });
 				}
 			}
 		}
 
-		private void Stop(StopOptions opt)
+		private void StopAll()
 		{
+			ProcessServices(new ServicesOptions() { Action = "stop", Target = "all" });
+		}
+
+		private void ProcessServices(ServicesOptions opt)
+		{
+			if(Services.Count == 0)
+				return;
+			if(opt.Action == null)
+				throw new FormatException();
 			opt.Target = opt.Target ?? "";
-			var stopMixer = opt.Target.Equals("mixer", StringComparison.OrdinalIgnoreCase);
-			var stopBroadcasted = opt.Target.Equals("broadcaster", StringComparison.OrdinalIgnoreCase);
-			var both = opt.Target.Equals("both", StringComparison.OrdinalIgnoreCase);
-			if(both)
-				stopMixer = stopBroadcasted = true;
-			if(stopMixer)
+			if(opt.Action.Equals("list", StringComparison.OrdinalIgnoreCase))
+				opt.Target = "all";
+			var stops = new HashSet<string>(opt.Target.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries));
+			if(stops.Contains("both", StringComparer.OrdinalIgnoreCase))
 			{
-				_MixingCTS.Cancel();
+				//Legacy
+				stops.Add("mixer");
+				stops.Add("broadcaster");
 			}
-			if(stopBroadcasted)
+
+			var services = Services.Where(s => stops.Contains(s.Name) || stops.Contains("all")).ToList();
+			if(services.Count == 0)
 			{
-				_BroadcasterCTS.Cancel();
+				Console.WriteLine("Valid services are " +
+					String.Join(",", new[] { "all" }.Concat(Services.Select(c => c.Name)).ToArray()));
+				throw new FormatException();
 			}
-			if(!stopMixer && !stopBroadcasted)
+
+			if(opt.Action.Equals("start", StringComparison.OrdinalIgnoreCase))
+			{
+				foreach(var service in services.Where(s => !s.Started))
+					service.Start();
+			}
+			else if(opt.Action.Equals("stop", StringComparison.OrdinalIgnoreCase))
+			{
+				object l = new object();
+				var stoppingServices = services.Where(s => s.Started).Select(c => c.Stop().ContinueWith(t =>
+				{
+					lock(l)
+					{
+						Console.WriteLine(c.Name + " stopped");
+					}
+				})).ToArray();
+				Task.WaitAll(stoppingServices);
+			}
+			else if(opt.Action.Equals("list", StringComparison.OrdinalIgnoreCase))
+			{
+				foreach(var item in services)
+				{
+					var state = item.Started ? ("started") : ("stopped");
+					Console.WriteLine($"Service {item.Name} is {state}");
+				}
+			}
+			else
 				throw new FormatException();
 		}
 
@@ -243,30 +295,10 @@ namespace NTumbleBit.ClassicTumbler.CLI
 		}
 
 
-		CancellationTokenSource _MixingCTS = new CancellationTokenSource();
-		CancellationTokenSource _BroadcasterCTS = new CancellationTokenSource();
-		public CancellationToken MixingCancellationToken
-		{
-			get
-			{
-				return _MixingCTS.Token;
-			}
-		}
-
-		public CancellationToken BroadcasterCancellationToken
-		{
-			get
-			{
-				return _BroadcasterCTS.Token;
-			}
-		}
 
 		public void Dispose()
 		{
-			if(!_MixingCTS.IsCancellationRequested)
-				_MixingCTS.Cancel();
-			if(!_BroadcasterCTS.IsCancellationRequested)
-				_BroadcasterCTS.Cancel();
+			StopAll();
 			if(Runtime != null)
 				Runtime.Dispose();
 		}

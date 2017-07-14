@@ -27,10 +27,25 @@ namespace NTumbleBit.ClassicTumbler.CLI
 		}
 	}
 
-	[Verb("stop", HelpText = "Stop a service.")]
-	internal class StopOptions
+	[Verb("services", HelpText = "Manage services (Example: services start all)")]
+	internal class ServicesOptions
 	{
-		[Value(0, HelpText = "\"stop mixer\" to stop the mixer, \"stop broadcaster\" to stop the broadcaster, \"stop both\" to stop both.")]
+		[Value(0, HelpText = "start, stop or list")]
+		public string Action
+		{
+			get; set;
+		}
+		[Value(1, HelpText = "Service names separated by commas ('all' for selecting all)")]
+		public string Target
+		{
+			get; set;
+		}
+	}
+
+	[Verb("start", HelpText = "Start a service.")]
+	internal class StartOptions
+	{
+		[Value(0, HelpText = "Start a service")]
 		public string Target
 		{
 			get; set;

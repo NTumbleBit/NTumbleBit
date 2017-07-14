@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit.ClassicTumbler.Client
 {
-	public class StateMachinesExecutor
+	public class StateMachinesExecutor : TumblerServiceBase
 	{
 		public StateMachinesExecutor(
 			TumblerClientRuntime runtime)
@@ -25,14 +25,14 @@ namespace NTumbleBit.ClassicTumbler.Client
 		{
 			get; set;
 		}
-		
-		private CancellationToken _Stop;
-		public void Start(CancellationToken cancellation)
+
+		public override string Name => "mixer";
+
+		protected override void StartCore(CancellationToken cancellationToken)
 		{
-			_Stop = cancellation;
 			new Thread(() =>
 			{
-				Logs.Client.LogInformation("State machines started");			
+				Logs.Client.LogInformation("State machines started");
 				uint256 lastBlock = uint256.Zero;
 				int lastCycle = 0;
 				while(true)
@@ -40,7 +40,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 					Exception unhandled = null;
 					try
 					{
-						lastBlock = Runtime.Services.BlockExplorerService.WaitBlock(lastBlock, _Stop);
+						lastBlock = Runtime.Services.BlockExplorerService.WaitBlock(lastBlock, cancellationToken);
 						var height = Runtime.Services.BlockExplorerService.GetCurrentHeight();
 						Logs.Client.LogInformation("New Block: " + height);
 						var cycle = Runtime.TumblerParameters.CycleGenerator.GetRegistratingCycle(height);
@@ -86,9 +86,9 @@ namespace NTumbleBit.ClassicTumbler.Client
 					}
 					catch(OperationCanceledException ex)
 					{
-						if(_Stop.IsCancellationRequested)
+						if(cancellationToken.IsCancellationRequested)
 						{
-							Logs.Client.LogInformation("Mixer stopped");
+							Stopped();
 							break;
 						}
 						else
@@ -101,7 +101,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 					if(unhandled != null)
 					{
 						Logs.Client.LogError("StateMachineExecutor Error: " + unhandled.ToString());
-						_Stop.WaitHandle.WaitOne(5000);
+						cancellationToken.WaitHandle.WaitOne(5000);
 					}
 				}
 			}).Start();

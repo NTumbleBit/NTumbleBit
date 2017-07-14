@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit.Services
 {
-	public class BroadcasterJob
+	public class BroadcasterJob : TumblerServiceBase
 	{
 		public BroadcasterJob(ExternalServices services)
 		{
@@ -36,47 +36,7 @@ namespace NTumbleBit.Services
 			private set;
 		}
 
-		private CancellationToken _Stop;
-		public void Start(CancellationToken cancellation)
-		{
-			_Stop = cancellation;
-			new Thread(() =>
-			{
-				Logs.Broadcasters.LogInformation("BroadcasterJob started");
-				while(true)
-				{
-					Exception unhandled = null;
-					try
-					{
-						uint256 lastBlock = uint256.Zero;
-						while(true)
-						{
-							lastBlock = BlockExplorerService.WaitBlock(lastBlock, _Stop);
-							TryBroadcast();
-						}
-					}
-					catch(OperationCanceledException ex)
-					{
-						if(_Stop.IsCancellationRequested)
-						{
-							Logs.Broadcasters.LogInformation("BroadcasterJob stopped");
-							break;
-						}
-						else
-							unhandled = ex;
-					}
-					catch(Exception ex)
-					{
-						unhandled = ex;
-					}
-					if(unhandled != null)
-					{
-						Logs.Broadcasters.LogError("Uncaught exception BroadcasterJob : " + unhandled.ToString());
-						_Stop.WaitHandle.WaitOne(5000);
-					}
-				}
-			}).Start();
-		}
+		public override string Name => "broadcaster";		
 
 		public Transaction[] TryBroadcast()
 		{
@@ -101,6 +61,46 @@ namespace NTumbleBit.Services
 				Logs.Broadcasters.LogError(ex.ToString());
 			}
 			return broadcasted.ToArray();
+		}
+
+		protected override void StartCore(CancellationToken cancellationToken)
+		{
+			new Thread(() =>
+			{
+				Logs.Broadcasters.LogInformation("BroadcasterJob started");
+				while(true)
+				{
+					Exception unhandled = null;
+					try
+					{
+						uint256 lastBlock = uint256.Zero;
+						while(true)
+						{
+							lastBlock = BlockExplorerService.WaitBlock(lastBlock, cancellationToken);
+							TryBroadcast();
+						}
+					}
+					catch(OperationCanceledException ex)
+					{
+						if(cancellationToken.IsCancellationRequested)
+						{
+							Stopped();
+							break;
+						}
+						else
+							unhandled = ex;
+					}
+					catch(Exception ex)
+					{
+						unhandled = ex;
+					}
+					if(unhandled != null)
+					{
+						Logs.Broadcasters.LogError("Uncaught exception BroadcasterJob : " + unhandled.ToString());
+						cancellationToken.WaitHandle.WaitOne(5000);
+					}
+				}
+			}).Start();
 		}
 	}
 }

@@ -36,36 +36,27 @@ namespace NTumbleBit.ClassicTumbler.Server.CLI
 				{
 					var runtime = TumblerRuntime.FromConfiguration(config, new TextWriterClientInteraction(Console.Out, Console.In));
 					interactive.Runtime = new ServerInteractiveRuntime(runtime);
-					IWebHost host = null;
+					StoppableWebHost host = null;
 					if(!config.OnlyMonitor)
 					{
-						host = new WebHostBuilder()
+						host = new StoppableWebHost(() => new WebHostBuilder()
 						.UseKestrel()
 						.UseAppConfiguration(runtime)
 						.UseContentRoot(Directory.GetCurrentDirectory())
 						.UseStartup<Startup>()
-						.UseUrls(config.GetUrls())
-						.Build();
+						.UseUrls(config.GetUrls()).Build());
 					}
 
 					var job = new BroadcasterJob(interactive.Runtime.Services);
-					job.Start(interactive.BroadcasterCancellationToken);
+					job.Start();
+					interactive.Services.Add(job);
 
 					if(!config.OnlyMonitor)
-						new Thread(() =>
-						{
-							try
-							{
-								host.Run(interactive.MixingCancellationToken);
-							}
-							catch(Exception ex)
-							{
-								if(!interactive.MixingCancellationToken.IsCancellationRequested)
-									Logs.Tumbler.LogCritical(1, ex, "Error while starting the host");
-							}
-							if(interactive.MixingCancellationToken.IsCancellationRequested)
-								Logs.Tumbler.LogInformation("Server stopped");
-						}).Start();
+					{
+						host.Start();
+						interactive.Services.Add(host);
+					}
+
 					interactive.StartInteractive();
 				}
 				catch(ConfigException ex)

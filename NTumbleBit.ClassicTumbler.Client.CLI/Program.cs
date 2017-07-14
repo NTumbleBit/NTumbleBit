@@ -36,14 +36,15 @@ namespace NTumbleBit.ClassicTumbler.Client.CLI
 
 
 					var broadcaster = runtime.CreateBroadcasterJob();
-					broadcaster.Start(interactive.BroadcasterCancellationToken);
+					broadcaster.Start();
+					interactive.Services.Add(broadcaster);
 
 					if(!config.OnlyMonitor)
 					{
 						var stateMachine = runtime.CreateStateMachineJob();
-						stateMachine.Start(interactive.MixingCancellationToken);
+						stateMachine.Start();
+						interactive.Services.Add(stateMachine);
 					}
-
 
 					interactive.StartInteractive();
 				}
