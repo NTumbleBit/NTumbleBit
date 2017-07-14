@@ -1,5 +1,6 @@
 ﻿using NTumbleBit.ClassicTumbler;
 using NTumbleBit.ClassicTumbler.CLI;
+using NTumbleBit.ClassicTumbler.Client.ConnectionSettings;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -21,8 +22,23 @@ namespace NTumbleBit
 			_Input = input;
 			_Output = output;
 		}
+
+		public Task AskConnectToTorAsync(string torPath, string args)
+		{
+			_Output.WriteLine("------");
+			_Output.WriteLine($"Unable to connect to tor control port, trying to run Tor with the following command from torpath settings, do you accept? (type 'yes' to accept)");
+			_Output.WriteLine("------");
+			_Output.WriteLine($"{torPath} {args}");
+			_Output.WriteLine("------");
+			var response = _Input.ReadLine();
+			if(!response.Equals("yes", StringComparison.OrdinalIgnoreCase))
+				throw new ClientInteractionException("User refused to start Tor");
+			return Task.CompletedTask;
+		}
+
 		public Task ConfirmParametersAsync(ClassicTumblerParameters parameters)
 		{
+			_Output.WriteLine("------");
 			_Output.WriteLine("Do you confirm the following tumbler settings? (type 'yes' to accept)");
 			_Output.WriteLine("------");
 			_Output.WriteLine(Serializer.ToString(parameters));

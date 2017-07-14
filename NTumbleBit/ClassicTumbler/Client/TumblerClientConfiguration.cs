@@ -100,6 +100,11 @@ namespace NTumbleBit.ClassicTumbler.Client
 			get;
 			set;
 		} = false;
+		public string TorPath
+		{
+			get;
+			set;
+		}
 
 		public TumblerClientConfiguration LoadArgs(String[] args)
 		{
@@ -152,6 +157,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 			OnlyMonitor = config.GetOrDefault<bool>("onlymonitor", false);
 			Cooperative = config.GetOrDefault<bool>("cooperative", true);
 			TumblerServer = config.GetOrDefault("tumbler.server", null as Uri);
+			TorPath = config.GetOrDefault<string>("torpath", "tor");
 
 			RPCArgs = RPCArgs.Parse(config, Network);
 

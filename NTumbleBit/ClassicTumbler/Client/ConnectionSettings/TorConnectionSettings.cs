@@ -1,4 +1,5 @@
 ﻿using DotNetTor.SocksPort;
+using Microsoft.Extensions.Logging;
 using System.Linq;
 using NTumbleBit.ClassicTumbler.CLI;
 using NTumbleBit.Configuration;
@@ -14,6 +15,8 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Diagnostics;
+using NTumbleBit.Logging;
 
 namespace NTumbleBit.ClassicTumbler.Client.ConnectionSettings
 {
@@ -166,14 +169,46 @@ namespace NTumbleBit.ClassicTumbler.Client.ConnectionSettings
 				throw new ConfigException("Invalid Tor configuration");
 		}
 
-		internal async Task SetupAsync(ClientInteraction interaction)
+		internal async Task<IDisposable> SetupAsync(ClientInteraction interaction, string torPath)
 		{
 			var autoConfig = string.IsNullOrEmpty(Password) && String.IsNullOrEmpty(CookieFile);
 			var connectResult = await TryConnectAsync().ConfigureAwait(false);
 			if(connectResult == TorConnectionSettings.ConnectionTest.SocketError)
+			{
+				if(torPath != null && autoConfig && Server.Address.Equals(IPAddress.Parse("127.0.0.1")))
+				{
+					var args = $"-controlport {Server.Port} -cookieauthentication 1";
+					await interaction.AskConnectToTorAsync(torPath, args).ConfigureAwait(false);
+					try
+					{
+						var processInfo = new ProcessStartInfo(torPath)
+						{
+							Arguments = args,
+							UseShellExecute = false,
+							CreateNoWindow = true,
+							RedirectStandardOutput = false
+						};
+						var process = new ProcessDisposable(Process.Start(processInfo));
+						try
+						{
+							await SetupAsync(interaction, null).ConfigureAwait(false);
+						}
+						catch
+						{
+							process.Dispose();
+							throw;
+						}
+						return process;
+					}
+					catch(Exception ex)
+					{
+						Logs.Configuration.LogError($"Failed to start Tor, please verify your configuration settings \"torpath\": {ex.Message}");
+					}
+				}
 				throw new ConfigException("Unable to connect to tor control port");
+			}
 			else if(connectResult == TorConnectionSettings.ConnectionTest.Success)
-				return;
+				return NullDisposable.Instance;
 			else if(!autoConfig && connectResult == TorConnectionSettings.ConnectionTest.AuthError)
 				throw new ConfigException("Unable to authenticate tor control port");
 
@@ -182,6 +217,7 @@ namespace NTumbleBit.ClassicTumbler.Client.ConnectionSettings
 			connectResult = await TryConnectAsync().ConfigureAwait(false);
 			if(connectResult != TorConnectionSettings.ConnectionTest.Success)
 				throw new ConfigException("Unable to authenticate tor control port");
+			return NullDisposable.Instance;
 		}
 	}
 }

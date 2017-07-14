@@ -55,7 +55,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 			var torOnly = AliceSettings is TorConnectionSettings && BobSettings is TorConnectionSettings;
 
-			await SetupTorAsync(interaction).ConfigureAwait(false);
+			await SetupTorAsync(interaction, configuration.TorPath).ConfigureAwait(false);
 			if(torOnly)
 				Logs.Configuration.LogInformation("Successfully authenticated to Tor");
 
@@ -147,18 +147,23 @@ namespace NTumbleBit.ClassicTumbler.Client
 			}
 		}
 
-		private async Task SetupTorAsync(ClientInteraction interaction)
+		private Task SetupTorAsync(ClientInteraction interaction, object torPath)
 		{
-			await SetupTorAsync(interaction, AliceSettings).ConfigureAwait(false);
-			await SetupTorAsync(interaction, BobSettings).ConfigureAwait(false);
+			throw new NotImplementedException();
 		}
 
-		private Task SetupTorAsync(ClientInteraction interaction, ConnectionSettingsBase settings)
+		private async Task SetupTorAsync(ClientInteraction interaction, string torPath)
+		{
+			await SetupTorAsync(interaction, AliceSettings, torPath).ConfigureAwait(false);
+			await SetupTorAsync(interaction, BobSettings, torPath).ConfigureAwait(false);
+		}
+
+		private async Task SetupTorAsync(ClientInteraction interaction, ConnectionSettingsBase settings, string torPath)
 		{
 			var tor = settings as TorConnectionSettings;
 			if(tor == null)
-				return Task.CompletedTask;
-			return tor.SetupAsync(interaction);
+				return;
+			_Disposables.Add(await tor.SetupAsync(interaction, torPath).ConfigureAwait(false));
 		}
 
 		private static async Task<IPAddress> GetExternalIp(TumblerClient client, string url)

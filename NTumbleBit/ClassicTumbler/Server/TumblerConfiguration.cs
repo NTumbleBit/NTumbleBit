@@ -75,6 +75,11 @@ namespace NTumbleBit.ClassicTumbler.Server
 			get;
 			set;
 		}
+		public string TorPath
+		{
+			get;
+			set;
+		}
 
 		public TumblerConfiguration LoadArgs(String[] args)
 		{
@@ -163,6 +168,7 @@ namespace NTumbleBit.ClassicTumbler.Server
 			}
 
 			RPC = RPCArgs.Parse(config, Network);
+			TorPath = config.GetOrDefault<string>("torpath", "tor");
 			return this;
 		}		
 

@@ -66,7 +66,7 @@ namespace NTumbleBit.ClassicTumbler.Server
 				Exception error = null;
 				try
 				{
-					await conf.TorSettings.SetupAsync(interaction).ConfigureAwait(false);
+					_Resources.Add(await conf.TorSettings.SetupAsync(interaction, conf.TorPath).ConfigureAwait(false));
 					Logs.Configuration.LogInformation("Successfully authenticated to Tor");
 					var torRSA = Path.Combine(conf.DataDir, "Tor.rsa");
 
