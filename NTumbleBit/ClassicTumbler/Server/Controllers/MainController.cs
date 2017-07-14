@@ -77,6 +77,8 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			[ModelBinder(BinderType = typeof(TumblerParametersModelBinder))]
 			ClassicTumblerParameters tumblerId)
 		{
+			if(tumblerId == null)
+				throw new ArgumentNullException("tumblerId");
 			return tumblerId;
 		}
 
@@ -85,6 +87,8 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			[ModelBinder(BinderType = typeof(TumblerParametersModelBinder))]
 			ClassicTumblerParameters tumblerId)
 		{
+			if(tumblerId == null)
+				throw new ArgumentNullException("tumblerId");
 			var height = Services.BlockExplorerService.GetCurrentHeight();
 			var cycleParameters = Parameters.CycleGenerator.GetRegistratingCycle(height);
 			PuzzleSolution solution = null;
@@ -108,6 +112,8 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			ClassicTumblerParameters tumblerId,
 			[FromBody]int cycleStart)
 		{
+			if(tumblerId == null)
+				throw new ArgumentNullException("tumblerId");
 			var height = Services.BlockExplorerService.GetCurrentHeight();
 			var cycle = GetCycle(cycleStart);
 			int keyIndex;
@@ -135,6 +141,8 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			ClassicTumblerParameters tumblerId,
 			[FromBody]SignVoucherRequest request)
 		{
+			if(tumblerId == null)
+				throw new ArgumentNullException("tumblerId");
 			if(request.UnsignedVoucher == null)
 				return BadRequest("Missing UnsignedVoucher");
 			if(request.MerkleProof == null)
@@ -212,6 +220,8 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			ClassicTumblerParameters tumblerId,
 			[FromBody] OpenChannelRequest request)
 		{
+			if(tumblerId == null)
+				throw new ArgumentNullException("tumblerId");
 			var height = Services.BlockExplorerService.GetCurrentHeight();
 			var cycle = GetCycle(request.CycleStart);
 			if(!cycle.IsInPhase(CyclePhase.TumblerChannelEstablishment, height))
@@ -275,6 +285,8 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			ClassicTumblerParameters tumblerId,
 			int cycleId, string channelId, [FromBody]SignaturesRequest sigReq)
 		{
+			if(tumblerId == null)
+				throw new ArgumentNullException("tumblerId");
 			var session = GetPromiseServerSession(cycleId, channelId, CyclePhase.TumblerChannelEstablishment);
 			var hashes = session.SignHashes(sigReq);
 			Repository.Save(cycleId, session);
@@ -287,6 +299,8 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			ClassicTumblerParameters tumblerId,
 			int cycleId, string channelId, [FromBody]PuzzlePromise.ClientRevelation revelation)
 		{
+			if(tumblerId == null)
+				throw new ArgumentNullException("tumblerId");
 			var session = GetPromiseServerSession(cycleId, channelId, CyclePhase.TumblerChannelEstablishment);
 			var proof = session.CheckRevelation(revelation);
 			Repository.Save(cycleId, session);
@@ -326,6 +340,8 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			ClassicTumblerParameters tumblerId,
 			int cycleId, string channelId, [FromBody]PuzzleValue[] puzzles)
 		{
+			if(tumblerId == null)
+				throw new ArgumentNullException("tumblerId");
 			var session = GetSolverServerSession(cycleId, channelId, CyclePhase.PaymentPhase);
 			var commitments = session.SolvePuzzles(puzzles);
 			Repository.Save(cycleId, session);
@@ -338,6 +354,8 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			ClassicTumblerParameters tumblerId,
 			int cycleId, string channelId, [FromBody]PuzzleSolver.ClientRevelation revelation)
 		{
+			if(tumblerId == null)
+				throw new ArgumentNullException("tumblerId");
 			var session = GetSolverServerSession(cycleId, channelId, CyclePhase.PaymentPhase);
 			var solutions = session.CheckRevelation(revelation);
 			Repository.Save(cycleId, session);
@@ -350,6 +368,8 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			ClassicTumblerParameters tumblerId,
 			int cycleId, string channelId, [FromBody]BlindFactor[] blindFactors)
 		{
+			if(tumblerId == null)
+				throw new ArgumentNullException("tumblerId");
 			var session = GetSolverServerSession(cycleId, channelId, CyclePhase.PaymentPhase);
 			var feeRate = Services.FeeService.GetFeeRate();
 			var fulfillKey = session.CheckBlindedFactors(blindFactors, feeRate);
@@ -363,6 +383,8 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			ClassicTumblerParameters tumblerId,
 			int cycleId, string channelId, [FromBody]TransactionSignature signature)
 		{
+			if(tumblerId == null)
+				throw new ArgumentNullException("tumblerId");
 			if(signature == null)
 				return BadRequest("Missing Signature");
 			var session = GetSolverServerSession(cycleId, channelId, CyclePhase.TumblerCashoutPhase);
@@ -414,6 +436,8 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			ClassicTumblerParameters tumblerId,
 			int cycleId, string channelId, [FromBody]TransactionSignature clientSignature)
 		{
+			if(tumblerId == null)
+				throw new ArgumentNullException("tumblerId");
 			var session = GetSolverServerSession(cycleId, channelId, CyclePhase.TumblerCashoutPhase);
 			if(session.Status != SolverServerStates.WaitingEscape)
 				return BadRequest("invalid-state");

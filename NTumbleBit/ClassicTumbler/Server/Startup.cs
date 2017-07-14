@@ -21,7 +21,11 @@ namespace NTumbleBit.ClassicTumbler.Server
 		public void ConfigureServices(IServiceCollection services)
 		{
 			services.AddSingleton<IObjectModelValidator, NoObjectModelValidator>();
-			services.AddMvcCore(o => o.Filters.Add(new ActionResultExceptionFilter()))
+			services.AddMvcCore(o =>
+			{
+				o.Filters.Add(new ActionResultExceptionFilter());
+				o.Filters.Add(new TumblerExceptionFilter());
+			})
 				.AddJsonFormatters()
 				.AddFormatterMappings();
 		}

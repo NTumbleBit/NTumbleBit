@@ -37,13 +37,21 @@ namespace NTumbleBit.ClassicTumbler
 				return TaskCache.CompletedTask;
 			}
 
-			var id = new uint160(key);
-
-			var runtime = (TumblerRuntime)bindingContext.HttpContext.RequestServices.GetService(typeof(TumblerRuntime));
-			if(runtime.ClassicTumblerParametersHash != id)
+			try
+			{
+				var id = new uint160(key);
+				var runtime = (TumblerRuntime)bindingContext.HttpContext.RequestServices.GetService(typeof(TumblerRuntime));
+				if(runtime.ClassicTumblerParametersHash != id)
+				{
+					bindingContext.Result = ModelBindingResult.Failed();
+				}
+				else
+					bindingContext.Result = ModelBindingResult.Success(runtime.ClassicTumblerParameters);
+			}
+			catch(FormatException)
+			{
 				bindingContext.Result = ModelBindingResult.Failed();
-			else
-				bindingContext.Result = ModelBindingResult.Success(runtime.ClassicTumblerParameters);
+			}
 			return TaskCache.CompletedTask;
 		}
 
