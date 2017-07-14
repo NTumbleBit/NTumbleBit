@@ -58,11 +58,11 @@ namespace NTumbleBit
 				_Output.WriteLine("------");
 				_Output.WriteLine("Do you confirm the following standard tumbler settings? (type 'yes' to accept)");
 				_Output.WriteLine("------");
-				_Output.WriteLine("Tumbler Fee: " + parameters.Fee.ToString() + $" ({feeRate.ToString("0.00")})");
+				_Output.WriteLine("Tumbler Fee: " + parameters.Fee.ToString() + $" ({feeRate.ToString("0.00")}%)");
 				_Output.WriteLine("Denomination: " + parameters.Denomination.ToString());
 				_Output.WriteLine("Time to tumble the first coin: " + PrettyPrint(standardCyle.GetLength(true)));
 				_Output.WriteLine("Time to tumble the following coins: " + PrettyPrint(standardCyle.GetLength(false)));
-				_Output.WriteLine("Peak amount tumbled per day: " + standardCyle.CoinsPerDay().ToString());
+				_Output.WriteLine($"Peak amount tumbled per day: {standardCyle.CoinsPerDay().ToDecimal(NBitcoin.MoneyUnit.BTC).ToString("0.00")} BTC");
 			}
 			var response = _Input.ReadLine();
 			if(!response.Equals("yes", StringComparison.OrdinalIgnoreCase))
@@ -70,9 +70,12 @@ namespace NTumbleBit
 			return Task.CompletedTask;
 		}
 
-		private string PrettyPrint(TimeSpan timeSpan)
+		private string PrettyPrint(TimeSpan t)
 		{
-			throw new NotImplementedException();
+			return string.Format("{0:D2}d:{1:D2}h:{2:D2}m",
+						t.Days,
+						t.Hours,
+						t.Minutes);
 		}
 	}
 }

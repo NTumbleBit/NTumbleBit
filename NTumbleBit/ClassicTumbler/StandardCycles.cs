@@ -40,7 +40,7 @@ namespace NTumbleBit.ClassicTumbler
 			var periods = Generator.FirstCycle.GetPeriods();
 			var nonOverlappedPart = periods.Registration.End - periods.Registration.Start - Generator.RegistrationOverlap;
 			var overlappedPart = periods.Total.End - periods.Total.Start - nonOverlappedPart;
-			return StandardCycles.GetEstimatedTime(Consensus, startup ? nonOverlappedPart + overlappedPart : overlappedPart);
+			return StandardCycles.GetEstimatedTime(Consensus, startup ? nonOverlappedPart + overlappedPart : nonOverlappedPart);
 		}
 	}
 	public class StandardCycles
