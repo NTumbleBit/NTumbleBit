@@ -133,13 +133,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 			_Disposables.Add(await tor.SetupAsync(interaction, torPath).ConfigureAwait(false));
 		}
 
-		private static async Task<IPAddress> GetExternalIp(TumblerClient client, string url)
-		{
-			var result = await client.Client.GetAsync(url).ConfigureAwait(false);
-			var content = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
-			return IPAddress.Parse(content.Replace("\n", string.Empty));
-		}
-
 		public BroadcasterJob CreateBroadcasterJob()
 		{
 			return new BroadcasterJob(Services);

@@ -38,6 +38,7 @@ namespace NTumbleBit.ClassicTumbler.Client.CLI
 					var broadcaster = runtime.CreateBroadcasterJob();
 					broadcaster.Start();
 					interactive.Services.Add(broadcaster);
+					//interactive.Services.Add(new CheckIpService(runtime));
 
 					if(!config.OnlyMonitor)
 					{
