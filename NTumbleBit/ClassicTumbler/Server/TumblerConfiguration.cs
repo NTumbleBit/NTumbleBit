@@ -136,7 +136,8 @@ namespace NTumbleBit.ClassicTumbler.Server
 
 			var standardCycles = new StandardCycles(Network);
 			var cycleName = config.GetOrDefault<string>("cycle", standardCycles.Debug ? "shorty" : "kotori");
-			
+
+			Logs.Configuration.LogInformation($"Using cycle {cycleName}");
 			ClassicTumblerParameters.CycleGenerator = standardCycles.GetStandardCycle(cycleName)?.Generator;
 			if(ClassicTumblerParameters.CycleGenerator == null)
 				throw new ConfigException($"Invalid cycle name, choose among {String.Join(",", standardCycles.ToEnumerable().Select(c => c.FriendlyName).ToArray())}");

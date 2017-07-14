@@ -58,6 +58,7 @@ namespace NTumbleBit
 				_Output.WriteLine("------");
 				_Output.WriteLine("Do you confirm the following standard tumbler settings? (type 'yes' to accept)");
 				_Output.WriteLine("------");
+				_Output.WriteLine($"Well-known cycle generator: {standardCyle.FriendlyName}");
 				_Output.WriteLine("Tumbler Fee: " + parameters.Fee.ToString() + $" ({feeRate.ToString("0.00")}%)");
 				_Output.WriteLine("Denomination: " + parameters.Denomination.ToString());
 				_Output.WriteLine("Time to tumble the first coin: " + PrettyPrint(standardCyle.GetLength(true)));
