@@ -53,11 +53,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 			BobSettings = configuration.BobConnectionSettings;
 			AliceSettings = configuration.AliceConnectionSettings;
 
-			var torOnly = AliceSettings is TorConnectionSettings && BobSettings is TorConnectionSettings;
-
 			await SetupTorAsync(interaction, configuration.TorPath).ConfigureAwait(false);
-			if(torOnly)
-				Logs.Configuration.LogInformation("Successfully authenticated to Tor");
 
 			RPCClient rpc = null;
 			try
@@ -100,30 +96,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 			if(!configuration.OnlyMonitor)
 			{
-				if(!torOnly && configuration.CheckIp)
-				{
-					var ip1 = GetExternalIp(CreateTumblerClient(0, Identity.Alice), "https://myexternalip.com/raw");
-					var ip2 = GetExternalIp(CreateTumblerClient(0, Identity.Bob), "https://icanhazip.com/");
-					var aliceIp = ip1.GetAwaiter().GetResult();
-					var bobIp = ip2.GetAwaiter().GetResult();
-					if(aliceIp.Equals(bobIp))
-					{
-						var error = "Same IP detected for Bob and Alice, the tumbler can link input address to output address";
-
-						if(configuration.AllowInsecure)
-						{
-							Logs.Configuration.LogWarning(error);
-						}
-						else
-						{
-							throw new ConfigException(error + ", use parameter -allowinsecure or allowinsecure=true in config file to ignore.");
-						}
-					}
-					else
-						Logs.Configuration.LogInformation("Alice and Bob have different IP configured");
-				}
-
-
 				var client = CreateTumblerClient(0);
 				if(TumblerParameters == null)
 				{
