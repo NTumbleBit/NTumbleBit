@@ -9,7 +9,8 @@ namespace NTumbleBit.ClassicTumbler.Client.ConnectionSettings
 {
 	public class ConnectionSettingsBase
 	{
-		public static ConnectionSettingsBase ParseConnectionSettings(string prefix, TextFileConfiguration config, string defaultType = "tor")
+		//Default to socks connection is safe if the cycle parameters make it impossible to have Alice and Bob both connected on a 10 minutes span
+		public static ConnectionSettingsBase ParseConnectionSettings(string prefix, TextFileConfiguration config, string defaultType = "socks")
 		{
 			var type = config.GetOrDefault<string>(prefix + ".proxy.type", defaultType);
 			if(type.Equals("none", StringComparison.OrdinalIgnoreCase))

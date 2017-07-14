@@ -20,7 +20,7 @@ using NTumbleBit.Logging;
 
 namespace NTumbleBit.ClassicTumbler.Client.ConnectionSettings
 {
-	public class TorConnectionSettings : ConnectionSettingsBase
+	public class TorConnectionSettings : ConnectionSettingsBase, ITorConnectionSettings
 	{
 		public static TorConnectionSettings ParseConnectionSettings(string prefix, TextFileConfiguration config)
 		{
@@ -169,13 +169,13 @@ namespace NTumbleBit.ClassicTumbler.Client.ConnectionSettings
 				throw new ConfigException("Invalid Tor configuration");
 		}
 
-		internal async Task<IDisposable> SetupAsync(ClientInteraction interaction, string torPath)
+		public async Task<IDisposable> SetupAsync(ClientInteraction interaction, string torPath)
 		{
-			var autoConfig = string.IsNullOrEmpty(Password) && String.IsNullOrEmpty(CookieFile);
+			var autoConfig = string.IsNullOrEmpty(Password) && String.IsNullOrEmpty(CookieFile) && Server.Address.Equals(IPAddress.Parse("127.0.0.1"));
 			var connectResult = await TryConnectAsync().ConfigureAwait(false);
 			if(connectResult == TorConnectionSettings.ConnectionTest.SocketError)
 			{
-				if(torPath != null && autoConfig && Server.Address.Equals(IPAddress.Parse("127.0.0.1")))
+				if(torPath != null && autoConfig)
 				{
 					var args = $"-controlport {Server.Port} -cookieauthentication 1";
 					await interaction.AskConnectToTorAsync(torPath, args).ConfigureAwait(false);

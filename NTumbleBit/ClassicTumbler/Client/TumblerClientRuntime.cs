@@ -147,11 +147,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 			}
 		}
 
-		private Task SetupTorAsync(ClientInteraction interaction, object torPath)
-		{
-			throw new NotImplementedException();
-		}
-
 		private async Task SetupTorAsync(ClientInteraction interaction, string torPath)
 		{
 			await SetupTorAsync(interaction, AliceSettings, torPath).ConfigureAwait(false);
@@ -160,7 +155,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 		private async Task SetupTorAsync(ClientInteraction interaction, ConnectionSettingsBase settings, string torPath)
 		{
-			var tor = settings as TorConnectionSettings;
+			var tor = settings as ITorConnectionSettings;
 			if(tor == null)
 				return;
 			_Disposables.Add(await tor.SetupAsync(interaction, torPath).ConfigureAwait(false));
