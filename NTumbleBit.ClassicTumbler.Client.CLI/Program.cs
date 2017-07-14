@@ -57,6 +57,7 @@ namespace NTumbleBit.ClassicTumbler.Client.CLI
 					if(!string.IsNullOrEmpty(ex.Message))
 						Logs.Configuration.LogError(ex.Message);
 				}
+				catch(InterruptedConsoleException) { }
 				catch(Exception ex)
 				{
 					Logs.Configuration.LogError(ex.Message);

@@ -73,6 +73,7 @@ namespace NTumbleBit.ClassicTumbler.Server.CLI
 					if(!string.IsNullOrEmpty(ex.Message))
 						Logs.Configuration.LogError(ex.Message);
 				}
+				catch(InterruptedConsoleException) { }
 				catch(Exception exception)
 				{
 					Logs.Tumbler.LogError("Exception thrown while running the server");

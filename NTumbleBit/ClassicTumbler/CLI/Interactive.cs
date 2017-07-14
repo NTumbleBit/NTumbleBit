@@ -22,7 +22,7 @@ namespace NTumbleBit.ClassicTumbler.CLI
 		{
 			get;
 			set;
-		}	
+		}
 
 		public void StartInteractive()
 		{
@@ -35,14 +35,23 @@ namespace NTumbleBit.ClassicTumbler.CLI
 			while(!quit)
 			{
 				Console.Write(">>> ");
-				var split = Console.ReadLine().Split(null);
+				var split = InterruptableConsole.ReadLine().Split(null);
 				try
 				{
 
 					Parser.Default.ParseArguments<StatusOptions, StopOptions, QuitOptions>(split)
 						.WithParsed<StatusOptions>(_ => GetStatus(_))
 						.WithParsed<StopOptions>(_ => Stop(_))
-						.WithParsed<QuitOptions>(_ => quit = true);
+						.WithParsed<QuitOptions>(_ =>
+						{
+							Stop(new StopOptions() { Target = "both" });
+							quit = true;
+						});
+				}
+				catch(InterruptedConsoleException)
+				{
+					Stop(new StopOptions() { Target = "both" });
+					throw;
 				}
 				catch(FormatException)
 				{
