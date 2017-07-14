@@ -198,7 +198,11 @@ namespace NTumbleBit.Services
 			var row = tx.Select<string, byte[]>(GetTableName<T>(), rowKey);
 			if(row == null || !row.Exists)
 				return default(T);
-			return Serializer.ToObject<T>(Unzip(row.Value));
+			try
+			{
+				return Serializer.ToObject<T>(Unzip(row.Value));
+			}
+			catch { return default(T); }
 		}
 
 		public bool Delete<T>(string partitionKey, string rowKey)

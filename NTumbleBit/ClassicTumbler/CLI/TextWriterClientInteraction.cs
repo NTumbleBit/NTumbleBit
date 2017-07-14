@@ -41,7 +41,7 @@ namespace NTumbleBit
 			_Output.WriteLine("------");
 			_Output.WriteLine("Do you confirm the following tumbler settings? (type 'yes' to accept)");
 			_Output.WriteLine("------");
-			_Output.WriteLine(Serializer.ToString(parameters));
+			_Output.WriteLine(Serializer.ToString(parameters, parameters.Network, true));
 			_Output.WriteLine("--");
 			_Output.WriteLine("Tumbler Fee: " + parameters.Fee.ToString());
 			_Output.WriteLine("Denomination: " + parameters.Denomination.ToString());

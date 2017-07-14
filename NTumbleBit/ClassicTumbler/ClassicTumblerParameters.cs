@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit.ClassicTumbler
 {
-	public class ClassicTumblerParameters
+	public class ClassicTumblerParameters : IBitcoinSerializable
 	{
 		public ClassicTumblerParameters()
 		{
@@ -29,55 +29,171 @@ namespace NTumbleBit.ClassicTumbler
 			CycleGenerator = new OverlappedCycleGenerator();
 		}
 
+		Network _Network;
 		public Network Network
 		{
-			get; set;
+			get
+			{
+				return _Network;
+			}
+			set
+			{
+				_Network = value;
+			}
 		}
 
+
+		OverlappedCycleGenerator _CycleGenerator;
 		public OverlappedCycleGenerator CycleGenerator
 		{
-			get;
-			set;
+			get
+			{
+				return _CycleGenerator;
+			}
+			set
+			{
+				_CycleGenerator = value;
+			}
 		}
 
+
+		RsaPubKey _ServerKey;
 		public RsaPubKey ServerKey
 		{
-			get; set;
+			get
+			{
+				return _ServerKey;
+			}
+			set
+			{
+				_ServerKey = value;
+			}
 		}
+
+
+		RsaPubKey _VoucherKey;
 		public RsaPubKey VoucherKey
 		{
-			get; set;
+			get
+			{
+				return _VoucherKey;
+			}
+			set
+			{
+				_VoucherKey = value;
+			}
 		}
 
+
+		Money _Denomination;
 		public Money Denomination
 		{
-			get; set;
+			get
+			{
+				return _Denomination;
+			}
+			set
+			{
+				_Denomination = value;
+			}
 		}
 
+
+		Money _Fee;
 		public Money Fee
 		{
-			get; set;
+			get
+			{
+				return _Fee;
+			}
+			set
+			{
+				_Fee = value;
+			}
 		}
 
+
+		int _FakePuzzleCount;
 		public int FakePuzzleCount
 		{
-			get; set;
+			get
+			{
+				return _FakePuzzleCount;
+			}
+			set
+			{
+				_FakePuzzleCount = value;
+			}
 		}
+
+
+		int _RealPuzzleCount;
 		public int RealPuzzleCount
 		{
-			get; set;
+			get
+			{
+				return _RealPuzzleCount;
+			}
+			set
+			{
+				_RealPuzzleCount = value;
+			}
 		}
+
+
+		int _FakeTransactionCount;
 		public int FakeTransactionCount
 		{
-			get; set;
+			get
+			{
+				return _FakeTransactionCount;
+			}
+			set
+			{
+				_FakeTransactionCount = value;
+			}
 		}
+
+
+		int _RealTransactionCount;
 		public int RealTransactionCount
 		{
-			get; set;
+			get
+			{
+				return _RealTransactionCount;
+			}
+			set
+			{
+				_RealTransactionCount = value;
+			}
 		}
+
+
+		uint256 _FakeFormat;
 		public uint256 FakeFormat
 		{
-			get; set;
+			get
+			{
+				return _FakeFormat;
+			}
+			set
+			{
+				_FakeFormat = value;
+			}
+		}
+
+		public void ReadWrite(BitcoinStream stream)
+		{
+			stream.ReadWriteC(ref _Network);
+			stream.ReadWrite(ref _CycleGenerator);
+			stream.ReadWriteC(ref _ServerKey);
+			stream.ReadWriteC(ref _VoucherKey);
+			stream.ReadWriteC(ref _Denomination);
+			stream.ReadWriteC(ref _Fee);
+			stream.ReadWrite(ref _FakePuzzleCount);
+			stream.ReadWrite(ref _RealPuzzleCount);
+			stream.ReadWrite(ref _FakeTransactionCount);
+			stream.ReadWrite(ref _RealTransactionCount);
 		}
 
 		public bool Check(PromiseParameters promiseParams)
@@ -124,10 +240,7 @@ namespace NTumbleBit.ClassicTumbler
 
 		public uint160 GetHash()
 		{
-			// Ideally ClassicTumblerParameters should be serialized as a byte array
-			// Because there is no such thing as canonical JSON
-			// For V1, we assume everybody run NTumbleBit, so it should not be a problem
-			return Hashes.Hash160(Encoding.UTF8.GetBytes(Serializer.ToString(this, Network)));
+			return Hashes.Hash160(this.ToBytes());
 		}
 
 		public static bool operator ==(ClassicTumblerParameters a, ClassicTumblerParameters b)

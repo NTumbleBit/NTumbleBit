@@ -1,26 +1,45 @@
-﻿using System;
+﻿using NBitcoin;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace NTumbleBit.ClassicTumbler
 {
-	public class OverlappedCycleGenerator
+	public class OverlappedCycleGenerator : IBitcoinSerializable
 	{
 		public OverlappedCycleGenerator()
 		{
 			FirstCycle = new CycleParameters();
 			RegistrationOverlap = 1;
-		}
+		}		
 
+
+		int _RegistrationOverlap;
 		public int RegistrationOverlap
 		{
-			get; set;
+			get
+			{
+				return _RegistrationOverlap;
+			}
+			set
+			{
+				_RegistrationOverlap = value;
+			}
 		}
 
+
+		CycleParameters _FirstCycle;
 		public CycleParameters FirstCycle
 		{
-			get; set;
+			get
+			{
+				return _FirstCycle;
+			}
+			set
+			{
+				_FirstCycle = value;
+			}
 		}
 
 		public CycleParameters GetRegistratingCycle(int blockHeight)
@@ -80,6 +99,12 @@ namespace NTumbleBit.ClassicTumbler
 				cycle = GetNextCycle(cycle);
 			} while(cycle.IsInside(height));
 			return cycles.ToArray();
+		}
+
+		public void ReadWrite(BitcoinStream stream)
+		{
+			stream.ReadWrite(ref _RegistrationOverlap);
+			stream.ReadWrite(ref _FirstCycle);
 		}
 	}
 }

@@ -48,7 +48,7 @@ namespace NTumbleBit.ClassicTumbler.Server
 		async Task ConfigureAsyncCore(TumblerConfiguration conf, ClientInteraction interaction)
 		{
 			Cooperative = conf.Cooperative;
-			ClassicTumblerParameters = Serializer.Clone(conf.ClassicTumblerParameters);
+			ClassicTumblerParameters = conf.ClassicTumblerParameters.Clone();
 			Network = conf.Network;
 			RPCClient rpcClient = null;
 			try

@@ -113,7 +113,7 @@ namespace NTumbleBit.ClassicTumbler
 	/// <summary>
 	/// See https://medium.com/@nicolasdorier/tumblebit-tumbler-mode-ea44e9a2a2ec#.d1kq6t2px
 	/// </summary>
-	public class CycleParameters
+	public class CycleParameters : IBitcoinSerializable
 	{
 		public CycleParameters()
 		{
@@ -197,43 +197,129 @@ namespace NTumbleBit.ClassicTumbler
 			};
 		}
 
+		public void ReadWrite(BitcoinStream stream)
+		{
+			stream.ReadWrite(ref _Start);
+			stream.ReadWrite(ref _RegistrationDuration);
+			stream.ReadWrite(ref _ClientChannelEstablishmentDuration);
+			stream.ReadWrite(ref _TumblerChannelEstablishmentDuration);
+			stream.ReadWrite(ref _TumblerCashoutDuration);
+			stream.ReadWrite(ref _ClientCashoutDuration);
+			stream.ReadWrite(ref _PaymentPhaseDuration);
+			stream.ReadWrite(ref _SafetyPeriodDuration);
+		}
+
+
+		int _Start;
 		public int Start
 		{
-			get; set;
+			get
+			{
+				return _Start;
+			}
+			set
+			{
+				_Start = value;
+			}
 		}
 
+
+		int _RegistrationDuration;
 		public int RegistrationDuration
 		{
-			get; set;
+			get
+			{
+				return _RegistrationDuration;
+			}
+			set
+			{
+				_RegistrationDuration = value;
+			}
 		}
+
+
+		int _ClientChannelEstablishmentDuration;
 		public int ClientChannelEstablishmentDuration
 		{
-			get; set;
+			get
+			{
+				return _ClientChannelEstablishmentDuration;
+			}
+			set
+			{
+				_ClientChannelEstablishmentDuration = value;
+			}
 		}
 
+
+
+		int _TumblerChannelEstablishmentDuration;
 		public int TumblerChannelEstablishmentDuration
 		{
-			get; set;
+			get
+			{
+				return _TumblerChannelEstablishmentDuration;
+			}
+			set
+			{
+				_TumblerChannelEstablishmentDuration = value;
+			}
 		}
 
+
+		int _TumblerCashoutDuration;
 		public int TumblerCashoutDuration
 		{
-			get; set;
+			get
+			{
+				return _TumblerCashoutDuration;
+			}
+			set
+			{
+				_TumblerCashoutDuration = value;
+			}
 		}
 
+
+		int _ClientCashoutDuration;
 		public int ClientCashoutDuration
 		{
-			get; set;
+			get
+			{
+				return _ClientCashoutDuration;
+			}
+			set
+			{
+				_ClientCashoutDuration = value;
+			}
 		}
 
+
+		int _PaymentPhaseDuration;
 		public int PaymentPhaseDuration
 		{
-			get; set;
+			get
+			{
+				return _PaymentPhaseDuration;
+			}
+			set
+			{
+				_PaymentPhaseDuration = value;
+			}
 		}
 
+
+		int _SafetyPeriodDuration;
 		public int SafetyPeriodDuration
 		{
-			get; set;
+			get
+			{
+				return _SafetyPeriodDuration;
+			}
+			set
+			{
+				_SafetyPeriodDuration = value;
+			}
 		}
 	}
 }
