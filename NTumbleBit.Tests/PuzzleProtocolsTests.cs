@@ -96,44 +96,31 @@ namespace NTumbleBit.Tests
 				SafetyPeriodDuration = 2,
 			};
 
+			Assert.Equal("{[..o.......]..[...........]..[............]..[[...].......][.............]..}", parameter.ToString(102));
+			//              0          10 12          23 25           37  39  42       49            62
+
 			Assert.True(parameter.IsInPhase(CyclePhase.Registration, 100));
 			Assert.True(parameter.IsInPhase(CyclePhase.Registration, 109));
 			Assert.False(parameter.IsInPhase(CyclePhase.Registration, 110));
 
-			Assert.True(parameter.IsInPhase(CyclePhase.ClientChannelEstablishment, 110));
-			Assert.True(parameter.IsInPhase(CyclePhase.ClientChannelEstablishment, 120));
-			Assert.False(parameter.IsInPhase(CyclePhase.ClientChannelEstablishment, 121));
+			Assert.True(parameter.IsInPhase(CyclePhase.ClientChannelEstablishment, 112));
 
-			Assert.True(parameter.IsInPhase(CyclePhase.TumblerChannelEstablishment, 121));
-			Assert.True(parameter.IsInPhase(CyclePhase.TumblerChannelEstablishment, 132));
-			Assert.False(parameter.IsInPhase(CyclePhase.TumblerChannelEstablishment, 133));
+			Assert.True(parameter.IsInPhase(CyclePhase.TumblerChannelEstablishment, 125));
 
-			Assert.False(parameter.IsInPhase(CyclePhase.TumblerCashoutPhase, 133));
-			Assert.False(parameter.IsInPhase(CyclePhase.TumblerCashoutPhase, 134));
-			Assert.True(parameter.IsInPhase(CyclePhase.TumblerCashoutPhase, 135));
-			Assert.True(parameter.IsInPhase(CyclePhase.TumblerCashoutPhase, 144));
-			Assert.False(parameter.IsInPhase(CyclePhase.TumblerCashoutPhase, 145));
+			Assert.True(parameter.IsInPhase(CyclePhase.TumblerCashoutPhase, 139));
 
-			Assert.False(parameter.IsInPhase(CyclePhase.PaymentPhase, 133));
-			Assert.False(parameter.IsInPhase(CyclePhase.PaymentPhase, 134));
-			Assert.True(parameter.IsInPhase(CyclePhase.PaymentPhase, 135));
-			Assert.True(parameter.IsInPhase(CyclePhase.PaymentPhase, 137));
-			Assert.False(parameter.IsInPhase(CyclePhase.PaymentPhase, 138));
+			Assert.True(parameter.IsInPhase(CyclePhase.PaymentPhase, 139));
 
-			Assert.True(parameter.IsInPhase(CyclePhase.ClientCashoutPhase, 145));
-			Assert.True(parameter.IsInPhase(CyclePhase.ClientCashoutPhase, 157));
-			Assert.False(parameter.IsInPhase(CyclePhase.ClientCashoutPhase, 158));
+			Assert.True(parameter.IsInPhase(CyclePhase.ClientCashoutPhase, 149));
 
-			//At block 147 we will be able to broadcast refund for expected confirmation at 148
-			Assert.Equal(147, parameter.GetClientLockTime().Height);
+			Assert.Equal(149 + 2, parameter.GetClientLockTime().Height);
 
 
 			var total = parameter.GetPeriods().Total;
 			Assert.Equal(100, total.Start);
-			Assert.Equal(160, total.End);
+			Assert.Equal(162 + 2, total.End);
 
-			////At block 160 we will be able to broadcast refund for expected confirmation at 161
-			Assert.Equal(160, parameter.GetTumblerLockTime().Height);
+			Assert.Equal(162 + 2, parameter.GetTumblerLockTime().Height);
 
 			var cycleGenerator = new OverlappedCycleGenerator();
 			cycleGenerator.FirstCycle = parameter;

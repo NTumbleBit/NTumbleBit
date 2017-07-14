@@ -176,7 +176,6 @@ namespace NTumbleBit.ClassicTumbler.CLI
 				var records = Runtime.Tracker.GetRecords(options.CycleId.Value);
 				var currentHeight = Runtime.Services.BlockExplorerService.GetCurrentHeight();
 
-				StringBuilder builder = new StringBuilder();
 				var phases = new[]
 				{
 					CyclePhase.Registration,
@@ -190,20 +189,14 @@ namespace NTumbleBit.ClassicTumbler.CLI
 				if(cycle != null)
 				{
 					Console.WriteLine("Phases:");
+					Console.WriteLine(cycle.ToString(currentHeight));
 					var periods = cycle.GetPeriods();
 					foreach(var phase in phases)
 					{
 						var period = periods.GetPeriod(phase);
 						if(period.IsInPeriod(currentHeight))
-							builder.Append("(");
-						builder.Append(phase.ToString());
-						if(period.IsInPeriod(currentHeight))
-							builder.Append($" {(period.End - currentHeight)} blocks left)");
-
-						if(phase != CyclePhase.ClientCashoutPhase)
-							builder.Append("-");
+							Console.WriteLine($"In phase: {phase.ToString()}  ({(period.End - currentHeight)} blocks left)");
 					}
-					Console.WriteLine(builder.ToString());
 					Console.WriteLine();
 				}
 
@@ -213,7 +206,7 @@ namespace NTumbleBit.ClassicTumbler.CLI
 					Console.WriteLine("========");
 					foreach(var group in correlationGroup.GroupBy(r => r.TransactionType).OrderBy(o => (int)o.Key))
 					{
-						builder = new StringBuilder();
+						var builder = new StringBuilder();
 						builder.AppendLine(group.Key.ToString());
 						foreach(var data in group.OrderBy(g => g.RecordType))
 						{

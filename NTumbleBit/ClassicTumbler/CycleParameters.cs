@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace NTumbleBit.ClassicTumbler
@@ -103,6 +104,18 @@ namespace NTumbleBit.ClassicTumbler
 			}
 		}
 
+		public IEnumerable<CyclePeriod> ToEnumerable()
+		{
+			return new[] 
+			{
+				Registration,
+				ClientChannelEstablishment,
+				TumblerChannelEstablishment,
+				Payment,
+				TumblerCashout,
+				ClientCashout
+			};
+		}
 		public bool IsInside(int blockHeight)
 		{
 			return Total.IsInPeriod(blockHeight);
@@ -131,9 +144,9 @@ namespace NTumbleBit.ClassicTumbler
 		{
 			int registrationStart = Start;
 			int registrationEnd = registrationStart + RegistrationDuration;
-			int cchannelRegistrationStart = registrationEnd;
+			int cchannelRegistrationStart = registrationEnd + SafetyPeriodDuration;
 			int cchannelRegistrationEnd = cchannelRegistrationStart + ClientChannelEstablishmentDuration;
-			int tchannelRegistrationStart = cchannelRegistrationEnd;
+			int tchannelRegistrationStart = cchannelRegistrationEnd + SafetyPeriodDuration;
 			int tchannelRegistrationEnd = tchannelRegistrationStart + TumblerChannelEstablishmentDuration;
 			int tcashoutStart = tchannelRegistrationEnd + SafetyPeriodDuration;
 			int tcashoutEnd = tcashoutStart + TumblerCashoutDuration;
@@ -320,6 +333,36 @@ namespace NTumbleBit.ClassicTumbler
 			{
 				_SafetyPeriodDuration = value;
 			}
+		}
+		public override string ToString()
+		{
+			return ToString(-1);
+		}
+		public string ToString(int pos)
+		{
+			StringBuilder builder = new StringBuilder();
+			builder.Append('{');
+			var periods = GetPeriods();
+			HashSet<CyclePeriod> started = new HashSet<CyclePeriod>();
+			HashSet<CyclePeriod> ended = new HashSet<CyclePeriod>();
+			for(int i = Start; i < Start + periods.Total.End - periods.Total.Start; i++)
+			{
+				foreach(var period in periods.ToEnumerable())
+				{
+					var isInside = period.IsInPeriod(i);
+					if(isInside && started.Add(period))
+					{
+						builder.Append('[');
+					}
+					if(!isInside && started.Contains(period) && ended.Add(period))
+					{
+						builder.Append(']');
+					}
+				}
+				builder.Append(i == pos ? 'o' :'.');
+			}
+			builder.Append('}');
+			return builder.ToString();
 		}
 	}
 }
