@@ -109,12 +109,24 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			[FromBody]int cycleStart)
 		{
 			var height = Services.BlockExplorerService.GetCurrentHeight();
-			var cycle = Parameters.CycleGenerator.GetCycle(cycleStart);
+			var cycle = GetCycle(cycleStart);
 			int keyIndex;
 			var key = Repository.GetNextKey(cycle.Start, out keyIndex);
 			if(!cycle.IsInPhase(CyclePhase.ClientChannelEstablishment, height))
 				return BadRequest("invalid-phase");
 			return Json(new TumblerEscrowKeyResponse { PubKey = key.PubKey, KeyIndex = keyIndex });
+		}
+
+		private CycleParameters GetCycle(int cycleStart)
+		{
+			try
+			{
+				return Parameters.CycleGenerator.GetCycle(cycleStart);
+			}
+			catch(InvalidOperationException)
+			{
+				throw new ActionResultException(BadRequest("invalid-cycle"));
+			}
 		}
 
 		[HttpPost("api/v1/tumblers/{tumblerId}/clientchannels/confirm")]
@@ -145,7 +157,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			if(transaction.Outputs.Count > 2)
 				return BadRequest("invalid-transaction");
 
-			var cycle = Parameters.CycleGenerator.GetCycle(request.Cycle);
+			var cycle = GetCycle(request.Cycle);
 			var height = Services.BlockExplorerService.GetCurrentHeight();
 			if(!cycle.IsInPhase(CyclePhase.ClientChannelEstablishment, height))
 				return BadRequest("invalid-phase");
@@ -201,7 +213,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			[FromBody] OpenChannelRequest request)
 		{
 			var height = Services.BlockExplorerService.GetCurrentHeight();
-			var cycle = Parameters.CycleGenerator.GetCycle(request.CycleStart);
+			var cycle = GetCycle(request.CycleStart);
 			if(!cycle.IsInPhase(CyclePhase.TumblerChannelEstablishment, height))
 				return BadRequest("invalid-phase");
 			var fee = Services.FeeService.GetFeeRate();
@@ -303,7 +315,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 
 		private void CheckPhase(CyclePhase expectedPhase, int height, int cycleId)
 		{
-			CycleParameters cycle = Parameters.CycleGenerator.GetCycle(cycleId);
+			CycleParameters cycle = GetCycle(cycleId);
 			if(!cycle.IsInPhase(expectedPhase, height))
 				throw BadRequest("invalid-phase").AsException();
 		}
@@ -341,7 +353,6 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			var session = GetSolverServerSession(cycleId, channelId, CyclePhase.PaymentPhase);
 			var feeRate = Services.FeeService.GetFeeRate();
 			var fulfillKey = session.CheckBlindedFactors(blindFactors, feeRate);
-			var cycle = Parameters.CycleGenerator.GetCycle(cycleId);
 			Repository.Save(cycleId, session);
 			return Json(fulfillKey);
 		}
@@ -360,7 +371,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 				return BadRequest("invalid-state");
 			try
 			{
-				var cycle = Parameters.CycleGenerator.GetCycle(cycleId);
+				var cycle = GetCycle(cycleId);
 				var cashout = Services.WalletService.GenerateAddress();
 
 				var fulfill = session.FulfillOffer(signature, cashout.ScriptPubKey, feeRate);
