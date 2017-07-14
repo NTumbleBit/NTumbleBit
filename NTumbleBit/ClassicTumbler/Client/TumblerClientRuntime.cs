@@ -22,6 +22,13 @@ namespace NTumbleBit.ClassicTumbler.Client
 		Alice,
 		Bob
 	}
+	public class PrematureRequestException : Exception
+	{
+		public PrematureRequestException() : base("Premature request")
+		{
+
+		}
+	}
 
 	public class TumblerClientRuntime : IDisposable
 	{
@@ -40,7 +47,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 			catch
 			{
 				runtime.Dispose();
-                throw;
+				throw;
 			}
 			return runtime;
 		}
@@ -52,6 +59,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 			TumblerServer = configuration.TumblerServer;
 			BobSettings = configuration.BobConnectionSettings;
 			AliceSettings = configuration.AliceConnectionSettings;
+			AllowInsecure = configuration.AllowInsecure;
 
 			await SetupTorAsync(interaction, configuration.TorPath).ConfigureAwait(false);
 
@@ -165,8 +173,15 @@ namespace NTumbleBit.ClassicTumbler.Client
 			return CreateTumblerClient(cycle, identity == Identity.Alice ? AliceSettings : BobSettings);
 		}
 
+		DateTimeOffset previousHandlerCreationDate;
+		TimeSpan CircuitRenewInterval = TimeSpan.FromMinutes(10.0);
 		private TumblerClient CreateTumblerClient(int cycleId, ConnectionSettingsBase settings)
 		{
+			if(!AllowInsecure && DateTimeOffset.UtcNow - previousHandlerCreationDate < CircuitRenewInterval)
+			{
+				throw new InvalidOperationException("premature-request");
+			}
+			previousHandlerCreationDate = DateTime.UtcNow;
 			var client = new TumblerClient(Network, TumblerServer, cycleId);
 			var handler = settings.CreateHttpHandler();
 			if(handler != null)
@@ -235,6 +250,11 @@ namespace NTumbleBit.ClassicTumbler.Client
 		{
 			get;
 			set;
+		}
+		public bool AllowInsecure
+		{
+			get;
+			private set;
 		}
 	}
 }

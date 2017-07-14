@@ -66,6 +66,11 @@ namespace NTumbleBit.ClassicTumbler.Client
 								machine.Update();
 								machine.InvalidPhaseCount = 0;
 							}
+							catch(PrematureRequestException)
+							{
+								Logs.Client.LogInformation("Skipping update, need to wait for tor circuit renewal");
+								break;
+							}
 							catch(Exception ex)
 							{
 								var invalidPhase = ex.Message.IndexOf("invalid-phase", StringComparison.OrdinalIgnoreCase) >= 0;
