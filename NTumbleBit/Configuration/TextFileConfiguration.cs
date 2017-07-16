@@ -1,4 +1,5 @@
 ﻿using NBitcoin;
+using NTumbleBit.ClassicTumbler;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -201,6 +202,8 @@ namespace NTumbleBit.Configuration
 				return (T)(object)new Uri(str, UriKind.Absolute);
 			else if(typeof(T) == typeof(string))
 				return (T)(object)str;
+			else if(typeof(T) == typeof(TumblerUrlBuilder))
+				return (T)(object)new TumblerUrlBuilder(str);
 			else if(typeof(T) == typeof(IPEndPoint))
 			{
 				var separator = str.LastIndexOf(":");

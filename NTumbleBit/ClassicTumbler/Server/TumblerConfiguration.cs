@@ -54,11 +54,11 @@ namespace NTumbleBit.ClassicTumbler.Server
 			get; set;
 		} = new RPCArgs();
 
-		public List<IPEndPoint> Listen
+		public IPEndPoint Listen
 		{
 			get;
 			set;
-		} = new List<IPEndPoint>();
+		}
 		public bool OnlyMonitor
 		{
 			get;
@@ -153,14 +153,7 @@ namespace NTumbleBit.ClassicTumbler.Server
 			var defaultPort = config.GetOrDefault<int>("port", 37123);
 
 			OnlyMonitor = config.GetOrDefault<bool>("onlymonitor", false);
-			Listen = config
-						.GetAll("bind")
-						.Select(p => ConvertToEndpoint(p, defaultPort))
-						.ToList();
-			if(Listen.Count == 0)
-			{
-				Listen.Add(new IPEndPoint(IPAddress.Any, defaultPort));
-			}
+			Listen = new IPEndPoint(IPAddress.Parse("127.0.0.1"), defaultPort);
 
 			RPC = RPCArgs.Parse(config, Network);
 			TorPath = config.GetOrDefault<string>("torpath", "tor");
@@ -170,6 +163,11 @@ namespace NTumbleBit.ClassicTumbler.Server
 		public string CycleName
 		{
 			get; set;
+		}
+		public bool AllowInsecure
+		{
+			get;
+			internal set;
 		}
 
 		public string GetDefaultConfigurationFile()
@@ -213,11 +211,6 @@ namespace NTumbleBit.ClassicTumbler.Server
 				File.WriteAllText(config, builder.ToString());
 			}
 			return config;
-		}
-
-		public string[] GetUrls()
-		{
-			return Listen.Select(b => "http://" + b + "/").ToArray();
 		}
 
 		public static IPEndPoint ConvertToEndpoint(string str, int defaultPort)

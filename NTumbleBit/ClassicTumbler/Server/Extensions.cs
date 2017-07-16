@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Hosting;
+using TCPServer;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
@@ -50,7 +51,10 @@ namespace NTumbleBit.ClassicTumbler.Server
 					 return runtime;
 				 });
 			});
-
+			builder.UseTCPServer(new ServerOptions(runtime.LocalEndpoint)
+			{
+				IncludeHeaders = false
+			});
 			return builder;
 		}
 	}

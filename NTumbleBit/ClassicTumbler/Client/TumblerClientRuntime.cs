@@ -14,6 +14,7 @@ using NTumbleBit.Services;
 using NTumbleBit.Configuration;
 using NTumbleBit.ClassicTumbler.Client.ConnectionSettings;
 using NTumbleBit.ClassicTumbler.CLI;
+using TCPServer.Client;
 
 namespace NTumbleBit.ClassicTumbler.Client
 {
@@ -96,10 +97,9 @@ namespace NTumbleBit.ClassicTumbler.Client
 			else
 				throw new ConfigException("Missing configuration for outputwallet");
 
-			TumblerParameters = dbreeze.Get<ClassicTumbler.ClassicTumblerParameters>("Configuration", configuration.TumblerServer.AbsoluteUri);
-			var parameterHash = ClassicTumbler.ClassicTumblerParameters.ExtractHashFromUrl(configuration.TumblerServer);
+			TumblerParameters = dbreeze.Get<ClassicTumbler.ClassicTumblerParameters>("Configuration", configuration.TumblerServer.Uri.AbsoluteUri);
 
-			if(TumblerParameters != null && TumblerParameters.GetHash() != parameterHash)
+			if(TumblerParameters != null && TumblerParameters.GetHash() != configuration.TumblerServer.ConfigurationHash)
 				TumblerParameters = null;
 
 			if(!configuration.OnlyMonitor)
@@ -107,12 +107,12 @@ namespace NTumbleBit.ClassicTumbler.Client
 				var client = CreateTumblerClient(0);
 				if(TumblerParameters == null)
 				{
-					Logs.Configuration.LogInformation("Downloading tumbler information of " + configuration.TumblerServer.AbsoluteUri);
+					Logs.Configuration.LogInformation("Downloading tumbler information of " + configuration.TumblerServer.Uri.AbsoluteUri);
 					var parameters = Retry(3, () => client.GetTumblerParameters());
 					if(parameters == null)
 						throw new ConfigException("Unable to download tumbler's parameters");
 
-					if(parameters.GetHash() != parameterHash)
+					if(parameters.GetHash() != configuration.TumblerServer.ConfigurationHash)
 						throw new ConfigException("The tumbler returned an invalid configuration");
 
 					var standardCycles = new StandardCycles(configuration.Network);
@@ -128,13 +128,13 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 					await interaction.ConfirmParametersAsync(parameters, standardCycle).ConfigureAwait(false);
 
-					Repository.UpdateOrInsert("Configuration", TumblerServer.AbsoluteUri, parameters, (o, n) => n);
+					Repository.UpdateOrInsert("Configuration", TumblerServer.Uri.AbsoluteUri, parameters, (o, n) => n);
 					TumblerParameters = parameters;
 
 					Logs.Configuration.LogInformation("Tumbler parameters saved");
 				}
 
-				Logs.Configuration.LogInformation($"Using tumbler {TumblerServer.AbsoluteUri}");
+				Logs.Configuration.LogInformation($"Using tumbler {TumblerServer.Uri.AbsoluteUri}");
 			}
 		}
 
@@ -172,7 +172,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 			get; set;
 		}
 
-		public Uri TumblerServer
+		public TumblerUrlBuilder TumblerServer
 		{
 			get; set;
 		}
@@ -194,7 +194,8 @@ namespace NTumbleBit.ClassicTumbler.Client
 			}
 			previousHandlerCreationDate = DateTime.UtcNow;
 			var client = new TumblerClient(Network, TumblerServer, cycleId);
-			var handler = settings.CreateHttpHandler();
+			//var handler = settings.CreateHttpHandler();
+			var handler = new TCPHttpMessageHandler() { IncludeHeaders = false };
 			if(handler != null)
 				client.SetHttpHandler(handler);
 			return client;

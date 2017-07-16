@@ -70,7 +70,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 			get;
 			set;
 		}
-		public Uri TumblerServer
+		public TumblerUrlBuilder TumblerServer
 		{
 			get;
 			set;
@@ -156,22 +156,13 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 			OnlyMonitor = config.GetOrDefault<bool>("onlymonitor", false);
 			Cooperative = config.GetOrDefault<bool>("cooperative", true);
-			TumblerServer = config.GetOrDefault("tumbler.server", null as Uri);
+			TumblerServer = config.GetOrDefault("tumbler.server", null as TumblerUrlBuilder);
 			TorPath = config.GetOrDefault<string>("torpath", "tor");
 
 			RPCArgs = RPCArgs.Parse(config, Network);
 
 			if(!OnlyMonitor && TumblerServer == null)
 				throw new ConfigException("tumbler.server not configured");
-
-			try
-			{
-				ClassicTumblerParameters.ExtractHashFromUrl(TumblerServer);
-			}
-			catch(FormatException)
-			{
-				throw new ConfigException("tumbler.server does not contains the parameter hash");
-			}
 
 			try
 			{

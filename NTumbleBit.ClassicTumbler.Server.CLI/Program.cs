@@ -1,4 +1,5 @@
 ﻿using System;
+using TCPServer;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -15,6 +16,7 @@ using NTumbleBit.ClassicTumbler;
 using NTumbleBit.Configuration;
 using NTumbleBit.ClassicTumbler.Server;
 using NTumbleBit.ClassicTumbler.CLI;
+using System.Net;
 
 namespace NTumbleBit.ClassicTumbler.Server.CLI
 {
@@ -40,11 +42,10 @@ namespace NTumbleBit.ClassicTumbler.Server.CLI
 					if(!config.OnlyMonitor)
 					{
 						host = new StoppableWebHost(() => new WebHostBuilder()
-						.UseKestrel()
 						.UseAppConfiguration(runtime)
 						.UseContentRoot(Directory.GetCurrentDirectory())
 						.UseStartup<Startup>()
-						.UseUrls(config.GetUrls()).Build());
+						.Build());
 					}
 
 					var job = new BroadcasterJob(interactive.Runtime.Services);

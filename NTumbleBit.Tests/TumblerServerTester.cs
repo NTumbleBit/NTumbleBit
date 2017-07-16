@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Hosting;
+using TCPServer;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Server.Kestrel;
@@ -70,7 +71,8 @@ namespace NTumbleBit.Tests
 				conf.RPC.User = creds.Item1;
 				conf.RPC.Password = creds.Item2;
 				conf.Network = Network.RegTest;
-				conf.Listen.Add(new System.Net.IPEndPoint(IPAddress.Parse("127.0.0.1"), 5000));
+				conf.Listen = new System.Net.IPEndPoint(IPAddress.Parse("127.0.0.1"), 5000);
+				conf.AllowInsecure = true;
 				conf.ClassicTumblerParameters.FakePuzzleCount /= 4;
 				conf.ClassicTumblerParameters.FakeTransactionCount /= 4;
 				conf.ClassicTumblerParameters.RealTransactionCount /= 4;
@@ -79,11 +81,9 @@ namespace NTumbleBit.Tests
 
 				var runtime = TumblerRuntime.FromConfiguration(conf, new AcceptAllClientInteraction());
 				_Host = new WebHostBuilder()
-					.UseKestrel()
 					.UseAppConfiguration(runtime)
 					.UseContentRoot(Path.GetFullPath(directory))
 					.UseStartup<Startup>()
-					.UseUrls(conf.GetUrls())
 					.Build();
 
 				_Host.Start();
@@ -105,7 +105,7 @@ namespace NTumbleBit.Tests
 				creds = ExtractCredentials(File.ReadAllText(AliceNode.Config));
 				clientConfig.RPCArgs.User = creds.Item1;
 				clientConfig.RPCArgs.Password = creds.Item2;
-				clientConfig.TumblerServer = Address;
+				clientConfig.TumblerServer = runtime.TumblerUris.First();
 
 				ClientRuntime = TumblerClientRuntime.FromConfiguration(clientConfig, new AcceptAllClientInteraction());
 
@@ -220,7 +220,7 @@ namespace NTumbleBit.Tests
 		{
 			get
 			{
-				var address = ((KestrelServer)(_Host.Services.GetService(typeof(IServer)))).Features.Get<IServerAddressesFeature>().Addresses.FirstOrDefault();
+				var address = ((IServer)(_Host.Services.GetService(typeof(IServer)))).Features.Get<IServerAddressesFeature>().Addresses.FirstOrDefault();
 				var builder = new UriBuilder(address);
 				builder.Path = $"api/v1/tumblers/{ServerRuntime.ClassicTumblerParameters.GetHash()}";
 				return builder.Uri;

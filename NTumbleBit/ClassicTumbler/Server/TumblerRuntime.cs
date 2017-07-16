@@ -50,6 +50,7 @@ namespace NTumbleBit.ClassicTumbler.Server
 			Cooperative = conf.Cooperative;
 			ClassicTumblerParameters = conf.ClassicTumblerParameters.Clone();
 			Network = conf.Network;
+			LocalEndpoint = conf.Listen;
 			RPCClient rpcClient = null;
 			try
 			{
@@ -60,7 +61,7 @@ namespace NTumbleBit.ClassicTumbler.Server
 				throw new ConfigException("Please, fix rpc settings in " + conf.ConfigurationFile);
 			}
 
-			bool torConfigured = false;			
+			bool torConfigured = false;
 			if(conf.TorSettings != null)
 			{
 				Exception error = null;
@@ -75,21 +76,24 @@ namespace NTumbleBit.ClassicTumbler.Server
 					if(File.Exists(torRSA))
 						privateKey = File.ReadAllText(torRSA, Encoding.UTF8);
 
-					IPEndPoint routable = GetLocalEndpoint(conf);
 					TorConnection = conf.TorSettings.CreateTorClient2();
 					_Resources.Add(TorConnection);
 
 					await TorConnection.ConnectAsync().ConfigureAwait(false);
 					await TorConnection.AuthenticateAsync().ConfigureAwait(false);
-					var result = await TorConnection.RegisterHiddenServiceAsync(routable, conf.TorSettings.VirtualPort, privateKey).ConfigureAwait(false);
+					var result = await TorConnection.RegisterHiddenServiceAsync(conf.Listen, conf.TorSettings.VirtualPort, privateKey).ConfigureAwait(false);
 					if(privateKey == null)
 					{
 						File.WriteAllText(torRSA, result.PrivateKey, Encoding.UTF8);
 						Logs.Configuration.LogWarning($"Tor RSA private key generated to {torRSA}");
 					}
 
-					TorUri = result.HiddenServiceUri;
-					Logs.Configuration.LogInformation($"Tor configured on {TorUri.AbsoluteUri}");
+					var tumblerUri = new TumblerUrlBuilder();
+					tumblerUri.Port = result.HiddenServiceUri.Port;
+					tumblerUri.Host = result.HiddenServiceUri.Host;
+					TumblerUris.Add(tumblerUri);
+					TorUri = tumblerUri.RoutableUri;
+					Logs.Configuration.LogInformation($"Tor configured on {result.HiddenServiceUri}");
 					torConfigured = true;
 				}
 				catch(ConfigException ex)
@@ -142,20 +146,27 @@ namespace NTumbleBit.ClassicTumbler.Server
 			ClassicTumblerParameters.VoucherKey = VoucherKey.PubKey;
 			ClassicTumblerParametersHash = ClassicTumblerParameters.GetHash();
 
-			if(TorUri != null)
-				TumblerUris.Add(CreateTumblerUri(TorUri));
+			if(conf.AllowInsecure)
+			{
+				TumblerUris.Add(new TumblerUrlBuilder()
+				{
+					Host = LocalEndpoint.Address.ToString(),
+					Port = LocalEndpoint.Port,
+				});
+			}
 
-			foreach(var url in conf.GetUrls())
-				TumblerUris.Add(CreateTumblerUri(new Uri(url, UriKind.Absolute)));
-
+			var configurationHash = ClassicTumblerParameters.GetHash();
+			foreach(var uri in TumblerUris)
+			{
+				uri.ConfigurationHash = configurationHash;
+			}
 
 			Logs.Configuration.LogInformation("");
 			Logs.Configuration.LogInformation($"--------------------------------");
-			var uris = String.Join(Environment.NewLine, TumblerUris.ToArray().Select(u => u.AbsoluteUri).ToArray());
 			Logs.Configuration.LogInformation($"Shareable URIs of the running tumbler are:");
 			foreach(var uri in TumblerUris)
 			{
-				Logs.Configuration.LogInformation(uri.AbsoluteUri);
+				Logs.Configuration.LogInformation(uri.Uri.AbsoluteUri);
 			}
 			Logs.Configuration.LogInformation($"--------------------------------");
 			Logs.Configuration.LogInformation("");
@@ -165,14 +176,6 @@ namespace NTumbleBit.ClassicTumbler.Server
 			_Resources.Add(dbreeze);
 			Tracker = new Tracker(dbreeze, Network);
 			Services = ExternalServices.CreateFromRPCClient(rpcClient, dbreeze, Tracker);
-		}
-
-		private static IPEndPoint GetLocalEndpoint(TumblerConfiguration conf)
-		{
-			var routable = conf.Listen.FirstOrDefault();
-			if(routable.Address == IPAddress.Any)
-				routable = new IPEndPoint(IPAddress.Parse("127.0.0.1"), routable.Port);
-			return routable;
 		}
 
 		public Uri TorUri
@@ -248,22 +251,20 @@ namespace NTumbleBit.ClassicTumbler.Server
 			get;
 			internal set;
 		}
-		public List<Uri> TumblerUris
+		public List<TumblerUrlBuilder> TumblerUris
 		{
 			get;
 			set;
-		} = new List<Uri>();
+		} = new List<TumblerUrlBuilder>();
 		public TorClient TorConnection
 		{
 			get;
 			private set;
 		}
-
-		private Uri CreateTumblerUri(Uri baseUri)
+		public IPEndPoint LocalEndpoint
 		{
-			var builder = new UriBuilder(baseUri);
-			builder.Path = $"/api/v1/tumblers/{ClassicTumblerParametersHash}";
-			return builder.Uri;
-		}
+			get;
+			set;
+		}		
 	}
 }

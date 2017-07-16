@@ -15,7 +15,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 {
     public class TumblerClient : IDisposable
     {
-		public TumblerClient(Network network, Uri serverAddress, int cycleId)
+		public TumblerClient(Network network, TumblerUrlBuilder serverAddress, int cycleId)
 		{
 			if(serverAddress == null)
 				throw new ArgumentNullException(nameof(serverAddress));
@@ -24,7 +24,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 			_Address = serverAddress;
 			_Network = network;
 			this.cycleId = cycleId;
-			ClassicTumblerParameters.ExtractHashFromUrl(serverAddress); //Validate
 		}
 
 		private int cycleId;
@@ -39,7 +38,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 		}
 
 
-		private readonly Uri _Address;
+		private readonly TumblerUrlBuilder _Address;
 
 	    private static readonly HttpClient SharedClient = new HttpClient(Utils.SetAntiFingerprint(new HttpClientHandler()));
 
@@ -103,7 +102,8 @@ namespace NTumbleBit.ClassicTumbler.Client
 		private string GetFullUri(string relativePath, params object[] parameters)
 		{
 			relativePath = String.Format(relativePath, parameters ?? new object[0]);
-			var uri = _Address.AbsoluteUri;
+
+			var uri = _Address.RoutableUri.AbsoluteUri;
 			if(!uri.EndsWith("/", StringComparison.Ordinal))
 				uri += "/";
 			uri += relativePath;
