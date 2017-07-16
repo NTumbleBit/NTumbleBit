@@ -1,4 +1,5 @@
-﻿using NTumbleBit.BouncyCastle.Math;
+﻿using NBitcoin;
+using NTumbleBit.BouncyCastle.Math;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,9 +7,13 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit.PuzzlePromise
 {
-    public class Quotient
+    public class Quotient : IBitcoinSerializable
     {
-		internal readonly BigInteger _Value;
+		internal BigInteger _Value;
+		public Quotient()
+		{
+
+		}
 
 		public Quotient(byte[] quotient)
 		{
@@ -24,6 +29,9 @@ namespace NTumbleBit.PuzzlePromise
 			_Value = quotient;
 		}
 
-
-    }
+		public void ReadWrite(BitcoinStream stream)
+		{
+			stream.ReadWriteC(ref _Value);
+		}
+	}
 }

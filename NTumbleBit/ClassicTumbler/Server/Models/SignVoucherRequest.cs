@@ -7,31 +7,99 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit.ClassicTumbler.Server.Models
 {
-	public class SignVoucherRequest
+	public class SignVoucherRequest : IBitcoinSerializable
 	{
+		int _Cycle;
 		public int Cycle
 		{
-			get; set;
+			get
+			{
+				return _Cycle;
+			}
+			set
+			{
+				_Cycle = value;
+			}
 		}
+
+
+		int _KeyReference;
 		public int KeyReference
 		{
-			get; set;
+			get
+			{
+				return _KeyReference;
+			}
+			set
+			{
+				_KeyReference = value;
+			}
 		}
+
+
+		PuzzleValue _UnsignedVoucher;
 		public PuzzleValue UnsignedVoucher
 		{
-			get; set;
+			get
+			{
+				return _UnsignedVoucher;
+			}
+			set
+			{
+				_UnsignedVoucher = value;
+			}
 		}
+
+
+		MerkleBlock _MerkleProof;
 		public MerkleBlock MerkleProof
 		{
-			get; set;
+			get
+			{
+				return _MerkleProof;
+			}
+			set
+			{
+				_MerkleProof = value;
+			}
 		}
+
+
+		PubKey _ClientEscrowKey;
 		public PubKey ClientEscrowKey
 		{
-			get; set;
+			get
+			{
+				return _ClientEscrowKey;
+			}
+			set
+			{
+				_ClientEscrowKey = value;
+			}
 		}
+
+
+		Transaction _Transaction;
 		public Transaction Transaction
 		{
-			get; set;
+			get
+			{
+				return _Transaction;
+			}
+			set
+			{
+				_Transaction = value;
+			}
+		}
+
+		public void ReadWrite(BitcoinStream stream)
+		{
+			stream.ReadWrite(ref _Cycle);
+			stream.ReadWrite(ref _KeyReference);
+			stream.ReadWrite(ref _UnsignedVoucher);
+			stream.ReadWrite(ref _MerkleProof);
+			stream.ReadWriteC(ref _ClientEscrowKey);
+			stream.ReadWrite(ref _Transaction);
 		}
 	}
 }

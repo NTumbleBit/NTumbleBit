@@ -1,11 +1,12 @@
-﻿using System;
+﻿using NBitcoin;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace NTumbleBit.PuzzlePromise
 {
-    public class ServerCommitmentsProof
+    public class ServerCommitmentsProof : IBitcoinSerializable
 	{
 		public ServerCommitmentsProof()
 		{
@@ -21,15 +22,37 @@ namespace NTumbleBit.PuzzlePromise
 			Quotients = quotients;
 		}
 
+		PuzzleSolution[] _FakeSolutions;
 		public PuzzleSolution[] FakeSolutions
 		{
-			get; set;
+			get
+			{
+				return _FakeSolutions;
+			}
+			set
+			{
+				_FakeSolutions = value;
+			}
 		}
 
 
+		Quotient[] _Quotients;
 		public Quotient[] Quotients
 		{
-			get; set;
+			get
+			{
+				return _Quotients;
+			}
+			set
+			{
+				_Quotients = value;
+			}
+		}
+
+		public void ReadWrite(BitcoinStream stream)
+		{
+			stream.ReadWrite(ref _FakeSolutions);
+			stream.ReadWrite(ref _Quotients);
 		}
 	}
 }

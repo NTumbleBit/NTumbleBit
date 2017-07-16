@@ -89,10 +89,10 @@ namespace NTumbleBit.Tests
 		[Fact]
 		public void CanCompleteCycleWithMachineState()
 		{
+			CanCompleteCycleWithMachineStateCore(true, true);
 			CanCompleteCycleWithMachineStateCore(false, true);
 			CanCompleteCycleWithMachineStateCore(true, false);
 			CanCompleteCycleWithMachineStateCore(false, false);
-			CanCompleteCycleWithMachineStateCore(true, true);
 		}
 
 

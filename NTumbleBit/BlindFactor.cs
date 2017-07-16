@@ -1,4 +1,5 @@
-﻿using NTumbleBit.BouncyCastle.Math;
+﻿using NBitcoin;
+using NTumbleBit.BouncyCastle.Math;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,8 +8,12 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit
 {
-	public class BlindFactor
+	public class BlindFactor : IBitcoinSerializable
 	{
+		public BlindFactor()
+		{
+
+		}
 		public BlindFactor(byte[] v)
 		{
 			if(v == null)
@@ -28,6 +33,11 @@ namespace NTumbleBit
 		public byte[] ToBytes()
 		{
 			return _Value.ToByteArrayUnsigned();
+		}
+
+		public void ReadWrite(BitcoinStream stream)
+		{
+			stream.ReadWriteC(ref _Value);
 		}
 	}
 }

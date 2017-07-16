@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit.PuzzlePromise
 {
-	public class ClientRevelation
+	public class ClientRevelation : IBitcoinSerializable
 	{
 		public ClientRevelation()
 		{
@@ -20,19 +20,54 @@ namespace NTumbleBit.PuzzlePromise
 			if(indexes.Length != salts.Length)
 				throw new ArgumentException("Indexes and Salts array should be of the same length");
 		}
+
+
+		uint256 _IndexesSalt;
 		public uint256 IndexesSalt
 		{
-			get; set;
+			get
+			{
+				return _IndexesSalt;
+			}
+			set
+			{
+				_IndexesSalt = value;
+			}
 		}
+
+
+		int[] _FakeIndexes;
 		public int[] FakeIndexes
 		{
-			get;
-			set;
+			get
+			{
+				return _FakeIndexes;
+			}
+			set
+			{
+				_FakeIndexes = value;
+			}
 		}
+
+
+		uint256[] _Salts;
 		public uint256[] Salts
 		{
-			get;
-			set;
+			get
+			{
+				return _Salts;
+			}
+			set
+			{
+				_Salts = value;
+			}
+		}
+		
+		public void ReadWrite(BitcoinStream stream)
+		{
+			stream.ReadWrite(ref _IndexesSalt);
+			stream.ReadWrite(ref _FakeIndexes);
+			stream.ReadWriteC(ref _Salts);
 		}
 	}
 }

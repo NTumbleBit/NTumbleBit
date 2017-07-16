@@ -73,7 +73,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 		}
 
 		[HttpGet("api/v1/tumblers/{tumblerId}/parameters")]
-		public ClassicTumblerParameters GetSolverParameters(
+		public ClassicTumblerParameters GetParameters(
 			[ModelBinder(BinderType = typeof(TumblerParametersModelBinder))]
 			ClassicTumblerParameters tumblerId)
 		{
@@ -106,11 +106,11 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 		}
 
 
-		[HttpPost("api/v1/tumblers/{tumblerId}/clientchannels")]
-		public IActionResult RequestTumblerEscrowKey(
+		[HttpGet("api/v1/tumblers/{tumblerId}/clientchannels/{cycleStart}")]
+		public TumblerEscrowKeyResponse RequestTumblerEscrowKey(
 			[ModelBinder(BinderType = typeof(TumblerParametersModelBinder))]
 			ClassicTumblerParameters tumblerId,
-			[FromBody]int cycleStart)
+			int cycleStart)
 		{
 			if(tumblerId == null)
 				throw new ArgumentNullException("tumblerId");
@@ -119,8 +119,8 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			int keyIndex;
 			var key = Repository.GetNextKey(cycle.Start, out keyIndex);
 			if(!cycle.IsInPhase(CyclePhase.ClientChannelEstablishment, height))
-				return BadRequest("invalid-phase");
-			return Json(new TumblerEscrowKeyResponse { PubKey = key.PubKey, KeyIndex = keyIndex });
+				throw new ActionResultException(BadRequest("invalid-phase"));
+			return new TumblerEscrowKeyResponse { PubKey = key.PubKey, KeyIndex = keyIndex };
 		}
 
 		private CycleParameters GetCycle(int cycleStart)
@@ -136,7 +136,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 		}
 
 		[HttpPost("api/v1/tumblers/{tumblerId}/clientchannels/confirm")]
-		public IActionResult SignVoucher(
+		public PuzzleSolution SignVoucher(
 			[ModelBinder(BinderType = typeof(TumblerParametersModelBinder))]
 			ClassicTumblerParameters tumblerId,
 			[FromBody]SignVoucherRequest request)
@@ -144,31 +144,31 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			if(tumblerId == null)
 				throw new ArgumentNullException("tumblerId");
 			if(request.UnsignedVoucher == null)
-				return BadRequest("Missing UnsignedVoucher");
+				throw new ActionResultException(BadRequest("Missing UnsignedVoucher"));
 			if(request.MerkleProof == null)
-				return BadRequest("Missing MerkleProof");
+				throw new ActionResultException(BadRequest("Missing MerkleProof"));
 			if(request.Transaction == null)
-				return BadRequest("Missing Transaction");
+				throw new ActionResultException(BadRequest("Missing Transaction"));
 			if(request.ClientEscrowKey == null)
-				return BadRequest("Missing ClientEscrowKey");
+				throw new ActionResultException(BadRequest("Missing ClientEscrowKey"));
 
 			if(request.MerkleProof.PartialMerkleTree
 				.GetMatchedTransactions()
 				.FirstOrDefault() != request.Transaction.GetHash() || !request.MerkleProof.Header.CheckProofOfWork())
-				return BadRequest("invalid-merkleproof");
+				throw new ActionResultException(BadRequest("invalid-merkleproof"));
 
 			var confirmations = Services.BlockExplorerService.GetBlockConfirmations(request.MerkleProof.Header.GetHash());
 			if((confirmations < Parameters.CycleGenerator.FirstCycle.SafetyPeriodDuration))
-				return BadRequest("not-enough-confirmation");
+				throw new ActionResultException(BadRequest("not-enough-confirmation"));
 
 			var transaction = request.Transaction;
 			if(transaction.Outputs.Count > 2)
-				return BadRequest("invalid-transaction");
+				throw new ActionResultException(BadRequest("invalid-transaction"));
 
 			var cycle = GetCycle(request.Cycle);
 			var height = Services.BlockExplorerService.GetCurrentHeight();
 			if(!cycle.IsInPhase(CyclePhase.ClientChannelEstablishment, height))
-				return BadRequest("invalid-phase");
+				throw new ActionResultException(BadRequest("invalid-phase"));
 
 
 			var key = Repository.GetKey(cycle.Start, request.KeyReference);
@@ -186,7 +186,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 				.FirstOrDefault();
 
 			if(escrowedCoin == null)
-				return BadRequest("invalid-transaction");
+				throw new ActionResultException(BadRequest("invalid-transaction"));
 
 			try
 			{
@@ -195,10 +195,10 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 
 				Services.BlockExplorerService.Track(escrowedCoin.ScriptPubKey);
 				if(!Services.BlockExplorerService.TrackPrunedTransaction(request.Transaction, request.MerkleProof))
-					return BadRequest("invalid-merkleproof");
+					throw new ActionResultException(BadRequest("invalid-merkleproof"));
 
 				if(!Repository.MarkUsedNonce(cycle.Start, new uint160(key.PubKey.Hash.ToBytes())))
-					return BadRequest("invalid-transaction");
+					throw new ActionResultException(BadRequest("invalid-transaction"));
 				Repository.Save(cycle.Start, solverServerSession);
 				Logs.Tumbler.LogInformation($"Cycle {cycle.Start} Proof of Escrow signed for " + transaction.GetHash());
 
@@ -206,16 +206,16 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 				Tracker.AddressCreated(cycle.Start, TransactionType.ClientEscrow, escrowedCoin.ScriptPubKey, correlation);
 				Tracker.TransactionCreated(cycle.Start, TransactionType.ClientEscrow, request.Transaction.GetHash(), correlation);
 				var solution = request.UnsignedVoucher.WithRsaKey(Runtime.VoucherKey.PubKey).Solve(Runtime.VoucherKey);
-				return Json(solution);
+				return solution;
 			}
 			catch(PuzzleException)
 			{
-				return BadRequest("invalid-transaction");
+				throw new ActionResultException(BadRequest("invalid-transaction"));
 			}
 		}
 
 		[HttpPost("api/v1/tumblers/{tumblerId}/channels")]
-		public IActionResult OpenChannel(
+		public ScriptCoinModel OpenChannel(
 			[ModelBinder(BinderType = typeof(TumblerParametersModelBinder))]
 			ClassicTumblerParameters tumblerId,
 			[FromBody] OpenChannelRequest request)
@@ -225,15 +225,15 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			var height = Services.BlockExplorerService.GetCurrentHeight();
 			var cycle = GetCycle(request.CycleStart);
 			if(!cycle.IsInPhase(CyclePhase.TumblerChannelEstablishment, height))
-				return BadRequest("invalid-phase");
+				throw new ActionResultException(BadRequest("invalid-phase"));
 			var fee = Services.FeeService.GetFeeRate();
 			try
 			{
 				if(!Parameters.VoucherKey.Verify(request.Signature, NBitcoin.Utils.ToBytes((uint)request.CycleStart, true), request.Nonce))
-					return BadRequest("incorrect-voucher");
+					throw new ActionResultException(BadRequest("incorrect-voucher"));
 				if(!Repository.MarkUsedNonce(request.CycleStart, request.Nonce))
 				{
-					return BadRequest("nonce-already-used");
+					throw new ActionResultException(BadRequest("nonce-already-used"));
 				}
 
 				var escrowKey = new Key();
@@ -266,21 +266,21 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 				var redeemTx = session.CreateRedeemTransaction(fee);
 				Tracker.AddressCreated(cycle.Start, TransactionType.TumblerRedeem, redeem.ScriptPubKey, correlation);
 				Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.TumblerRedeem, correlation, redeemTx);
-				return Json(session.EscrowedCoin);
+				return new ScriptCoinModel(session.EscrowedCoin);
 			}
 			catch(PuzzleException)
 			{
-				return BadRequest("incorrect-voucher");
+				throw new ActionResultException(BadRequest("incorrect-voucher"));
 			}
 			catch(NotEnoughFundsException ex)
 			{
 				Logs.Tumbler.LogInformation(ex.Message);
-				return BadRequest("tumbler-insufficient-funds");
+				throw new ActionResultException(BadRequest("tumbler-insufficient-funds"));
 			}
 		}
 
 		[HttpPost("api/v1/tumblers/{tumblerId}/channels/{cycleId}/{channelId}/signhashes")]
-		public IActionResult SignHashes(
+		public PuzzlePromise.ServerCommitment[] SignHashes(
 			[ModelBinder(BinderType = typeof(TumblerParametersModelBinder))]
 			ClassicTumblerParameters tumblerId,
 			int cycleId, string channelId, [FromBody]SignaturesRequest sigReq)
@@ -290,11 +290,11 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			var session = GetPromiseServerSession(cycleId, channelId, CyclePhase.TumblerChannelEstablishment);
 			var hashes = session.SignHashes(sigReq);
 			Repository.Save(cycleId, session);
-			return Json(hashes);
+			return hashes;
 		}
 
 		[HttpPost("api/v1/tumblers/{tumblerId}/channels/{cycleId}/{channelId}/checkrevelation")]
-		public IActionResult CheckRevelation(
+		public ServerCommitmentsProof CheckRevelation(
 			[ModelBinder(BinderType = typeof(TumblerParametersModelBinder))]
 			ClassicTumblerParameters tumblerId,
 			int cycleId, string channelId, [FromBody]PuzzlePromise.ClientRevelation revelation)
@@ -304,7 +304,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			var session = GetPromiseServerSession(cycleId, channelId, CyclePhase.TumblerChannelEstablishment);
 			var proof = session.CheckRevelation(revelation);
 			Repository.Save(cycleId, session);
-			return Json(proof);
+			return proof;
 		}
 
 		private PromiseServerSession GetPromiseServerSession(int cycleId, string channelId, CyclePhase expectedPhase)
@@ -335,7 +335,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 		}
 
 		[HttpPost("api/v1/tumblers/{tumblerId}/clientchannels/{cycleId}/{channelId}/solvepuzzles")]
-		public IActionResult SolvePuzzles(
+		public PuzzleSolver.ServerCommitment[] SolvePuzzles(
 			[ModelBinder(BinderType = typeof(TumblerParametersModelBinder))]
 			ClassicTumblerParameters tumblerId,
 			int cycleId, string channelId, [FromBody]PuzzleValue[] puzzles)
@@ -345,11 +345,11 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			var session = GetSolverServerSession(cycleId, channelId, CyclePhase.PaymentPhase);
 			var commitments = session.SolvePuzzles(puzzles);
 			Repository.Save(cycleId, session);
-			return Json(commitments);
+			return commitments;
 		}
 
 		[HttpPost("api/v1/tumblers/{tumblerId}/clientschannels/{cycleId}/{channelId}/checkrevelation")]
-		public IActionResult CheckRevelation(
+		public SolutionKey[] CheckRevelation(
 			[ModelBinder(BinderType = typeof(TumblerParametersModelBinder))]
 			ClassicTumblerParameters tumblerId,
 			int cycleId, string channelId, [FromBody]PuzzleSolver.ClientRevelation revelation)
@@ -359,11 +359,11 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			var session = GetSolverServerSession(cycleId, channelId, CyclePhase.PaymentPhase);
 			var solutions = session.CheckRevelation(revelation);
 			Repository.Save(cycleId, session);
-			return Json(solutions);
+			return solutions;
 		}
 
 		[HttpPost("api/v1/tumblers/{tumblerId}/clientschannels/{cycleId}/{channelId}/checkblindfactors")]
-		public IActionResult CheckBlindFactors(
+		public OfferInformation CheckBlindFactors(
 			[ModelBinder(BinderType = typeof(TumblerParametersModelBinder))]
 			ClassicTumblerParameters tumblerId,
 			int cycleId, string channelId, [FromBody]BlindFactor[] blindFactors)
@@ -374,23 +374,24 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			var feeRate = Services.FeeService.GetFeeRate();
 			var fulfillKey = session.CheckBlindedFactors(blindFactors, feeRate);
 			Repository.Save(cycleId, session);
-			return Json(fulfillKey);
+			return fulfillKey;
 		}
 
 		[HttpPost("api/v1/tumblers/{tumblerId}/clientchannels/{cycleId}/{channelId}/offer")]
-		public IActionResult FulfillOffer(
+		public SolutionKey[] FulfillOffer(
 			[ModelBinder(BinderType = typeof(TumblerParametersModelBinder))]
 			ClassicTumblerParameters tumblerId,
-			int cycleId, string channelId, [FromBody]TransactionSignature signature)
+			int cycleId, string channelId, [FromBody]SignatureWrapper wrapper)
 		{
+			var signature = wrapper?.Signature;
 			if(tumblerId == null)
 				throw new ArgumentNullException("tumblerId");
 			if(signature == null)
-				return BadRequest("Missing Signature");
+				throw new ActionResultException(BadRequest("Missing Signature"));
 			var session = GetSolverServerSession(cycleId, channelId, CyclePhase.TumblerCashoutPhase);
 			var feeRate = Services.FeeService.GetFeeRate();
 			if(session.Status != SolverServerStates.WaitingFulfillment)
-				return BadRequest("invalid-state");
+				throw new ActionResultException(BadRequest("invalid-state"));
 			try
 			{
 				var cycle = GetCycle(cycleId);
@@ -416,11 +417,11 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 				{
 					Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.ClientFulfill, correlation, fulfill);
 				}
-				return Json(Runtime.Cooperative ? session.GetSolutionKeys() : new SolutionKey[0]);
+				return Runtime.Cooperative ? session.GetSolutionKeys() : new SolutionKey[0];
 			}
 			catch(PuzzleException ex)
 			{
-				return BadRequest(ex.Message);
+				throw new ActionResultException(BadRequest(ex.Message));
 			}
 		}
 
@@ -431,16 +432,17 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 
 
 		[HttpPost("api/v1/tumblers/{tumblerId}/clientchannels/{cycleId}/{channelId}/escape")]
-		public IActionResult GiveEscapeKey(
+		public NoData GiveEscapeKey(
 			[ModelBinder(BinderType = typeof(TumblerParametersModelBinder))]
 			ClassicTumblerParameters tumblerId,
-			int cycleId, string channelId, [FromBody]TransactionSignature clientSignature)
+			int cycleId, string channelId, [FromBody]SignatureWrapper wrapper)
 		{
+			var clientSignature = wrapper?.Signature;
 			if(tumblerId == null)
 				throw new ArgumentNullException("tumblerId");
 			var session = GetSolverServerSession(cycleId, channelId, CyclePhase.TumblerCashoutPhase);
 			if(session.Status != SolverServerStates.WaitingEscape)
-				return BadRequest("invalid-state");
+				throw new ActionResultException(BadRequest("invalid-state"));
 
 			var fee = Services.FeeService.GetFeeRate();
 			try
@@ -456,9 +458,9 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			}
 			catch(PuzzleException ex)
 			{
-				return BadRequest(ex.Message);
+				throw new ActionResultException(BadRequest(ex.Message));
 			}
-			return Ok();
+			return new NoData();
 		}
 	}
 }

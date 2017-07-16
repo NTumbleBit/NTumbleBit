@@ -6,15 +6,40 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit.ClassicTumbler.Server.Models
 {
-	public class TumblerEscrowKeyResponse
-    {
+	public class TumblerEscrowKeyResponse : IBitcoinSerializable
+	{
+
+		int _KeyIndex;
 		public int KeyIndex
 		{
-			get; set;
+			get
+			{
+				return _KeyIndex;
+			}
+			set
+			{
+				_KeyIndex = value;
+			}
 		}
+
+
+		PubKey _PubKey;
 		public PubKey PubKey
 		{
-			get; set;
+			get
+			{
+				return _PubKey;
+			}
+			set
+			{
+				_PubKey = value;
+			}
+		}
+
+		public void ReadWrite(BitcoinStream stream)
+		{
+			stream.ReadWrite(ref _KeyIndex);
+			stream.ReadWriteC(ref _PubKey);
 		}
 	}
 }

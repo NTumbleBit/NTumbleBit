@@ -1,4 +1,5 @@
-﻿using NBitcoin.DataEncoders;
+﻿using NBitcoin;
+using NBitcoin.DataEncoders;
 using NTumbleBit.BouncyCastle.Crypto.Engines;
 using NTumbleBit.BouncyCastle.Crypto.Parameters;
 using NTumbleBit.BouncyCastle.Math;
@@ -10,10 +11,13 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit
 {
-	public class PuzzleValue
+	public class PuzzleValue : IBitcoinSerializable
 	{
-		internal readonly BigInteger _Value;
+		internal BigInteger _Value;
+		public PuzzleValue()
+		{
 
+		}
 		public PuzzleValue(byte[] z)
 		{
 			if(z == null)
@@ -73,6 +77,11 @@ namespace NTumbleBit
 		public Puzzle WithRsaKey(RsaPubKey key)
 		{
 			return new Puzzle(key, this);
+		}
+
+		public void ReadWrite(BitcoinStream stream)
+		{
+			stream.ReadWriteC(ref _Value);
 		}
 	}
 }

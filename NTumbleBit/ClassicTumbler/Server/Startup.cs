@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using Microsoft.Net.Http.Headers;
 
 namespace NTumbleBit.ClassicTumbler.Server
 {
@@ -25,9 +26,9 @@ namespace NTumbleBit.ClassicTumbler.Server
 			{
 				o.Filters.Add(new ActionResultExceptionFilter());
 				o.Filters.Add(new TumblerExceptionFilter());
-			})
-				.AddJsonFormatters()
-				.AddFormatterMappings();
+				o.InputFormatters.Add(new BitcoinInputFormatter());
+				o.OutputFormatters.Add(new BitcoinOutputFormatter());
+			});
 		}
 
 		// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -1,4 +1,5 @@
-﻿using NBitcoin.DataEncoders;
+﻿using NBitcoin;
+using NBitcoin.DataEncoders;
 using NTumbleBit.BouncyCastle.Math;
 using System;
 using System.Collections.Generic;
@@ -8,8 +9,12 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit
 {
-	public class PuzzleSolution
+	public class PuzzleSolution : IBitcoinSerializable
 	{
+		public PuzzleSolution()
+		{
+
+		}
 		public PuzzleSolution(byte[] solution)
 		{
 			if(solution == null)
@@ -24,7 +29,7 @@ namespace NTumbleBit
 			_Value = value;
 		}
 
-		internal readonly BigInteger _Value;
+		internal BigInteger _Value;
 
 		public byte[] ToBytes()
 		{
@@ -69,6 +74,11 @@ namespace NTumbleBit
 		public override string ToString()
 		{
 			return Encoders.Hex.EncodeData(ToBytes());
+		}
+
+		public void ReadWrite(BitcoinStream stream)
+		{
+			stream.ReadWriteC(ref _Value);
 		}
 	}
 }

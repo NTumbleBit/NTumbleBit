@@ -335,9 +335,23 @@ namespace NTumbleBit.Tests
 			result = JsonConvert.DeserializeObject<T>(str, settings);
 		}
 
-		private void RoundTrip<T>(ref T commitments)
+		private void RoundTrip<T>(ref T[] commitments) where T : IBitcoinSerializable, new()
 		{
 			RoundtripJson(ref commitments);
+			var a = new ArrayWrapper<T>(commitments);
+			Roundtrip(ref a);
+			commitments = a.Elements;
+		}
+
+		private void RoundTrip<T>(ref T commitments) where T : IBitcoinSerializable, new()
+		{
+			RoundtripJson(ref commitments);
+			Roundtrip(ref commitments);
+		}
+
+		private void Roundtrip<T>(ref T commitments) where T : IBitcoinSerializable, new()
+		{
+			commitments = commitments.Clone();
 		}
 
 		private void RoundTrip(ref SolverServerSession server, SolverParameters parameters, RsaKey key)

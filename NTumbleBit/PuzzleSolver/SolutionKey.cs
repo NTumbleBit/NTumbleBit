@@ -8,8 +8,12 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit.PuzzleSolver
 {
-	public class SolutionKey
+	public class SolutionKey : IBitcoinSerializable
 	{
+		public SolutionKey()
+		{
+
+		}
 		public SolutionKey(byte[] key)
 		{
 			if(key == null)
@@ -30,6 +34,19 @@ namespace NTumbleBit.PuzzleSolver
 		public uint160 GetHash()
 		{
 			return new uint160(Hashes.RIPEMD160(_Bytes, _Bytes.Length));
+		}
+
+		public void ReadWrite(BitcoinStream stream)
+		{
+			if(stream.Serializing)
+			{
+				stream.ReadWrite(ref _Bytes);
+			}
+			else
+			{
+				_Bytes = new byte[KeySize];
+				stream.ReadWrite(ref _Bytes);
+			}
 		}
 	}
 }

@@ -1,4 +1,5 @@
 ﻿using NBitcoin;
+using NBitcoin.BouncyCastle.Math;
 using NBitcoin.RPC;
 using Newtonsoft.Json.Linq;
 using System;
@@ -11,6 +12,28 @@ namespace NTumbleBit
 {
 	public static class Extensions
 	{
+		public static void ReadWriteC(this BitcoinStream bs, ref uint256[] values)
+		{
+			var mutable = values?.Select(h => h.AsBitcoinSerializable()).ToArray();
+			bs.ReadWrite(ref mutable);
+			if(!bs.Serializing)
+			{
+				values = mutable.Select(m => m.Value).ToArray();
+			}
+		}
+		public static void ReadWriteC(this BitcoinStream bs, ref PubKey pubKey)
+		{
+			if(bs.Serializing)
+			{
+				var bytes = pubKey.ToBytes();
+				bs.Inner.Write(bytes, 0, 33);
+			}
+			else
+			{
+				pubKey = new PubKey(bs.Inner.ReadBytes(33));
+			}
+		}
+
 		public static void ReadWriteC(this BitcoinStream bs, ref Network network)
 		{
 			if(bs.Serializing)
@@ -25,6 +48,22 @@ namespace NTumbleBit
 				network = Network.GetNetwork(str);
 			}
 		}
+
+		internal static void ReadWriteC(this BitcoinStream bs, ref BouncyCastle.Math.BigInteger integer)
+		{
+			if(bs.Serializing)
+			{
+				var str = integer.ToByteArrayUnsigned();
+				bs.ReadWriteAsVarString(ref str);
+			}
+			else
+			{
+				byte[] str = null;
+				bs.ReadWriteAsVarString(ref str);
+				integer = new BouncyCastle.Math.BigInteger(1, str);
+			}
+		}
+
 		public static void ReadWriteC(this BitcoinStream bs, ref string str)
 		{
 			if(bs.Serializing)
