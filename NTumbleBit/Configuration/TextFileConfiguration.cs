@@ -122,7 +122,7 @@ namespace NTumbleBit.Configuration
 				if(split.Length == 0)
 					continue;
 				if(split.Length == 1)
-					throw new FormatException("Line " + lineCount + ": No value are set");
+					throw new ConfigException("Line " + lineCount + ": No value are set");
 
 				var key = split[0];
 				key = NormalizeKey(key);
@@ -181,7 +181,11 @@ namespace NTumbleBit.Configuration
 				{
 					return ConvertValue<T>(values[0]);
 				}
-				catch(FormatException) { throw new ConfigurationException("Key " + notNormalizedKey + " should be of type " + typeof(T).Name); }
+				catch(FormatException) { throw new ConfigException("Key " + notNormalizedKey + " should be of type " + typeof(T).Name); }
+				catch(ConfigException ex)
+				{
+					throw new ConfigException(notNormalizedKey + " : " +  ex.Message);
+				}
 			}
 			return defaultValue;
 		}
@@ -203,7 +207,12 @@ namespace NTumbleBit.Configuration
 			else if(typeof(T) == typeof(string))
 				return (T)(object)str;
 			else if(typeof(T) == typeof(TumblerUrlBuilder))
-				return (T)(object)new TumblerUrlBuilder(str);
+				try
+				{
+
+					return (T)(object)new TumblerUrlBuilder(str);
+				}
+				catch { throw new ConfigException("Invalid tumbler uri"); }
 			else if(typeof(T) == typeof(IPEndPoint))
 			{
 				var separator = str.LastIndexOf(":");

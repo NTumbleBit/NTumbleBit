@@ -108,7 +108,7 @@ namespace NTumbleBit.Tor
 				throw new SocksException("Invalid ATYP in connect reply");
 			for(int i = 4; i < 4 + 4; i++)
 			{
-				if(i != 0)
+				if(connectResponse[i] != 0)
 					throw new SocksException("Invalid BIND address in connect reply");
 			}
 
@@ -118,6 +118,12 @@ namespace NTumbleBit.Tor
 			return s;
 		}
 
+		protected override ConnectionEndpoint GetEndpoint(Uri request)
+		{
+			if(request.DnsSafeHost.EndsWith(".onion"))
+				throw new NotSupportedException("SocksMessageHandler only support onion address");
+			return base.GetEndpoint(request);
+		}
 
 		//From DotNetTor
 		internal static byte[] CreateConnectMessage(string host, int port)
@@ -135,7 +141,7 @@ namespace NTumbleBit.Tor
 					.Concat(
 						new byte[]
 						{
-							(byte)5, (byte) 0x01, (byte) 0x00, (byte)0x08
+							(byte)5, (byte) 0x01, (byte) 0x00, (byte)0x03
 						})
 						.Concat(addressBytes)
 						.Concat(BitConverter.GetBytes(IPAddress.HostToNetworkOrder((short)port))).ToArray();
