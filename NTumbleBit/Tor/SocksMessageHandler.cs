@@ -120,7 +120,7 @@ namespace NTumbleBit.Tor
 
 		protected override ConnectionEndpoint GetEndpoint(Uri request)
 		{
-			if(request.DnsSafeHost.EndsWith(".onion"))
+			if(!request.DnsSafeHost.EndsWith(".onion"))
 				throw new NotSupportedException("SocksMessageHandler only support onion address");
 			return base.GetEndpoint(request);
 		}
