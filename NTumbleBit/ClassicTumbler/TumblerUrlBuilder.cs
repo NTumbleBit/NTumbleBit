@@ -126,7 +126,7 @@ namespace NTumbleBit.ClassicTumbler
 			{
 				Dictionary<string, string> parameters = new Dictionary<string, string>();
 				StringBuilder builder = new StringBuilder();
-				builder.Append("ctb:");
+				builder.Append("ctb://");
 				if(Host != null)
 				{
 					builder.Append(Host.ToString());
