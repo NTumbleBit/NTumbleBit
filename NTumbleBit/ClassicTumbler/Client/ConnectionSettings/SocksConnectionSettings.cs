@@ -83,7 +83,7 @@ namespace NTumbleBit.ClassicTumbler.Client.ConnectionSettings
 
 		public override HttpMessageHandler CreateHttpHandler()
 		{
-			SocksPortHandler handler = new SocksPortHandler(Proxy);
+			var handler = new Tor.SocksMessageHandler(Proxy, new TCPServer.Client.ClientOptions() { IncludeHeaders = false });
 			return handler;
 		}
 	}

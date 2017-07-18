@@ -73,7 +73,7 @@ namespace NTumbleBit.ClassicTumbler.Client.ConnectionSettings
 				cts.Token.ThrowIfCancellationRequested();
 				cts.Token.WaitHandle.WaitOne(100);
 			}
-			return new SocksPortHandler(SocksEndpoint);
+			return new Tor.SocksMessageHandler(SocksEndpoint, new TCPServer.Client.ClientOptions() {  IncludeHeaders =false });
 		}
 
 		public void AutoDetectCookieFile()

@@ -194,8 +194,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 			}
 			previousHandlerCreationDate = DateTime.UtcNow;
 			var client = new TumblerClient(Network, TumblerServer, cycleId);
-			//var handler = settings.CreateHttpHandler();
-			var handler = new TCPHttpMessageHandler() { IncludeHeaders = false };
+			var handler = settings.CreateHttpHandler();
 			if(handler != null)
 				client.SetHttpHandler(handler);
 			return client;
