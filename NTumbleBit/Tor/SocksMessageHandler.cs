@@ -113,6 +113,7 @@ namespace NTumbleBit.Tor
 						if(code != SocksErrorCode.GeneralServerFailure || retry++ >= maxTries)
 							throw new SocksException(code);
 						SafeDispose(ref s);
+						await Task.Delay(1000, cancellation).ConfigureAwait(false);
 						continue;
 					}
 					if(connectResponse[2] != 0)
