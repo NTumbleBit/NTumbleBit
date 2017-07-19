@@ -182,7 +182,7 @@ namespace NTumbleBit.ClassicTumbler
 				throw new PuzzleException("Incorrect puzzle solution");
 			InternalState.BlindedVoucherFactor = null;
 			InternalState.SignedVoucher = new XORKey(solution).XOR(InternalState.UnsignedVoucher.EncryptedSignature);
-			InternalState.UnsignedVoucher.EncryptedSignature = null;
+			InternalState.UnsignedVoucher.EncryptedSignature = new byte[0];
 			InternalState.ClientEscrowKey = null;
 			InternalState.Status = TumblerClientSessionStates.WaitingGenerateTumblerTransactionKey;
 		}
