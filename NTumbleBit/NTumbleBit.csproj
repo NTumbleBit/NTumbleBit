@@ -17,9 +17,11 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="1.1.2" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="1.1.2" />
     <PackageReference Include="Microsoft.Extensions.Logging.Filter" Version="1.1.2" />
-    <PackageReference Include="NBitcoin" Version="4.0.0.5" />
     <PackageReference Include="System.Diagnostics.Process" Version="4.3.0" />
     <PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
     <PackageReference Include="TCPServer" Version="1.0.9" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NStratis\NBitcoin\NBitcoin.csproj" />
   </ItemGroup>
 </Project>
