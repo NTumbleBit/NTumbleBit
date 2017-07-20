@@ -12,7 +12,8 @@ init:
   # Good practise, because Windows
   - cmd: git config --global core.autocrlf true
 install:
-  # No repo specific stuff - put here when we have
+  # need to do the recursice clone here for submodules
+  git submodule update --init --recursive
 before_build:
   # Display .NET Core version
   - cmd: dotnet --version
