@@ -1,3 +1,14 @@
+| Windows | Linux | OS X |
+| :---- | :---- | :---- |
+[![Windows build status][1]][2] | [![Linux build status][3]][4] | [![OS X build status][5]][6] |
+
+[1]: https://ci.appveyor.com/api/projects/status/vs4sn7saan0n9sx3?svg=true
+[2]: https://ci.appveyor.com/project/BreezeHubAdmin/breezeprotocol/branch/master
+[3]: https://travis-ci.org/BreezeHub/BreezeProtocol.svg?branch=master
+[4]: https://travis-ci.org/BreezeHub/BreezeProtocol
+[5]: https://travis-ci.org/BreezeHub/BreezeProtocol.svg?branch=master
+[6]: https://travis-ci.org/BreezeHub/BreezeProtocol
+
 # NTumbleBit
 TumbleBit implementation in .NET Core.  
 
