@@ -17,15 +17,15 @@ before_build:
   # Display .NET Core version
   - cmd: dotnet --version
   # 
-  - cmd: dotnet restore ./BreezeProtocol.sln
+  - cmd: dotnet restore ./NTumbleBit.sln
 build_script:
   #
-  - cmd: dotnet publish ./BreezeProtocol.sln
+  - cmd: dotnet publish ./NTumbleBit.sln
 after_build:
   # For once the build has completed
 test_script:
   # tests in here
-  - cmd: dotnet test ./BreezeProtocol.sln
+  - cmd: dotnet test ./NTumbleBit.sln
   #- cmd: cd ..
 on_finish :
   # any cleanup in here
