@@ -25,4 +25,5 @@ before_install:
 install:
   - dotnet restore NTumbleBit.sln
 script:
- # - dotnet test -c Release -f netcoreapp1.1 ./NTumbleBit.Tests/NTumbleBit.Tests.csproj
+  - dotnet build NTumbleBit.sln
+ # - dotnet build -c Release -f netcoreapp1.1 ./NTumbleBit.Tests/NTumbleBit.Tests.csproj
