@@ -201,10 +201,10 @@ namespace NTumbleBit.ClassicTumbler.CLI
 				}
 
 				Console.WriteLine("Records:");
-				foreach(var correlationGroup in records.GroupBy(r => r.Correlation).OrderBy(o => (int)o.Key))
+				foreach(var correlationGroup in records.GroupBy(r => r.Correlation))
 				{
 					Console.WriteLine("========");
-					foreach(var group in correlationGroup.GroupBy(r => r.TransactionType).OrderBy(o => (int)o.Key))
+					foreach(var group in correlationGroup.GroupBy(r => r.TransactionType).OrderBy(r => (int)r.Key))
 					{
 						var builder = new StringBuilder();
 						builder.AppendLine(group.Key.ToString());

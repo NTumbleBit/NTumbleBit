@@ -182,7 +182,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 			try
 			{
 
-				var correlation = SolverClientSession == null ? 0 : GetCorrelation(SolverClientSession.EscrowedCoin);
+				var correlation = SolverClientSession == null ? CorrelationId.Zero : GetCorrelation(SolverClientSession.EscrowedCoin);
 
 				FeeRate feeRate = null;
 				switch(phase)
@@ -385,9 +385,9 @@ namespace NTumbleBit.ClassicTumbler.Client
 			}
 		}
 
-		private uint GetCorrelation(ScriptCoin escrowCoin)
+		private CorrelationId GetCorrelation(ScriptCoin escrowCoin)
 		{
-			return new uint160(escrowCoin.Redeem.Hash.ToString()).GetLow32();
+			return new CorrelationId(escrowCoin);
 		}
 
 		private TransactionInformation GetTransactionInformation(ICoin coin, bool withProof)

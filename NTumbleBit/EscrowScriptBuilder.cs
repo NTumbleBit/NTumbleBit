@@ -64,9 +64,9 @@ namespace NTumbleBit
 			get; set;
 		}
 
-		public uint GetCorrelation()
+		public CorrelationId GetCorrelation()
 		{
-			return new uint160(ToScript().Hash.ToString()).GetLow32();
+			return new CorrelationId(ToScript());
 		}
 
 		public Script ToScript()

@@ -17,6 +17,7 @@ namespace NTumbleBit
 			settings.Converters.Add(new RsaKeyJsonConverter());
 			settings.Converters.Add(new SerializerBaseJsonConverter());
 			settings.Converters.Add(new StringEnumConverter());
+			settings.Converters.Add(new CorrelationIdJsonConverter());
 			NBitcoin.JsonConverters.Serializer.RegisterFrontConverters(settings, network);
 
 			if(prettyPrint)
