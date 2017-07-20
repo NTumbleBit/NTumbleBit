@@ -26,7 +26,7 @@ after_build:
   # For once the build has completed
 test_script:
   # tests in here
-  - cmd: dotnet test ./NTumbleBit.Tests/NTumbleBit.csproj
+  - cmd: dotnet test ./NTumbleBit.Tests/NTumbleBit.Tests.csproj
   #- cmd: cd ..
 on_finish :
   # any cleanup in here
