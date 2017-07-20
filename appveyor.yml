@@ -1,0 +1,32 @@
+version: '1.0.{build}'
+image: Visual Studio 2017
+branches:
+  only:
+  - master
+
+# see http://status.appveyor.com/ re:connectivity issues for nuget
+hosts:
+ api.nuget.org: 93.184.221.200
+
+init:
+  # Good practise, because Windows
+  - cmd: git config --global core.autocrlf true
+install:
+  # No repo specific stuff - put here when we have
+before_build:
+  # Display .NET Core version
+  - cmd: dotnet --version
+  # 
+  - cmd: dotnet restore ./BreezeProtocol.sln
+build_script:
+  #
+  - cmd: dotnet publish ./BreezeProtocol.sln
+after_build:
+  # For once the build has completed
+test_script:
+  # tests in here
+  - cmd: dotnet test ./BreezeProtocol.sln
+  #- cmd: cd ..
+on_finish :
+  # any cleanup in here
+deploy: off
