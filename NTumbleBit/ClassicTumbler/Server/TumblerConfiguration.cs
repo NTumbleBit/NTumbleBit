@@ -1,7 +1,6 @@
 ﻿using NBitcoin;
 using System;
 using System.IO;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using NTumbleBit.Logging;
@@ -11,6 +10,8 @@ using System.Runtime.InteropServices;
 using NTumbleBit.Configuration;
 using System.Diagnostics;
 using NTumbleBit.ClassicTumbler.Client.ConnectionSettings;
+using NTumbleBit.Services;
+using NBitcoin.RPC;
 
 namespace NTumbleBit.ClassicTumbler.Server
 {
@@ -81,7 +82,25 @@ namespace NTumbleBit.ClassicTumbler.Server
 			set;
 		}
 
-		public TumblerConfiguration LoadArgs(String[] args)
+	    public Tracker Tracker
+	    {
+	        get;
+	        set;
+	    }
+
+	    public ExternalServices Services
+	    {
+	        get;
+	        set;
+	    }
+
+	    public DBreezeRepository DBreezeRepository
+	    {
+	        get;
+	        set;
+	    }
+
+        public TumblerConfiguration LoadArgs(String[] args)
 		{
 			ConfigurationFile = args.Where(a => a.StartsWith("-conf=", StringComparison.Ordinal)).Select(a => a.Substring("-conf=".Length).Replace("\"", "")).FirstOrDefault();
 			DataDir = args.Where(a => a.StartsWith("-datadir=", StringComparison.Ordinal)).Select(a => a.Substring("-datadir=".Length).Replace("\"", "")).FirstOrDefault();
@@ -156,8 +175,22 @@ namespace NTumbleBit.ClassicTumbler.Server
 			Listen = new IPEndPoint(IPAddress.Parse("127.0.0.1"), defaultPort);
 
 			RPC = RPCArgs.Parse(config, Network);
-			TorPath = config.GetOrDefault<string>("torpath", "tor");
-			return this;
+			TorPath = config.GetOrDefault<string>("torpath", "tor");		    
+		    DBreezeRepository = new DBreezeRepository(Path.Combine(DataDir, "db2"));
+		    Tracker = new Tracker(DBreezeRepository, Network);
+
+		    RPCClient rpc = null;
+		    try
+		    {
+		        rpc = RPC.ConfigureRPCClient(Network);
+		    }
+		    catch
+		    {
+		        throw new ConfigException("Please, fix rpc settings in " + ConfigurationFile);
+		    }
+
+            Services = ExternalServices.CreateFromRPCClient(rpc, DBreezeRepository, Tracker);
+            return this;
 		}
 
 		public string CycleName

@@ -1,20 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using NBitcoin;
-using System.IO;
-using NBitcoin.RPC;
 using NTumbleBit.Logging;
 using Microsoft.Extensions.Logging;
-using NTumbleBit.ClassicTumbler;
-using System.Net;
 using System.Threading.Tasks;
-using System.Net.Http;
 using NTumbleBit.Services;
 using NTumbleBit.Configuration;
 using NTumbleBit.ClassicTumbler.Client.ConnectionSettings;
 using NTumbleBit.ClassicTumbler.CLI;
-using TCPServer.Client;
 
 namespace NTumbleBit.ClassicTumbler.Client
 {
@@ -63,26 +56,15 @@ namespace NTumbleBit.ClassicTumbler.Client
 			AllowInsecure = configuration.AllowInsecure;
 
 			await SetupTorAsync(interaction, configuration.TorPath).ConfigureAwait(false);
-
-			RPCClient rpc = null;
-			try
-			{
-				rpc = configuration.RPCArgs.ConfigureRPCClient(configuration.Network);
-			}
-			catch
-			{
-				throw new ConfigException("Please, fix rpc settings in " + configuration.ConfigurationFile);
-			}
-
-			var dbreeze = new DBreezeRepository(Path.Combine(configuration.DataDir, "db2"));
+			
 			Cooperative = configuration.Cooperative;
-			Repository = dbreeze;
-			_Disposables.Add(dbreeze);
-			Tracker = new Tracker(dbreeze, Network);
-			Services = ExternalServices.CreateFromRPCClient(rpc, dbreeze, Tracker);
+			Repository = configuration.DBreezeRepository;
+			_Disposables.Add(Repository);
+		    Tracker = configuration.Tracker;
+			Services = configuration.Services;
 
 			if(configuration.OutputWallet.RootKey != null && configuration.OutputWallet.KeyPath != null)
-				DestinationWallet = new ClientDestinationWallet(configuration.OutputWallet.RootKey, configuration.OutputWallet.KeyPath, dbreeze, configuration.Network);
+				DestinationWallet = new ClientDestinationWallet(configuration.OutputWallet.RootKey, configuration.OutputWallet.KeyPath, Repository, configuration.Network);
 			else if(configuration.OutputWallet.RPCArgs != null)
 			{
 				try
@@ -97,7 +79,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 			else
 				throw new ConfigException("Missing configuration for outputwallet");
 
-			TumblerParameters = dbreeze.Get<ClassicTumbler.ClassicTumblerParameters>("Configuration", configuration.TumblerServer.Uri.AbsoluteUri);
+			TumblerParameters = Repository.Get<ClassicTumbler.ClassicTumblerParameters>("Configuration", configuration.TumblerServer.Uri.AbsoluteUri);
 
 			if(TumblerParameters != null && TumblerParameters.GetHash() != configuration.TumblerServer.ConfigurationHash)
 				TumblerParameters = null;

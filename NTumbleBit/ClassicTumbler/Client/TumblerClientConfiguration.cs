@@ -1,21 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text;
 using System.Linq;
 using System.IO;
 using NBitcoin;
 using Microsoft.Extensions.Logging;
 using NTumbleBit.Logging;
-using System.Net;
 using NTumbleBit.Configuration;
-using System.Net.Sockets;
-using System.Net.Http;
-using DotNetTor.SocksPort;
-using System.Runtime.InteropServices;
-using System.Threading;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+using NBitcoin.RPC;
 using NTumbleBit.ClassicTumbler.Client.ConnectionSettings;
+using NTumbleBit.Services;
 
 namespace NTumbleBit.ClassicTumbler.Client
 {
@@ -106,7 +99,26 @@ namespace NTumbleBit.ClassicTumbler.Client
 			set;
 		}
 
-		public TumblerClientConfiguration LoadArgs(String[] args)
+	    public Tracker Tracker
+	    {
+	        get;
+	        set;
+	    }
+
+        public ExternalServices Services
+	    {
+	        get;
+	        set;
+	    }
+
+	    public DBreezeRepository DBreezeRepository
+	    {
+	        get;
+	        set;
+	    }
+
+
+        public TumblerClientConfiguration LoadArgs(String[] args)
 		{
 			ConfigurationFile = args.Where(a => a.StartsWith("-conf=", StringComparison.Ordinal)).Select(a => a.Substring("-conf=".Length).Replace("\"", "")).FirstOrDefault();
 			DataDir = args.Where(a => a.StartsWith("-datadir=", StringComparison.Ordinal)).Select(a => a.Substring("-datadir=".Length).Replace("\"", "")).FirstOrDefault();
@@ -201,7 +213,22 @@ namespace NTumbleBit.ClassicTumbler.Client
 			BobConnectionSettings = ConnectionSettingsBase.ParseConnectionSettings("bob", config);
 
 			AllowInsecure = config.GetOrDefault<bool>("allowinsecure", IsTest(Network));
-			return this;
+
+		    RPCClient rpc = null;
+		    try
+		    {
+		        rpc = RPCArgs.ConfigureRPCClient(Network);
+		    }
+		    catch
+		    {
+		        throw new ConfigException("Please, fix rpc settings in " + ConfigurationFile);
+		    }
+
+		    DBreezeRepository = new DBreezeRepository(Path.Combine(DataDir, "db2"));
+		    Tracker = new Tracker(DBreezeRepository, Network);
+		    Services = ExternalServices.CreateFromRPCClient(rpc, DBreezeRepository, Tracker);
+
+            return this;
 		}
 
 		private bool IsTest(Network network)
