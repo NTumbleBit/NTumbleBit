@@ -39,7 +39,7 @@ namespace NTumbleBit.Services.RPC
 				get; set;
 			}
 
-			public uint Correlation
+			public CorrelationId Correlation
 			{
 				get; set;
 			}
@@ -97,7 +97,7 @@ namespace NTumbleBit.Services.RPC
 			get; set;
 		}
 
-		public void Broadcast(int cycleStart, TransactionType transactionType, uint correlation, TrustedBroadcastRequest broadcast)
+		public void Broadcast(int cycleStart, TransactionType transactionType, CorrelationId correlation, TrustedBroadcastRequest broadcast)
 		{
 			if(broadcast == null)
 				throw new ArgumentNullException(nameof(broadcast));

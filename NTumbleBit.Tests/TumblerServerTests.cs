@@ -73,9 +73,9 @@ namespace NTumbleBit.Tests
 				var address3 = new Key().ScriptPubKey;
 
 				var h = new Transaction().GetHash();
-				tracker.AddressCreated(1, TransactionType.ClientEscrow, address, 0);
-				tracker.AddressCreated(1, TransactionType.ClientFulfill, address2, 0);
-				tracker.TransactionCreated(1, TransactionType.ClientEscrow, h, 0);
+				tracker.AddressCreated(1, TransactionType.ClientEscrow, address, CorrelationId.Zero);
+				tracker.AddressCreated(1, TransactionType.ClientFulfill, address2, CorrelationId.Zero);
+				tracker.TransactionCreated(1, TransactionType.ClientEscrow, h, CorrelationId.Zero);
 
 				Assert.Equal(0, tracker.GetRecords(2).Length);
 				Assert.Equal(3, tracker.GetRecords(1).Length);

@@ -63,7 +63,7 @@ namespace NTumbleBit.Services
 		{
 			get; set;
 		}
-		public uint Correlation
+		public CorrelationId Correlation
 		{
 			get;
 			set;
@@ -102,7 +102,7 @@ namespace NTumbleBit.Services
 			return "Cycle_" + cycleId;
 		}
 
-		public void TransactionCreated(int cycleId, TransactionType type, uint256 txId, uint correlation)
+		public void TransactionCreated(int cycleId, TransactionType type, uint256 txId, CorrelationId correlation)
 		{
 			var record = new TrackerRecord()
 			{
@@ -126,7 +126,7 @@ namespace NTumbleBit.Services
 				Logs.Tracker.LogInformation($"Tracking transaction {type} of cycle {cycleId} with correlation {correlation} ({txId})");
 		}
 
-		public void AddressCreated(int cycleId, TransactionType type, Script scriptPubKey, uint correlation)
+		public void AddressCreated(int cycleId, TransactionType type, Script scriptPubKey, CorrelationId correlation)
 		{
 			var record = new TrackerRecord()
 			{

@@ -403,7 +403,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 
 				var signedOffer = session.GetSignedOfferTransaction();
 				signedOffer.BroadcastAt = fulfill.BroadcastAt - 1;
-				uint correlation = GetCorrelation(session);
+				var correlation = GetCorrelation(session);
 
 				var offerScriptPubKey = session.GetInternalState().OfferCoin.ScriptPubKey;
 				Services.BlockExplorerService.Track(offerScriptPubKey);
@@ -425,7 +425,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			}
 		}
 
-		private static uint GetCorrelation(SolverServerSession session)
+		private static CorrelationId GetCorrelation(SolverServerSession session)
 		{
 			return EscrowScriptPubKeyParameters.GetFromCoin(session.EscrowedCoin).GetCorrelation();
 		}
