@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit.Services
 {
-	public class ExternalServices
+	public class ExternalServices : IExternalServices
     {
 		public static ExternalServices CreateFromRPCClient(RPCClient rpc, IRepository repository, Tracker tracker)
 		{

@@ -62,7 +62,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 				return Runtime.Tracker;
 			}
 		}
-		public ExternalServices Services
+		public IExternalServices Services
 		{
 			get
 			{

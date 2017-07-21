@@ -121,7 +121,7 @@ namespace NTumbleBit.Tests
 
 			    RPCClient rpcClient =  clientConfig.RPCArgs.ConfigureRPCClient(clientConfig.Network);			    
 			    clientConfig.Services = ExternalServices.CreateFromRPCClient(rpcClient, clientConfig.DBreezeRepository, clientConfig.Tracker);
-
+                clientConfig.DestinationWallet = new ClientDestinationWallet(clientConfig.OutputWallet.RootKey, clientConfig.OutputWallet.KeyPath, clientConfig.DBreezeRepository, clientConfig.Network);
                 ClientRuntime = TumblerClientRuntime.FromConfiguration(clientConfig, new AcceptAllClientInteraction());
 
 				//Overrides client fee

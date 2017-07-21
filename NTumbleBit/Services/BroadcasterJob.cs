@@ -12,7 +12,7 @@ namespace NTumbleBit.Services
 {
 	public class BroadcasterJob : TumblerServiceBase
 	{
-		public BroadcasterJob(ExternalServices services)
+		public BroadcasterJob(IExternalServices services)
 		{
 			BroadcasterService = services.BroadcastService;
 			TrustedBroadcasterService = services.TrustedBroadcastService;
