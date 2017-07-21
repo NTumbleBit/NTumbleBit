@@ -60,9 +60,9 @@ namespace NTumbleBit.ClassicTumbler.Client
 			Cooperative = configuration.Cooperative;
 			Repository = configuration.DBreezeRepository;
 			_Disposables.Add(Repository);
-		    Tracker = configuration.Tracker;
+			Tracker = configuration.Tracker;
 			Services = configuration.Services;
-		    DestinationWallet = configuration.DestinationWallet;
+			DestinationWallet = configuration.DestinationWallet;
 			TumblerParameters = Repository.Get<ClassicTumbler.ClassicTumblerParameters>("Configuration", configuration.TumblerServer.Uri.AbsoluteUri);
 
 			if(TumblerParameters != null && TumblerParameters.GetHash() != configuration.TumblerServer.ConfigurationHash)

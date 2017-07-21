@@ -8,7 +8,7 @@ using NTumbleBit.Services;
 namespace NTumbleBit.ClassicTumbler.Client
 {
 	public abstract class TumblerClientConfigurationBase
-	{               
+	{
 		public string DataDir
 		{
 			get;

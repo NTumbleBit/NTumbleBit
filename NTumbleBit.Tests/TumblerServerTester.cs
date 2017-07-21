@@ -1,8 +1,6 @@
 ﻿using Microsoft.AspNetCore.Hosting;
-using TCPServer;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
-using Microsoft.AspNetCore.Server.Kestrel;
 using NBitcoin;
 using NBitcoin.RPC;
 using NTumbleBit.ClassicTumbler;
@@ -19,7 +17,6 @@ using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using NTumbleBit.Services;
-using NTumbleBit.Configuration;
 
 namespace NTumbleBit.Tests
 {
@@ -67,7 +64,7 @@ namespace NTumbleBit.Tests
 				var conf = new TumblerConfiguration();
 				conf.DataDir = Path.Combine(directory, "server");
 
-                Directory.CreateDirectory(conf.DataDir);
+				Directory.CreateDirectory(conf.DataDir);
 				File.WriteAllBytes(Path.Combine(conf.DataDir, "Tumbler.pem"), TestKeys.Default.ToBytes());
 				File.WriteAllBytes(Path.Combine(conf.DataDir, "Voucher.pem"), TestKeys.Default2.ToBytes());
 				conf.RPC.Url = TumblerNode.CreateRPCClient().Address;
@@ -77,19 +74,19 @@ namespace NTumbleBit.Tests
 				conf.Network = Network.RegTest;
 				conf.Listen = new System.Net.IPEndPoint(IPAddress.Parse("127.0.0.1"), 5000);
 				conf.AllowInsecure = true;
-			    conf.DBreezeRepository = new DBreezeRepository(Path.Combine(conf.DataDir, "db2"));
-			    conf.Tracker = new Tracker(conf.DBreezeRepository, conf.Network);
+				conf.DBreezeRepository = new DBreezeRepository(Path.Combine(conf.DataDir, "db2"));
+				conf.Tracker = new Tracker(conf.DBreezeRepository, conf.Network);
 
-                conf.ClassicTumblerParameters.FakePuzzleCount /= 4;
+				conf.ClassicTumblerParameters.FakePuzzleCount /= 4;
 				conf.ClassicTumblerParameters.FakeTransactionCount /= 4;
 				conf.ClassicTumblerParameters.RealTransactionCount /= 4;
 				conf.ClassicTumblerParameters.RealPuzzleCount /= 4;
 				conf.ClassicTumblerParameters.CycleGenerator.FirstCycle.Start = 105;
 
-			    RPCClient rpc =  conf.RPC.ConfigureRPCClient(conf.Network);
-			    conf.Services = ExternalServices.CreateFromRPCClient(rpc, conf.DBreezeRepository, conf.Tracker);
+				RPCClient rpc =  conf.RPC.ConfigureRPCClient(conf.Network);
+				conf.Services = ExternalServices.CreateFromRPCClient(rpc, conf.DBreezeRepository, conf.Tracker);
 
-                var runtime = TumblerRuntime.FromConfiguration(conf, new AcceptAllClientInteraction());
+				var runtime = TumblerRuntime.FromConfiguration(conf, new AcceptAllClientInteraction());
 				_Host = new WebHostBuilder()
 					.UseAppConfiguration(runtime)
 					.UseContentRoot(Path.GetFullPath(directory))
@@ -115,14 +112,14 @@ namespace NTumbleBit.Tests
 				creds = ExtractCredentials(File.ReadAllText(AliceNode.Config));
 				clientConfig.RPCArgs.User = creds.Item1;
 				clientConfig.RPCArgs.Password = creds.Item2;
-			    clientConfig.DBreezeRepository = new DBreezeRepository(Path.Combine(clientConfig.DataDir, "db2"));
-			    clientConfig.Tracker = new Tracker(clientConfig.DBreezeRepository, clientConfig.Network);
-                clientConfig.TumblerServer = runtime.TumblerUris.First();
+				clientConfig.DBreezeRepository = new DBreezeRepository(Path.Combine(clientConfig.DataDir, "db2"));
+				clientConfig.Tracker = new Tracker(clientConfig.DBreezeRepository, clientConfig.Network);
+				clientConfig.TumblerServer = runtime.TumblerUris.First();
 
-			    RPCClient rpcClient =  clientConfig.RPCArgs.ConfigureRPCClient(clientConfig.Network);			    
-			    clientConfig.Services = ExternalServices.CreateFromRPCClient(rpcClient, clientConfig.DBreezeRepository, clientConfig.Tracker);
-                clientConfig.DestinationWallet = new ClientDestinationWallet(clientConfig.OutputWallet.RootKey, clientConfig.OutputWallet.KeyPath, clientConfig.DBreezeRepository, clientConfig.Network);
-                ClientRuntime = TumblerClientRuntime.FromConfiguration(clientConfig, new AcceptAllClientInteraction());
+				RPCClient rpcClient =  clientConfig.RPCArgs.ConfigureRPCClient(clientConfig.Network);			    
+				clientConfig.Services = ExternalServices.CreateFromRPCClient(rpcClient, clientConfig.DBreezeRepository, clientConfig.Tracker);
+				clientConfig.DestinationWallet = new ClientDestinationWallet(clientConfig.OutputWallet.RootKey, clientConfig.OutputWallet.KeyPath, clientConfig.DBreezeRepository, clientConfig.Network);
+				ClientRuntime = TumblerClientRuntime.FromConfiguration(clientConfig, new AcceptAllClientInteraction());
 
 				//Overrides client fee
 				((RPCFeeService)ClientRuntime.Services.FeeService).FallBackFeeRate = new FeeRate(Money.Satoshis(50), 1);

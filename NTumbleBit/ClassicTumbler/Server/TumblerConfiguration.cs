@@ -82,25 +82,25 @@ namespace NTumbleBit.ClassicTumbler.Server
 			set;
 		}
 
-	    public Tracker Tracker
-	    {
-	        get;
-	        set;
-	    }
+		public Tracker Tracker
+		{
+			get;
+			set;
+		}
 
-	    public ExternalServices Services
-	    {
-	        get;
-	        set;
-	    }
+		public ExternalServices Services
+		{
+			get;
+			set;
+		}
 
-	    public DBreezeRepository DBreezeRepository
-	    {
-	        get;
-	        set;
-	    }
+		public DBreezeRepository DBreezeRepository
+		{
+			get;
+			set;
+		}
 
-        public TumblerConfiguration LoadArgs(String[] args)
+		public TumblerConfiguration LoadArgs(String[] args)
 		{
 			ConfigurationFile = args.Where(a => a.StartsWith("-conf=", StringComparison.Ordinal)).Select(a => a.Substring("-conf=".Length).Replace("\"", "")).FirstOrDefault();
 			DataDir = args.Where(a => a.StartsWith("-datadir=", StringComparison.Ordinal)).Select(a => a.Substring("-datadir=".Length).Replace("\"", "")).FirstOrDefault();
@@ -176,21 +176,21 @@ namespace NTumbleBit.ClassicTumbler.Server
 
 			RPC = RPCArgs.Parse(config, Network);
 			TorPath = config.GetOrDefault<string>("torpath", "tor");		    
-		    DBreezeRepository = new DBreezeRepository(Path.Combine(DataDir, "db2"));
-		    Tracker = new Tracker(DBreezeRepository, Network);
+			DBreezeRepository = new DBreezeRepository(Path.Combine(DataDir, "db2"));
+			Tracker = new Tracker(DBreezeRepository, Network);
 
-		    RPCClient rpc = null;
-		    try
-		    {
-		        rpc = RPC.ConfigureRPCClient(Network);
-		    }
-		    catch
-		    {
-		        throw new ConfigException("Please, fix rpc settings in " + ConfigurationFile);
-		    }
+			RPCClient rpc = null;
+			try
+			{
+				rpc = RPC.ConfigureRPCClient(Network);
+			}
+			catch
+			{
+				throw new ConfigException("Please, fix rpc settings in " + ConfigurationFile);
+			}
 
-            Services = ExternalServices.CreateFromRPCClient(rpc, DBreezeRepository, Tracker);
-            return this;
+			Services = ExternalServices.CreateFromRPCClient(rpc, DBreezeRepository, Tracker);
+			return this;
 		}
 
 		public string CycleName
