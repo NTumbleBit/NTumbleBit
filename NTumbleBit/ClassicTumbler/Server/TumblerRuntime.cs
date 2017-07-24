@@ -166,7 +166,7 @@ namespace NTumbleBit.ClassicTumbler.Server
 			Logs.Configuration.LogInformation($"Shareable URIs of the running tumbler are:");
 			foreach(var uri in TumblerUris)
 			{
-				Logs.Configuration.LogInformation(uri.Uri.AbsoluteUri);
+				Logs.Configuration.LogInformation(uri.ToString());
 			}
 			Logs.Configuration.LogInformation($"--------------------------------");
 			Logs.Configuration.LogInformation("");
