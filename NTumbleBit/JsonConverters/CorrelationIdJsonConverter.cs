@@ -20,7 +20,7 @@ namespace NTumbleBit.JsonConverters
 				return null;
 			try
 			{
-				return CorrelationId.Parse((string)reader.Value);
+				return CorrelationId.Parse(reader.Value.ToString());
 			}
 			catch(EndOfStreamException)
 			{
