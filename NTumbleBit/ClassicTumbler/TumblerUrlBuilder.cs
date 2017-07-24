@@ -42,6 +42,8 @@ namespace NTumbleBit.ClassicTumbler
 			}
 			if(address != String.Empty)
 			{
+				if(address.EndsWith("/", StringComparison.OrdinalIgnoreCase))
+					address = address.Substring(0, address.Length - 1);
 				Port = 80;
 				var split = address.Split(':');
 				if(split.Length != 1 && split.Length != 2)
