@@ -38,7 +38,6 @@ namespace NTumbleBit.ClassicTumbler
 			else
 			{
 				address = uri.Substring(0, paramStart);
-				uri = uri.Remove(0, 1); //remove ?
 			}
 			if(address != String.Empty)
 			{
@@ -54,7 +53,7 @@ namespace NTumbleBit.ClassicTumbler
 				var host = split[0];
 				Host = host;
 			}
-			uri = uri.Remove(0, address.Length);
+			uri = uri.Remove(0, paramStart + 1);  //+1 to move past '?'
 
 			Dictionary<string, string> parameters;
 			try
