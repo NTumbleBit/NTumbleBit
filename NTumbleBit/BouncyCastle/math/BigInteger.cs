@@ -153,7 +153,7 @@ namespace NTumbleBit.BouncyCastle.Math
 		//    4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8
 		//};
 
-		private static readonly byte[] BitLengthTable =
+		private readonly static byte[] BitLengthTable =
 		{
 			0, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4,
 			5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
@@ -233,8 +233,8 @@ namespace NTumbleBit.BouncyCastle.Math
 			}
 		}
 
-		private readonly int[] magnitude; // array of ints with [0] being the most significant
-		private readonly int sign; // -1 means -ve; +1 means +ve; 0 means 0;
+		private int[] magnitude; // array of ints with [0] being the most significant
+		private int sign; // -1 means -ve; +1 means +ve; 0 means 0;
 		private int nBits = -1; // cache BitCount() value
 		private int nBitLength = -1; // cache BitLength() value
 		private int mQuote = 0; // -m^(-1) mod b, b = 2^32 (see Montgomery mult.), 0 when uninitialised
@@ -265,29 +265,29 @@ namespace NTumbleBit.BouncyCastle.Math
 
 				if(i == mag.Length)
 				{
-					sign = 0;
-					magnitude = ZeroMagnitude;
+					this.sign = 0;
+					this.magnitude = ZeroMagnitude;
 				}
 				else
 				{
-					sign = signum;
+					this.sign = signum;
 
 					if(i == 0)
 					{
-						magnitude = mag;
+						this.magnitude = mag;
 					}
 					else
 					{
 						// strip leading 0 words
-						magnitude = new int[mag.Length - i];
-						Array.Copy(mag, i, magnitude, 0, magnitude.Length);
+						this.magnitude = new int[mag.Length - i];
+						Array.Copy(mag, i, this.magnitude, 0, this.magnitude.Length);
 					}
 				}
 			}
 			else
 			{
-				sign = signum;
-				magnitude = mag;
+				this.sign = signum;
+				this.magnitude = mag;
 			}
 		}
 
@@ -495,7 +495,7 @@ namespace NTumbleBit.BouncyCastle.Math
 			// TODO Move this processing into MakeMagnitude (provide sign argument)
 			if((sbyte)bytes[offset] < 0)
 			{
-				sign = -1;
+				this.sign = -1;
 
 				int end = offset + length;
 
@@ -507,7 +507,7 @@ namespace NTumbleBit.BouncyCastle.Math
 
 				if(iBval >= end)
 				{
-					magnitude = One.magnitude;
+					this.magnitude = One.magnitude;
 				}
 				else
 				{
@@ -529,14 +529,14 @@ namespace NTumbleBit.BouncyCastle.Math
 
 					inverse[index]++;
 
-					magnitude = MakeMagnitude(inverse, 0, inverse.Length);
+					this.magnitude = MakeMagnitude(inverse, 0, inverse.Length);
 				}
 			}
 			else
 			{
 				// strip leading zero bytes and return magnitude bytes
-				magnitude = MakeMagnitude(bytes, offset, length);
-				sign = magnitude.Length > 0 ? 1 : 0;
+				this.magnitude = MakeMagnitude(bytes, offset, length);
+				this.sign = this.magnitude.Length > 0 ? 1 : 0;
 			}
 		}
 
@@ -616,13 +616,13 @@ namespace NTumbleBit.BouncyCastle.Math
 			if(sign == 0)
 			{
 				this.sign = 0;
-				magnitude = ZeroMagnitude;
+				this.magnitude = ZeroMagnitude;
 			}
 			else
 			{
 				// copy bytes
-				magnitude = MakeMagnitude(bytes, offset, length);
-				this.sign = magnitude.Length < 1 ? 0 : sign;
+				this.magnitude = MakeMagnitude(bytes, offset, length);
+				this.sign = this.magnitude.Length < 1 ? 0 : sign;
 			}
 		}
 
@@ -633,13 +633,13 @@ namespace NTumbleBit.BouncyCastle.Math
 			if(sizeInBits < 0)
 				throw new ArgumentException("sizeInBits must be non-negative");
 
-			nBits = -1;
-			nBitLength = -1;
+			this.nBits = -1;
+			this.nBitLength = -1;
 
 			if(sizeInBits == 0)
 			{
-				sign = 0;
-				magnitude = ZeroMagnitude;
+				this.sign = 0;
+				this.magnitude = ZeroMagnitude;
 				return;
 			}
 
@@ -651,8 +651,8 @@ namespace NTumbleBit.BouncyCastle.Math
 			int xBits = BitsPerByte * nBytes - sizeInBits;
 			b[0] &= (byte)(255U >> xBits);
 
-			magnitude = MakeMagnitude(b, 0, b.Length);
-			sign = magnitude.Length < 1 ? 0 : 1;
+			this.magnitude = MakeMagnitude(b, 0, b.Length);
+			this.sign = this.magnitude.Length < 1 ? 0 : 1;
 		}
 
 		public BigInteger(
@@ -663,12 +663,12 @@ namespace NTumbleBit.BouncyCastle.Math
 			if(bitLength < 2)
 				throw new ArithmeticException("bitLength < 2");
 
-			sign = 1;
-			nBitLength = bitLength;
+			this.sign = 1;
+			this.nBitLength = bitLength;
 
 			if(bitLength == 2)
 			{
-				magnitude = random.Next(2) == 0
+				this.magnitude = random.Next(2) == 0
 					? Two.magnitude
 					: Three.magnitude;
 				return;
@@ -679,7 +679,6 @@ namespace NTumbleBit.BouncyCastle.Math
 
 			int xBits = BitsPerByte * nBytes - bitLength;
 			byte mask = (byte)(255U >> xBits);
-			byte lead = (byte)(1 << (7 - xBits));
 
 			for(;;)
 			{
@@ -689,14 +688,14 @@ namespace NTumbleBit.BouncyCastle.Math
 				b[0] &= mask;
 
 				// ensure the leading bit is 1 (to meet the strength requirement)
-				b[0] |= lead;
+				b[0] |= (byte)(1 << (7 - xBits));
 
 				// ensure the trailing bit is 1 (i.e. must be odd)
 				b[nBytes - 1] |= 1;
 
-				magnitude = MakeMagnitude(b, 0, b.Length);
-				nBits = -1;
-				mQuote = 0;
+				this.magnitude = MakeMagnitude(b, 0, b.Length);
+				this.nBits = -1;
+				this.mQuote = 0;
 
 				if(certainty < 1)
 					break;
@@ -704,12 +703,18 @@ namespace NTumbleBit.BouncyCastle.Math
 				if(CheckProbablePrime(certainty, random, true))
 					break;
 
-				for(int j = 1; j < (magnitude.Length - 1); ++j)
+				if(bitLength > 32)
 				{
-					magnitude[j] ^= random.Next();
+					for(int rep = 0; rep < 10000; ++rep)
+					{
+						int n = 33 + random.Next(bitLength - 2);
+						this.magnitude[this.magnitude.Length - (n >> 5)] ^= (1 << (n & 31));
+						this.magnitude[this.magnitude.Length - 1] ^= ((random.Next() + 1) << 1);
+						this.mQuote = 0;
 
-					if(CheckProbablePrime(certainty, random, true))
-						return;
+						if(CheckProbablePrime(certainty, random, true))
+							return;
+					}
 				}
 			}
 		}
@@ -750,10 +755,10 @@ namespace NTumbleBit.BouncyCastle.Math
 		public BigInteger Add(
 			BigInteger value)
 		{
-			if(sign == 0)
+			if(this.sign == 0)
 				return value;
 
-			if(sign != value.sign)
+			if(this.sign != value.sign)
 			{
 				if(value.sign == 0)
 					return this;
@@ -771,14 +776,14 @@ namespace NTumbleBit.BouncyCastle.Math
 			int[] magToAdd)
 		{
 			int[] big, small;
-			if(magnitude.Length < magToAdd.Length)
+			if(this.magnitude.Length < magToAdd.Length)
 			{
 				big = magToAdd;
-				small = magnitude;
+				small = this.magnitude;
 			}
 			else
 			{
-				big = magnitude;
+				big = this.magnitude;
 				small = magToAdd;
 			}
 
@@ -802,19 +807,19 @@ namespace NTumbleBit.BouncyCastle.Math
 
 			bigCopy = AddMagnitudes(bigCopy, small);
 
-			return new BigInteger(sign, bigCopy, possibleOverflow);
+			return new BigInteger(this.sign, bigCopy, possibleOverflow);
 		}
 
 		public BigInteger And(
 			BigInteger value)
 		{
-			if(sign == 0 || value.sign == 0)
+			if(this.sign == 0 || value.sign == 0)
 			{
 				return Zero;
 			}
 
-			int[] aMag = sign > 0
-				? magnitude
+			int[] aMag = this.sign > 0
+				? this.magnitude
 				: Add(One).magnitude;
 
 			int[] bMag = value.sign > 0
@@ -833,7 +838,7 @@ namespace NTumbleBit.BouncyCastle.Math
 				int aWord = i >= aStart ? aMag[i - aStart] : 0;
 				int bWord = i >= bStart ? bMag[i - bStart] : 0;
 
-				if(sign < 0)
+				if(this.sign < 0)
 				{
 					aWord = ~aWord;
 				}
@@ -961,7 +966,7 @@ namespace NTumbleBit.BouncyCastle.Math
 		//
 		// BitLen(value) is the number of bits in value.
 		//
-		internal static int BitLen(int w)
+		private static int BitLen(int w)
 		{
 			uint v = (uint)w;
 			uint t = v >> 24;
@@ -1193,13 +1198,13 @@ namespace NTumbleBit.BouncyCastle.Math
 
 			if(val.QuickPow2Check()) // val is power of two
 			{
-				BigInteger result = Abs().ShiftRight(val.Abs().BitLength - 1);
-				return val.sign == sign ? result : result.Negate();
+				BigInteger result = this.Abs().ShiftRight(val.Abs().BitLength - 1);
+				return val.sign == this.sign ? result : result.Negate();
 			}
 
-			int[] mag = (int[])magnitude.Clone();
+			int[] mag = (int[])this.magnitude.Clone();
 
-			return new BigInteger(sign * val.sign, Divide(mag, val.magnitude), true);
+			return new BigInteger(this.sign * val.sign, Divide(mag, val.magnitude), true);
 		}
 
 		public BigInteger[] DivideAndRemainder(
@@ -1218,19 +1223,19 @@ namespace NTumbleBit.BouncyCastle.Math
 			else if(val.QuickPow2Check()) // val is power of two
 			{
 				int e = val.Abs().BitLength - 1;
-				BigInteger quotient = Abs().ShiftRight(e);
-				int[] remainder = LastNBits(e);
+				BigInteger quotient = this.Abs().ShiftRight(e);
+				int[] remainder = this.LastNBits(e);
 
-				biggies[0] = val.sign == sign ? quotient : quotient.Negate();
-				biggies[1] = new BigInteger(sign, remainder, true);
+				biggies[0] = val.sign == this.sign ? quotient : quotient.Negate();
+				biggies[1] = new BigInteger(this.sign, remainder, true);
 			}
 			else
 			{
-				int[] remainder = (int[])magnitude.Clone();
+				int[] remainder = (int[])this.magnitude.Clone();
 				int[] quotient = Divide(remainder, val.magnitude);
 
-				biggies[0] = new BigInteger(sign * val.sign, quotient, true);
-				biggies[1] = new BigInteger(sign, remainder, true);
+				biggies[0] = new BigInteger(this.sign * val.sign, quotient, true);
+				biggies[1] = new BigInteger(this.sign, remainder, true);
 			}
 
 			return biggies;
@@ -1251,6 +1256,7 @@ namespace NTumbleBit.BouncyCastle.Math
 
 		private bool IsEqualMagnitude(BigInteger x)
 		{
+			int[] xMag = x.magnitude;
 			if(magnitude.Length != x.magnitude.Length)
 				return false;
 			for(int i = 0; i < magnitude.Length; i++)
@@ -1303,11 +1309,11 @@ namespace NTumbleBit.BouncyCastle.Math
 		// TODO Make public?
 		private BigInteger Inc()
 		{
-			if(sign == 0)
+			if(this.sign == 0)
 				return One;
 
-			if(sign < 0)
-				return new BigInteger(-1, doSubBigLil(magnitude, One.magnitude), true);
+			if(this.sign < 0)
+				return new BigInteger(-1, doSubBigLil(this.magnitude, One.magnitude), true);
 
 			return AddToMagnitude(One.magnitude);
 		}
@@ -1655,7 +1661,7 @@ namespace NTumbleBit.BouncyCastle.Math
 				return ModInversePow2(m);
 			}
 
-			BigInteger d = Remainder(m);
+			BigInteger d = this.Remainder(m);
 			BigInteger x;
 			BigInteger gcd = ExtEuclid(d, m, out x);
 
@@ -1688,11 +1694,11 @@ namespace NTumbleBit.BouncyCastle.Math
 				inv64 &= ((1L << pow) - 1);
 			}
 
-			BigInteger x = ValueOf(inv64);
+			BigInteger x = BigInteger.ValueOf(inv64);
 
 			if(pow > 64)
 			{
-				BigInteger d = Remainder(m);
+				BigInteger d = this.Remainder(m);
 				int bitsCorrect = 64;
 
 				do
@@ -1807,7 +1813,7 @@ namespace NTumbleBit.BouncyCastle.Math
 			if(negExp)
 				e = e.Negate();
 
-			BigInteger result = Mod(m);
+			BigInteger result = this.Mod(m);
 			if(!e.Equals(One))
 			{
 				if((m.magnitude[m.magnitude.Length - 1] & 1) == 0)
@@ -2210,7 +2216,7 @@ namespace NTumbleBit.BouncyCastle.Math
 				return mQuote; // already calculated
 			}
 
-			Debug.Assert(sign > 0);
+			Debug.Assert(this.sign > 0);
 
 			int d = -magnitude[magnitude.Length - 1];
 
@@ -2453,7 +2459,7 @@ namespace NTumbleBit.BouncyCastle.Math
 		public BigInteger Multiply(
 			BigInteger val)
 		{
-			if(Equals(val, this))
+			if(val == this)
 				return Square();
 
 			if((sign & val.sign) == 0)
@@ -2461,20 +2467,20 @@ namespace NTumbleBit.BouncyCastle.Math
 
 			if(val.QuickPow2Check()) // val is power of two
 			{
-				BigInteger result = ShiftLeft(val.Abs().BitLength - 1);
+				BigInteger result = this.ShiftLeft(val.Abs().BitLength - 1);
 				return val.sign > 0 ? result : result.Negate();
 			}
 
-			if(QuickPow2Check()) // this is power of two
+			if(this.QuickPow2Check()) // this is power of two
 			{
-				BigInteger result = val.ShiftLeft(Abs().BitLength - 1);
-				return sign > 0 ? result : result.Negate();
+				BigInteger result = val.ShiftLeft(this.Abs().BitLength - 1);
+				return this.sign > 0 ? result : result.Negate();
 			}
 
 			int resLength = magnitude.Length + val.magnitude.Length;
 			int[] res = new int[resLength];
 
-			Multiply(res, magnitude, val.magnitude);
+			Multiply(res, this.magnitude, val.magnitude);
 
 			int resSign = sign ^ val.sign ^ 1;
 			return new BigInteger(resSign, res, true);
@@ -2484,7 +2490,7 @@ namespace NTumbleBit.BouncyCastle.Math
 		{
 			if(sign == 0)
 				return Zero;
-			if(QuickPow2Check())
+			if(this.QuickPow2Check())
 				return ShiftLeft(Abs().BitLength - 1);
 			int resLength = magnitude.Length << 1;
 			if((uint)magnitude[0] >> 16 == 0)
@@ -2707,7 +2713,7 @@ namespace NTumbleBit.BouncyCastle.Math
 			if(n.sign == 0)
 				throw new ArithmeticException("Division by zero error");
 
-			if(sign == 0)
+			if(this.sign == 0)
 				return Zero;
 
 			// For small values, use fast remainder method
@@ -2740,7 +2746,7 @@ namespace NTumbleBit.BouncyCastle.Math
 			}
 			else
 			{
-				result = (int[])magnitude.Clone();
+				result = (int[])this.magnitude.Clone();
 				result = Remainder(result, n.magnitude);
 			}
 
@@ -2754,10 +2760,10 @@ namespace NTumbleBit.BouncyCastle.Math
 				return ZeroMagnitude;
 
 			int numWords = (n + BitsPerInt - 1) / BitsPerInt;
-			numWords = System.Math.Min(numWords, magnitude.Length);
+			numWords = System.Math.Min(numWords, this.magnitude.Length);
 			int[] result = new int[numWords];
 
-			Array.Copy(magnitude, magnitude.Length - numWords, result, 0, numWords);
+			Array.Copy(this.magnitude, this.magnitude.Length - numWords, result, 0, numWords);
 
 			int excessBits = (numWords << 5) - n;
 			if(excessBits > 0)
@@ -2865,16 +2871,16 @@ namespace NTumbleBit.BouncyCastle.Math
 
 			BigInteger result = new BigInteger(sign, ShiftLeft(magnitude, n), true);
 
-			if(nBits != -1)
+			if(this.nBits != -1)
 			{
 				result.nBits = sign > 0
-					? nBits
-					: nBits + n;
+					? this.nBits
+					: this.nBits + n;
 			}
 
-			if(nBitLength != -1)
+			if(this.nBitLength != -1)
 			{
-				result.nBitLength = nBitLength + n;
+				result.nBitLength = this.nBitLength + n;
 			}
 
 			return result;
@@ -2953,7 +2959,7 @@ namespace NTumbleBit.BouncyCastle.Math
 				return ShiftLeft(-n);
 
 			if(n >= BitLength)
-				return (sign < 0 ? One.Negate() : Zero);
+				return (this.sign < 0 ? One.Negate() : Zero);
 
 			//			int[] res = (int[]) this.magnitude.Clone();
 			//
@@ -2969,27 +2975,27 @@ namespace NTumbleBit.BouncyCastle.Math
 
 			if(numBits == 0)
 			{
-				Array.Copy(magnitude, 0, res, 0, res.Length);
+				Array.Copy(this.magnitude, 0, res, 0, res.Length);
 			}
 			else
 			{
 				int numBits2 = 32 - numBits;
 
-				int magPos = magnitude.Length - 1 - numInts;
+				int magPos = this.magnitude.Length - 1 - numInts;
 				for(int i = resultLength - 1; i >= 0; --i)
 				{
-					res[i] = (int)((uint)magnitude[magPos--] >> numBits);
+					res[i] = (int)((uint)this.magnitude[magPos--] >> numBits);
 
 					if(magPos >= 0)
 					{
-						res[i] |= magnitude[magPos] << numBits2;
+						res[i] |= this.magnitude[magPos] << numBits2;
 					}
 				}
 			}
 
 			Debug.Assert(res[0] != 0);
 
-			return new BigInteger(sign, res, false);
+			return new BigInteger(this.sign, res, false);
 		}
 
 		public int SignValue
@@ -3043,10 +3049,10 @@ namespace NTumbleBit.BouncyCastle.Math
 			if(n.sign == 0)
 				return this;
 
-			if(sign == 0)
+			if(this.sign == 0)
 				return n.Negate();
 
-			if(sign != n.sign)
+			if(this.sign != n.sign)
 				return Add(n.Negate());
 
 			int compare = CompareNoLeadingZeroes(0, magnitude, 0, n.magnitude);
@@ -3065,7 +3071,7 @@ namespace NTumbleBit.BouncyCastle.Math
 				lilun = n;
 			}
 
-			return new BigInteger(sign * compare, doSubBigLil(bigun.magnitude, lilun.magnitude), true);
+			return new BigInteger(this.sign * compare, doSubBigLil(bigun.magnitude, lilun.magnitude), true);
 		}
 
 		private static int[] doSubBigLil(
@@ -3233,7 +3239,7 @@ namespace NTumbleBit.BouncyCastle.Math
 				case 8:
 					{
 						int mask = (1 << 30) - 1;
-						BigInteger u = Abs();
+						BigInteger u = this.Abs();
 						int bits = u.BitLength;
 						IList S = Platform.CreateArrayList();
 						while(bits > 30)
@@ -3263,7 +3269,7 @@ namespace NTumbleBit.BouncyCastle.Math
 				//default:
 				case 10:
 					{
-						BigInteger q = Abs();
+						BigInteger q = this.Abs();
 						if(q.BitLength < 64)
 						{
 							sb.Append(Convert.ToString(q.LongValue, radix));
@@ -3283,7 +3289,7 @@ namespace NTumbleBit.BouncyCastle.Math
 							++exponent;
 						}
 
-						BigInteger bigPower = ValueOf(power);
+						BigInteger bigPower = BigInteger.ValueOf(power);
 
 						IList S = Platform.CreateArrayList();
 						while(q.CompareTo(bigPower) >= 0)
@@ -3364,7 +3370,7 @@ namespace NTumbleBit.BouncyCastle.Math
 
 		public int GetLowestSetBit()
 		{
-			if(sign == 0)
+			if(this.sign == 0)
 				return -1;
 
 			return GetLowestSetBitMaskFirst(-1);
@@ -3418,14 +3424,14 @@ namespace NTumbleBit.BouncyCastle.Math
 		public BigInteger Or(
 			BigInteger value)
 		{
-			if(sign == 0)
+			if(this.sign == 0)
 				return value;
 
 			if(value.sign == 0)
 				return this;
 
-			int[] aMag = sign > 0
-				? magnitude
+			int[] aMag = this.sign > 0
+				? this.magnitude
 				: Add(One).magnitude;
 
 			int[] bMag = value.sign > 0
@@ -3444,7 +3450,7 @@ namespace NTumbleBit.BouncyCastle.Math
 				int aWord = i >= aStart ? aMag[i - aStart] : 0;
 				int bWord = i >= bStart ? bMag[i - bStart] : 0;
 
-				if(sign < 0)
+				if(this.sign < 0)
 				{
 					aWord = ~aWord;
 				}
@@ -3476,14 +3482,14 @@ namespace NTumbleBit.BouncyCastle.Math
 		public BigInteger Xor(
 			BigInteger value)
 		{
-			if(sign == 0)
+			if(this.sign == 0)
 				return value;
 
 			if(value.sign == 0)
 				return this;
 
-			int[] aMag = sign > 0
-				? magnitude
+			int[] aMag = this.sign > 0
+				? this.magnitude
 				: Add(One).magnitude;
 
 			int[] bMag = value.sign > 0
@@ -3503,7 +3509,7 @@ namespace NTumbleBit.BouncyCastle.Math
 				int aWord = i >= aStart ? aMag[i - aStart] : 0;
 				int bWord = i >= bStart ? bMag[i - bStart] : 0;
 
-				if(sign < 0)
+				if(this.sign < 0)
 				{
 					aWord = ~aWord;
 				}
@@ -3584,10 +3590,10 @@ namespace NTumbleBit.BouncyCastle.Math
 			Debug.Assert(n >= 0);
 			Debug.Assert(n < BitLength - 1);
 
-			int[] mag = (int[])magnitude.Clone();
+			int[] mag = (int[])this.magnitude.Clone();
 			mag[mag.Length - 1 - (n >> 5)] ^= (1 << (n & 31)); // Flip bit
 															   //mag[mag.Length - 1 - (n / 32)] ^= (1 << (n % 32));
-			return new BigInteger(sign, mag, false);
+			return new BigInteger(this.sign, mag, false);
 		}
 	}
 }

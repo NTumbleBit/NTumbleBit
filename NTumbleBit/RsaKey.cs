@@ -27,7 +27,7 @@ namespace NTumbleBit
 		public RsaKey()
 		{
 			var gen = new RsaKeyPairGenerator();
-			gen.Init(new RsaKeyGenerationParameters(RSA_F4, NBitcoinSecureRandom.Instance, KeySize, 2)); // See A.15.2 IEEE P1363 v2 D1 for certainty parameter
+			gen.Init(new RsaKeyGenerationParameters(RSA_F4, NBitcoinSecureRandom.Instance, KeySize, 100)); // See A.15.2 IEEE P1363 v2 D1 for certainty parameter
 			var pair = gen.GenerateKeyPair();
 			_Key = (RsaPrivateCrtKeyParameters)pair.Private;
 			_PubKey = new RsaPubKey((RsaKeyParameters)pair.Public);
