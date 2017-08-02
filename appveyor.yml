@@ -1,0 +1,33 @@
+version: '1.0.{build}'
+image: Visual Studio 2017
+branches:
+  only:
+  - master
+
+# see http://status.appveyor.com/ re:connectivity issues for nuget
+hosts:
+ api.nuget.org: 93.184.221.200
+
+init:
+  # Good practise, because Windows
+  - cmd: git config --global core.autocrlf true
+install:
+  # need to do the recursice clone here for submodules
+  git submodule update --init --recursive
+before_build:
+  # Display .NET Core version
+  - cmd: dotnet --version
+  # 
+  - cmd: dotnet restore ./NTumbleBit.sln
+build_script:
+  #
+  - cmd: dotnet publish ./NTumbleBit.sln
+after_build:
+  # For once the build has completed
+test_script:
+  # tests in here
+  - cmd: dotnet test ./NTumbleBit.Tests/NTumbleBit.Tests.csproj
+  #- cmd: cd ..
+on_finish :
+  # any cleanup in here
+deploy: off
