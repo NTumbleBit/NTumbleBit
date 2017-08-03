@@ -233,8 +233,8 @@ namespace NTumbleBit.BouncyCastle.Math
 			}
 		}
 
-		private int[] magnitude; // array of ints with [0] being the most significant
-		private int sign; // -1 means -ve; +1 means +ve; 0 means 0;
+		private readonly int[] magnitude; // array of ints with [0] being the most significant
+		private readonly int sign; // -1 means -ve; +1 means +ve; 0 means 0;
 		private int nBits = -1; // cache BitCount() value
 		private int nBitLength = -1; // cache BitLength() value
 		private int mQuote = 0; // -m^(-1) mod b, b = 2^32 (see Montgomery mult.), 0 when uninitialised
