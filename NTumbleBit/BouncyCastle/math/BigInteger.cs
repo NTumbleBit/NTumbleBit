@@ -1256,7 +1256,6 @@ namespace NTumbleBit.BouncyCastle.Math
 
 		private bool IsEqualMagnitude(BigInteger x)
 		{
-			int[] xMag = x.magnitude;
 			if(magnitude.Length != x.magnitude.Length)
 				return false;
 			for(int i = 0; i < magnitude.Length; i++)
