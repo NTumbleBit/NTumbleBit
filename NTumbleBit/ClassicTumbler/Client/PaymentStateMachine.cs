@@ -302,7 +302,8 @@ namespace NTumbleBit.ClassicTumbler.Client
 						{
 							TransactionInformation tumblerTx = GetTransactionInformation(PromiseClientSession.EscrowedCoin, false);
 							//Ensure the tumbler coin is confirmed before paying anything
-							if(tumblerTx != null || tumblerTx.Confirmations >= cycle.SafetyPeriodDuration)
+
+							if(tumblerTx != null && tumblerTx.Confirmations >= cycle.SafetyPeriodDuration)
 							{
 								Logs.Client.LogInformation($"Client escrow reached {cycle.SafetyPeriodDuration} confirmations");
 
