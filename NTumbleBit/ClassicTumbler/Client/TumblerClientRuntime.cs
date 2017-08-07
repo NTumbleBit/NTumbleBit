@@ -63,7 +63,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 			Tracker = configuration.Tracker;
 			Services = configuration.Services;
 			DestinationWallet = configuration.DestinationWallet;
-			TumblerParameters = Repository.Get<ClassicTumbler.ClassicTumblerParameters>("Configuration", configuration.TumblerServer.Uri.AbsoluteUri);
+			TumblerParameters = Repository.Get<ClassicTumbler.ClassicTumblerParameters>("Configuration", configuration.ToString());
 
 			if(TumblerParameters != null && TumblerParameters.GetHash() != configuration.TumblerServer.ConfigurationHash)
 				TumblerParameters = null;
@@ -73,7 +73,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 				var client = CreateTumblerClient(0);
 				if(TumblerParameters == null)
 				{
-					Logs.Configuration.LogInformation("Downloading tumbler information of " + configuration.TumblerServer.Uri.AbsoluteUri);
+					Logs.Configuration.LogInformation("Downloading tumbler information of " + configuration.TumblerServer.ToString());
 					var parameters = Retry(3, () => client.GetTumblerParameters());
 					if(parameters == null)
 						throw new ConfigException("Unable to download tumbler's parameters");
@@ -94,13 +94,13 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 					await interaction.ConfirmParametersAsync(parameters, standardCycle).ConfigureAwait(false);
 
-					Repository.UpdateOrInsert("Configuration", TumblerServer.Uri.AbsoluteUri, parameters, (o, n) => n);
+					Repository.UpdateOrInsert("Configuration", TumblerServer.ToString(), parameters, (o, n) => n);
 					TumblerParameters = parameters;
 
 					Logs.Configuration.LogInformation("Tumbler parameters saved");
 				}
 
-				Logs.Configuration.LogInformation($"Using tumbler {TumblerServer.Uri.AbsoluteUri}");
+				Logs.Configuration.LogInformation($"Using tumbler {TumblerServer.ToString()}");
 			}
 		}
 

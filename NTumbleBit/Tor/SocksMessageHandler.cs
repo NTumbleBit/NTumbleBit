@@ -110,7 +110,7 @@ namespace NTumbleBit.Tor
 					if(connectResponse[1] != 0)
 					{
 						var code = (SocksErrorCode)connectResponse[1];
-						if(code != SocksErrorCode.GeneralServerFailure || retry++ >= maxTries)
+						if(!IsTransient(code) || retry++ >= maxTries)
 							throw new SocksException(code);
 						SafeDispose(ref s);
 						await Task.Delay(1000, cancellation).ConfigureAwait(false);
@@ -136,6 +136,12 @@ namespace NTumbleBit.Tor
 				SafeDispose(ref s);
 				throw;
 			}
+		}
+
+		private bool IsTransient(SocksErrorCode code)
+		{
+			return code == SocksErrorCode.GeneralServerFailure ||
+				   code == SocksErrorCode.TTLExpired;
 		}
 
 		private void SafeDispose(ref Socket s)

@@ -1,139 +1,168 @@
-﻿using System;
-
-using NTumbleBit.BouncyCastle.Crypto;
-using NTumbleBit.BouncyCastle.Crypto.Parameters;
+﻿using NTumbleBit.BouncyCastle.Crypto.Parameters;
 using NTumbleBit.BouncyCastle.Math;
+using NTumbleBit.BouncyCastle.Utilities;
 
 namespace NTumbleBit.BouncyCastle.Crypto.Generators
 {
 	/**
      * an RSA key pair generator.
      */
-
 	internal class RsaKeyPairGenerator
 	{
-		private static readonly BigInteger DefaultPublicExponent = BigInteger.ValueOf(0x10001);
-		private const int DefaultTests = 12;
+		private static readonly int[] SPECIAL_E_VALUES = new int[] { 3, 5, 17, 257, 65537 };
+		private static readonly int SPECIAL_E_HIGHEST = SPECIAL_E_VALUES[SPECIAL_E_VALUES.Length - 1];
+		private static readonly int SPECIAL_E_BITS = BigInteger.ValueOf(SPECIAL_E_HIGHEST).BitLength;
 
-		private RsaKeyGenerationParameters param;
+		protected static readonly BigInteger One = BigInteger.One;
+		protected static readonly BigInteger DefaultPublicExponent = BigInteger.ValueOf(0x10001);
+		protected const int DefaultTests = 100;
 
-		public void Init(
+		protected RsaKeyGenerationParameters parameters;
+
+		public virtual void Init(
 			KeyGenerationParameters parameters)
 		{
 			if(parameters is RsaKeyGenerationParameters)
 			{
-				param = (RsaKeyGenerationParameters)parameters;
+				this.parameters = (RsaKeyGenerationParameters)parameters;
 			}
 			else
 			{
-				param = new RsaKeyGenerationParameters(
+				this.parameters = new RsaKeyGenerationParameters(
 					DefaultPublicExponent, parameters.Random, parameters.Strength, DefaultTests);
 			}
 		}
 
-		public AsymmetricCipherKeyPair GenerateKeyPair()
+		public virtual AsymmetricCipherKeyPair GenerateKeyPair()
 		{
-			BigInteger p, q, n, d, e, pSub1, qSub1, phi;
-
-			//
-			// p and q values should have a length of half the strength in bits
-			//
-			int strength = param.Strength;
-			int pbitlength = (strength + 1) / 2;
-			int qbitlength = (strength - pbitlength);
-			int mindiffbits = strength / 3;
-
-			e = param.PublicExponent;
-
-			// TODO Consider generating safe primes for p, q (see DHParametersHelper.generateSafePrimes)
-			// (then p-1 and q-1 will not consist of only small factors - see "Pollard's algorithm")
-
-			//
-			// Generate p, prime and (p-1) relatively prime to e
-			//
 			for(;;)
 			{
-				p = new BigInteger(pbitlength, 1, param.Random);
+				//
+				// p and q values should have a length of half the strength in bits
+				//
+				int strength = parameters.Strength;
+				int pBitlength = (strength + 1) / 2;
+				int qBitlength = strength - pBitlength;
+				int mindiffbits = strength / 3;
+				int minWeight = strength >> 2;
 
-				if(p.Mod(e).Equals(BigInteger.One))
-					continue;
+				BigInteger e = parameters.PublicExponent;
 
-				if(!p.IsProbablePrime(param.Certainty))
-					continue;
+				// TODO Consider generating safe primes for p, q (see DHParametersHelper.generateSafePrimes)
+				// (then p-1 and q-1 will not consist of only small factors - see "Pollard's algorithm")
 
-				if(e.Gcd(p.Subtract(BigInteger.One)).Equals(BigInteger.One))
-					break;
-			}
+				BigInteger p = ChooseRandomPrime(pBitlength, e);
+				BigInteger q, n;
 
-			//
-			// Generate a modulus of the required length
-			//
-			for(;;)
-			{
-				// Generate q, prime and (q-1) relatively prime to e,
-				// and not equal to p
+				//
+				// generate a modulus of the required length
 				//
 				for(;;)
 				{
-					q = new BigInteger(qbitlength, 1, param.Random);
+					q = ChooseRandomPrime(qBitlength, e);
 
-					if(q.Subtract(p).Abs().BitLength < mindiffbits)
+					// p and q should not be too close together (or equal!)
+					BigInteger diff = q.Subtract(p).Abs();
+					if(diff.BitLength < mindiffbits)
 						continue;
 
-					if(q.Mod(e).Equals(BigInteger.One))
-						continue;
+					//
+					// calculate the modulus
+					//
+					n = p.Multiply(q);
 
-					if(!q.IsProbablePrime(param.Certainty))
+					if(n.BitLength != strength)
+					{
+						//
+						// if we get here our primes aren't big enough, make the largest
+						// of the two p and try again
+						//
+						p = p.Max(q);
 						continue;
+					}
 
-					if(e.Gcd(q.Subtract(BigInteger.One)).Equals(BigInteger.One))
-						break;
+					/*
+	                 * Require a minimum weight of the NAF representation, since low-weight composites may
+	                 * be weak against a version of the number-field-sieve for factoring.
+	                 *
+	                 * See "The number field sieve for integers of low weight", Oliver Schirokauer.
+	                 */
+					if(GetNafWeight(n) < minWeight)
+					{
+						p = ChooseRandomPrime(pBitlength, e);
+						continue;
+					}
+
+					break;
 				}
 
-				//
-				// calculate the modulus
-				//
-				n = p.Multiply(q);
+				if(p.CompareTo(q) < 0)
+				{
+					BigInteger tmp = p;
+					p = q;
+					q = tmp;
+				}
 
-				if(n.BitLength == param.Strength)
-					break;
+				BigInteger pSub1 = p.Subtract(One);
+				BigInteger qSub1 = q.Subtract(One);
+				BigInteger gcd = pSub1.Gcd(qSub1);
+				BigInteger lcm = pSub1.Divide(gcd).Multiply(qSub1);
 
 				//
-				// if we Get here our primes aren't big enough, make the largest
-				// of the two p and try again
+				// calculate the private exponent
 				//
-				p = p.Max(q);
+				BigInteger d = e.ModInverse(lcm);
+
+				if(d.BitLength <= qBitlength)
+					continue;
+
+				//
+				// calculate the CRT factors
+				//
+				BigInteger dP = d.Remainder(pSub1);
+				BigInteger dQ = d.Remainder(qSub1);
+				BigInteger qInv = q.ModInverse(p);
+
+				return new AsymmetricCipherKeyPair(
+					new RsaKeyParameters(false, n, e),
+					new RsaPrivateCrtKeyParameters(n, e, d, p, q, dP, dQ, qInv));
 			}
+		}
 
-			if(p.CompareTo(q) < 0)
+		public static int GetNafWeight(BigInteger k)
+		{
+			if(k.SignValue == 0)
+				return 0;
+
+			BigInteger _3k = k.ShiftLeft(1).Add(k);
+			BigInteger diff = _3k.Xor(k);
+
+			return diff.BitCount;
+		}
+
+		/// <summary>Choose a random prime value for use with RSA</summary>
+		/// <param name="bitlength">the bit-length of the returned prime</param>
+		/// <param name="e">the RSA public exponent</param>
+		/// <returns>a prime p, with (p-1) relatively prime to e</returns>
+		protected virtual BigInteger ChooseRandomPrime(int bitlength, BigInteger e)
+		{
+			bool eIsKnownOddPrime = (e.BitLength <= SPECIAL_E_BITS) && Arrays.Contains(SPECIAL_E_VALUES, e.IntValue);
+
+			for(;;)
 			{
-				phi = p;
-				p = q;
-				q = phi;
+				BigInteger p = new BigInteger(bitlength, 1, parameters.Random);
+
+				if(p.Mod(e).Equals(One))
+					continue;
+
+				if(!p.IsProbablePrime(parameters.Certainty, true))
+					continue;
+
+				if(!eIsKnownOddPrime && !e.Gcd(p.Subtract(One)).Equals(One))
+					continue;
+
+				return p;
 			}
-
-			pSub1 = p.Subtract(BigInteger.One);
-			qSub1 = q.Subtract(BigInteger.One);
-			phi = pSub1.Multiply(qSub1);
-
-			//
-			// calculate the private exponent
-			//
-			d = e.ModInverse(phi);
-
-			//
-			// calculate the CRT factors
-			//
-			BigInteger dP, dQ, qInv;
-
-			dP = d.Remainder(pSub1);
-			dQ = d.Remainder(qSub1);
-			qInv = q.ModInverse(p);
-
-			return new AsymmetricCipherKeyPair(
-				new RsaKeyParameters(false, n, e),
-				new RsaPrivateCrtKeyParameters(n, e, d, p, q, dP, dQ, qInv));
 		}
 	}
-
 }

@@ -5,6 +5,7 @@ using NTumbleBit.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using Xunit;
 
 namespace NTumbleBit.Tests
@@ -23,6 +24,7 @@ namespace NTumbleBit.Tests
 				Assert.NotEqual(0, parameters.FakeTransactionCount);
 				Assert.NotNull(parameters.FakeFormat);
 				Assert.True(parameters.FakeFormat != uint256.Zero);
+				Assert.Equal(RsaKey.KeySize, parameters.VoucherKey.GetKeySize());
 			}
 		}
 
@@ -85,7 +87,6 @@ namespace NTumbleBit.Tests
 			}
 		}
 
-
 		[Fact]
 		public void CanCompleteCycleWithMachineState()
 		{
@@ -95,6 +96,19 @@ namespace NTumbleBit.Tests
 			CanCompleteCycleWithMachineStateCore(false, false);
 		}
 
+		[Fact]
+		public void CanParseAndGenerateTBAddresses()
+		{
+			Assert.Equal("ctb://ye33yfa66xpqsjdu.onion?h=2fc0fba4f88fae783dd6e8f972920d51586e3084", 
+				new TumblerUrlBuilder("ctb://ye33yfa66xpqsjdu.onion?h=2fc0fba4f88fae783dd6e8f972920d51586e3084").ToString());
+			Assert.Equal("ctb://ye33yfa66xpqsjdu.onion?h=2fc0fba4f88fae783dd6e8f972920d51586e3084",
+				new TumblerUrlBuilder("ctb://ye33yfa66xpqsjdu.onion/?h=2fc0fba4f88fae783dd6e8f972920d51586e3084").ToString());
+
+			Assert.Throws<FormatException>(() => new TumblerUrlBuilder("ctb://ye33yfa66xpqsjdu.onio?h=2fc0fba4f88fae783dd6e8f972920d51586e3084"));
+			Assert.Throws<FormatException>(() => new TumblerUrlBuilder("ctb://ye33yfa66xpqsjdu.onion/h=2fc0fba4f88fae783dd6e8f972920d51586e3084"));
+			Assert.Throws<FormatException>(() => new TumblerUrlBuilder("ctb://ye33yfa66xpqsjdu.onion/?q=2fc0fba4f88fae783dd6e8f972920d51586e3084"));
+			Assert.Throws<FormatException>(() => new TumblerUrlBuilder("ctb://ye33yfa66xpqsjdu.onion/"));
+		}
 
 		[Fact]
 		public void CanGenerateAddress()

@@ -38,10 +38,11 @@ namespace NTumbleBit.ClassicTumbler
 			else
 			{
 				address = uri.Substring(0, paramStart);
-				uri = uri.Remove(0, 1); //remove ?
 			}
 			if(address != String.Empty)
 			{
+				if(address.EndsWith("/", StringComparison.OrdinalIgnoreCase))
+					address = address.Substring(0, address.Length - 1);
 				Port = 80;
 				var split = address.Split(':');
 				if(split.Length != 1 && split.Length != 2)
@@ -52,7 +53,7 @@ namespace NTumbleBit.ClassicTumbler
 				var host = split[0];
 				Host = host;
 			}
-			uri = uri.Remove(0, address.Length);
+			uri = uri.Remove(0, paramStart + 1);  //+1 to move past '?'
 
 			Dictionary<string, string> parameters;
 			try
@@ -120,32 +121,6 @@ namespace NTumbleBit.ClassicTumbler
 			get; set;
 		}
 
-		public Uri Uri
-		{
-			get
-			{
-				Dictionary<string, string> parameters = new Dictionary<string, string>();
-				StringBuilder builder = new StringBuilder();
-				builder.Append("ctb://");
-				if(Host != null)
-				{
-					builder.Append(Host.ToString());
-				}
-				if(Port != 80)
-				{
-					builder.Append(":" + Port.ToString());
-				}
-				if(ConfigurationHash != null)
-				{
-					parameters.Add("h", ConfigurationHash.ToString());
-				}
-
-				WriteParameters(parameters, builder);
-
-				return new System.Uri(builder.ToString(), UriKind.Absolute);
-			}
-		}
-
 		public Uri RoutableUri
 		{
 			get
@@ -180,7 +155,24 @@ namespace NTumbleBit.ClassicTumbler
 
 		public override string ToString()
 		{
-			return Uri.AbsoluteUri;
+			Dictionary<string, string> parameters = new Dictionary<string, string>();
+			StringBuilder builder = new StringBuilder();
+			builder.Append("ctb://");
+			if(Host != null)
+			{
+				builder.Append(Host.ToString());
+			}
+			if(Port != 80)
+			{
+				builder.Append(":" + Port.ToString());
+			}
+			if(ConfigurationHash != null)
+			{
+				parameters.Add("h", ConfigurationHash.ToString());
+			}
+
+			WriteParameters(parameters, builder);
+			return builder.ToString();
 		}
 	}
 }
