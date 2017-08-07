@@ -242,7 +242,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 			get;
 			set;
 		}
-		public ExternalServices Services
+		public IExternalServices Services
 		{
 			get;
 			set;

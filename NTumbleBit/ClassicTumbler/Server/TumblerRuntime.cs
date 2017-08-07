@@ -202,7 +202,7 @@ namespace NTumbleBit.ClassicTumbler.Server
 			get; set;
 		}
 
-		public ExternalServices Services
+		public IExternalServices Services
 		{
 			get; set;
 		}

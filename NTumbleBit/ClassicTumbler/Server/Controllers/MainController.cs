@@ -46,7 +46,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			}
 		}
 
-		public ExternalServices Services
+		public IExternalServices Services
 		{
 			get
 			{
