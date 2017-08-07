@@ -1,21 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text;
 using System.Linq;
 using System.IO;
 using NBitcoin;
 using Microsoft.Extensions.Logging;
 using NTumbleBit.Logging;
-using System.Net;
 using NTumbleBit.Configuration;
-using System.Net.Sockets;
-using System.Net.Http;
-using DotNetTor.SocksPort;
-using System.Runtime.InteropServices;
-using System.Threading;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+using NBitcoin.RPC;
 using NTumbleBit.ClassicTumbler.Client.ConnectionSettings;
+using NTumbleBit.Services;
 
 namespace NTumbleBit.ClassicTumbler.Client
 {
@@ -37,74 +30,18 @@ namespace NTumbleBit.ClassicTumbler.Client
 		}
 	}
 
-	public class TumblerClientConfiguration
+	public class TumblerClientConfiguration : TumblerClientConfigurationBase
 	{
 		public string ConfigurationFile
 		{
 			get;
 			set;
 		}
-		public string DataDir
-		{
-			get;
-			set;
-		}
-
-		public Network Network
-		{
-			get; set;
-		}
-
-		public bool OnlyMonitor
-		{
-			get; set;
-		}
-
-		public bool CheckIp
-		{
-			get; set;
-		} = true;
-
-		public bool Cooperative
-		{
-			get;
-			set;
-		}
-		public TumblerUrlBuilder TumblerServer
-		{
-			get;
-			set;
-		}
-
-		public ConnectionSettingsBase BobConnectionSettings
-		{
-			get; set;
-		} = new ConnectionSettingsBase();
-
-		public ConnectionSettingsBase AliceConnectionSettings
-		{
-			get; set;
-		} = new ConnectionSettings.ConnectionSettingsBase();
-
-		public OutputWalletConfiguration OutputWallet
-		{
-			get; set;
-		} = new OutputWalletConfiguration();
 
 		public RPCArgs RPCArgs
 		{
 			get; set;
 		} = new RPCArgs();
-		public bool AllowInsecure
-		{
-			get;
-			set;
-		} = false;
-		public string TorPath
-		{
-			get;
-			set;
-		}
 
 		public TumblerClientConfiguration LoadArgs(String[] args)
 		{
@@ -201,12 +138,38 @@ namespace NTumbleBit.ClassicTumbler.Client
 			BobConnectionSettings = ConnectionSettingsBase.ParseConnectionSettings("bob", config);
 
 			AllowInsecure = config.GetOrDefault<bool>("allowinsecure", IsTest(Network));
-			return this;
-		}
 
-		private bool IsTest(Network network)
-		{
-			return network == Network.TestNet || network == Network.RegTest;
+			RPCClient rpc = null;
+			try
+			{
+				rpc = RPCArgs.ConfigureRPCClient(Network);
+			}
+			catch
+			{
+				throw new ConfigException("Please, fix rpc settings in " + ConfigurationFile);
+			}
+
+			DBreezeRepository = new DBreezeRepository(Path.Combine(DataDir, "db2"));
+			Tracker = new Tracker(DBreezeRepository, Network);
+			Services = ExternalServices.CreateFromRPCClient(rpc, DBreezeRepository, Tracker);
+
+			if (OutputWallet.RootKey != null && OutputWallet.KeyPath != null)
+				DestinationWallet = new ClientDestinationWallet(OutputWallet.RootKey, OutputWallet.KeyPath, DBreezeRepository, Network);
+			else if (OutputWallet.RPCArgs != null)
+			{
+				try
+				{
+					DestinationWallet = new RPCDestinationWallet(OutputWallet.RPCArgs.ConfigureRPCClient(Network));
+				}
+				catch
+				{
+					throw new ConfigException("Please, fix outputwallet rpc settings in " + ConfigurationFile);
+				}
+			}
+			else
+				throw new ConfigException("Missing configuration for outputwallet");
+
+			return this;
 		}
 
 		public static string GetDefaultConfigurationFile(string dataDirectory, Network network)
@@ -286,7 +249,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 		{
 			if(!File.Exists(ConfigurationFile))
 				throw new ConfigurationException("Configuration file does not exists");
-		}
-
+		}	   
 	}
 }

@@ -51,16 +51,7 @@ namespace NTumbleBit.ClassicTumbler.Server
 			ClassicTumblerParameters = conf.ClassicTumblerParameters.Clone();
 			Network = conf.Network;
 			LocalEndpoint = conf.Listen;
-			RPCClient rpcClient = null;
-			try
-			{
-				rpcClient = conf.RPC.ConfigureRPCClient(conf.Network);
-			}
-			catch
-			{
-				throw new ConfigException("Please, fix rpc settings in " + conf.ConfigurationFile);
-			}
-
+			
 			bool torConfigured = false;
 			if(conf.TorSettings != null)
 			{
@@ -170,12 +161,11 @@ namespace NTumbleBit.ClassicTumbler.Server
 			}
 			Logs.Configuration.LogInformation($"--------------------------------");
 			Logs.Configuration.LogInformation("");
-
-			var dbreeze = new DBreezeRepository(Path.Combine(conf.DataDir, "db2"));
-			Repository = dbreeze;
-			_Resources.Add(dbreeze);
-			Tracker = new Tracker(dbreeze, Network);
-			Services = ExternalServices.CreateFromRPCClient(rpcClient, dbreeze, Tracker);
+			
+			Repository = conf.DBreezeRepository;
+			_Resources.Add(Repository);
+			Tracker = conf.Tracker;
+			Services = conf.Services;
 		}
 
 		public Uri TorUri
@@ -227,7 +217,7 @@ namespace NTumbleBit.ClassicTumbler.Server
 			get;
 			set;
 		}
-		public IRepository Repository
+		public DBreezeRepository Repository
 		{
 			get;
 			set;
