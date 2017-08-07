@@ -242,6 +242,8 @@ namespace NTumbleBit.ClassicTumbler
 		{
 			//TODO check RSA proof for the pubkeys
 			return
+				this.VoucherKey.GetKeySize() == RsaKey.KeySize &&
+				this.ServerKey.GetKeySize() == RsaKey.KeySize &&
 				this.FakePuzzleCount == 285 &&
 				this.RealPuzzleCount == 15 &&
 				this.RealTransactionCount == 42 &&

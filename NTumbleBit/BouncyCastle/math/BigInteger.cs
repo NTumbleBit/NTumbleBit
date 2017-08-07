@@ -3,7 +3,6 @@ using System.Collections;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
-
 using NTumbleBit.BouncyCastle.Security;
 using NTumbleBit.BouncyCastle.Utilities;
 
@@ -153,7 +152,7 @@ namespace NTumbleBit.BouncyCastle.Math
 		//    4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8
 		//};
 
-		private readonly static byte[] BitLengthTable =
+		private static readonly byte[] BitLengthTable =
 		{
 			0, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4,
 			5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
@@ -233,8 +232,8 @@ namespace NTumbleBit.BouncyCastle.Math
 			}
 		}
 
-		private int[] magnitude; // array of ints with [0] being the most significant
-		private int sign; // -1 means -ve; +1 means +ve; 0 means 0;
+		private readonly int[] magnitude; // array of ints with [0] being the most significant
+		private readonly int sign; // -1 means -ve; +1 means +ve; 0 means 0;
 		private int nBits = -1; // cache BitCount() value
 		private int nBitLength = -1; // cache BitLength() value
 		private int mQuote = 0; // -m^(-1) mod b, b = 2^32 (see Montgomery mult.), 0 when uninitialised
@@ -1256,7 +1255,6 @@ namespace NTumbleBit.BouncyCastle.Math
 
 		private bool IsEqualMagnitude(BigInteger x)
 		{
-			int[] xMag = x.magnitude;
 			if(magnitude.Length != x.magnitude.Length)
 				return false;
 			for(int i = 0; i < magnitude.Length; i++)
@@ -2459,7 +2457,7 @@ namespace NTumbleBit.BouncyCastle.Math
 		public BigInteger Multiply(
 			BigInteger val)
 		{
-			if(val == this)
+			if(Equals(val, this))
 				return Square();
 
 			if((sign & val.sign) == 0)

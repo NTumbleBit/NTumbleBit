@@ -141,6 +141,10 @@ namespace NTumbleBit
 			return msg.Multiply(multiplier).Mod(_Key.Modulus);
 		}
 
+		public int GetKeySize()
+		{
+			return _Key.Modulus.BitLength;
+		}
 
 		public override bool Equals(object obj)
 		{
