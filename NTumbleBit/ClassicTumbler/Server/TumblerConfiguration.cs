@@ -1,7 +1,6 @@
 ﻿using NBitcoin;
 using System;
 using System.IO;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using NTumbleBit.Logging;
@@ -11,6 +10,8 @@ using System.Runtime.InteropServices;
 using NTumbleBit.Configuration;
 using System.Diagnostics;
 using NTumbleBit.ClassicTumbler.Client.ConnectionSettings;
+using NTumbleBit.Services;
+using NBitcoin.RPC;
 
 namespace NTumbleBit.ClassicTumbler.Server
 {
@@ -76,6 +77,24 @@ namespace NTumbleBit.ClassicTumbler.Server
 			set;
 		}
 		public string TorPath
+		{
+			get;
+			set;
+		}
+
+		public Tracker Tracker
+		{
+			get;
+			set;
+		}
+
+		public ExternalServices Services
+		{
+			get;
+			set;
+		}
+
+		public DBreezeRepository DBreezeRepository
 		{
 			get;
 			set;
@@ -156,7 +175,21 @@ namespace NTumbleBit.ClassicTumbler.Server
 			Listen = new IPEndPoint(IPAddress.Parse("127.0.0.1"), defaultPort);
 
 			RPC = RPCArgs.Parse(config, Network);
-			TorPath = config.GetOrDefault<string>("torpath", "tor");
+			TorPath = config.GetOrDefault<string>("torpath", "tor");		    
+			DBreezeRepository = new DBreezeRepository(Path.Combine(DataDir, "db2"));
+			Tracker = new Tracker(DBreezeRepository, Network);
+
+			RPCClient rpc = null;
+			try
+			{
+				rpc = RPC.ConfigureRPCClient(Network);
+			}
+			catch
+			{
+				throw new ConfigException("Please, fix rpc settings in " + ConfigurationFile);
+			}
+
+			Services = ExternalServices.CreateFromRPCClient(rpc, DBreezeRepository, Tracker);
 			return this;
 		}
 
@@ -211,31 +244,6 @@ namespace NTumbleBit.ClassicTumbler.Server
 				File.WriteAllText(config, builder.ToString());
 			}
 			return config;
-		}
-
-		public static IPEndPoint ConvertToEndpoint(string str, int defaultPort)
-		{
-			var portOut = defaultPort;
-			var hostOut = "";
-			int colon = str.LastIndexOf(':');
-			// if a : is found, and it either follows a [...], or no other : is in the string, treat it as port separator
-			bool fHaveColon = colon != -1;
-			bool fBracketed = fHaveColon && (str[0] == '[' && str[colon - 1] == ']'); // if there is a colon, and in[0]=='[', colon is not 0, so in[colon-1] is safe
-			bool fMultiColon = fHaveColon && (str.LastIndexOf(':', colon - 1) != -1);
-			if(fHaveColon && (colon == 0 || fBracketed || !fMultiColon))
-			{
-				int n;
-				if(int.TryParse(str.Substring(colon + 1), out n) && n > 0 && n < 0x10000)
-				{
-					str = str.Substring(0, colon);
-					portOut = n;
-				}
-			}
-			if(str.Length > 0 && str[0] == '[' && str[str.Length - 1] == ']')
-				hostOut = str.Substring(1, str.Length - 2);
-			else
-				hostOut = str;
-			return new IPEndPoint(IPAddress.Parse(hostOut), portOut);
 		}
 
 		private void AssetConfigFileExists()

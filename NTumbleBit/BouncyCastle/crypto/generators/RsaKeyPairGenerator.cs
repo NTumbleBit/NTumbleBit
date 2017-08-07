@@ -1,7 +1,4 @@
-﻿using System;
-
-using NTumbleBit.BouncyCastle.Crypto;
-using NTumbleBit.BouncyCastle.Crypto.Parameters;
+﻿using NTumbleBit.BouncyCastle.Crypto.Parameters;
 using NTumbleBit.BouncyCastle.Math;
 using NTumbleBit.BouncyCastle.Utilities;
 
@@ -108,7 +105,6 @@ namespace NTumbleBit.BouncyCastle.Crypto.Generators
 
 				BigInteger pSub1 = p.Subtract(One);
 				BigInteger qSub1 = q.Subtract(One);
-				//BigInteger phi = pSub1.Multiply(qSub1);
 				BigInteger gcd = pSub1.Gcd(qSub1);
 				BigInteger lcm = pSub1.Divide(gcd).Multiply(qSub1);
 

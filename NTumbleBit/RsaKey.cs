@@ -139,6 +139,11 @@ namespace NTumbleBit
 			return privInfo.ToAsn1Object().GetEncoded();
 		}
 
+		public int GetKeySize()
+		{
+			return PubKey.GetKeySize();
+		}
+
 		internal static AlgorithmIdentifier algID = new AlgorithmIdentifier(
 					new DerObjectIdentifier("1.2.840.113549.1.1.1"), DerNull.Instance);
 		public static readonly int KeySize = 2048;

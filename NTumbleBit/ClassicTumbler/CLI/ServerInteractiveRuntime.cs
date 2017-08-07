@@ -28,7 +28,7 @@ namespace NTumbleBit.ClassicTumbler.CLI
 
 		public Tracker Tracker => InnerRuntime.Tracker;
 
-		public ExternalServices Services => InnerRuntime.Services;
+		public IExternalServices Services => InnerRuntime.Services;
 
 		public IDestinationWallet DestinationWallet => null;
 

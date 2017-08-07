@@ -5,6 +5,7 @@ using NTumbleBit.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using Xunit;
 
 namespace NTumbleBit.Tests
@@ -23,6 +24,7 @@ namespace NTumbleBit.Tests
 				Assert.NotEqual(0, parameters.FakeTransactionCount);
 				Assert.NotNull(parameters.FakeFormat);
 				Assert.True(parameters.FakeFormat != uint256.Zero);
+				Assert.Equal(RsaKey.KeySize, parameters.VoucherKey.GetKeySize());
 			}
 		}
 
@@ -84,7 +86,6 @@ namespace NTumbleBit.Tests
 				Assert.True(tracker.Search(address3).Length == 0);
 			}
 		}
-
 
 		[Fact]
 		public void CanCompleteCycleWithMachineState()

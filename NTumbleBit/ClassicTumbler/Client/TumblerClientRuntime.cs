@@ -33,12 +33,12 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 	public class TumblerClientRuntime : IDisposable
 	{
-		public static TumblerClientRuntime FromConfiguration(TumblerClientConfiguration configuration, ClientInteraction interaction)
+		public static TumblerClientRuntime FromConfiguration(TumblerClientConfigurationBase configuration, ClientInteraction interaction)
 		{
 			return FromConfigurationAsync(configuration, interaction).GetAwaiter().GetResult();
 		}
 
-		public static async Task<TumblerClientRuntime> FromConfigurationAsync(TumblerClientConfiguration configuration, ClientInteraction interaction)
+		public static async Task<TumblerClientRuntime> FromConfigurationAsync(TumblerClientConfigurationBase configuration, ClientInteraction interaction)
 		{
 			TumblerClientRuntime runtime = new TumblerClientRuntime();
 			try
@@ -52,7 +52,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 			}
 			return runtime;
 		}
-		public async Task ConfigureAsync(TumblerClientConfiguration configuration, ClientInteraction interaction)
+		public async Task ConfigureAsync(TumblerClientConfigurationBase configuration, ClientInteraction interaction)
 		{
 			interaction = interaction ?? new AcceptAllClientInteraction();
 
@@ -63,43 +63,18 @@ namespace NTumbleBit.ClassicTumbler.Client
 			AllowInsecure = configuration.AllowInsecure;
 
 			await SetupTorAsync(interaction, configuration.TorPath).ConfigureAwait(false);
-
-			RPCClient rpc = null;
-			try
-			{
-				rpc = configuration.RPCArgs.ConfigureRPCClient(configuration.Network);
-			}
-			catch
-			{
-				throw new ConfigException("Please, fix rpc settings in " + configuration.ConfigurationFile);
-			}
-
-			var dbreeze = new DBreezeRepository(Path.Combine(configuration.DataDir, "db2"));
+		
 			Cooperative = configuration.Cooperative;
-			Repository = dbreeze;
-			_Disposables.Add(dbreeze);
-			Tracker = new Tracker(dbreeze, Network);
-			Services = ExternalServices.CreateFromRPCClient(rpc, dbreeze, Tracker);
+			Repository = configuration.DBreezeRepository;
+			_Disposables.Add(Repository);
+			Tracker = configuration.Tracker;
+			Services = configuration.Services;
+			DestinationWallet = configuration.DestinationWallet;
 
-			if(configuration.OutputWallet.RootKey != null && configuration.OutputWallet.KeyPath != null)
-				DestinationWallet = new ClientDestinationWallet(configuration.OutputWallet.RootKey, configuration.OutputWallet.KeyPath, dbreeze, configuration.Network);
-			else if(configuration.OutputWallet.RPCArgs != null)
-			{
-				try
-				{
-					DestinationWallet = new RPCDestinationWallet(configuration.OutputWallet.RPCArgs.ConfigureRPCClient(Network));
-				}
-				catch
-				{
-					throw new ConfigException("Please, fix outputwallet rpc settings in " + configuration.ConfigurationFile);
-				}
-			}
-			else
-				throw new ConfigException("Missing configuration for outputwallet");
 
-			TumblerParameters = dbreeze.Get<ClassicTumbler.ClassicTumblerParameters>("Configuration", configuration.ToString());
+			TumblerParameters = Repository.Get<ClassicTumbler.ClassicTumblerParameters>("Configuration", configuration.TumblerServer.ToString());
 
-			if(TumblerParameters != null && TumblerParameters.GetHash() != configuration.TumblerServer.ConfigurationHash)
+			if (TumblerParameters != null && TumblerParameters.GetHash() != configuration.TumblerServer.ConfigurationHash)
 				TumblerParameters = null;
 
 			if(!configuration.OnlyMonitor)
@@ -242,7 +217,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 			get;
 			set;
 		}
-		public ExternalServices Services
+		public IExternalServices Services
 		{
 			get;
 			set;
