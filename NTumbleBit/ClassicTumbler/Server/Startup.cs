@@ -12,6 +12,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using Microsoft.Net.Http.Headers;
+using Microsoft.AspNetCore.Diagnostics;
+using NTumbleBit.Logging;
 
 namespace NTumbleBit.ClassicTumbler.Server
 {
@@ -35,7 +37,22 @@ namespace NTumbleBit.ClassicTumbler.Server
 		public void Configure(IApplicationBuilder app, IHostingEnvironment env,
 			ILoggerFactory loggerFactory,
 			IServiceProvider serviceProvider)
-		{
+		 {
+			app.Use(req =>
+			{
+				return async (ctx) =>
+				{
+					try
+					{
+						await req(ctx);
+					}
+					catch(Exception ex)
+					{
+						Logs.Tumbler.LogCritical("Unhandled exception thrown by the Tumbler Service", ex);
+						throw;
+					}
+				};
+			});
 			var logging = new FilterLoggerSettings();
 			logging.Add("Microsoft.AspNetCore.Hosting.Internal.WebHost", LogLevel.Error);
 			logging.Add("Microsoft.AspNetCore.Mvc", LogLevel.Error);
