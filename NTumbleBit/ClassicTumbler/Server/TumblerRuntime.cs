@@ -1,20 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using NBitcoin.RPC;
 using System.IO;
 using NTumbleBit.Logging;
 using NTumbleBit.Services;
-using NTumbleBit.ClassicTumbler;
 using NBitcoin;
 using NTumbleBit.Configuration;
-using NTumbleBit.ClassicTumbler.Client;
 using NTumbleBit.ClassicTumbler.CLI;
 using System.Text;
 using System.Net;
-using System.Threading;
 using NTumbleBit.Tor;
 
 namespace NTumbleBit.ClassicTumbler.Server
@@ -51,16 +46,7 @@ namespace NTumbleBit.ClassicTumbler.Server
 			ClassicTumblerParameters = conf.ClassicTumblerParameters.Clone();
 			Network = conf.Network;
 			LocalEndpoint = conf.Listen;
-			RPCClient rpcClient = null;
-			try
-			{
-				rpcClient = conf.RPC.ConfigureRPCClient(conf.Network);
-			}
-			catch
-			{
-				throw new ConfigException("Please, fix rpc settings in " + conf.ConfigurationFile);
-			}
-
+			
 			bool torConfigured = false;
 			if(conf.TorSettings != null)
 			{
@@ -170,12 +156,11 @@ namespace NTumbleBit.ClassicTumbler.Server
 			}
 			Logs.Configuration.LogInformation($"--------------------------------");
 			Logs.Configuration.LogInformation("");
-
-			var dbreeze = new DBreezeRepository(Path.Combine(conf.DataDir, "db2"));
-			Repository = dbreeze;
-			_Resources.Add(dbreeze);
-			Tracker = new Tracker(dbreeze, Network);
-			Services = ExternalServices.CreateFromRPCClient(rpcClient, dbreeze, Tracker);
+			
+			Repository = conf.DBreezeRepository;
+			_Resources.Add(Repository);
+			Tracker = conf.Tracker;
+			Services = conf.Services;
 		}
 
 		public Uri TorUri
@@ -227,7 +212,7 @@ namespace NTumbleBit.ClassicTumbler.Server
 			get;
 			set;
 		}
-		public IRepository Repository
+		public DBreezeRepository Repository
 		{
 			get;
 			set;

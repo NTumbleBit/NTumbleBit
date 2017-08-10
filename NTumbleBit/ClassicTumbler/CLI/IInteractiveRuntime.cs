@@ -22,7 +22,7 @@ namespace NTumbleBit.ClassicTumbler.CLI
 		{
 			get;
 		}
-		ExternalServices Services
+		IExternalServices Services
 		{
 			get;
 		}
