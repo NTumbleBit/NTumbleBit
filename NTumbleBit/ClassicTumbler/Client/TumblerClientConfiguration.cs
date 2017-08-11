@@ -105,6 +105,11 @@ namespace NTumbleBit.ClassicTumbler.Client
 			get;
 			set;
 		}
+		public bool AllowHttp
+		{
+			get;
+			set;
+		} = false;
 
 		public TumblerClientConfiguration LoadArgs(String[] args)
 		{

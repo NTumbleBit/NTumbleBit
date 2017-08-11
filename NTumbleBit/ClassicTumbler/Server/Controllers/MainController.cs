@@ -92,7 +92,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			var height = Services.BlockExplorerService.GetCurrentHeight();
 			var cycleParameters = Parameters.CycleGenerator.GetRegistratingCycle(height);
 			PuzzleSolution solution = null;
-			var puzzle = Parameters.VoucherKey.GeneratePuzzle(ref solution);
+			var puzzle = Parameters.VoucherKey.PublicKey.GeneratePuzzle(ref solution);
 			uint160 nonce;
 			var cycle = cycleParameters.Start;
 			var signature = Runtime.VoucherKey.Sign(NBitcoin.Utils.ToBytes((uint)cycle, true), out nonce);
@@ -229,7 +229,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			var fee = Services.FeeService.GetFeeRate();
 			try
 			{
-				if(!Parameters.VoucherKey.Verify(request.Signature, NBitcoin.Utils.ToBytes((uint)request.CycleStart, true), request.Nonce))
+				if(!Parameters.VoucherKey.PublicKey.Verify(request.Signature, NBitcoin.Utils.ToBytes((uint)request.CycleStart, true), request.Nonce))
 					throw new ActionResultException(BadRequest("incorrect-voucher"));
 				if(!Repository.MarkUsedNonce(request.CycleStart, request.Nonce))
 				{

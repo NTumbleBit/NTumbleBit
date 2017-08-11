@@ -128,7 +128,7 @@ namespace NTumbleBit.ClassicTumbler
 		public void ReceiveUnsignedVoucher(UnsignedVoucherInformation voucher)
 		{
 			AssertState(TumblerClientSessionStates.WaitingVoucher);
-			var puzzle = new Puzzle(Parameters.VoucherKey, voucher.Puzzle);
+			var puzzle = new Puzzle(Parameters.VoucherKey.PublicKey, voucher.Puzzle);
 			InternalState.UnsignedVoucher = voucher;
 			BlindFactor factor = null;
 			InternalState.BlindedVoucher = puzzle.Blind(ref factor).PuzzleValue;
@@ -177,8 +177,8 @@ namespace NTumbleBit.ClassicTumbler
 		public void CheckVoucherSolution(PuzzleSolution blindedVoucherSignature)
 		{
 			AssertState(TumblerClientSessionStates.WaitingSolvedVoucher);
-			var solution = blindedVoucherSignature.Unblind(Parameters.VoucherKey, InternalState.BlindedVoucherFactor);
-			if(!InternalState.UnsignedVoucher.Puzzle.WithRsaKey(Parameters.VoucherKey).Verify(solution))
+			var solution = blindedVoucherSignature.Unblind(Parameters.VoucherKey.PublicKey, InternalState.BlindedVoucherFactor);
+			if(!InternalState.UnsignedVoucher.Puzzle.WithRsaKey(Parameters.VoucherKey.PublicKey).Verify(solution))
 				throw new PuzzleException("Incorrect puzzle solution");
 			InternalState.BlindedVoucherFactor = null;
 			InternalState.SignedVoucher = new XORKey(solution).XOR(InternalState.UnsignedVoucher.EncryptedSignature);

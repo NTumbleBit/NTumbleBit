@@ -22,11 +22,11 @@ namespace NTumbleBit.Tests
 {
 	public class TumblerServerTester : IDisposable
 	{
-		public static TumblerServerTester Create([CallerMemberNameAttribute]string caller = null)
+		public static TumblerServerTester Create([CallerMemberNameAttribute]string caller = null, bool shouldBeStandard = false)
 		{
-			return new TumblerServerTester(caller);
+			return new TumblerServerTester(caller, shouldBeStandard);
 		}
-		public TumblerServerTester(string directory)
+		public TumblerServerTester(string directory, bool shouldBeStandard)
 		{
 			try
 			{
@@ -60,24 +60,37 @@ namespace NTumbleBit.Tests
 				_NodeBuilder.StartAll();
 
 				SyncNodes();
-				
+
 				var conf = new TumblerConfiguration();
 				conf.DataDir = Path.Combine(directory, "server");
 				Directory.CreateDirectory(conf.DataDir);
 				File.WriteAllBytes(Path.Combine(conf.DataDir, "Tumbler.pem"), TestKeys.Default.ToBytes());
 				File.WriteAllBytes(Path.Combine(conf.DataDir, "Voucher.pem"), TestKeys.Default2.ToBytes());
+
 				conf.RPC.Url = TumblerNode.CreateRPCClient().Address;
 				var creds = ExtractCredentials(File.ReadAllText(_TumblerNode.Config));
 				conf.RPC.User = creds.Item1;
 				conf.RPC.Password = creds.Item2;
+				conf.AllowHttp = true; //So the tests do not need TOR
 				conf.Network = Network.RegTest;
 				conf.Listen = new System.Net.IPEndPoint(IPAddress.Parse("127.0.0.1"), 5000);
-				conf.AllowInsecure = true;
-				conf.ClassicTumblerParameters.FakePuzzleCount /= 4;
-				conf.ClassicTumblerParameters.FakeTransactionCount /= 4;
-				conf.ClassicTumblerParameters.RealTransactionCount /= 4;
-				conf.ClassicTumblerParameters.RealPuzzleCount /= 4;
-				conf.ClassicTumblerParameters.CycleGenerator.FirstCycle.Start = 105;
+				conf.AllowInsecure = !shouldBeStandard;
+
+				conf.NoRSAProof = !shouldBeStandard;
+				if(!shouldBeStandard)
+				{
+					conf.ClassicTumblerParameters.FakePuzzleCount /= 4;
+					conf.ClassicTumblerParameters.FakeTransactionCount /= 4;
+					conf.ClassicTumblerParameters.RealTransactionCount /= 4;
+					conf.ClassicTumblerParameters.RealPuzzleCount /= 4;
+					conf.ClassicTumblerParameters.CycleGenerator.FirstCycle.Start = 105;
+				}
+				else
+				{
+					var standard = new StandardCycles(conf.Network).Shorty;
+					conf.ClassicTumblerParameters.CycleGenerator = standard.Generator;
+					conf.ClassicTumblerParameters.Denomination = standard.Denomination;
+				}
 
 				var runtime = TumblerRuntime.FromConfiguration(conf, new AcceptAllClientInteraction());
 				_Host = new WebHostBuilder()
@@ -95,10 +108,11 @@ namespace NTumbleBit.Tests
 
 				var clientConfig = new TumblerClientConfiguration();
 				clientConfig.DataDir = Path.Combine(directory, "client");
-				clientConfig.AllowInsecure = true;
+				clientConfig.AllowInsecure = !shouldBeStandard;
 				Directory.CreateDirectory(clientConfig.DataDir);
 				clientConfig.Network = conf.Network;
 				clientConfig.CheckIp = false;
+				clientConfig.AllowHttp = true; //So the tests do not need TOR
 				clientConfig.OutputWallet.KeyPath = new KeyPath("0");
 				clientConfig.OutputWallet.RootKey = new ExtKey().Neuter().GetWif(conf.Network);
 				clientConfig.RPCArgs.Url = AliceNode.CreateRPCClient().Address;

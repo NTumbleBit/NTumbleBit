@@ -169,6 +169,16 @@ namespace NTumbleBit.ClassicTumbler.Server
 			get;
 			internal set;
 		}
+		public bool NoRSAProof
+		{
+			get;
+			set;
+		} = false;
+		public bool AllowHttp
+		{
+			get;
+			set;
+		} = false;
 
 		public string GetDefaultConfigurationFile()
 		{
