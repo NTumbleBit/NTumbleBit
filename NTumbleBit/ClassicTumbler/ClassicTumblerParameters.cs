@@ -30,6 +30,20 @@ namespace NTumbleBit.ClassicTumbler
 			CycleGenerator = new OverlappedCycleGenerator();
 		}
 
+
+		uint _Version = 1;
+		public uint Version
+		{
+			get
+			{
+				return _Version;
+			}
+			set
+			{
+				_Version = value;
+			}
+		}
+
 		Network _Network;
 		public Network Network
 		{
@@ -185,6 +199,7 @@ namespace NTumbleBit.ClassicTumbler
 
 		public void ReadWrite(BitcoinStream stream)
 		{
+			stream.ReadWrite(ref _Version);
 			stream.ReadWriteC(ref _Network);
 			stream.ReadWrite(ref _CycleGenerator);
 			stream.ReadWrite(ref _ServerKey);
