@@ -100,7 +100,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 			else
 				throw new ConfigException("Missing configuration for outputwallet");
 
-			TumblerParameters = dbreeze.Get<ClassicTumbler.ClassicTumblerParameters>("Configuration", configuration.ToString());
+			TumblerParameters = dbreeze.Get<ClassicTumbler.ClassicTumblerParameters>("Configuration", TumblerServer.ToString());
 
 			if(TumblerParameters != null && TumblerParameters.GetHash() != configuration.TumblerServer.ConfigurationHash)
 				TumblerParameters = null;
