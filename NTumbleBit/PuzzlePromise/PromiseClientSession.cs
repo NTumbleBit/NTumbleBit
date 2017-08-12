@@ -47,7 +47,7 @@ namespace NTumbleBit.PuzzlePromise
 			}
 			private readonly ScriptCoin _Escrow;
 			private readonly Transaction _BaseTransaction;
-			public LockTime LockTime
+			public Money FeeVariation
 			{
 				get; set;
 			}
@@ -63,7 +63,7 @@ namespace NTumbleBit.PuzzlePromise
 			public Transaction GetTransaction()
 			{
 				var clone = _BaseTransaction.Clone();
-				clone.LockTime = LockTime;
+				clone.Outputs[0].Value -= FeeVariation;
 				return clone;
 			}
 		}
@@ -127,7 +127,7 @@ namespace NTumbleBit.PuzzlePromise
 				get;
 				set;
 			}
-			public LockTime[] LockTimes
+			public Money[] FeeVariations
 			{
 				get;
 				set;
@@ -180,7 +180,7 @@ namespace NTumbleBit.PuzzlePromise
 					{
 						hash = new RealHash(InternalState.Cashout, InternalState.EscrowedCoin)
 						{
-							LockTime = InternalState.LockTimes[realI++]
+							FeeVariation = InternalState.FeeVariations[realI++]
 						};
 					}
 					hash.Index = i;
@@ -194,13 +194,13 @@ namespace NTumbleBit.PuzzlePromise
 		{
 			State state = Serializer.Clone(InternalState);
 			state.FakeSalts = null;
-			state.LockTimes = null;
+			state.FeeVariations = null;
 			state.Commitments = null;
 			if(_Hashes != null)
 			{
 				var commitments = new List<ServerCommitment>();
 				var fakeSalts = new List<uint256>();
-				var lockTimes = new List<LockTime>();
+				var feeVariations = new List<Money>();
 				for(int i = 0; i < _Hashes.Length; i++)
 				{
 					commitments.Add(_Hashes[i].Commitment);
@@ -213,11 +213,11 @@ namespace NTumbleBit.PuzzlePromise
 					var real = _Hashes[i] as RealHash;
 					if(real != null)
 					{
-						lockTimes.Add(real.LockTime);
+						feeVariations.Add(real.FeeVariation);
 					}
 				}
 				state.FakeSalts = fakeSalts.ToArray();
-				state.LockTimes = lockTimes.ToArray();
+				state.FeeVariations = feeVariations.ToArray();
 				state.Commitments = commitments.ToArray();
 			}
 			return state;
@@ -261,7 +261,7 @@ namespace NTumbleBit.PuzzlePromise
 			for(int i = 0; i < Parameters.RealTransactionCount; i++)
 			{
 				RealHash h = new RealHash(cashout, InternalState.EscrowedCoin);
-				h.LockTime = lockTime;
+				h.FeeVariation = Money.Satoshis(i);
 				lockTime++;
 				hashes.Add(h);
 			}
