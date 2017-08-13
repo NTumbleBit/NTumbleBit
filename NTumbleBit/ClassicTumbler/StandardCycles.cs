@@ -79,15 +79,35 @@ namespace NTumbleBit.ClassicTumbler
 					FirstCycle = new CycleParameters()
 					{
 						Start = 1,
-						//one cycle per day
 						RegistrationDuration = GetBlocksCount(consensus, 20) + 1,
-						//make sure tor circuit get renewed
 						SafetyPeriodDuration = GetBlocksCount(consensus, 10),
 						ClientChannelEstablishmentDuration = GetBlocksCount(consensus, 20),
 						TumblerChannelEstablishmentDuration = GetBlocksCount(consensus, 20),
 						PaymentPhaseDuration = GetBlocksCount(consensus, 20),
 						TumblerCashoutDuration = GetBlocksCount(consensus, 40),
 						ClientCashoutDuration = GetBlocksCount(consensus, 20),
+					}
+				}
+			};
+
+			_Shorty2x = new StandardCycle()
+			{
+				FriendlyName = "Shorty2x",
+				Consensus = consensus,
+				Denomination = Money.Coins(2.0m),
+				Generator = new OverlappedCycleGenerator()
+				{
+					RegistrationOverlap = 1,
+					FirstCycle = new CycleParameters()
+					{
+						Start = 1,
+						RegistrationDuration = GetBlocksCount(consensus, 20 * 2) + 1,
+						SafetyPeriodDuration = GetBlocksCount(consensus, 10),
+						ClientChannelEstablishmentDuration = GetBlocksCount(consensus, 20 * 2),
+						TumblerChannelEstablishmentDuration = GetBlocksCount(consensus, 20 * 2),
+						PaymentPhaseDuration = GetBlocksCount(consensus, 20 * 2),
+						TumblerCashoutDuration = GetBlocksCount(consensus, 40 * 2),
+						ClientCashoutDuration = GetBlocksCount(consensus, 20 * 2),
 					}
 				}
 			};
@@ -188,6 +208,16 @@ namespace NTumbleBit.ClassicTumbler
 			}
 		}
 
+
+		private readonly StandardCycle _Shorty2x;
+		public StandardCycle Shorty2x
+		{
+			get
+			{
+				return _Shorty2x;
+			}
+		}
+
 		StandardCycle _Shorty;
 		public StandardCycle Shorty
 		{
@@ -201,7 +231,10 @@ namespace NTumbleBit.ClassicTumbler
 		{
 			yield return _Kotori;
 			if(_Debug)
+			{
 				yield return _Shorty;
+				yield return _Shorty2x;
+			}
 		}
 
 		public StandardCycle GetStandardCycle(ClassicTumblerParameters tumblerParameters)
