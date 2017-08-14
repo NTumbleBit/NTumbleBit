@@ -64,7 +64,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 			if (this.TumblerServer.IsOnion)
 				await SetupTorAsync(interaction, configuration.TorPath).ConfigureAwait(false);
-			else if (!configuration.AllowHttp)
+			else if (configuration.TorMandatory)
 				throw new ConfigException("The tumbler server should use TOR");
 
 			RPCClient rpc = null;

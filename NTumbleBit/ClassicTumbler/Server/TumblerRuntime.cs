@@ -126,7 +126,7 @@ namespace NTumbleBit.ClassicTumbler.Server
 
 			ClassicTumblerParametersHash = ClassicTumblerParameters.GetHash();
 
-			if(conf.AllowHttp)
+			if(!conf.TorMandatory)
 			{
 				TumblerUris.Add(new TumblerUrlBuilder()
 				{

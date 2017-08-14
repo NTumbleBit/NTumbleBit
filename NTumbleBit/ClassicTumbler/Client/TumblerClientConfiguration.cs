@@ -105,11 +105,11 @@ namespace NTumbleBit.ClassicTumbler.Client
 			get;
 			set;
 		}
-		public bool AllowHttp
+		public bool TorMandatory
 		{
 			get;
 			set;
-		} = false;
+		} = true;
 
 		public TumblerClientConfiguration LoadArgs(String[] args)
 		{
