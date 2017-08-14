@@ -289,8 +289,8 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 							feeRate = GetFeeRate();
 							var sigReq = PromiseClientSession.CreateSignatureRequest(cashoutDestination, feeRate);
-							var commiments = bob.SignHashes(PromiseClientSession.Id, sigReq);
-							var revelation = PromiseClientSession.Reveal(commiments);
+							var commitments = bob.SignHashes(PromiseClientSession.Id, sigReq);
+							var revelation = PromiseClientSession.Reveal(commitments);
 							var proof = bob.CheckRevelation(PromiseClientSession.Id, revelation);
 							var puzzle = PromiseClientSession.CheckCommitmentProof(proof);
 							SolverClientSession.AcceptPuzzle(puzzle);
