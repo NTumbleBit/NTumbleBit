@@ -80,11 +80,14 @@ namespace NTumbleBit.ClassicTumbler.Client
 								else
 									machine.InvalidPhaseCount = 0;
 
-								if(!invalidPhase || machine.InvalidPhaseCount > 2)
+								if(invalidPhase && machine.InvalidPhaseCount > 2)
 								{
-									Logs.Client.LogError("StateMachine Error: " + ex.ToString());
+									Logs.Client.LogError(new EventId(), ex, $"Invalid-Phase happened repeatedly, check that your node currently at height {height} is currently sync to the network");
 								}
-
+								else if(!invalidPhase)
+								{
+									Logs.Client.LogError(new EventId(), ex, "Unhandled StateMachine Error");
+								}
 							}
 							Save(machine, machine.StartCycle);
 						}
