@@ -194,7 +194,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 		{
 			if(!AllowInsecure && DateTimeOffset.UtcNow - previousHandlerCreationDate < CircuitRenewInterval)
 			{
-				throw new InvalidOperationException("premature-request");
+				throw new PrematureRequestException();
 			}
 			previousHandlerCreationDate = DateTime.UtcNow;
 			var client = new TumblerClient(Network, TumblerServer, cycleId);
