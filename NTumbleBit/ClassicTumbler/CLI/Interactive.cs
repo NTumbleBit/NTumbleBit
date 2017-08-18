@@ -226,6 +226,7 @@ namespace NTumbleBit.ClassicTumbler.CLI
 
 					if(cycle != null)
 					{
+						Console.WriteLine("CycleId: " + cycle.Start);
 						Console.WriteLine("Phases:");
 						Console.WriteLine(cycle.ToString(currentHeight));
 						var periods = cycle.GetPeriods();
