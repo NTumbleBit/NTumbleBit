@@ -47,7 +47,9 @@ namespace NTumbleBit.ClassicTumbler.CLI
 			while(!quit)
 			{
 				Console.Write(">>> ");
-				var split = InterruptableConsole.ReadLine().Split(null);
+				var split = SplitArguments(InterruptableConsole.ReadLine());
+				split = split.Where(s => !String.IsNullOrEmpty(s)).Select(s => s.Trim()).ToArray();
+
 				try
 				{
 
@@ -71,6 +73,29 @@ namespace NTumbleBit.ClassicTumbler.CLI
 					Parser.Default.ParseArguments<StatusOptions, ServicesOptions, QuitOptions>(new[] { "help", split[0] });
 				}
 			}
+		}
+
+		static string[] SplitArguments(string commandLine)
+		{
+			var parmChars = commandLine.ToCharArray();
+			var inSingleQuote = false;
+			var inDoubleQuote = false;
+			for(var index = 0; index < parmChars.Length; index++)
+			{
+				if(parmChars[index] == '"' && !inSingleQuote)
+				{
+					inDoubleQuote = !inDoubleQuote;
+					parmChars[index] = '\n';
+				}
+				if(parmChars[index] == '\'' && !inDoubleQuote)
+				{
+					inSingleQuote = !inSingleQuote;
+					parmChars[index] = '\n';
+				}
+				if(!inSingleQuote && !inDoubleQuote && parmChars[index] == ' ')
+					parmChars[index] = '\n';
+			}
+			return (new string(parmChars)).Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
 		}
 
 		private void StopAll()
