@@ -187,22 +187,23 @@ namespace NTumbleBit.ClassicTumbler.CLI
 
 			if(options.CycleId != null)
 			{
-				CycleParameters cycle = null;
+				while(options.PreviousCount > 0)
+				{
+					CycleParameters cycle = null;
+					try
+					{
+						cycle = Runtime.TumblerParameters?.CycleGenerator?.GetCycle(options.CycleId.Value);
+					}
+					catch
+					{
+						Console.WriteLine("Invalid cycle");
+						return;
+					}
+					var records = Runtime.Tracker.GetRecords(options.CycleId.Value);
+					var currentHeight = Runtime.Services.BlockExplorerService.GetCurrentHeight();
 
-				try
-				{
-					cycle = Runtime.TumblerParameters?.CycleGenerator?.GetCycle(options.CycleId.Value);
-				}
-				catch
-				{
-					Console.WriteLine("Invalid cycle");
-					return;
-				}
-				var records = Runtime.Tracker.GetRecords(options.CycleId.Value);
-				var currentHeight = Runtime.Services.BlockExplorerService.GetCurrentHeight();
-
-				var phases = new[]
-				{
+					var phases = new[]
+					{
 					CyclePhase.Registration,
 					CyclePhase.ClientChannelEstablishment,
 					CyclePhase.TumblerChannelEstablishment,
@@ -211,39 +212,43 @@ namespace NTumbleBit.ClassicTumbler.CLI
 					CyclePhase.ClientCashoutPhase
 				};
 
-				if(cycle != null)
-				{
-					Console.WriteLine("Phases:");
-					Console.WriteLine(cycle.ToString(currentHeight));
-					var periods = cycle.GetPeriods();
-					foreach(var phase in phases)
+					if(cycle != null)
 					{
-						var period = periods.GetPeriod(phase);
-						if(period.IsInPeriod(currentHeight))
-							Console.WriteLine($"In phase: {phase.ToString()}  ({(period.End - currentHeight)} blocks left)");
-					}
-					Console.WriteLine();
-				}
-
-				Console.WriteLine("Records:");
-				foreach(var correlationGroup in records.GroupBy(r => r.Correlation))
-				{
-					Console.WriteLine("========");
-					foreach(var group in correlationGroup.GroupBy(r => r.TransactionType).OrderBy(r => (int)r.Key))
-					{
-						var builder = new StringBuilder();
-						builder.AppendLine(group.Key.ToString());
-						foreach(var data in group.OrderBy(g => g.RecordType))
+						Console.WriteLine("Phases:");
+						Console.WriteLine(cycle.ToString(currentHeight));
+						var periods = cycle.GetPeriods();
+						foreach(var phase in phases)
 						{
-							builder.Append("\t" + data.RecordType.ToString());
-							if(data.ScriptPubKey != null)
-								builder.AppendLine(" " + data.ScriptPubKey.GetDestinationAddress(Runtime.Network));
-							if(data.TransactionId != null)
-								builder.AppendLine(" " + data.TransactionId);
+							var period = periods.GetPeriod(phase);
+							if(period.IsInPeriod(currentHeight))
+								Console.WriteLine($"In phase: {phase.ToString()}  ({(period.End - currentHeight)} blocks left)");
 						}
-						Console.WriteLine(builder.ToString());
+						Console.WriteLine();
 					}
-					Console.WriteLine("========");
+
+					Console.WriteLine("Records:");
+					foreach(var correlationGroup in records.GroupBy(r => r.Correlation))
+					{
+						Console.WriteLine("========");
+						foreach(var group in correlationGroup.GroupBy(r => r.TransactionType).OrderBy(r => (int)r.Key))
+						{
+							var builder = new StringBuilder();
+							builder.AppendLine(group.Key.ToString());
+							foreach(var data in group.OrderBy(g => g.RecordType))
+							{
+								builder.Append("\t" + data.RecordType.ToString());
+								if(data.ScriptPubKey != null)
+									builder.AppendLine(" " + data.ScriptPubKey.GetDestinationAddress(Runtime.Network));
+								if(data.TransactionId != null)
+									builder.AppendLine(" " + data.TransactionId);
+							}
+							Console.WriteLine(builder.ToString());
+						}
+						Console.WriteLine("========");
+					}
+
+					options.PreviousCount--;
+					options.CycleId = Runtime.TumblerParameters.CycleGenerator.GetPreviousCycle(cycle).Start;
 				}
 			}
 
