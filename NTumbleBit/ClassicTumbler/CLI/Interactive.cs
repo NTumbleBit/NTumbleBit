@@ -163,6 +163,18 @@ namespace NTumbleBit.ClassicTumbler.CLI
 			if(!string.IsNullOrWhiteSpace(options.Query))
 			{
 				bool parsed = false;
+
+				if(options.Query.Equals("now", StringComparison.Ordinal))
+				{
+					var blockCount = Runtime.Services.BlockExplorerService.GetCurrentHeight();
+					options.CycleId =
+						Runtime.TumblerParameters?.CycleGenerator?.GetCycles(blockCount)
+						.OrderByDescending(o => o.Start)
+						.Select(o => o.Start)
+						.FirstOrDefault();
+					parsed = options.CycleId != 0;
+				}
+
 				try
 				{
 					options.CycleId = int.Parse(options.Query);
