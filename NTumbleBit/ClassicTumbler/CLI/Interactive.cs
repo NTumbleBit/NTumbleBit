@@ -228,6 +228,7 @@ namespace NTumbleBit.ClassicTumbler.CLI
 					CyclePhase.TumblerCashoutPhase,
 					CyclePhase.ClientCashoutPhase };
 
+					Console.WriteLine("=====================================");
 					if(cycle != null)
 					{
 						Console.WriteLine("CycleId: " + cycle.Start);
@@ -272,8 +273,9 @@ namespace NTumbleBit.ClassicTumbler.CLI
 					if(!hasData)
 					{
 						Console.WriteLine("Cycle " + cycle.Start + " has no data");
-						Console.WriteLine("========");
 					}
+					Console.WriteLine("=====================================");
+
 					options.PreviousCount--;
 					try
 					{
