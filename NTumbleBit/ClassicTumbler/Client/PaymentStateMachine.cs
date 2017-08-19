@@ -57,13 +57,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 				PromiseClientSession = new PromiseClientSession(runtime.TumblerParameters.CreatePromiseParamaters(), state.PromiseClientState);
 			if(state.SolverClientState != null)
 				SolverClientSession = new SolverClientSession(runtime.TumblerParameters.CreateSolverParamaters(), state.SolverClientState);
-			InvalidPhaseCount = state.InvalidPhaseCount;
 			Status = state.Status;
-		}
-
-		public int InvalidPhaseCount
-		{
-			get; set;
 		}
 
 		public Tracker Tracker
@@ -138,10 +132,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 				get;
 				set;
 			}
-			public int InvalidPhaseCount
-			{
-				get; set;
-			}
 			public PaymentStateMachineStatus Status
 			{
 				get;
@@ -158,7 +148,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 				s.PromiseClientState = PromiseClientSession.GetInternalState();
 			if(ClientChannelNegotiation != null)
 				s.NegotiationClientState = ClientChannelNegotiation.GetInternalState();
-			s.InvalidPhaseCount = InvalidPhaseCount;
 			s.Status = Status;
 			return s;
 		}
