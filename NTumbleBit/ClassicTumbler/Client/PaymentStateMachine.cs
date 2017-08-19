@@ -186,6 +186,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 			}
 
 
+			Logs.Client.LogInformation(Environment.NewLine);
 			Logs.Client.LogInformation("[[[Updating cycle " + cycle.Start + "]]]");
 
 			Logs.Client.LogInformation("Phase " + Enum.GetName(typeof(CyclePhase), phase) + ", ending in " + (cycle.GetPeriods().GetPeriod(phase).End - height) + " blocks");

@@ -270,7 +270,10 @@ namespace NTumbleBit.ClassicTumbler.CLI
 						Console.WriteLine("========");
 					}
 					if(!hasData)
+					{
 						Console.WriteLine("Cycle " + cycle.Start + " has no data");
+						Console.WriteLine("========");
+					}
 					options.PreviousCount--;
 					try
 					{
