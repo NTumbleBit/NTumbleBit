@@ -48,8 +48,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 						{
 							lastCycle = cycle.Start;
 							Logs.Client.LogInformation("New Cycle: " + cycle.Start);
-
-							var state = Runtime.Repository.Get<PaymentStateMachine.State>(GetPartitionKey(cycle.Start), "");
+							PaymentStateMachine.State state = GetPaymentStateMachineState(cycle);
 							if(state == null)
 							{
 								var stateMachine = new PaymentStateMachine(Runtime, null);
@@ -115,10 +114,16 @@ namespace NTumbleBit.ClassicTumbler.Client
 			}).Start();
 		}
 
+		public PaymentStateMachine.State GetPaymentStateMachineState(CycleParameters cycle)
+		{
+			return Runtime.Repository.Get<PaymentStateMachine.State>(GetPartitionKey(cycle.Start), "");
+		}
+
 		private string GetPartitionKey(int cycle)
 		{
 			return "Cycle_" + cycle;
 		}
+
 		private void Save(PaymentStateMachine stateMachine, int cycle)
 		{
 			Runtime.Repository.UpdateOrInsert(GetPartitionKey(cycle), "", stateMachine.GetInternalState(), (o, n) => n);

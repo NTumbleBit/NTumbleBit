@@ -204,29 +204,32 @@ namespace NTumbleBit.ClassicTumbler.CLI
 					CycleParameters cycle = null;
 					try
 					{
-						cycle = Runtime.TumblerParameters?.CycleGenerator?.GetCycle(options.CycleId.Value);
+						cycle = Runtime.TumblerParameters.CycleGenerator.GetCycle(options.CycleId.Value);
+						if(cycle == null)
+							throw new NullReferenceException(); //Cleanup
 					}
 					catch
 					{
 						Console.WriteLine("Invalid cycle");
 						return;
 					}
-					var records = Runtime.Tracker.GetRecords(options.CycleId.Value);
-					var currentHeight = Runtime.Services.BlockExplorerService.GetCurrentHeight();
-
-					var phases = new[]
+					var state = Services.OfType<StateMachinesExecutor>().Select(e => e.GetPaymentStateMachineState(cycle)).FirstOrDefault();
+					if(state != null)
 					{
-					CyclePhase.Registration,
+
+						var records = Runtime.Tracker.GetRecords(options.CycleId.Value);
+						var currentHeight = Runtime.Services.BlockExplorerService.GetCurrentHeight();
+
+						var phases = new[]
+						{ CyclePhase.Registration,
 					CyclePhase.ClientChannelEstablishment,
 					CyclePhase.TumblerChannelEstablishment,
 					CyclePhase.PaymentPhase,
 					CyclePhase.TumblerCashoutPhase,
-					CyclePhase.ClientCashoutPhase
-				};
+					CyclePhase.ClientCashoutPhase };
 
-					if(cycle != null)
-					{
 						Console.WriteLine("CycleId: " + cycle.Start);
+						Console.WriteLine("Status: " + state.Status);
 						Console.WriteLine("Phases:");
 						Console.WriteLine(cycle.ToString(currentHeight));
 						var periods = cycle.GetPeriods();
@@ -237,31 +240,39 @@ namespace NTumbleBit.ClassicTumbler.CLI
 								Console.WriteLine($"In phase: {phase.ToString()}  ({(period.End - currentHeight)} blocks left)");
 						}
 						Console.WriteLine();
-					}
 
-					Console.WriteLine("Records:");
-					foreach(var correlationGroup in records.GroupBy(r => r.Correlation))
-					{
-						Console.WriteLine("========");
-						foreach(var group in correlationGroup.GroupBy(r => r.TransactionType).OrderBy(r => (int)r.Key))
+						Console.WriteLine("Records:");
+						foreach(var correlationGroup in records.GroupBy(r => r.Correlation))
 						{
-							var builder = new StringBuilder();
-							builder.AppendLine(group.Key.ToString());
-							foreach(var data in group.OrderBy(g => g.RecordType))
+							Console.WriteLine("========");
+							foreach(var group in correlationGroup.GroupBy(r => r.TransactionType).OrderBy(r => (int)r.Key))
 							{
-								builder.Append("\t" + data.RecordType.ToString());
-								if(data.ScriptPubKey != null)
-									builder.AppendLine(" " + data.ScriptPubKey.GetDestinationAddress(Runtime.Network));
-								if(data.TransactionId != null)
-									builder.AppendLine(" " + data.TransactionId);
+								var builder = new StringBuilder();
+								builder.AppendLine(group.Key.ToString());
+								foreach(var data in group.OrderBy(g => g.RecordType))
+								{
+									builder.Append("\t" + data.RecordType.ToString());
+									if(data.ScriptPubKey != null)
+										builder.AppendLine(" " + data.ScriptPubKey.GetDestinationAddress(Runtime.Network));
+									if(data.TransactionId != null)
+										builder.AppendLine(" " + data.TransactionId);
+								}
+								Console.WriteLine(builder.ToString());
 							}
-							Console.WriteLine(builder.ToString());
+							Console.WriteLine("========");
 						}
-						Console.WriteLine("========");
 					}
-
+					else
+						Console.WriteLine("No data for cycle " + cycle.Start);
 					options.PreviousCount--;
-					options.CycleId = Runtime.TumblerParameters.CycleGenerator.GetPreviousCycle(cycle).Start;
+					try
+					{
+						options.CycleId = Runtime.TumblerParameters.CycleGenerator.GetPreviousCycle(cycle).Start;
+					}
+					catch
+					{
+						break;
+					}
 				}
 			}
 
