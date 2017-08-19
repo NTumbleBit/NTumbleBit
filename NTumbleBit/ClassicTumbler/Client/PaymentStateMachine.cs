@@ -296,6 +296,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 					case CyclePhase.TumblerChannelEstablishment:
 						if(ClientChannelNegotiation != null && ClientChannelNegotiation.Status == TumblerClientSessionStates.WaitingGenerateTumblerTransactionKey)
 						{
+							Logs.Client.LogInformation("Asking the tumbler to open the channel...");
 							bob = Runtime.CreateTumblerClient(cycle.Start, Identity.Bob);
 							//Client asks the Tumbler to make a channel
 							var bobEscrowInformation = ClientChannelNegotiation.GetOpenChannelRequest();
