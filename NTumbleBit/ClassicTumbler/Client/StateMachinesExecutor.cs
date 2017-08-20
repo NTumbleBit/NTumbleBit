@@ -63,7 +63,9 @@ namespace NTumbleBit.ClassicTumbler.Client
 						}
 
 						var cycles = Runtime.TumblerParameters.CycleGenerator.GetCycles(height);
-						foreach(var state in cycles.SelectMany(c => Runtime.Repository.List<PaymentStateMachine.State>(GetPartitionKey(c.Start))))
+						var machineStates = cycles.SelectMany(c => Runtime.Repository.List<PaymentStateMachine.State>(GetPartitionKey(c.Start))).ToArray();
+						NBitcoin.Utils.Shuffle(machineStates);
+						foreach(var state in machineStates)
 						{
 							bool noSave = false;
 							var machine = new PaymentStateMachine(Runtime, state);
