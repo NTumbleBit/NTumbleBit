@@ -290,7 +290,20 @@ namespace NTumbleBit.ClassicTumbler.Client
 							bob = Runtime.CreateTumblerClient(cycle.Start, Identity.Bob);
 							//Client asks the Tumbler to make a channel
 							var bobEscrowInformation = ClientChannelNegotiation.GetOpenChannelRequest();
-							var tumblerInformation = bob.OpenChannel(bobEscrowInformation);
+							ScriptCoin tumblerInformation = null;
+							try
+							{
+								tumblerInformation = bob.OpenChannel(bobEscrowInformation);
+							}
+							catch(Exception ex)
+							{
+								if(ex.Message.Contains("tumbler-insufficient-funds"))
+								{
+									Logs.Client.LogWarning("The tumbler server has not enough funds and can't open a channel for now");
+									break;
+								}
+								throw;
+							}
 							PromiseClientSession = ClientChannelNegotiation.ReceiveTumblerEscrowedCoin(tumblerInformation);
 							Logs.Client.LogInformation("Tumbler escrow broadcasted");
 							//Tell to the block explorer we need to track that address (for checking if it is confirmed in payment phase)
