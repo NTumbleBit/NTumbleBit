@@ -371,7 +371,8 @@ namespace NTumbleBit.ClassicTumbler.Client
 										if(Cooperative)
 										{
 											var signature = SolverClientSession.SignEscape();
-											alice.GiveEscapeKey(SolverClientSession.Id, signature);
+											// No need to await for it, it is a just nice for the tumbler (we don't want the underlying socks connection cut before the escape key is sent)
+											alice.GiveEscapeKeyAsync(SolverClientSession.Id, signature).Wait(2000);
 											Logs.Client.LogInformation("Gave escape signature to the tumbler");
 										}
 									}

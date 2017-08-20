@@ -61,9 +61,23 @@ namespace NTumbleBit
 			return _Id.GetHashCode();
 		}
 
+
+		[Obsolete]
 		public override string ToString()
 		{
-			return _Id.ToString();
+			return ToString(true);
+		}
+
+		public string ToString(bool longForm)
+		{
+			if(longForm)
+				return _Id.ToString();
+			return _Id.GetLow64().ToString();
+		}
+
+		public byte[] ToBytes()
+		{
+			return _Id.ToBytes();
 		}
 	}
 }

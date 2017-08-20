@@ -115,7 +115,9 @@ namespace NTumbleBit.Services
 
 			bool isNew = true;
 
-			_Repo.UpdateOrInsert(GetCyclePartition(cycleId), txId.GetLow64().ToString(), record, (a, b) =>
+			//The 
+			var uniqueKey = NBitcoin.Crypto.Hashes.Hash256(txId.ToBytes().Concat(correlation.ToBytes()).ToArray()).GetLow64();
+			_Repo.UpdateOrInsert(GetCyclePartition(cycleId), uniqueKey.ToString(), record, (a, b) =>
 			{
 				isNew = false;
 				return b;
@@ -123,7 +125,7 @@ namespace NTumbleBit.Services
 			_Repo.UpdateOrInsert("Search", "t:" + txId.ToString(), cycleId, (a, b) => b);
 
 			if(isNew)
-				Logs.Tracker.LogInformation($"Tracking transaction {type} of cycle {cycleId} with correlation {correlation} ({txId})");
+				Logs.Tracker.LogInformation($"Tracking transaction {type} of cycle {cycleId} with correlation {correlation.ToString(false)} ({txId})");
 		}
 
 		public void AddressCreated(int cycleId, TransactionType type, Script scriptPubKey, CorrelationId correlation)
@@ -146,7 +148,7 @@ namespace NTumbleBit.Services
 			_Repo.UpdateOrInsert("Search", "t:" + scriptPubKey.Hash.ToString(), cycleId, (a, b) => b);
 
 			if(isNew)
-				Logs.Tracker.LogInformation($"Tracking address {type} of cycle {cycleId} with correlation {correlation} ({scriptPubKey.GetDestinationAddress(Network)})");
+				Logs.Tracker.LogInformation($"Tracking address {type} of cycle {cycleId} with correlation {correlation.ToString(false)} ({scriptPubKey.GetDestinationAddress(Network)})");
 		}
 
 		private string Rand()

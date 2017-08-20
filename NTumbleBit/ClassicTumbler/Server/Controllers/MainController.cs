@@ -467,6 +467,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 				var tx = session.GetSignedEscapeTransaction(clientSignature, fee, dummy);
 				var state = session.GetInternalState();
 
+				// The previous tx is broadcastable, but let's give change to the wallet to join everything in a single transaction
 				tx = await Runtime.Services.WalletService.ReceiveAsync(state.EscrowedCoin, clientSignature, state.EscrowKey, fee);
 
 				var correlation = GetCorrelation(session);
