@@ -155,7 +155,7 @@ namespace NTumbleBit.ClassicTumbler.Server
 			Repository = dbreeze;
 			_Resources.Add(dbreeze);
 			Tracker = new Tracker(dbreeze, Network);
-			Services = ExternalServices.CreateFromRPCClient(rpcClient, dbreeze, Tracker);
+			Services = ExternalServices.CreateFromRPCClient(rpcClient, dbreeze, Tracker, true);
 		}
 
 		private static Tuple<RsaKey, RSAKeyData> LoadRSAKeyData(string dataDir, string keyName, bool noRSAProof)

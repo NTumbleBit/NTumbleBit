@@ -9,6 +9,6 @@ namespace NTumbleBit.Services
 	public interface IWalletService
     {
 		IDestination GenerateAddress();
-		Transaction FundTransaction(TxOut txOut, FeeRate feeRate);
+		Task<Transaction> FundTransactionAsync(TxOut txOut, FeeRate feeRate);
 	}
 }

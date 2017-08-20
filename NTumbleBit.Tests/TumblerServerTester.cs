@@ -104,6 +104,7 @@ namespace NTumbleBit.Tests
 
 				//Overrides server fee
 				((RPCFeeService)runtime.Services.FeeService).FallBackFeeRate = new FeeRate(Money.Satoshis(100), 1);
+				((RPCWalletService)runtime.Services.WalletService).BatchInterval = TimeSpan.FromMilliseconds(100);
 
 
 				var clientConfig = new TumblerClientConfiguration();

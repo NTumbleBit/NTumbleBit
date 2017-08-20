@@ -9,6 +9,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using TumbleBitSetup;
+using NTumbleBit.Services;
+using NTumbleBit.ClassicTumbler.Client;
 
 namespace NTumbleBit.ClassicTumbler
 {
@@ -306,6 +308,12 @@ namespace NTumbleBit.ClassicTumbler
 		public override int GetHashCode()
 		{
 			return GetHash().GetHashCode();
+		}
+
+		public int CountEscrows(Transaction tx, Identity identity)
+		{
+			var amount = identity == Identity.Bob ? Denomination : Denomination + Fee;
+			return tx.Outputs.Where(o => o.Value == amount).Count();
 		}
 	}
 

@@ -230,7 +230,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 							Transaction clientEscrowTx = null;
 							try
 							{
-								clientEscrowTx = Services.WalletService.FundTransaction(escrowTxOut, feeRate);
+								clientEscrowTx = Services.WalletService.FundTransactionAsync(escrowTxOut, feeRate).GetAwaiter().GetResult();
 							}
 							catch(NotEnoughFundsException ex)
 							{
@@ -333,7 +333,9 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 							if(tumblerTx != null && tumblerTx.Confirmations >= cycle.SafetyPeriodDuration)
 							{
+								var bobCount = Parameters.CountEscrows(tumblerTx.Transaction, Identity.Bob);
 								Logs.Client.LogInformation($"Tumbler escrow reached {cycle.SafetyPeriodDuration} confirmations");
+								Logs.Client.LogInformation($"Tumbler escrow transaction has {bobCount} users");
 
 								if(SolverClientSession.Status == SolverClientStates.WaitingGeneratePuzzles)
 								{

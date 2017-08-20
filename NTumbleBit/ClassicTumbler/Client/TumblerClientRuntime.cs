@@ -82,7 +82,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 			Repository = dbreeze;
 			_Disposables.Add(dbreeze);
 			Tracker = new Tracker(dbreeze, Network);
-			Services = ExternalServices.CreateFromRPCClient(rpc, dbreeze, Tracker);
+			Services = ExternalServices.CreateFromRPCClient(rpc, dbreeze, Tracker, false);
 
 			if(configuration.OutputWallet.RootKey != null && configuration.OutputWallet.KeyPath != null)
 				DestinationWallet = new ClientDestinationWallet(configuration.OutputWallet.RootKey, configuration.OutputWallet.KeyPath, dbreeze, configuration.Network);

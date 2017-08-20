@@ -230,7 +230,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 		}
 
 		[HttpPost("api/v1/tumblers/{tumblerId}/channels")]
-		public ScriptCoinModel OpenChannel(
+		public async Task<ScriptCoinModel> OpenChannel(
 			[ModelBinder(BinderType = typeof(TumblerParametersModelBinder))]
 			ClassicTumblerParameters tumblerId,
 			[FromBody] OpenChannelRequest request)
@@ -260,14 +260,15 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 
 				Logs.Tumbler.LogInformation($"Cycle {cycle.Start} Asked to open channel");
 				var txOut = new TxOut(Parameters.Denomination, escrow.ToScript().Hash);
-				var tx = Services.WalletService.FundTransaction(txOut, fee);
+				var tx = await Services.WalletService.FundTransactionAsync(txOut, fee);
 				var correlation = escrow.GetCorrelation();
 				var escrowTumblerLabel = $"Cycle {cycle.Start} Tumbler Escrow";
 				Services.BlockExplorerService.Track(txOut.ScriptPubKey);
 
 				Tracker.AddressCreated(cycle.Start, TransactionType.TumblerEscrow, txOut.ScriptPubKey, correlation);
 				Tracker.TransactionCreated(cycle.Start, TransactionType.TumblerEscrow, tx.GetHash(), correlation);
-				Logs.Tumbler.LogInformation($"Cycle {cycle.Start} Channel created " + tx.GetHash());
+				var bobCount = Parameters.CountEscrows(tx, Client.Identity.Bob);
+				Logs.Tumbler.LogInformation($"Cycle {cycle.Start} channel created {tx.GetHash()} with {bobCount} users");
 
 				var coin = tx.Outputs.AsCoins().First(o => o.ScriptPubKey == txOut.ScriptPubKey && o.TxOut.Value == txOut.Value);
 
