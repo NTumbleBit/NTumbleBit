@@ -215,6 +215,7 @@ namespace NTumbleBit.ClassicTumbler
 			stream.ReadWrite(ref _RealPuzzleCount);
 			stream.ReadWrite(ref _FakeTransactionCount);
 			stream.ReadWrite(ref _RealTransactionCount);
+			stream.ReadWriteC(ref _ExpectedAddress);
 		}
 
 		public bool Check(PromiseParameters promiseParams)
@@ -272,6 +273,20 @@ namespace NTumbleBit.ClassicTumbler
 				this.Fee < this.Denomination &&
 				this.FakeFormat == new uint256(Enumerable.Range(0, 32).Select(o => o == 0 ? (byte)0 : (byte)1).ToArray());
 
+		}
+
+
+		string _ExpectedAddress = "";
+		public string ExpectedAddress
+		{
+			get
+			{
+				return _ExpectedAddress;
+			}
+			set
+			{
+				_ExpectedAddress = value;
+			}
 		}
 
 
