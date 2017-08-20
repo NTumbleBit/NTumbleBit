@@ -31,7 +31,7 @@ namespace NTumbleBit.ClassicTumbler
 
 		public Money CoinsPerDay()
 		{
-			var satoshisPerDay = (decimal)Denomination.Satoshi / (decimal)GetLength(false).TotalDays;
+			var satoshisPerDay = Math.Round((decimal)Denomination.Satoshi / (decimal)GetLength(false).TotalDays);
 			return Money.Satoshis(satoshisPerDay);
 		}
 
@@ -124,13 +124,13 @@ namespace NTumbleBit.ClassicTumbler
 					{
 						Start = 0,
 						//one cycle per day
-						RegistrationDuration = GetBlocksCount(consensus, 24 * 60) + 1,
+						RegistrationDuration = GetBlocksCount(consensus, 60 * 4) + 1,
 						//make sure tor circuit get renewed
 						SafetyPeriodDuration = GetBlocksCount(consensus, 20),
-						ClientChannelEstablishmentDuration = GetBlocksCount(consensus, 4 * 60),
-						TumblerChannelEstablishmentDuration = GetBlocksCount(consensus, 4 * 60),
-						PaymentPhaseDuration = GetBlocksCount(consensus, 4 * 60 + 30),
-						TumblerCashoutDuration = GetBlocksCount(consensus, 9 * 60 + 30),
+						ClientChannelEstablishmentDuration = GetBlocksCount(consensus, 30),
+						TumblerChannelEstablishmentDuration = GetBlocksCount(consensus, 30),
+						PaymentPhaseDuration = GetBlocksCount(consensus, 30),
+						TumblerCashoutDuration = GetBlocksCount(consensus, 5 * 60),
 						ClientCashoutDuration = GetBlocksCount(consensus, 5 * 60)
 					}
 				}
