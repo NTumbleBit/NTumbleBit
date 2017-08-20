@@ -116,6 +116,14 @@ namespace NTumbleBit.ClassicTumbler
 			}
 		}
 
+		internal string PrettyPrint()
+		{
+			//Strip keys so we can read
+			var parameters = this.Clone();
+			parameters.ServerKey = null;
+			parameters.VoucherKey = null;
+			return Serializer.ToString(parameters, parameters.Network, true);
+		}
 
 		Money _Fee;
 		public Money Fee
