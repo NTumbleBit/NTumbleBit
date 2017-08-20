@@ -138,10 +138,13 @@ namespace NTumbleBit.ClassicTumbler.Server
 			var cycleName = config.GetOrDefault<string>("cycle", standardCycles.Debug ? "shorty" : "kotori");
 
 			Logs.Configuration.LogInformation($"Using cycle {cycleName}");
-			ClassicTumblerParameters.CycleGenerator = standardCycles.GetStandardCycle(cycleName)?.Generator;
-			if(ClassicTumblerParameters.CycleGenerator == null)
+			
+			var standardCycle = standardCycles.GetStandardCycle(cycleName);
+			if(standardCycle == null)
 				throw new ConfigException($"Invalid cycle name, choose among {String.Join(",", standardCycles.ToEnumerable().Select(c => c.FriendlyName).ToArray())}");
 
+			ClassicTumblerParameters.CycleGenerator = standardCycle.Generator;
+			ClassicTumblerParameters.Denomination = standardCycle.Denomination;
 			var torEnabled = config.GetOrDefault<bool>("tor.enabled", true);
 			if(torEnabled)
 			{
