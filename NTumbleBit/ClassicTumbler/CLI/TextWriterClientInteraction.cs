@@ -38,7 +38,7 @@ namespace NTumbleBit
 
 		public Task ConfirmParametersAsync(ClassicTumblerParameters parameters, StandardCycle standardCyle)
 		{
-			var feeRate = ((decimal)parameters.Fee.Satoshi / (decimal)parameters.Denomination.Satoshi);
+			var feeRate = ((decimal)parameters.Fee.Satoshi / (decimal)parameters.Denomination.Satoshi) * 100.0m;
 			if(standardCyle == null)
 			{
 				_Output.WriteLine("------");

@@ -29,7 +29,7 @@ namespace NTumbleBit.ClassicTumbler
 			FakeFormat = promise.FakeFormat;
 
 			Denomination = Money.Coins(1.0m);
-			Fee = Money.Coins(0.01m);
+			Fee = Money.Coins(0.001m);
 			CycleGenerator = new OverlappedCycleGenerator();
 		}
 

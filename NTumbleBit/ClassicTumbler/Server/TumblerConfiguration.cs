@@ -113,7 +113,7 @@ namespace NTumbleBit.ClassicTumbler.Server
 
 			if(ConfigurationFile == null)
 			{
-				ConfigurationFile = GetDefaultConfigurationFile();
+				ConfigurationFile = GetDefaultConfigurationFile(Network);
 			}
 			Logs.Configuration.LogInformation("Network: " + Network);
 
@@ -156,6 +156,7 @@ namespace NTumbleBit.ClassicTumbler.Server
 			Listen = new IPEndPoint(IPAddress.Parse("127.0.0.1"), defaultPort);
 
 			RPC = RPCArgs.Parse(config, Network);
+			ClassicTumblerParameters.Fee = config.GetOrDefault<Money>("tumbler.fee", Money.Coins(0.01m));
 			TorPath = config.GetOrDefault<string>("torpath", "tor");
 			return this;
 		}
@@ -180,7 +181,7 @@ namespace NTumbleBit.ClassicTumbler.Server
 			set;
 		} = true;
 
-		public string GetDefaultConfigurationFile()
+		public string GetDefaultConfigurationFile(Network network)
 		{
 			var config = Path.Combine(DataDir, "server.config");
 			Logs.Configuration.LogInformation("Configuration file set to " + config);
@@ -194,6 +195,15 @@ namespace NTumbleBit.ClassicTumbler.Server
 				builder.AppendLine("#rpc.user=bitcoinuser");
 				builder.AppendLine("#rpc.password=bitcoinpassword");
 				builder.AppendLine("#rpc.cookiefile=yourbitcoinfolder/.cookie");
+
+				builder.AppendLine();
+				builder.AppendLine();
+
+				builder.AppendLine("####Tumbler settings####");
+				builder.AppendLine("## The fees in BTC");
+				builder.AppendLine("#tumbler.fee=0.01");
+				builder.AppendLine("## The cycle used among " + string.Join(",", new StandardCycles(Network).ToEnumerable().Select(c => c.FriendlyName)));
+				builder.AppendLine("#cycle=kotori");
 
 				builder.AppendLine();
 				builder.AppendLine();
