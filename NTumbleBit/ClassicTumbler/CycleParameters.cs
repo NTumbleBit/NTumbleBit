@@ -323,6 +323,10 @@ namespace NTumbleBit.ClassicTumbler
 
 
 		int _SafetyPeriodDuration;
+
+		/// <summary>
+		/// Safety duration is used to give TOR time to change circuit when Alice and Bob change identity
+		/// </summary>
 		public int SafetyPeriodDuration
 		{
 			get

@@ -21,7 +21,8 @@ namespace NTumbleBit.ClassicTumbler.Client
 		Registered,
 		ClientChannelBroadcasted,
 		TumblerVoucherObtained,
-		TumblerEscrowed,
+		TumblerChannelBroadcasted,
+		TumblerChannelConfirmed,
 		PuzzleSolutionObtained,
 		UncooperativeTumbler,
 	}
@@ -321,21 +322,28 @@ namespace NTumbleBit.ClassicTumbler.Client
 							var proof = bob.CheckRevelation(PromiseClientSession.Id, revelation);
 							var puzzle = PromiseClientSession.CheckCommitmentProof(proof);
 							SolverClientSession.AcceptPuzzle(puzzle);
-							Status = PaymentStateMachineStatus.TumblerEscrowed;
+							Status = PaymentStateMachineStatus.TumblerChannelBroadcasted;
+						}
+						else if(Status == PaymentStateMachineStatus.TumblerChannelBroadcasted)
+						{
+							TransactionInformation tumblerTx = GetTransactionInformation(PromiseClientSession.EscrowedCoin, false);
+							if(tumblerTx != null && tumblerTx.Confirmations >= cycle.SafetyPeriodDuration)
+							{
+								var bobCount = Parameters.CountEscrows(tumblerTx.Transaction, Identity.Bob);
+								Logs.Client.LogInformation($"Tumbler escrow reached {cycle.SafetyPeriodDuration} confirmations");
+								Logs.Client.LogInformation($"Tumbler escrow transaction has {bobCount} users");
+							}
+							Status = PaymentStateMachineStatus.TumblerChannelConfirmed;
 						}
 						break;
 					case CyclePhase.PaymentPhase:
-						if(PromiseClientSession != null)
+						if(PromiseClientSession != null && Status == PaymentStateMachineStatus.TumblerChannelConfirmed)
 						{
 							TransactionInformation tumblerTx = GetTransactionInformation(PromiseClientSession.EscrowedCoin, false);
 							//Ensure the tumbler coin is confirmed before paying anything
 
 							if(tumblerTx != null && tumblerTx.Confirmations >= cycle.SafetyPeriodDuration)
 							{
-								var bobCount = Parameters.CountEscrows(tumblerTx.Transaction, Identity.Bob);
-								Logs.Client.LogInformation($"Tumbler escrow reached {cycle.SafetyPeriodDuration} confirmations");
-								Logs.Client.LogInformation($"Tumbler escrow transaction has {bobCount} users");
-
 								if(SolverClientSession.Status == SolverClientStates.WaitingGeneratePuzzles)
 								{
 									feeRate = GetFeeRate();

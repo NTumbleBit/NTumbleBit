@@ -203,12 +203,17 @@ namespace NTumbleBit.Tests
 
 
 				machine.Update();
+				Assert.Equal(PaymentStateMachineStatus.TumblerChannelBroadcasted, machine.Status);
 
 
 				serverTracker.AssertKnown(TransactionType.TumblerEscrow, machine.PromiseClientSession.EscrowedCoin.ScriptPubKey);
 				serverTracker.AssertKnown(TransactionType.TumblerEscrow, machine.PromiseClientSession.EscrowedCoin.Outpoint.Hash);
 				clientTracker.AssertKnown(TransactionType.TumblerEscrow, machine.PromiseClientSession.EscrowedCoin.ScriptPubKey);
 				clientTracker.AssertKnown(TransactionType.TumblerEscrow, machine.PromiseClientSession.EscrowedCoin.Outpoint.Hash);
+
+				server.MineTo(server.TumblerNode, cycle, CyclePhase.TumblerChannelEstablishment, end: true, offset: -1);
+				machine.Update();
+				Assert.Equal(PaymentStateMachineStatus.TumblerChannelConfirmed, machine.Status);
 
 				server.MineTo(server.TumblerNode, cycle, CyclePhase.PaymentPhase);
 
@@ -405,7 +410,9 @@ namespace NTumbleBit.Tests
 				var broadcasted = server.ServerRuntime.Services.BroadcastService.TryBroadcast();
 				Assert.Equal(1, broadcasted.Length);
 				server.ServerRuntime.Tracker.AssertKnown(TransactionType.TumblerEscrow, broadcasted[0].GetHash());
-				server.TumblerNode.FindBlock(1);
+
+				server.MineTo(server.TumblerNode, cycle, CyclePhase.TumblerChannelEstablishment, end: true, offset: -1);
+				machine.Update();
 
 				if(!fulfill)
 				{

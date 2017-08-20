@@ -103,8 +103,8 @@ namespace NTumbleBit.ClassicTumbler
 						Start = 1,
 						RegistrationDuration = GetBlocksCount(consensus, 20 * 2) + 1,
 						SafetyPeriodDuration = GetBlocksCount(consensus, 10),
-						ClientChannelEstablishmentDuration = GetBlocksCount(consensus, 20 * 2),
-						TumblerChannelEstablishmentDuration = GetBlocksCount(consensus, 20 * 2),
+						ClientChannelEstablishmentDuration = GetBlocksCount(consensus, 20 * 4),
+						TumblerChannelEstablishmentDuration = GetBlocksCount(consensus, 20 * 4),
 						PaymentPhaseDuration = GetBlocksCount(consensus, 20 * 2),
 						TumblerCashoutDuration = GetBlocksCount(consensus, 40 * 2),
 						ClientCashoutDuration = GetBlocksCount(consensus, 20 * 2),
@@ -127,8 +127,8 @@ namespace NTumbleBit.ClassicTumbler
 						RegistrationDuration = GetBlocksCount(consensus, 60 * 4) + 1,
 						//make sure tor circuit get renewed
 						SafetyPeriodDuration = GetBlocksCount(consensus, 20),
-						ClientChannelEstablishmentDuration = GetBlocksCount(consensus, 30),
-						TumblerChannelEstablishmentDuration = GetBlocksCount(consensus, 30),
+						ClientChannelEstablishmentDuration = GetBlocksCount(consensus, 120),
+						TumblerChannelEstablishmentDuration = GetBlocksCount(consensus, 120),
 						PaymentPhaseDuration = GetBlocksCount(consensus, 30),
 						TumblerCashoutDuration = GetBlocksCount(consensus, 5 * 60),
 						ClientCashoutDuration = GetBlocksCount(consensus, 5 * 60)

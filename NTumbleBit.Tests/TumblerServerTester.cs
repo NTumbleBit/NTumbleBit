@@ -87,7 +87,7 @@ namespace NTumbleBit.Tests
 				}
 				else
 				{
-					var standard = new StandardCycles(conf.Network).Shorty;
+					var standard = new StandardCycles(conf.Network).Shorty2x;
 					conf.ClassicTumblerParameters.CycleGenerator = standard.Generator;
 					conf.ClassicTumblerParameters.Denomination = standard.Denomination;
 				}
