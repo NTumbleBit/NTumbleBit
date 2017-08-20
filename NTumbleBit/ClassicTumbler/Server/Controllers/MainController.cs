@@ -470,6 +470,8 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 				// The previous tx is broadcastable, but let's give change to the wallet to join everything in a single transaction
 				tx = await Runtime.Services.WalletService.ReceiveAsync(state.EscrowedCoin, clientSignature, state.EscrowKey, fee);
 
+				Logs.Tumbler.LogInformation($"Cashing out from {tx.Inputs.Count} Alices");
+
 				var correlation = GetCorrelation(session);
 				Tracker.AddressCreated(cycleId, TransactionType.ClientEscape, tx.Outputs[0].ScriptPubKey, correlation);
 				Tracker.TransactionCreated(cycleId, TransactionType.ClientEscape, tx.GetHash(), correlation);
