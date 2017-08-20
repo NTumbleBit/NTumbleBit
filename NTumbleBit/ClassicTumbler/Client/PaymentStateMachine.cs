@@ -118,6 +118,10 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 		public class State
 		{
+			public uint160 TumblerParametersHash
+			{
+				get; set;
+			}
 			public ClientChannelNegotiation.State NegotiationClientState
 			{
 				get;
@@ -150,6 +154,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 			if(ClientChannelNegotiation != null)
 				s.NegotiationClientState = ClientChannelNegotiation.GetInternalState();
 			s.Status = Status;
+			s.TumblerParametersHash = Parameters.GetHash();
 			return s;
 		}
 

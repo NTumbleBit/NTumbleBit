@@ -18,9 +18,10 @@ namespace NTumbleBit.ClassicTumbler.Client
 			if(runtime == null)
 				throw new ArgumentNullException("runtime");
 			Runtime = runtime;
+			_ParametersHash = Runtime.TumblerParameters.GetHash();
 		}
 
-
+		uint160 _ParametersHash;
 		public TumblerClientRuntime Runtime
 		{
 			get; set;
@@ -63,7 +64,10 @@ namespace NTumbleBit.ClassicTumbler.Client
 						}
 
 						var cycles = Runtime.TumblerParameters.CycleGenerator.GetCycles(height);
-						var machineStates = cycles.SelectMany(c => Runtime.Repository.List<PaymentStateMachine.State>(GetPartitionKey(c.Start))).ToArray();
+						var machineStates = cycles
+												.SelectMany(c => Runtime.Repository.List<PaymentStateMachine.State>(GetPartitionKey(c.Start)))
+												.Where(m => m.TumblerParametersHash == _ParametersHash)
+												.ToArray();
 						NBitcoin.Utils.Shuffle(machineStates);
 						bool hadInvalidPhase = false;
 						foreach(var state in machineStates)
@@ -131,7 +135,10 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 		public PaymentStateMachine.State GetPaymentStateMachineState(CycleParameters cycle)
 		{
-			return Runtime.Repository.Get<PaymentStateMachine.State>(GetPartitionKey(cycle.Start), "");
+			var state = Runtime.Repository.Get<PaymentStateMachine.State>(GetPartitionKey(cycle.Start), "");
+			if(state == null)
+				return null;
+			return state.TumblerParametersHash == _ParametersHash ? state : null;
 		}
 
 		private string GetPartitionKey(int cycle)
