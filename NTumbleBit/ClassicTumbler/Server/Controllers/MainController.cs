@@ -131,6 +131,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			}
 			catch(InvalidOperationException)
 			{
+				Logs.Tumbler.LogDebug($"Invalid cycle received {cycleStart}");
 				throw new ActionResultException(BadRequest("invalid-cycle"));
 			}
 		}
@@ -212,7 +213,10 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 					throw new ActionResultException(BadRequest("invalid-merkleproof"));
 
 				if(!Repository.MarkUsedNonce(cycle.Start, new uint160(key.PubKey.Hash.ToBytes())))
+				{
+					Logs.Tumbler.LogDebug("Nonce already marked");
 					throw new ActionResultException(BadRequest("invalid-transaction"));
+				}
 				Repository.Save(cycle.Start, solverServerSession);
 				Logs.Tumbler.LogInformation($"Cycle {cycle.Start} Proof of Escrow signed for " + transaction.GetHash());
 
