@@ -1,13 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using NBitcoin;
 using System.Linq;
-using System.Threading.Tasks;
-using NBitcoin;
 using NBitcoin.RPC;
 using Newtonsoft.Json.Linq;
-using NTumbleBit.PuzzlePromise;
-using NBitcoin.DataEncoders;
+using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace NTumbleBit.Services.RPC
 {
@@ -19,6 +18,7 @@ namespace NTumbleBit.Services.RPC
 				throw new ArgumentNullException(nameof(rpc));
 			_RPCClient = rpc;
 			_FundingBatch = new FundingBatch(rpc);
+			_ReceiveBatch = new ReceiveBatch(rpc);
 			BatchInterval = TimeSpan.Zero;
 		}
 
@@ -31,6 +31,7 @@ namespace NTumbleBit.Services.RPC
 			set
 			{
 				_FundingBatch.BatchInterval = value;
+				_ReceiveBatch.BatchInterval = value;
 			}
 		}
 
@@ -57,116 +58,27 @@ namespace NTumbleBit.Services.RPC
 			return coin;
 		}
 
-		class FundingBatch
-		{
-			public FundingBatch(RPCClient rpc)
-			{
-				_RPCClient = rpc;
-			}
-
-			public TimeSpan BatchInterval
-			{
-				get; set;
-			}
-			RPCClient _RPCClient;
-			public FeeRate FeeRate
-			{
-				get; set;
-			}
-
-			ConcurrentQueue<TxOut> Outputs = new ConcurrentQueue<TxOut>();
-			public async Task<Transaction> WaitTransactionAsync(TxOut output)
-			{
-				var isFirstOutput = false;
-				TaskCompletionSource<Transaction> completion = null;
-				lock(Outputs)
-				{
-					completion = _TransactionCreated;
-					Outputs.Enqueue(output);
-					isFirstOutput = Outputs.Count == 1;
-				}
-				if(isFirstOutput)
-				{
-					await Task.WhenAny(completion.Task, Task.Delay(BatchInterval)).ConfigureAwait(false);
-					if(completion.Task.Status != TaskStatus.RanToCompletion &&
-						completion.Task.Status != TaskStatus.Faulted)
-						SendNow();
-				}
-				return await completion.Task.ConfigureAwait(false);
-			}
-
-			TaskCompletionSource<Transaction> _TransactionCreated = new TaskCompletionSource<Transaction>();
-
-			public void SendNow()
-			{
-				var unused = FundTransactionAsync();
-			}
-
-			private async Task FundTransactionAsync()
-			{
-				Transaction tx = new Transaction();
-				List<TxOut> outputs = new List<TxOut>();
-				TxOut output = new TxOut();
-				TaskCompletionSource<Transaction> completion = null;
-				lock(Outputs)
-				{
-					completion = _TransactionCreated;
-					_TransactionCreated = new TaskCompletionSource<Transaction>();
-					while(Outputs.TryDequeue(out output))
-					{
-						outputs.Add(output);
-					}
-				}
-				if(outputs.Count == 0)
-					return;
-				var outputsArray = outputs.ToArray();
-				NBitcoin.Utils.Shuffle(outputsArray);
-				tx.Outputs.AddRange(outputsArray);
-
-				try
-				{
-					completion.TrySetResult(await FundTransactionAsync(tx).ConfigureAwait(false));
-				}
-				catch(Exception ex)
-				{
-					completion.TrySetException(ex);
-				}
-			}
-
-			private async Task<Transaction> FundTransactionAsync(Transaction tx)
-			{
-				var changeAddress = _RPCClient.GetRawChangeAddress();
-
-				FundRawTransactionResponse response = null;
-				try
-				{
-					response = await _RPCClient.FundRawTransactionAsync(tx, new FundRawTransactionOptions()
-					{
-						ChangeAddress = changeAddress,
-						FeeRate = FeeRate,
-						LockUnspents = true
-					}).ConfigureAwait(false);
-				}
-				catch(RPCException ex)
-				{
-					var balance = _RPCClient.GetBalance(0, false);
-					var needed = tx.Outputs.Select(o => o.Value).Sum()
-								  + FeeRate.GetFee(2000);
-					var missing = needed - balance;
-					if(missing > Money.Zero || ex.Message.Equals("Insufficient funds", StringComparison.OrdinalIgnoreCase))
-						throw new NotEnoughFundsException("Not enough funds", "", missing);
-					throw;
-				}
-				var result = await _RPCClient.SendCommandAsync("signrawtransaction", response.Transaction.ToHex()).ConfigureAwait(false);
-				return new Transaction(((JObject)result.Result)["hex"].Value<string>());
-			}
-		}
+		
 
 		FundingBatch _FundingBatch;
 		public async Task<Transaction> FundTransactionAsync(TxOut txOut, FeeRate feeRate)
 		{
 			_FundingBatch.FeeRate = feeRate;
 			return await _FundingBatch.WaitTransactionAsync(txOut).ConfigureAwait(false);
+		}
+
+		
+
+		ReceiveBatch _ReceiveBatch;
+		public async Task<Transaction> ReceiveAsync(ScriptCoin escrowedCoin, TransactionSignature clientSignature, Key escrowKey, FeeRate feeRate)
+		{
+			_ReceiveBatch.FeeRate = feeRate;
+			return await _ReceiveBatch.WaitTransactionAsync(new ClientEscapeData()
+			{
+				ClientSignature = clientSignature,
+				EscrowedCoin = escrowedCoin,
+				EscrowKey = escrowKey
+			}).ConfigureAwait(false);
 		}
 	}
 }

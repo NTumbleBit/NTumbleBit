@@ -448,7 +448,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 
 
 		[HttpPost("api/v1/tumblers/{tumblerId}/clientchannels/{cycleId}/{channelId}/escape")]
-		public NoData GiveEscapeKey(
+		public async Task<NoData> GiveEscapeKey(
 			[ModelBinder(BinderType = typeof(TumblerParametersModelBinder))]
 			ClassicTumblerParameters tumblerId,
 			int cycleId, string channelId, [FromBody]SignatureWrapper wrapper)
@@ -463,11 +463,14 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			var fee = Services.FeeService.GetFeeRate();
 			try
 			{
-				var cashout = Services.WalletService.GenerateAddress();
-				var tx = session.GetSignedEscapeTransaction(clientSignature, fee, cashout.ScriptPubKey);
+				var dummy = new Key().PubKey.Hash.ScriptPubKey;
+				var tx = session.GetSignedEscapeTransaction(clientSignature, fee, dummy);
+				var state = session.GetInternalState();
+
+				tx = await Runtime.Services.WalletService.ReceiveAsync(state.EscrowedCoin, clientSignature, state.EscrowKey, fee);
 
 				var correlation = GetCorrelation(session);
-				Tracker.AddressCreated(cycleId, TransactionType.ClientEscape, cashout.ScriptPubKey, correlation);
+				Tracker.AddressCreated(cycleId, TransactionType.ClientEscape, tx.Outputs[0].ScriptPubKey, correlation);
 				Tracker.TransactionCreated(cycleId, TransactionType.ClientEscape, tx.GetHash(), correlation);
 
 				Services.BroadcastService.Broadcast(tx);
