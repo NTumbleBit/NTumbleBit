@@ -187,10 +187,9 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 
 			Logs.Client.LogInformation(Environment.NewLine);
-			Logs.Client.LogInformation("[[[Updating cycle " + cycle.Start + "]]]");
-
-			Logs.Client.LogInformation("Phase " + Enum.GetName(typeof(CyclePhase), phase) + ", ending in " + (cycle.GetPeriods().GetPeriod(phase).End - height) + " blocks");
-
+			var blocksLeft = (cycle.GetPeriods().GetPeriod(phase).End - height);
+			Logs.Client.LogInformation($"Cycle {cycle.Start} ({Status})");
+			Logs.Client.LogInformation($"{cycle.ToString(height)} in phase {phase} ({blocksLeft} more blocks)");
 			var previousState = Status;
 			TumblerClient bob = null, alice = null;
 			try

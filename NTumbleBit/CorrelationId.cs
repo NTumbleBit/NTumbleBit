@@ -62,7 +62,6 @@ namespace NTumbleBit
 		}
 
 
-		[Obsolete]
 		public override string ToString()
 		{
 			return ToString(true);

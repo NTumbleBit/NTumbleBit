@@ -65,6 +65,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 						var cycles = Runtime.TumblerParameters.CycleGenerator.GetCycles(height);
 						var machineStates = cycles.SelectMany(c => Runtime.Repository.List<PaymentStateMachine.State>(GetPartitionKey(c.Start))).ToArray();
 						NBitcoin.Utils.Shuffle(machineStates);
+						bool hadInvalidPhase = false;
 						foreach(var state in machineStates)
 						{
 							bool noSave = false;
@@ -83,20 +84,20 @@ namespace NTumbleBit.ClassicTumbler.Client
 							catch(Exception ex)
 							{
 								var invalidPhase = ex.Message.IndexOf("invalid-phase", StringComparison.OrdinalIgnoreCase) >= 0;
-
 								if(invalidPhase)
 								{
-									InvalidPhaseCount++;
+									if(!hadInvalidPhase)
+									{
+										hadInvalidPhase = true;
+										InvalidPhaseCount++;
+										if(InvalidPhaseCount > 2)
+										{
+											Logs.Client.LogError(new EventId(), ex, $"Invalid-Phase happened repeatedly, check that your node currently at height {height} is currently sync to the network");
+										}
+									}
 									noSave = true;
 								}
 								else
-									InvalidPhaseCount = 0;
-
-								if(invalidPhase && InvalidPhaseCount > 2)
-								{
-									Logs.Client.LogError(new EventId(), ex, $"Invalid-Phase happened repeatedly, check that your node currently at height {height} is currently sync to the network");
-								}
-								else if(!invalidPhase)
 								{
 									Logs.Client.LogError(new EventId(), ex, "Unhandled StateMachine Error");
 								}
