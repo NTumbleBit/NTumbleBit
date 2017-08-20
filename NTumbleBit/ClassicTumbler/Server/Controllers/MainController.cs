@@ -152,23 +152,34 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			if(request.ClientEscrowKey == null)
 				throw new ActionResultException(BadRequest("Missing ClientEscrowKey"));
 
-			if(request.MerkleProof.PartialMerkleTree
-				.GetMatchedTransactions()
-				.FirstOrDefault() != request.Transaction.GetHash() || !request.MerkleProof.Header.CheckProofOfWork())
-				throw new ActionResultException(BadRequest("invalid-merkleproof"));
-
-			var confirmations = Services.BlockExplorerService.GetBlockConfirmations(request.MerkleProof.Header.GetHash());
-			if((confirmations < Parameters.CycleGenerator.FirstCycle.SafetyPeriodDuration))
-				throw new ActionResultException(BadRequest("not-enough-confirmation"));
-
-			var transaction = request.Transaction;
-			if(transaction.Outputs.Count > 2)
-				throw new ActionResultException(BadRequest("invalid-transaction"));
-
 			var cycle = GetCycle(request.Cycle);
 			var height = Services.BlockExplorerService.GetCurrentHeight();
 			if(!cycle.IsInPhase(CyclePhase.ClientChannelEstablishment, height))
+			{
 				throw new ActionResultException(BadRequest("invalid-phase"));
+			}
+
+			if(request.MerkleProof.PartialMerkleTree
+				.GetMatchedTransactions()
+				.FirstOrDefault() != request.Transaction.GetHash() || !request.MerkleProof.Header.CheckProofOfWork())
+			{
+				Logs.Tumbler.LogDebug("Invalid transaction merkle proof");
+				throw new ActionResultException(BadRequest("invalid-merkleproof"));
+			}
+
+			var confirmations = Services.BlockExplorerService.GetBlockConfirmations(request.MerkleProof.Header.GetHash());
+			if((confirmations < Parameters.CycleGenerator.FirstCycle.SafetyPeriodDuration))
+			{
+				Logs.Tumbler.LogDebug("Not enough confirmations");
+				throw new ActionResultException(BadRequest("not-enough-confirmation"));
+			}
+
+			var transaction = request.Transaction;
+			if(transaction.Outputs.Count > 2)
+			{
+				Logs.Tumbler.LogDebug("Incorrect number of outputs");
+				throw new ActionResultException(BadRequest("invalid-transaction"));
+			}
 
 
 			var key = Repository.GetKey(cycle.Start, request.KeyReference);
@@ -186,7 +197,10 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 				.FirstOrDefault();
 
 			if(escrowedCoin == null)
+			{
+				Logs.Tumbler.LogDebug("Could not find escrowed coin");
 				throw new ActionResultException(BadRequest("invalid-transaction"));
+			}
 
 			try
 			{
@@ -208,8 +222,9 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 				var solution = request.UnsignedVoucher.WithRsaKey(Runtime.VoucherKey.PubKey).Solve(Runtime.VoucherKey);
 				return solution;
 			}
-			catch(PuzzleException)
+			catch(PuzzleException ex)
 			{
+				Logs.Tumbler.LogDebug(new EventId(), ex, "Puzzle failed");
 				throw new ActionResultException(BadRequest("invalid-transaction"));
 			}
 		}
