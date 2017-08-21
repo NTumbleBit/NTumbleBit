@@ -14,6 +14,9 @@ using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using Microsoft.Net.Http.Headers;
 using Microsoft.AspNetCore.Diagnostics;
 using NTumbleBit.Logging;
+using System.Net;
+using System.Text;
+using System.IO;
 
 namespace NTumbleBit.ClassicTumbler.Server
 {
@@ -49,6 +52,17 @@ namespace NTumbleBit.ClassicTumbler.Server
 					catch(Exception ex)
 					{
 						Logs.Tumbler.LogCritical("Unhandled exception thrown by the Tumbler Service", ex);
+						var webEx = ex as WebException;
+						if(webEx != null)
+						{
+							try
+							{
+								var httpResp = ((HttpWebResponse)webEx.Response);
+								var reader = new StreamReader(httpResp.GetResponseStream(), Encoding.UTF8);
+								Logs.Tumbler.LogCritical($"Web Exception {(int)httpResp.StatusCode} {reader.ReadToEnd()}");
+							}
+							catch { }
+						}
 						throw;
 					}
 				};
