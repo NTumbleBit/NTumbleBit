@@ -357,7 +357,7 @@ namespace NTumbleBit.Logging
 		// for testing
 		internal virtual void WriteMessage(LogMessageEntry message)
 		{
-			var dateTime = $"[{DateTimeOffset.Now.ToString("hh:mm:ss")}] ";
+			var dateTime = $"[{DateTimeOffset.Now.ToString("yy-MM-dd hh:mm:ss")}] ";
 			Console.Write(dateTime, message.MessageColor, message.MessageColor);
 			if(message.LevelString != null)
 			{
