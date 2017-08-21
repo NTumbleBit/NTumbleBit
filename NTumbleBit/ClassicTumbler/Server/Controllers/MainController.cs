@@ -182,9 +182,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 				throw new ActionResultException(BadRequest("invalid-transaction"));
 			}
 
-			Logs.Tumbler.LogDebug("Getting key");
 			var key = Repository.GetKey(cycle.Start, request.KeyReference);
-			Logs.Tumbler.LogDebug("Gotten key");
 
 			var expectedEscrow = new EscrowScriptPubKeyParameters(request.ClientEscrowKey, key.PubKey, cycle.GetClientLockTime());
 

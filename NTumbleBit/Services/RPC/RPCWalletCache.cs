@@ -44,17 +44,14 @@ namespace NTumbleBit.Services.RPC
 
 		public void Refresh(uint256 currentBlock)
 		{
-			var refreshedAt = _RefreshedAtBlock;
-			if(refreshedAt != currentBlock)
+			if(_RefreshedAtBlock != currentBlock)
 			{
-				lock(_Transactions)
+				var newBlockCount = _RPCClient.GetBlockCount();
+				//If we just udpated the value...
+				if(Interlocked.Exchange(ref _BlockCount, newBlockCount) != newBlockCount)
 				{
-					if(refreshedAt != currentBlock)
-					{
-						RefreshBlockCount();
-						_Transactions = ListTransactions(ref _KnownTransactions);
-						_RefreshedAtBlock = currentBlock;
-					}
+					_RefreshedAtBlock = currentBlock;
+					ListTransactions();
 				}
 			}
 		}
@@ -66,15 +63,10 @@ namespace NTumbleBit.Services.RPC
 			{
 				if(_BlockCount == 0)
 				{
-					RefreshBlockCount();
+					_BlockCount = _RPCClient.GetBlockCount();
 				}
 				return _BlockCount;
 			}
-		}
-
-		private void RefreshBlockCount()
-		{
-			Interlocked.Exchange(ref _BlockCount, _RPCClient.GetBlockCount());
 		}
 
 		public Transaction GetTransaction(uint256 txId)
@@ -113,20 +105,14 @@ namespace NTumbleBit.Services.RPC
 
 		public RPCWalletEntry[] GetEntries()
 		{
-			lock(_Transactions)
-			{
-				return _Transactions.ToArray();
-			}
+			return _WalletEntries.Values.ToArray();
 		}
 
 		private void PutCached(Transaction tx)
 		{
 			tx.CacheHashes();
 			_Repo.UpdateOrInsert("CachedTransactions", tx.GetHash().ToString(), tx, (a, b) => b);
-			lock(_TransactionsByTxId)
-			{
-				_TransactionsByTxId.TryAdd(tx.GetHash(), tx);
-			}
+			_TransactionsByTxId.TryAdd(tx.GetHash(), tx);
 		}
 
 		private Transaction GetCachedTransaction(uint256 txId)
@@ -144,23 +130,20 @@ namespace NTumbleBit.Services.RPC
 		}
 
 
-		List<RPCWalletEntry> _Transactions = new List<RPCWalletEntry>();
-		HashSet<uint256> _KnownTransactions = new HashSet<uint256>();
-		List<RPCWalletEntry> ListTransactions(ref HashSet<uint256> knownTransactions)
+		ConcurrentDictionary<uint256, RPCWalletEntry> _WalletEntries = new ConcurrentDictionary<uint256, RPCWalletEntry>();
+		void ListTransactions()
 		{
-			List<RPCWalletEntry> array = new List<RPCWalletEntry>();
-			knownTransactions = new HashSet<uint256>();
 			var removeFromCache = new HashSet<uint256>(_TransactionsByTxId.Values.Select(tx => tx.GetHash()));
+			var removeFromWalletEntries = new HashSet<uint256>(_WalletEntries.Keys);
+
 			int count = 100;
 			int skip = 0;
 			int highestConfirmation = 0;
 
 			while(true)
 			{
-				var result = _RPCClient.SendCommandNoThrows("listtransactions", "*", count, skip, true);
+				var result = _RPCClient.SendCommand("listtransactions", "*", count, skip, true);
 				skip += count;
-				if(result.Error != null)
-					return null;
 				var transactions = (JArray)result.Result;
 				foreach(var obj in transactions)
 				{
@@ -168,10 +151,8 @@ namespace NTumbleBit.Services.RPC
 					entry.Confirmations = obj["confirmations"] == null ? 0 : (int)obj["confirmations"];
 					entry.TransactionId = new uint256((string)obj["txid"]);
 					removeFromCache.Remove(entry.TransactionId);
-					if(knownTransactions.Add(entry.TransactionId))
-					{
-						array.Add(entry);
-					}
+					removeFromWalletEntries.Remove(entry.TransactionId);
+					_WalletEntries.AddOrUpdate(entry.TransactionId, entry, (k, existing) => entry);
 					if(obj["confirmations"] != null)
 					{
 						highestConfirmation = Math.Max(highestConfirmation, (int)obj["confirmations"]);
@@ -185,25 +166,22 @@ namespace NTumbleBit.Services.RPC
 				Transaction opt;
 				_TransactionsByTxId.TryRemove(remove, out opt);
 			}
-			return array;
+			foreach(var remove in removeFromWalletEntries)
+			{
+				RPCWalletEntry opt;
+				_WalletEntries.TryRemove(remove, out opt);
+			}
 		}
 
 
 		public void ImportTransaction(Transaction transaction, int confirmations)
 		{
 			PutCached(transaction);
-			lock(_Transactions)
+			_WalletEntries.TryAdd(transaction.GetHash(), new RPCWalletEntry()
 			{
-				if(_KnownTransactions.Add(transaction.GetHash()))
-				{
-					_Transactions.Insert(0,
-						new RPCWalletEntry()
-						{
-							Confirmations = confirmations,
-							TransactionId = transaction.GetHash()
-						});
-				}
-			}
+				Confirmations = confirmations,
+				TransactionId = transaction.GetHash()
+			});
 		}
 	}
 }
