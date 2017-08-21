@@ -193,12 +193,13 @@ namespace NTumbleBit.Services.RPC
 							{
 								bool cached;
 								var transaction = broadcast.Request.ReSign(coin, out cached);
-
 								var txHash = transaction.GetHash();
-								_Tracker.TransactionCreated(broadcast.Cycle, broadcast.TransactionType, txHash, broadcast.Correlation);
-								RecordMaping(broadcast, transaction, txHash);
 								if(!cached)
+								{
+									_Tracker.TransactionCreated(broadcast.Cycle, broadcast.TransactionType, txHash, broadcast.Correlation);
+									RecordMaping(broadcast, transaction, txHash);
 									AddBroadcast(broadcast);
+								}
 
 								if(!knownBroadcastedSet.Contains(txHash)
 									&& broadcast.Request.IsBroadcastableAt(height))
