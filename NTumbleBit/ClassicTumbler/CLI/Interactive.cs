@@ -11,6 +11,7 @@ using NTumbleBit.Services;
 using NTumbleBit.ClassicTumbler.Client;
 using System.Threading.Tasks;
 using CommandLine.Text;
+using System.Text.RegularExpressions;
 
 namespace NTumbleBit.ClassicTumbler.CLI
 {
@@ -164,7 +165,7 @@ namespace NTumbleBit.ClassicTumbler.CLI
 			{
 				bool parsed = false;
 
-				if(options.Query.Equals("now", StringComparison.Ordinal))
+				if(options.Query.StartsWith("now", StringComparison.Ordinal))
 				{
 					var blockCount = Runtime.Services.BlockExplorerService.GetCurrentHeight();
 					options.CycleId =
@@ -173,12 +174,26 @@ namespace NTumbleBit.ClassicTumbler.CLI
 						.Select(o => o.Start)
 						.FirstOrDefault();
 					parsed = options.CycleId != 0;
+					options.Query = options.Query.Replace("now", options.CycleId.Value.ToString());
 				}
 
 				try
 				{
-					options.CycleId = int.Parse(options.Query);
-					parsed = true;
+					var regex = System.Text.RegularExpressions.Regex.Match(options.Query, @"(\d+)(([+|-])(\d))?");
+					if(regex.Success)
+					{
+						options.CycleId = int.Parse(regex.Groups[1].Value);
+						if(regex.Groups[3].Success && regex.Groups[4].Success)
+						{
+							int offset = 1;
+							if(regex.Groups[3].Value.Equals("-", StringComparison.OrdinalIgnoreCase))
+								offset = -1;
+							offset = offset * int.Parse(regex.Groups[4].Value);
+							options.CycleOffset = offset;
+						}
+						
+						parsed = true;
+					}
 				}
 				catch { }
 				try
@@ -197,11 +212,8 @@ namespace NTumbleBit.ClassicTumbler.CLI
 					throw new FormatException();
 			}
 
-
-			int bobCount = 0;
-			int aliceCount = 0;
-			int cashoutCount = 0;
-			int uncooperativeCount = 0;
+			Stats stats = new Stats();
+			Stats statsTotal = new Stats();
 
 			if(options.CycleId != null)
 			{
@@ -213,6 +225,11 @@ namespace NTumbleBit.ClassicTumbler.CLI
 						cycle = Runtime.TumblerParameters.CycleGenerator.GetCycle(options.CycleId.Value);
 						if(cycle == null)
 							throw new NullReferenceException(); //Cleanup
+						for(int i = 0; i < Math.Abs(options.CycleOffset); i++)
+						{
+							cycle = options.CycleOffset < 0 ? Runtime.TumblerParameters.CycleGenerator.GetPreviousCycle(cycle) : Runtime.TumblerParameters.CycleGenerator.GetNextCycle(cycle);
+						}
+						options.CycleId = cycle.Start;
 					}
 					catch
 					{
@@ -262,6 +279,7 @@ namespace NTumbleBit.ClassicTumbler.CLI
 						Console.WriteLine("========");
 						foreach(var group in correlationGroup.GroupBy(r => r.TransactionType).OrderBy(r => (int)r.Key))
 						{
+							stats.CorrelationGroupCount++;
 							var builder = new StringBuilder();
 							builder.AppendLine(group.Key.ToString());
 
@@ -270,33 +288,33 @@ namespace NTumbleBit.ClassicTumbler.CLI
 								var isBob = group.Any(o => o.RecordType == RecordType.Transaction && o.TransactionType == TransactionType.TumblerEscrow);
 								var isAlice = group.Any(o => o.RecordType == RecordType.Transaction && o.TransactionType == TransactionType.ClientEscrow);
 								if(isBob)
-									bobCount++;
+									stats.BobCount++;
 								if(isAlice)
-									aliceCount++;
+									stats.AliceCount++;
 
 								var isOffer = group.Any(o => o.RecordType == RecordType.Transaction && o.TransactionType == TransactionType.ClientFulfill);
 								if(isOffer)
 								{
-									uncooperativeCount++;
+									stats.UncooperativeCount++;
 								}
 
 								var isCashout = group.Any(o => o.RecordType == RecordType.Transaction && (o.TransactionType == TransactionType.ClientEscape || o.TransactionType == TransactionType.ClientFulfill));
 								if(isCashout)
-									cashoutCount++;
+									stats.CashoutCount++;
 							}
 							else
 							{
 								var isOffer = group.Any(o => o.RecordType == RecordType.Transaction && (o.TransactionType == TransactionType.ClientOffer || o.TransactionType == TransactionType.ClientOfferRedeem));
 								if(isOffer)
 								{
-									uncooperativeCount++;
+									stats.UncooperativeCount++;
 								}
 
 								var isCashout = group.Any(o => o.RecordType == RecordType.Transaction && (o.TransactionType == TransactionType.TumblerCashout));
 								if(isCashout)
-									cashoutCount++;
+									stats.CashoutCount++;
 							}							
-							
+						
 							foreach(var data in group.OrderBy(g => g.RecordType))
 							{
 								builder.Append("\t" + data.RecordType.ToString());
@@ -308,20 +326,19 @@ namespace NTumbleBit.ClassicTumbler.CLI
 							Console.WriteLine(builder.ToString());
 						}
 						Console.WriteLine("========");
+
+						Console.WriteLine(stats.ToString());
+						statsTotal = statsTotal + stats;
+						stats = new Stats();
+						Console.WriteLine("========");
 					}
 					if(!hasData)
 					{
 						Console.WriteLine("Cycle " + cycle.Start + " has no data");
 					}
 
-					if(bobCount != 0)
-						Console.WriteLine("Bob count: " + bobCount);
-					if(aliceCount != 0)
-						Console.WriteLine("Alice count: " + aliceCount);
-					if(cashoutCount != 0)
-						Console.WriteLine("Cashout count: " + cashoutCount);
-					if(uncooperativeCount != 0)
-						Console.WriteLine("Uncooperative count: " + uncooperativeCount);
+					Console.WriteLine("Stats Total:");
+					Console.WriteLine(statsTotal.ToString());
 					Console.WriteLine("=====================================");
 
 					options.PreviousCount--;

@@ -5,7 +5,7 @@ namespace NTumbleBit.ClassicTumbler.CLI
 	[Verb("status", HelpText = "Shows the current status.")]
 	internal class StatusOptions
 	{
-		[Value(0, HelpText = "Search information about the specifed, cycle/transaction/address.")]
+		[Value(0, HelpText = "Search information about the specifed, cycle/transaction/address. (`status now-1` will show the previous cycle, `status 293212+1` will show the cycle after 293212)")]
 		public string Query
 		{
 			get; set;
@@ -30,6 +30,11 @@ namespace NTumbleBit.ClassicTumbler.CLI
 		public string Address
 		{
 			get; set;
+		}
+		public int CycleOffset
+		{
+			get;
+			set;
 		}
 	}
 
