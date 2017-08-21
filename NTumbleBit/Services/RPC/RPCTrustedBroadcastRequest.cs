@@ -153,7 +153,12 @@ namespace NTumbleBit.Services.RPC
 
 			DateTimeOffset startTime = DateTimeOffset.UtcNow;
 			int totalEntries = 0;
+
 			HashSet<uint256> knownBroadcastedSet = new HashSet<uint256>(knownBroadcasted ?? new uint256[0]);
+			foreach(var confirmedTx in _Cache.GetEntries().Where(e => e.Confirmations > 6).Select(t => t.TransactionId))
+			{
+				knownBroadcastedSet.Add(confirmedTx);
+			}
 
 			List<Transaction> broadcasted = new List<Transaction>();
 			foreach(var broadcast in GetRequests())
