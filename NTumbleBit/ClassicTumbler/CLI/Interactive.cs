@@ -197,6 +197,13 @@ namespace NTumbleBit.ClassicTumbler.CLI
 					throw new FormatException();
 			}
 
+
+			int bobCount = 0;
+			int aliceCount = 0;
+			int redeemCount = 0;
+			int clientEscapeCount = 0;
+			int uncooperativeCount = 0;
+
 			if(options.CycleId != null)
 			{
 				while(options.PreviousCount > 0)
@@ -258,6 +265,46 @@ namespace NTumbleBit.ClassicTumbler.CLI
 						{
 							var builder = new StringBuilder();
 							builder.AppendLine(group.Key.ToString());
+
+							if(state != null)
+							{
+								var isBob = group.Any(o => o.RecordType == RecordType.Transaction && o.TransactionType == TransactionType.TumblerEscrow);
+								var isAlice = group.Any(o => o.RecordType == RecordType.Transaction && o.TransactionType == TransactionType.ClientEscrow);
+								if(isBob)
+									bobCount++;
+								if(isAlice)
+									aliceCount++;
+
+								var isRedeemed = group.Any(o => o.RecordType == RecordType.Transaction && 
+															(o.TransactionType == TransactionType.ClientRedeem || o.TransactionType == TransactionType.ClientOfferRedeem));
+								if(isRedeemed)
+									redeemCount++;
+
+								var isOffer = group.Any(o => o.RecordType == RecordType.Transaction && o.TransactionType == TransactionType.ClientOffer);
+								if(isOffer)
+								{
+									Console.WriteLine("Warning: This is an uncooperative actor");
+									uncooperativeCount++;
+								}
+							}
+							else
+							{
+								var isEscaped = group.Any(o => o.RecordType == RecordType.Transaction && o.TransactionType == TransactionType.ClientEscape);
+								if(isEscaped)
+									clientEscapeCount++;
+
+								var isRedeemed = group.Any(o => o.RecordType == RecordType.Transaction && o.TransactionType == TransactionType.TumblerRedeem);
+								if(isRedeemed)
+									redeemCount++;
+
+								var isOffer = group.Any(o => o.RecordType == RecordType.Transaction && o.TransactionType == TransactionType.ClientFulfill);
+								if(isOffer)
+								{
+									Console.WriteLine("Warning: This is an uncooperative actor");
+									uncooperativeCount++;
+								}
+							}							
+							
 							foreach(var data in group.OrderBy(g => g.RecordType))
 							{
 								builder.Append("\t" + data.RecordType.ToString());
@@ -274,6 +321,17 @@ namespace NTumbleBit.ClassicTumbler.CLI
 					{
 						Console.WriteLine("Cycle " + cycle.Start + " has no data");
 					}
+
+					if(bobCount != 0)
+						Console.WriteLine("Bob count: " + bobCount);
+					if(aliceCount != 0)
+						Console.WriteLine("Alice count: " + aliceCount);
+					if(redeemCount != 0)
+						Console.WriteLine("Redeem count: " + redeemCount);
+					if(clientEscapeCount != 0)
+						Console.WriteLine("Escape count: " + clientEscapeCount);
+					if(uncooperativeCount != 0)
+						Console.WriteLine("Uncooperative count: " + uncooperativeCount);
 					Console.WriteLine("=====================================");
 
 					options.PreviousCount--;
