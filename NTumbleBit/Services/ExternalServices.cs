@@ -30,9 +30,15 @@ namespace NTumbleBit.Services
 			}
 
 			var cache = new RPCWalletCache(rpc, repository);
-			service.WalletService = new RPCWalletService(rpc) { BatchInterval = aggregateFunding ? TimeSpan.FromSeconds(30) : TimeSpan.Zero};
+			service.WalletService = new RPCWalletService(rpc)
+			{
+				BatchInterval = aggregateFunding ? TimeSpan.FromSeconds(30) : TimeSpan.Zero
+			};
 			service.BroadcastService = new RPCBroadcastService(rpc, cache, repository);
-			service.BlockExplorerService = new RPCBlockExplorerService(rpc, cache, repository);
+			service.BlockExplorerService = new RPCBlockExplorerService(rpc, cache, repository)
+			{
+				BatchInterval = aggregateFunding ? TimeSpan.FromSeconds(5) : TimeSpan.Zero
+			};
 			service.TrustedBroadcastService = new RPCTrustedBroadcastService(rpc, service.BroadcastService, service.BlockExplorerService, repository, cache, tracker)
 			{
 				//BlockExplorer will already track the addresses, since they used a shared bitcoind, no need of tracking again (this would overwrite labels)

@@ -203,6 +203,15 @@ namespace NTumbleBit
 			}, throwIfRPCError: false);
 		}
 
+		public static Task<RPCResponse> SendCommandNoThrowsAsync(this RPCClient client, string commandName, params object[] parameters)
+		{
+			return client.SendCommandAsync(new RPCRequest
+			{
+				Method = commandName,
+				Params = parameters
+			}, throwIfRPCError: false);
+		}
+
 		public static ScriptCoin Clone(this ScriptCoin scriptCoin)
 		{
 			return new ScriptCoin(scriptCoin, scriptCoin.Redeem);

@@ -251,7 +251,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 							Tracker.AddressCreated(cycle.Start, TransactionType.ClientEscrow, escrowTxOut.ScriptPubKey, correlation);
 							Tracker.TransactionCreated(cycle.Start, TransactionType.ClientEscrow, clientEscrowTx.GetHash(), correlation);
-							Services.BlockExplorerService.Track(escrowTxOut.ScriptPubKey);
+							Services.BlockExplorerService.TrackAsync(escrowTxOut.ScriptPubKey).GetAwaiter().GetResult();
 
 
 							var redeemTx = SolverClientSession.CreateRedeemTransaction(feeRate);
@@ -312,7 +312,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 							PromiseClientSession = ClientChannelNegotiation.ReceiveTumblerEscrowedCoin(tumblerInformation);
 							Logs.Client.LogInformation("Tumbler escrow broadcasted");
 							//Tell to the block explorer we need to track that address (for checking if it is confirmed in payment phase)
-							Services.BlockExplorerService.Track(PromiseClientSession.EscrowedCoin.ScriptPubKey);
+							Services.BlockExplorerService.TrackAsync(PromiseClientSession.EscrowedCoin.ScriptPubKey).GetAwaiter().GetResult();
 							Tracker.AddressCreated(cycle.Start, TransactionType.TumblerEscrow, PromiseClientSession.EscrowedCoin.ScriptPubKey, correlation);
 							Tracker.TransactionCreated(cycle.Start, TransactionType.TumblerEscrow, PromiseClientSession.EscrowedCoin.Outpoint.Hash, correlation);
 
@@ -364,7 +364,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 									var offerRedeem = SolverClientSession.CreateOfferRedeemTransaction(feeRate);
 									//May need to find solution in the fulfillment transaction
-									Services.BlockExplorerService.Track(offerRedeem.PreviousScriptPubKey);
+									Services.BlockExplorerService.TrackAsync(offerRedeem.PreviousScriptPubKey).GetAwaiter().GetResult();
 									Tracker.AddressCreated(cycle.Start, TransactionType.ClientOfferRedeem, SolverClientSession.GetInternalState().RedeemDestination, correlation);
 									Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.ClientOfferRedeem, correlation, offerRedeem);
 									try

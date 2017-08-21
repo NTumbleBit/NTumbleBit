@@ -13,6 +13,7 @@ namespace NTumbleBit.Services.RPC
 	public class RPCBlockExplorerService : IBlockExplorerService
 	{
 		RPCWalletCache _Cache;
+		RPCBatch _RPCBatch;
 		public RPCBlockExplorerService(RPCClient client, RPCWalletCache cache, IRepository repo)
 		{
 			if(client == null)
@@ -24,6 +25,19 @@ namespace NTumbleBit.Services.RPC
 			_RPCClient = client;
 			_Repo = repo;
 			_Cache = cache;
+			_RPCBatch = new RPCBatch(client);
+		}
+
+		public TimeSpan BatchInterval
+		{
+			get
+			{
+				return _RPCBatch.BatchInterval;
+			}
+			set
+			{
+				_RPCBatch.BatchInterval = value;
+			}
 		}
 
 		IRepository _Repo;
@@ -169,9 +183,13 @@ namespace NTumbleBit.Services.RPC
 			catch(RPCException) { return null; }
 		}
 
-		public void Track(Script scriptPubkey)
+		public async Task TrackAsync(Script scriptPubkey)
 		{
-			RPCClient.ImportAddress(scriptPubkey, "", false);
+			await _RPCBatch.Do(async batch =>
+			{
+				await batch.ImportAddressAsync(scriptPubkey, "", false).ConfigureAwait(false);
+				return true;
+			}).ConfigureAwait(false);
 		}
 
 		public int GetBlockConfirmations(uint256 blockId)
@@ -182,15 +200,18 @@ namespace NTumbleBit.Services.RPC
 			return (int)result.Result["confirmations"];
 		}
 
-		public bool TrackPrunedTransaction(Transaction transaction, MerkleBlock merkleProof)
+		public async Task<bool> TrackPrunedTransactionAsync(Transaction transaction, MerkleBlock merkleProof)
 		{
-			var result = RPCClient.SendCommandNoThrows("importprunedfunds", transaction.ToHex(), Encoders.Hex.EncodeData(merkleProof.ToBytes()));
-			var success = result != null && result.Error == null;
-			if(success)
+			return await _RPCBatch.Do(async batch =>
 			{
-				_Cache.ImportTransaction(transaction, GetBlockConfirmations(merkleProof.Header.GetHash()));
-			}
-			return success;
+				var result = await batch.SendCommandNoThrowsAsync("importprunedfunds", transaction.ToHex(), Encoders.Hex.EncodeData(merkleProof.ToBytes())).ConfigureAwait(false);
+				var success = result != null && result.Error == null;
+				if(success)
+				{
+					_Cache.ImportTransaction(transaction, GetBlockConfirmations(merkleProof.Header.GetHash()));
+				}
+				return success;
+			}).ConfigureAwait(false);
 		}
 	}
 }

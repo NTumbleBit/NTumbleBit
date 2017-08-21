@@ -137,7 +137,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 		}
 
 		[HttpPost("api/v1/tumblers/{tumblerId}/clientchannels/confirm")]
-		public PuzzleSolution SignVoucher(
+		public async Task<PuzzleSolution> SignVoucher(
 			[ModelBinder(BinderType = typeof(TumblerParametersModelBinder))]
 			ClassicTumblerParameters tumblerId,
 			[FromBody]SignVoucherRequest request)
@@ -208,8 +208,8 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 				var solverServerSession = new SolverServerSession(Runtime.TumblerKey, Parameters.CreateSolverParamaters());
 				solverServerSession.ConfigureEscrowedCoin(escrowedCoin, key);
 
-				Services.BlockExplorerService.Track(escrowedCoin.ScriptPubKey);
-				if(!Services.BlockExplorerService.TrackPrunedTransaction(request.Transaction, request.MerkleProof))
+				await Services.BlockExplorerService.TrackAsync(escrowedCoin.ScriptPubKey);
+				if(! await Services.BlockExplorerService.TrackPrunedTransactionAsync(request.Transaction, request.MerkleProof))
 					throw new ActionResultException(BadRequest("invalid-merkleproof"));
 
 				if(!Repository.MarkUsedNonce(cycle.Start, new uint160(key.PubKey.Hash.ToBytes())))
@@ -267,7 +267,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 				var tx = await Services.WalletService.FundTransactionAsync(txOut, fee);
 				var correlation = escrow.GetCorrelation();
 				var escrowTumblerLabel = $"Cycle {cycle.Start} Tumbler Escrow";
-				Services.BlockExplorerService.Track(txOut.ScriptPubKey);
+				await Services.BlockExplorerService.TrackAsync(txOut.ScriptPubKey);
 
 				Tracker.AddressCreated(cycle.Start, TransactionType.TumblerEscrow, txOut.ScriptPubKey, correlation);
 				Tracker.TransactionCreated(cycle.Start, TransactionType.TumblerEscrow, tx.GetHash(), correlation);
@@ -398,7 +398,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 		}
 
 		[HttpPost("api/v1/tumblers/{tumblerId}/clientchannels/{cycleId}/{channelId}/offer")]
-		public SolutionKey[] FulfillOffer(
+		public async Task<SolutionKey[]> FulfillOffer(
 			[ModelBinder(BinderType = typeof(TumblerParametersModelBinder))]
 			ClassicTumblerParameters tumblerId,
 			int cycleId, string channelId, [FromBody]SignatureWrapper wrapper)
@@ -426,7 +426,9 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 				var correlation = GetCorrelation(session);
 
 				var offerScriptPubKey = session.GetInternalState().OfferCoin.ScriptPubKey;
-				Services.BlockExplorerService.Track(offerScriptPubKey);
+
+
+				await Services.BlockExplorerService.TrackAsync(offerScriptPubKey);
 
 				Tracker.AddressCreated(cycle.Start, TransactionType.ClientOffer, offerScriptPubKey, correlation);
 				Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.ClientOffer, correlation, signedOffer);
