@@ -20,7 +20,7 @@ As a user, you will need:
 
 On Tumbler server side, run Bitcoin Core with a big RPC work queue. TumbleBit has peak of activity making it likely to reach the limit.
 ```
-bitcoind -server -rpcworkqueue=100
+bitcoind -rpcworkqueue=100
 ```
 
 Alternatively, you can also put the `rpcworkqueue=100` in the configuration file of your bitcoin instance.
