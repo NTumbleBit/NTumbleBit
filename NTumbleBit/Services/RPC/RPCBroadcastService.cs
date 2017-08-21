@@ -84,7 +84,17 @@ namespace NTumbleBit.Services.RPC
 			var transactions = Repository.List<Record>("Broadcasts");
 			foreach(var tx in transactions)
 				tx.Transaction.CacheHashes();
-			return transactions.TopologicalSort(tx => transactions.Where(tx2 => tx.Transaction.Inputs.Any<TxIn>(input => input.PrevOut.Hash == tx2.Transaction.GetHash()))).ToArray();
+
+			var txByTxId = transactions.ToDictionary(t => t.Transaction.GetHash());
+			var dependsOn = transactions.Select(t => new
+			{
+				Tx = t,
+				Depends = t.Transaction.Inputs.Select(i => i.PrevOut)
+											  .Where(o => txByTxId.ContainsKey(o.Hash))
+											  .Select(o => txByTxId[o.Hash])
+			})
+			.ToDictionary(o => o.Tx, o => o.Depends.ToArray());
+			return transactions.TopologicalSort(tx => dependsOn[tx]).ToArray();
 		}
 		public Transaction[] TryBroadcast()
 		{
