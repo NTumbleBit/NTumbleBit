@@ -279,7 +279,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 				session.ConfigureEscrowedCoin(coin.ToScriptCoin(escrow.ToScript()), escrowKey, redeem.ScriptPubKey);
 				Repository.Save(cycle.Start, session);
 
-				Services.BroadcastService.Broadcast(tx);
+				await Services.BroadcastService.BroadcastAsync(tx);
 
 				var redeemTx = session.CreateRedeemTransaction(fee);
 				Tracker.AddressCreated(cycle.Start, TransactionType.TumblerRedeem, redeem.ScriptPubKey, correlation);
@@ -480,7 +480,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 				Tracker.AddressCreated(cycleId, TransactionType.ClientEscape, tx.Outputs[0].ScriptPubKey, correlation);
 				Tracker.TransactionCreated(cycleId, TransactionType.ClientEscape, tx.GetHash(), correlation);
 
-				Services.BroadcastService.Broadcast(tx);
+				await Services.BroadcastService.BroadcastAsync(tx);
 			}
 			catch(PuzzleException ex)
 			{

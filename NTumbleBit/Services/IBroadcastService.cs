@@ -8,7 +8,7 @@ namespace NTumbleBit.Services
 {
 	public interface IBroadcastService
     {
-		bool Broadcast(Transaction tx);
+		Task<bool> BroadcastAsync(Transaction tx);
 		Transaction GetKnownTransaction(uint256 txId);
 		Transaction[] TryBroadcast(ref uint256[] knownBroadcasted);
 		Transaction[] TryBroadcast();

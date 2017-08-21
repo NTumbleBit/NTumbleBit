@@ -161,6 +161,8 @@ namespace NTumbleBit.Services.RPC
 			}
 
 			List<Transaction> broadcasted = new List<Transaction>();
+			var broadcasting = new List<Tuple<Record, Transaction, Task<bool>>>();
+
 			foreach(var broadcast in GetRequests())
 			{
 				totalEntries++;
@@ -172,17 +174,17 @@ namespace NTumbleBit.Services.RPC
 					RecordMaping(broadcast, transaction, txHash);
 
 					if(!knownBroadcastedSet.Contains(txHash)
-						&& broadcast.Request.IsBroadcastableAt(height)
-						&& _Broadcaster.Broadcast(transaction))
+						&& broadcast.Request.IsBroadcastableAt(height))
 					{
-						LogBroadcasted(broadcast);
-						broadcasted.Add(transaction);
+						broadcasting.Add(Tuple.Create(broadcast, transaction, _Broadcaster.BroadcastAsync(transaction)));
 					}
 					knownBroadcastedSet.Add(txHash);
 				}
 				else
 				{
-					foreach(var tx in GetReceivedTransactions(broadcast.Request.PreviousScriptPubKey))
+					foreach(var tx in GetReceivedTransactions(broadcast.Request.PreviousScriptPubKey)
+						//Currently broadcasting transaction might have received transactions for PreviousScriptPubKey
+						.Concat(broadcasting.ToArray().Select(b => b.Item2)))
 					{
 						foreach(var coin in tx.Outputs.AsCoins())
 						{
@@ -195,11 +197,9 @@ namespace NTumbleBit.Services.RPC
 								RecordMaping(broadcast, transaction, txHash);
 
 								if(!knownBroadcastedSet.Contains(txHash)
-									&& broadcast.Request.IsBroadcastableAt(height)
-									&& _Broadcaster.Broadcast(transaction))
+									&& broadcast.Request.IsBroadcastableAt(height))
 								{
-									LogBroadcasted(broadcast);
-									broadcasted.Add(transaction);
+									broadcasting.Add(Tuple.Create(broadcast, transaction, _Broadcaster.BroadcastAsync(transaction)));
 								}
 								knownBroadcastedSet.Add(txHash);
 							}
@@ -213,6 +213,15 @@ namespace NTumbleBit.Services.RPC
 			}
 
 			knownBroadcasted = knownBroadcastedSet.ToArray();
+
+			foreach(var b in broadcasting)
+			{
+				if(b.Item3.GetAwaiter().GetResult())
+				{
+					LogBroadcasted(b.Item1);
+					broadcasted.Add(b.Item2);
+				}
+			}
 
 			Logs.Broadcasters.LogInformation($"Trusted Broadcaster is monitoring {totalEntries} entries in {(long)(DateTimeOffset.UtcNow - startTime).TotalSeconds} seconds");
 			return broadcasted.ToArray();

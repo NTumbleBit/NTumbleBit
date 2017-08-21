@@ -260,7 +260,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 							//redeemTx does not be to be recorded to the tracker, this is TrustedBroadcastService job
 
-							Services.BroadcastService.Broadcast(clientEscrowTx);
+							Services.BroadcastService.BroadcastAsync(clientEscrowTx).GetAwaiter().GetResult();
 
 							Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.ClientRedeem, correlation, redeemTx);
 
@@ -414,7 +414,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 									var tumblingSolution = SolverClientSession.GetSolution();
 									var transaction = PromiseClientSession.GetSignedTransaction(tumblingSolution);
 									Tracker.TransactionCreated(cycle.Start, TransactionType.TumblerCashout, transaction.GetHash(), correlation);
-									Services.BroadcastService.Broadcast(transaction);
+									Services.BroadcastService.BroadcastAsync(transaction).GetAwaiter().GetResult();
 								}
 							}
 						}

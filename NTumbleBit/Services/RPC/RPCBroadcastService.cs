@@ -33,10 +33,25 @@ namespace NTumbleBit.Services.RPC
 			_Repository = repository;
 			_Cache = cache;
 			_BlockExplorerService = new RPCBlockExplorerService(rpc, cache, repository);
+			_RPCBatch = new RPCBatch(_RPCClient);
+		}
+
+		public TimeSpan BatchInterval
+		{
+			get
+			{
+				return _RPCBatch.BatchInterval;
+			}
+			set
+			{
+				_RPCBatch.BatchInterval = value;
+			}
 		}
 
 
 		private readonly RPCBlockExplorerService _BlockExplorerService;
+		private readonly RPCBatch _RPCBatch;
+
 		public RPCBlockExplorerService BlockExplorerService
 		{
 			get
@@ -81,7 +96,7 @@ namespace NTumbleBit.Services.RPC
 			var startTime = DateTimeOffset.UtcNow;
 			int totalEntries = 0;
 			List<Transaction> broadcasted = new List<Transaction>();
-
+			var broadcasting = new List<Tuple<Transaction, Task<bool>>>();
 			HashSet<uint256> knownBroadcastedSet = new HashSet<uint256>(knownBroadcasted ?? new uint256[0]);
 			int height = _Cache.BlockCount;
 			foreach(var obj in _Cache.GetEntries())
@@ -93,63 +108,75 @@ namespace NTumbleBit.Services.RPC
 			foreach(var tx in GetTransactions())
 			{
 				totalEntries++;
-				if(!knownBroadcastedSet.Contains(tx.Transaction.GetHash()) &&
-					TryBroadcastCore(tx, height))
+				if(!knownBroadcastedSet.Contains(tx.Transaction.GetHash()))
 				{
-					broadcasted.Add(tx.Transaction);
+					broadcasting.Add(Tuple.Create(tx.Transaction, TryBroadcastCoreAsync(tx, height)));
 				}
 				knownBroadcastedSet.Add(tx.Transaction.GetHash());
 			}
+
 			knownBroadcasted = knownBroadcastedSet.ToArray();
+
+			foreach(var broadcast in broadcasting)
+			{
+				if(broadcast.Item2.GetAwaiter().GetResult())
+					broadcasted.Add(broadcast.Item1);
+			}
+
 			Logs.Broadcasters.LogInformation($"Broadcasted {broadcasted.Count} transaction(s), monitoring {totalEntries} entries in {(long)(DateTimeOffset.UtcNow - startTime).TotalSeconds} seconds");
 			return broadcasted.ToArray();
 		}
-
-		private bool TryBroadcastCore(Record tx, int currentHeight)
+		
+		private async Task<bool> TryBroadcastCoreAsync(Record tx, int currentHeight)
 		{
-			bool remove;
-			var result = TryBroadcastCore(tx, currentHeight, out remove);
-			if(remove)
-				RemoveRecord(tx);
-			return result;
-		}
-
-		private bool TryBroadcastCore(Record tx, int currentHeight, out bool remove)
-		{
-			remove = currentHeight >= tx.Expiration;
-
-			//Happens when the caller does not know the previous input yet
-			if(tx.Transaction.Inputs.Count == 0 || tx.Transaction.Inputs[0].PrevOut.Hash == uint256.Zero)
-				return false;
-
-			bool isFinal = tx.Transaction.IsFinal(DateTimeOffset.UtcNow, currentHeight + 1);
-			if(!isFinal || IsDoubleSpend(tx.Transaction))
-				return false;
-
+			bool remove = false;
 			try
 			{
-				RPCClient.SendRawTransaction(tx.Transaction);
-				_Cache.ImportTransaction(tx.Transaction, 0);
-				Logs.Broadcasters.LogInformation($"Broadcasted {tx.Transaction.GetHash()}");
-				return true;
-			}
-			catch(RPCException ex)
-			{
-				if(ex.RPCResult == null || ex.RPCResult.Error == null)
-				{
+				remove = currentHeight >= tx.Expiration;
+
+				//Happens when the caller does not know the previous input yet
+				if(tx.Transaction.Inputs.Count == 0 || tx.Transaction.Inputs[0].PrevOut.Hash == uint256.Zero)
 					return false;
-				}
-				var error = ex.RPCResult.Error.Message;
-				if(ex.RPCResult.Error.Code != RPCErrorCode.RPC_TRANSACTION_ALREADY_IN_CHAIN &&
-				   !error.EndsWith("bad-txns-inputs-spent", StringComparison.OrdinalIgnoreCase) &&
-				   !error.EndsWith("txn-mempool-conflict", StringComparison.OrdinalIgnoreCase) &&
-				   !error.EndsWith("Missing inputs", StringComparison.OrdinalIgnoreCase))
+
+				bool isFinal = tx.Transaction.IsFinal(DateTimeOffset.UtcNow, currentHeight + 1);
+				if(!isFinal || IsDoubleSpend(tx.Transaction))
+					return false;
+
+				try
 				{
-					remove = false;
+					await _RPCBatch.Do(async batch =>
+					{
+						await batch.SendRawTransactionAsync(tx.Transaction).ConfigureAwait(false);
+						return true;
+					}).ConfigureAwait(false);
+
+					_Cache.ImportTransaction(tx.Transaction, 0);
+					Logs.Broadcasters.LogInformation($"Broadcasted {tx.Transaction.GetHash()}");
+					return true;
 				}
+				catch(RPCException ex)
+				{
+					if(ex.RPCResult == null || ex.RPCResult.Error == null)
+					{
+						return false;
+					}
+					var error = ex.RPCResult.Error.Message;
+					if(ex.RPCResult.Error.Code != RPCErrorCode.RPC_TRANSACTION_ALREADY_IN_CHAIN &&
+					   !error.EndsWith("bad-txns-inputs-spent", StringComparison.OrdinalIgnoreCase) &&
+					   !error.EndsWith("txn-mempool-conflict", StringComparison.OrdinalIgnoreCase) &&
+					   !error.EndsWith("Missing inputs", StringComparison.OrdinalIgnoreCase))
+					{
+						remove = false;
+					}
+				}
+				return false;
 			}
-			return false;
-		}		
+			finally
+			{
+				if(remove)
+					RemoveRecord(tx);
+			}
+		}
 
 		private bool IsDoubleSpend(Transaction tx)
 		{
@@ -177,7 +204,7 @@ namespace NTumbleBit.Services.RPC
 			Repository.UpdateOrInsert<Transaction>("CachedTransactions", tx.Transaction.GetHash().ToString(), tx.Transaction, (a, b) => a);
 		}
 
-		public bool Broadcast(Transaction transaction)
+		public Task<bool> BroadcastAsync(Transaction transaction)
 		{
 			var record = new Record();
 			record.Transaction = transaction;
@@ -185,7 +212,7 @@ namespace NTumbleBit.Services.RPC
 			//3 days expiration
 			record.Expiration = height + (int)(TimeSpan.FromDays(3).Ticks / Network.Main.Consensus.PowTargetSpacing.Ticks);
 			Repository.UpdateOrInsert<Record>("Broadcasts", transaction.GetHash().ToString(), record, (o, n) => o);
-			return TryBroadcastCore(record, height);
+			return TryBroadcastCoreAsync(record, height);
 		}
 
 		public Transaction GetKnownTransaction(uint256 txId)
