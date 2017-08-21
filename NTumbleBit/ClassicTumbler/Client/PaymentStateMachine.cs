@@ -193,7 +193,8 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 
 			Logs.Client.LogInformation(Environment.NewLine);
-			var blocksLeft = (cycle.GetPeriods().GetPeriod(phase).End - height);
+			var period = cycle.GetPeriods().GetPeriod(phase);
+			var blocksLeft = period.End - height;
 			Logs.Client.LogInformation($"Cycle {cycle.Start} ({Status})");
 			Logs.Client.LogInformation($"{cycle.ToString(height)} in phase {phase} ({blocksLeft} more blocks)");
 			var previousState = Status;
@@ -331,17 +332,17 @@ namespace NTumbleBit.ClassicTumbler.Client
 						}
 						else if(Status == PaymentStateMachineStatus.TumblerChannelBroadcasted)
 						{
-							TransactionInformation tumblerTx = GetTransactionInformation(PromiseClientSession.EscrowedCoin, false);
-							if(tumblerTx != null && tumblerTx.Confirmations >= cycle.SafetyPeriodDuration)
-							{
-								var bobCount = Parameters.CountEscrows(tumblerTx.Transaction, Identity.Bob);
-								Logs.Client.LogInformation($"Tumbler escrow reached {cycle.SafetyPeriodDuration} confirmations");
-								Logs.Client.LogInformation($"Tumbler escrow transaction has {bobCount} users");
-							}
-							Status = PaymentStateMachineStatus.TumblerChannelConfirmed;
+							CheckTumblerChannelConfirmed(cycle);
 						}
 						break;
 					case CyclePhase.PaymentPhase:
+						//Could have confirmed during safe period
+						//Only check for the first block when period start, 
+						//else Tumbler can know deanonymize you based on the timing of first Alice request if the transaction was not confirmed previously
+						if(Status == PaymentStateMachineStatus.TumblerChannelBroadcasted && height == period.Start)
+						{
+							CheckTumblerChannelConfirmed(cycle);
+						}
 						if(PromiseClientSession != null && Status == PaymentStateMachineStatus.TumblerChannelConfirmed)
 						{
 							TransactionInformation tumblerTx = GetTransactionInformation(PromiseClientSession.EscrowedCoin, false);
@@ -433,6 +434,18 @@ namespace NTumbleBit.ClassicTumbler.Client
 				if(bob != null)
 					bob.Dispose();
 			}
+		}
+
+		private void CheckTumblerChannelConfirmed(CycleParameters cycle)
+		{
+			TransactionInformation tumblerTx = GetTransactionInformation(PromiseClientSession.EscrowedCoin, false);
+			if(tumblerTx != null && tumblerTx.Confirmations >= cycle.SafetyPeriodDuration)
+			{
+				var bobCount = Parameters.CountEscrows(tumblerTx.Transaction, Identity.Bob);
+				Logs.Client.LogInformation($"Tumbler escrow reached {cycle.SafetyPeriodDuration} confirmations");
+				Logs.Client.LogInformation($"Tumbler escrow transaction has {bobCount} users");
+			}
+			Status = PaymentStateMachineStatus.TumblerChannelConfirmed;
 		}
 
 		private CorrelationId GetCorrelation(ScriptCoin escrowCoin)
