@@ -326,20 +326,17 @@ namespace NTumbleBit.ClassicTumbler.CLI
 							Console.WriteLine(builder.ToString());
 						}
 						Console.WriteLine("========");
-
-						Console.WriteLine(stats.ToString());
-						statsTotal = statsTotal + stats;
-						stats = new Stats();
-						Console.WriteLine("========");
 					}
 					if(!hasData)
 					{
 						Console.WriteLine("Cycle " + cycle.Start + " has no data");
 					}
 
-					Console.WriteLine("Stats Total:");
-					Console.WriteLine(statsTotal.ToString());
+					Console.WriteLine(stats.ToString());
 					Console.WriteLine("=====================================");
+
+					statsTotal = statsTotal + stats;
+					stats = new Stats();
 
 					options.PreviousCount--;
 					try
@@ -351,6 +348,8 @@ namespace NTumbleBit.ClassicTumbler.CLI
 						break;
 					}
 				}
+				Console.WriteLine("Stats Total:");
+				Console.WriteLine(statsTotal.ToString());
 			}
 
 			if(options.TxId != null)
