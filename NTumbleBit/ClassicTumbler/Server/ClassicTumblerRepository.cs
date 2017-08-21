@@ -128,5 +128,11 @@ namespace NTumbleBit.ClassicTumbler.Server
 			});
 			return !used;
 		}
+
+		public bool IsUsed(int cycle, uint160 nonce)
+		{
+			var partition = GetCyclePartition(cycle);
+			return Repository.Get<bool>(partition, "Nonces-" + nonce);
+		}
 	}
 }

@@ -183,6 +183,9 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			}
 
 			var key = Repository.GetKey(cycle.Start, request.KeyReference);
+			var nonce = new uint160(key.PubKey.Hash.ToBytes());
+			if(Repository.IsUsed(cycle.Start, nonce))
+				throw new ActionResultException(BadRequest("duplicate-query"));
 
 			var expectedEscrow = new EscrowScriptPubKeyParameters(request.ClientEscrowKey, key.PubKey, cycle.GetClientLockTime());
 
@@ -206,17 +209,12 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			{
 				var solverServerSession = new SolverServerSession(Runtime.TumblerKey, Parameters.CreateSolverParamaters());
 				solverServerSession.ConfigureEscrowedCoin(escrowedCoin, key);
-				Logs.Tumbler.LogDebug("Tracking escrow...");
 				await Services.BlockExplorerService.TrackAsync(escrowedCoin.ScriptPubKey);
-				Logs.Tumbler.LogDebug("Tracking pruned funds...");
-				if(! await Services.BlockExplorerService.TrackPrunedTransactionAsync(request.Transaction, request.MerkleProof))
+				if(!await Services.BlockExplorerService.TrackPrunedTransactionAsync(request.Transaction, request.MerkleProof))
 					throw new ActionResultException(BadRequest("invalid-merkleproof"));
-				Logs.Tumbler.LogDebug("Pruned funds tracked...");
-				if(!Repository.MarkUsedNonce(cycle.Start, new uint160(key.PubKey.Hash.ToBytes())))
-				{
-					Logs.Tumbler.LogDebug("Nonce already marked");
-					throw new ActionResultException(BadRequest("invalid-transaction"));
-				}
+				if(!Repository.MarkUsedNonce(cycle.Start, nonce))
+					throw new ActionResultException(BadRequest("duplicate-query"));
+
 				Repository.Save(cycle.Start, solverServerSession);
 				Logs.Tumbler.LogInformation($"Cycle {cycle.Start} Proof of Escrow signed for " + transaction.GetHash());
 
@@ -242,6 +240,8 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			if(tumblerId == null)
 				throw new ArgumentNullException("tumblerId");
 			var height = Services.BlockExplorerService.GetCurrentHeight();
+			if(Repository.IsUsed(request.CycleStart, request.Nonce))
+				throw new ActionResultException(BadRequest("duplicate-query"));
 			var cycle = GetCycle(request.CycleStart);
 			if(!cycle.IsInPhase(CyclePhase.TumblerChannelEstablishment, height))
 				throw new ActionResultException(BadRequest("invalid-phase"));
@@ -251,9 +251,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 				if(!Parameters.VoucherKey.PublicKey.Verify(request.Signature, NBitcoin.Utils.ToBytes((uint)request.CycleStart, true), request.Nonce))
 					throw new ActionResultException(BadRequest("incorrect-voucher"));
 				if(!Repository.MarkUsedNonce(request.CycleStart, request.Nonce))
-				{
-					throw new ActionResultException(BadRequest("nonce-already-used"));
-				}
+					throw new ActionResultException(BadRequest("duplicate-query"));
 
 				var escrowKey = new Key();
 
