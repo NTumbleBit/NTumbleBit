@@ -275,15 +275,13 @@ namespace NTumbleBit.ClassicTumbler.CLI
 								if(isAlice)
 									aliceCount++;
 
-								var isRedeemed = group.Any(o => o.RecordType == RecordType.Transaction && 
-															(o.TransactionType == TransactionType.ClientRedeem || o.TransactionType == TransactionType.ClientOfferRedeem));
+								var isRedeemed = group.Any(o => o.RecordType == RecordType.Transaction && o.TransactionType == TransactionType.TumblerRedeem);
 								if(isRedeemed)
 									redeemCount++;
 
-								var isOffer = group.Any(o => o.RecordType == RecordType.Transaction && o.TransactionType == TransactionType.ClientOffer);
+								var isOffer = group.Any(o => o.RecordType == RecordType.Transaction && o.TransactionType == TransactionType.ClientFulfill);
 								if(isOffer)
 								{
-									Console.WriteLine("Warning: This is an uncooperative actor");
 									uncooperativeCount++;
 								}
 							}
@@ -293,14 +291,14 @@ namespace NTumbleBit.ClassicTumbler.CLI
 								if(isEscaped)
 									clientEscapeCount++;
 
-								var isRedeemed = group.Any(o => o.RecordType == RecordType.Transaction && o.TransactionType == TransactionType.TumblerRedeem);
+								var isRedeemed = group.Any(o => o.RecordType == RecordType.Transaction &&
+															(o.TransactionType == TransactionType.ClientRedeem || o.TransactionType == TransactionType.ClientOfferRedeem));
 								if(isRedeemed)
 									redeemCount++;
 
-								var isOffer = group.Any(o => o.RecordType == RecordType.Transaction && o.TransactionType == TransactionType.ClientFulfill);
+								var isOffer = group.Any(o => o.RecordType == RecordType.Transaction && (o.TransactionType == TransactionType.ClientOffer || o.TransactionType == TransactionType.ClientOfferRedeem));
 								if(isOffer)
 								{
-									Console.WriteLine("Warning: This is an uncooperative actor");
 									uncooperativeCount++;
 								}
 							}							
