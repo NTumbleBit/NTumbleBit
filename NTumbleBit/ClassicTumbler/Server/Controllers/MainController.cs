@@ -182,8 +182,9 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 				throw new ActionResultException(BadRequest("invalid-transaction"));
 			}
 
-
+			Logs.Tumbler.LogDebug("Getting key");
 			var key = Repository.GetKey(cycle.Start, request.KeyReference);
+			Logs.Tumbler.LogDebug("Gotten key");
 
 			var expectedEscrow = new EscrowScriptPubKeyParameters(request.ClientEscrowKey, key.PubKey, cycle.GetClientLockTime());
 
@@ -207,11 +208,12 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			{
 				var solverServerSession = new SolverServerSession(Runtime.TumblerKey, Parameters.CreateSolverParamaters());
 				solverServerSession.ConfigureEscrowedCoin(escrowedCoin, key);
-
+				Logs.Tumbler.LogDebug("Tracking escrow...");
 				await Services.BlockExplorerService.TrackAsync(escrowedCoin.ScriptPubKey);
+				Logs.Tumbler.LogDebug("Tracking pruned funds...");
 				if(! await Services.BlockExplorerService.TrackPrunedTransactionAsync(request.Transaction, request.MerkleProof))
 					throw new ActionResultException(BadRequest("invalid-merkleproof"));
-
+				Logs.Tumbler.LogDebug("Pruned funds tracked...");
 				if(!Repository.MarkUsedNonce(cycle.Start, new uint160(key.PubKey.Hash.ToBytes())))
 				{
 					Logs.Tumbler.LogDebug("Nonce already marked");
