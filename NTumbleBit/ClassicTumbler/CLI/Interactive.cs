@@ -266,7 +266,7 @@ namespace NTumbleBit.ClassicTumbler.CLI
 							var builder = new StringBuilder();
 							builder.AppendLine(group.Key.ToString());
 
-							if(state != null)
+							if(state == null)
 							{
 								var isBob = group.Any(o => o.RecordType == RecordType.Transaction && o.TransactionType == TransactionType.TumblerEscrow);
 								var isAlice = group.Any(o => o.RecordType == RecordType.Transaction && o.TransactionType == TransactionType.ClientEscrow);
