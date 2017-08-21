@@ -275,11 +275,11 @@ namespace NTumbleBit.ClassicTumbler.CLI
 					Console.WriteLine("Records:");
 					foreach(var correlationGroup in records.GroupBy(r => r.Correlation))
 					{
+						stats.CorrelationGroupCount++;
 						hasData = true;
 						Console.WriteLine("========");
 						foreach(var group in correlationGroup.GroupBy(r => r.TransactionType).OrderBy(r => (int)r.Key))
 						{
-							stats.CorrelationGroupCount++;
 							var builder = new StringBuilder();
 							builder.AppendLine(group.Key.ToString());
 
