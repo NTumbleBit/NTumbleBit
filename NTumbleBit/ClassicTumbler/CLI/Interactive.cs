@@ -201,7 +201,7 @@ namespace NTumbleBit.ClassicTumbler.CLI
 			int bobCount = 0;
 			int aliceCount = 0;
 			int redeemCount = 0;
-			int clientEscapeCount = 0;
+			int cashoutCount = 0;
 			int uncooperativeCount = 0;
 
 			if(options.CycleId != null)
@@ -284,13 +284,13 @@ namespace NTumbleBit.ClassicTumbler.CLI
 								{
 									uncooperativeCount++;
 								}
+
+								var isCashout = group.Any(o => o.RecordType == RecordType.Transaction && (o.TransactionType == TransactionType.ClientEscape || o.TransactionType == TransactionType.ClientFulfill));
+								if(isCashout)
+									cashoutCount++;
 							}
 							else
 							{
-								var isEscaped = group.Any(o => o.RecordType == RecordType.Transaction && o.TransactionType == TransactionType.ClientEscape);
-								if(isEscaped)
-									clientEscapeCount++;
-
 								var isRedeemed = group.Any(o => o.RecordType == RecordType.Transaction &&
 															(o.TransactionType == TransactionType.ClientRedeem || o.TransactionType == TransactionType.ClientOfferRedeem));
 								if(isRedeemed)
@@ -301,6 +301,10 @@ namespace NTumbleBit.ClassicTumbler.CLI
 								{
 									uncooperativeCount++;
 								}
+
+								var isCashout = group.Any(o => o.RecordType == RecordType.Transaction && (o.TransactionType == TransactionType.TumblerCashout));
+								if(isCashout)
+									cashoutCount++;
 							}							
 							
 							foreach(var data in group.OrderBy(g => g.RecordType))
@@ -326,8 +330,8 @@ namespace NTumbleBit.ClassicTumbler.CLI
 						Console.WriteLine("Alice count: " + aliceCount);
 					if(redeemCount != 0)
 						Console.WriteLine("Redeem count: " + redeemCount);
-					if(clientEscapeCount != 0)
-						Console.WriteLine("Escape count: " + clientEscapeCount);
+					if(cashoutCount != 0)
+						Console.WriteLine("Cashout count: " + cashoutCount);
 					if(uncooperativeCount != 0)
 						Console.WriteLine("Uncooperative count: " + uncooperativeCount);
 					Console.WriteLine("=====================================");
