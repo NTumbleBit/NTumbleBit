@@ -245,7 +245,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			var cycle = GetCycle(request.CycleStart);
 			if(!cycle.IsInPhase(CyclePhase.TumblerChannelEstablishment, height))
 				throw new ActionResultException(BadRequest("invalid-phase"));
-			var fee = Services.FeeService.GetFeeRate();
+			var fee = await Services.FeeService.GetFeeRateAsync();
 			try
 			{
 				if(!Parameters.VoucherKey.PublicKey.Verify(request.Signature, NBitcoin.Utils.ToBytes((uint)request.CycleStart, true), request.Nonce))
@@ -383,7 +383,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 		}
 
 		[HttpPost("api/v1/tumblers/{tumblerId}/clientschannels/{cycleId}/{channelId}/checkblindfactors")]
-		public OfferInformation CheckBlindFactors(
+		public async Task<OfferInformation> CheckBlindFactors(
 			[ModelBinder(BinderType = typeof(TumblerParametersModelBinder))]
 			ClassicTumblerParameters tumblerId,
 			int cycleId, string channelId, [FromBody]BlindFactor[] blindFactors)
@@ -391,7 +391,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			if(tumblerId == null)
 				throw new ArgumentNullException("tumblerId");
 			var session = GetSolverServerSession(cycleId, channelId, CyclePhase.PaymentPhase);
-			var feeRate = Services.FeeService.GetFeeRate();
+			var feeRate = await Services.FeeService.GetFeeRateAsync();
 			var fulfillKey = session.CheckBlindedFactors(blindFactors, feeRate);
 			Repository.Save(cycleId, session);
 			return fulfillKey;
@@ -409,7 +409,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			if(signature == null)
 				throw new ActionResultException(BadRequest("Missing Signature"));
 			var session = GetSolverServerSession(cycleId, channelId, CyclePhase.TumblerCashoutPhase);
-			var feeRate = Services.FeeService.GetFeeRate();
+			var feeRate = Services.FeeService.GetFeeRateAsync().GetAwaiter().GetResult();
 			if(session.Status != SolverServerStates.WaitingFulfillment)
 				throw new ActionResultException(BadRequest("invalid-state"));
 			try
@@ -464,7 +464,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			if(session.Status != SolverServerStates.WaitingEscape)
 				throw new ActionResultException(BadRequest("invalid-state"));
 
-			var fee = Services.FeeService.GetFeeRate();
+			var fee = await Services.FeeService.GetFeeRateAsync();
 			try
 			{
 				var dummy = new Key().PubKey.Hash.ScriptPubKey;

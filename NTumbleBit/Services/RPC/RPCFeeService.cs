@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using NBitcoin;
 using NBitcoin.RPC;
+using System.Threading;
 
 namespace NTumbleBit.Services.RPC
 {
@@ -37,28 +38,53 @@ namespace NTumbleBit.Services.RPC
 		{
 			public FeeRate Rate;
 			public DateTimeOffset Time;
-		}
-		RateCache _Cache;
-		TimeSpan CacheExpiration = TimeSpan.FromSeconds(60 * 5);
-		public FeeRate GetFeeRate()
-		{
-			var cache = _Cache;
-			if(cache != null && (DateTime.UtcNow - cache.Time) < CacheExpiration)
+			public TaskCompletionSource<bool> _Refreshing;
+			object l = new object();
+			public Task<bool> WaitRefreshed()
 			{
-				return cache.Rate;
+				lock(l)
+				{
+					if(_Refreshing == null)
+					{
+						_Refreshing = new TaskCompletionSource<bool>();
+						return Task.FromResult(false);
+					}
+					else
+						return _Refreshing.Task;
+				}
 			}
-			var rate = _RPCClient.TryEstimateFeeRate(1) ??
-				   _RPCClient.TryEstimateFeeRate(2) ??
-				   _RPCClient.TryEstimateFeeRate(3) ??
+
+			internal void Done()
+			{
+				lock(l)
+				{
+					_Refreshing.TrySetResult(true);
+					_Refreshing = null;
+				}
+			}
+		}
+		RateCache _Cache = new RateCache();
+		TimeSpan CacheExpiration = TimeSpan.FromSeconds(60 * 5);
+		public async Task<FeeRate> GetFeeRateAsync()
+		{
+			if(_Cache != null && (DateTime.UtcNow - _Cache.Time) < CacheExpiration)
+			{
+				return _Cache.Rate;
+			}
+			if(await _Cache.WaitRefreshed().ConfigureAwait(false))
+				return _Cache.Rate;
+
+			var rate = await _RPCClient.TryEstimateFeeRateAsync(1).ConfigureAwait(false) ??
+				   await _RPCClient.TryEstimateFeeRateAsync(2).ConfigureAwait(false) ??
+				   await _RPCClient.TryEstimateFeeRateAsync(3).ConfigureAwait(false) ??
 				   FallBackFeeRate;
 			if(rate == null)
 				throw new FeeRateUnavailableException("The fee rate is unavailable");
 			if(rate < MinimumFeeRate)
 				rate = MinimumFeeRate;
-			cache = new RateCache();
-			cache.Rate = rate;
-			cache.Time = DateTimeOffset.UtcNow;
-			_Cache = cache;
+			_Cache.Rate = rate;
+			_Cache.Time = DateTimeOffset.UtcNow;
+			_Cache.Done();
 			return rate;
 		}
 	}

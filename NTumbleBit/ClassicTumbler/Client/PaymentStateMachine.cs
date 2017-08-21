@@ -450,7 +450,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 		private FeeRate GetFeeRate()
 		{
-			return Services.FeeService.GetFeeRate();
+			return Services.FeeService.GetFeeRateAsync().GetAwaiter().GetResult();
 		}
 
 		private void Assert(bool test, string error)
