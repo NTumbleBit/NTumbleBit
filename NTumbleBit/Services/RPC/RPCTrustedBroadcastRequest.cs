@@ -118,12 +118,13 @@ namespace NTumbleBit.Services.RPC
 			record.TransactionType = transactionType;
 			record.Cycle = cycleStart;
 			record.Correlation = correlation;
+			Logs.Broadcasters.LogInformation($"Planning to broadcast {record.TransactionType} of cycle {record.Cycle} on block {record.Request.BroadcastableHeight}");
 			AddBroadcast(record);
 		}
+		
 
 		private void AddBroadcast(Record broadcast)
 		{
-			Logs.Broadcasters.LogInformation($"Planning to broadcast {broadcast.TransactionType} of cycle {broadcast.Cycle} on block {broadcast.Request.BroadcastableHeight}");
 			Repository.UpdateOrInsert("TrustedBroadcasts", broadcast.Request.Transaction.GetHash().ToString(), broadcast, (o, n) => n);
 		}
 
@@ -190,11 +191,14 @@ namespace NTumbleBit.Services.RPC
 						{
 							if(coin.ScriptPubKey == broadcast.Request.PreviousScriptPubKey)
 							{
-								var transaction = broadcast.Request.ReSign(coin);
+								bool cached;
+								var transaction = broadcast.Request.ReSign(coin, out cached);
+
 								var txHash = transaction.GetHash();
 								_Tracker.TransactionCreated(broadcast.Cycle, broadcast.TransactionType, txHash, broadcast.Correlation);
-
 								RecordMaping(broadcast, transaction, txHash);
+								if(!cached)
+									AddBroadcast(broadcast);
 
 								if(!knownBroadcastedSet.Contains(txHash)
 									&& broadcast.Request.IsBroadcastableAt(height))

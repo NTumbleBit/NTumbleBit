@@ -15,6 +15,16 @@ namespace NTumbleBit
 		{
 			get; set;
 		}
+		public OutPoint SignedOutpoint
+		{
+			get;
+			set;
+		}
+
+		public Script Signature
+		{
+			get; set;
+		}
 		public Transaction Transaction
 		{
 			get; set;
@@ -28,7 +38,6 @@ namespace NTumbleBit
 			get;
 			set;
 		}
-		
 		public bool IsBroadcastableAt(int height)
 		{
 			return height >= BroadcastAt.Height && Transaction.IsFinal(DateTimeOffset.UtcNow, height + 1);
@@ -51,7 +60,19 @@ namespace NTumbleBit
 
 		public Transaction ReSign(Coin coin)
 		{
+			bool a;
+			return ReSign(coin, out a);
+		}
+		public Transaction ReSign(Coin coin, out bool cached)
+		{
 			var transaction = Transaction.Clone();
+			if(coin.Outpoint == SignedOutpoint)
+			{
+				transaction.Inputs[0].ScriptSig = Signature;
+				transaction.Inputs[0].PrevOut = SignedOutpoint;
+				cached = true;
+				return transaction;
+			}
 			transaction.Inputs[0].PrevOut = coin.Outpoint;
 			var redeem = new Script(transaction.Inputs[0].ScriptSig.ToOps().Last().PushData);
 			var scriptCoin = coin.ToScriptCoin(redeem);
@@ -61,7 +82,10 @@ namespace NTumbleBit
 			{
 				resignedScriptSig.Add(IsPlaceholder(op) ? Op.GetPushOp(signature) : op);
 			}
-			transaction.Inputs[0].ScriptSig = new Script(resignedScriptSig.ToArray());
+			Signature = new Script(resignedScriptSig.ToArray());
+			SignedOutpoint = coin.Outpoint;
+			transaction.Inputs[0].ScriptSig = Signature;
+			cached = false;
 			return transaction;
 		}
 

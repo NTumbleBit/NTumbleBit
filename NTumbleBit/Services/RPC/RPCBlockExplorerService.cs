@@ -70,17 +70,14 @@ namespace NTumbleBit.Services.RPC
 			}
 		}
 
-		public TransactionInformation[] GetTransactions(Script scriptPubKey, bool withProof)
+		public ICollection<TransactionInformation> GetTransactions(Script scriptPubKey, bool withProof)
 		{
 			if(scriptPubKey == null)
 				throw new ArgumentNullException(nameof(scriptPubKey));
-
-			var address = scriptPubKey.GetDestinationAddress(RPCClient.Network);
-			if(address == null)
-				return new TransactionInformation[0];
+			
 
 			var walletTransactions = _Cache.GetEntries();
-			List<TransactionInformation> results = Filter(walletTransactions, !withProof, address);
+			List<TransactionInformation> results = Filter(walletTransactions, !withProof, scriptPubKey);
 
 			if(withProof)
 			{
@@ -98,7 +95,7 @@ namespace NTumbleBit.Services.RPC
 					tx.MerkleProof = proof;
 				}
 			}
-			return results.ToArray();
+			return results;
 		}
 
 		private List<TransactionInformation> QueryWithListReceivedByAddress(bool withProof, BitcoinAddress address)
@@ -126,7 +123,7 @@ namespace NTumbleBit.Services.RPC
 			return results;
 		}
 
-		private List<TransactionInformation> Filter(RPCWalletEntry[] entries, bool includeUnconf, BitcoinAddress address)
+		private List<TransactionInformation> Filter(ICollection<RPCWalletEntry> entries, bool includeUnconf, Script scriptPubKey)
 		{
 			List<TransactionInformation> results = new List<TransactionInformation>();
 			HashSet<uint256> resultsSet = new HashSet<uint256>();
@@ -141,8 +138,8 @@ namespace NTumbleBit.Services.RPC
 					if(tx == null || (!includeUnconf && confirmations == 0))
 						continue;
 
-					if(tx.Outputs.Any(o => o.ScriptPubKey == address.ScriptPubKey) ||
-					   tx.Inputs.Any(o => o.ScriptSig.GetSigner().ScriptPubKey == address.ScriptPubKey))
+					if(tx.Outputs.Any(o => o.ScriptPubKey == scriptPubKey) ||
+					   tx.Inputs.Any(o => o.ScriptSig.GetSigner().ScriptPubKey == scriptPubKey))
 					{
 
 						resultsSet.Add(obj.TransactionId);

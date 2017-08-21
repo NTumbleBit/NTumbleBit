@@ -103,9 +103,9 @@ namespace NTumbleBit.Services.RPC
 			catch(RPCException) { return null; }
 		}
 
-		public RPCWalletEntry[] GetEntries()
+		public ICollection<RPCWalletEntry> GetEntries()
 		{
-			return _WalletEntries.Values.ToArray();
+			return _WalletEntries.Values;
 		}
 
 		private void PutCached(Transaction tx)

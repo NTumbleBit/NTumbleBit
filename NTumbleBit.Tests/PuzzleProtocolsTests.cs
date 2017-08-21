@@ -301,9 +301,16 @@ namespace NTumbleBit.Tests
 			txBuilder.AddCoins(client.EscrowedCoin);
 			Assert.True(txBuilder.Verify(resigned));
 
-			resigned = fulfill.ReSign(offerCoin);
+			bool cached;
+			resigned = fulfill.ReSign(offerCoin, out cached);
+			Assert.False(cached);
 			txBuilder = new TransactionBuilder();
 			txBuilder.AddCoins(offerCoin);
+			Assert.True(txBuilder.Verify(resigned));
+
+			//Test again to see if cached signature works well
+			resigned = fulfill.ReSign(offerCoin, out cached);
+			Assert.True(cached);
 			Assert.True(txBuilder.Verify(resigned));
 
 			var offerRedeemTx = offerRedeem.ReSign(offerCoin);

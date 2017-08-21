@@ -406,7 +406,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 							if(SolverClientSession.Status == SolverClientStates.WaitingPuzzleSolutions)
 							{
 								var transactions = Services.BlockExplorerService.GetTransactions(SolverClientSession.GetInternalState().OfferCoin.ScriptPubKey, false);
-								if(transactions.Length != 0)
+								if(transactions.Count != 0)
 								{
 									SolverClientSession.CheckSolutions(transactions.Select(t => t.Transaction).ToArray());
 									Logs.Client.LogInformation("Puzzle solution recovered from tumbler's fulfill transaction");
