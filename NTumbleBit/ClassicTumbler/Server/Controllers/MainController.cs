@@ -13,6 +13,7 @@ using NBitcoin.Crypto;
 using NTumbleBit.Logging;
 using Microsoft.Extensions.Logging;
 using NTumbleBit.ClassicTumbler.Server.Models;
+using System.Text;
 
 // For more information on enabling Web API for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -361,9 +362,16 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			if(tumblerId == null)
 				throw new ArgumentNullException("tumblerId");
 			var session = GetSolverServerSession(cycleId, channelId, CyclePhase.PaymentPhase);
+			if(!Repository.MarkUsedNonce(cycleId, CreateNonce(channelId, CyclePhase.PaymentPhase)))
+				throw new ActionResultException(BadRequest("duplicate-query"));
 			var commitments = session.SolvePuzzles(puzzles);
 			Repository.Save(cycleId, session);
 			return commitments;
+		}
+
+		private uint160 CreateNonce(string channelId, CyclePhase paymentPhase)
+		{
+			return Hashes.Hash160(Encoding.UTF8.GetBytes(channelId + paymentPhase));
 		}
 
 		[HttpPost("api/v1/tumblers/{tumblerId}/clientschannels/{cycleId}/{channelId}/checkrevelation")]
