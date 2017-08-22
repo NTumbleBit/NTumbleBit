@@ -30,17 +30,19 @@ namespace NTumbleBit.Services
 			}
 
 			var cache = new RPCWalletCache(rpc, repository);
+
+			var clientBatchInterval = TimeSpan.FromMilliseconds(100);
 			service.WalletService = new RPCWalletService(rpc)
 			{
-				BatchInterval = useBatching ? TimeSpan.FromSeconds(60) : TimeSpan.Zero
+				BatchInterval = useBatching ? TimeSpan.FromSeconds(60) : clientBatchInterval
 			};
 			service.BroadcastService = new RPCBroadcastService(rpc, cache, repository)
 			{
-				BatchInterval = useBatching ? TimeSpan.FromSeconds(5) : TimeSpan.Zero
+				BatchInterval = useBatching ? TimeSpan.FromSeconds(5) : clientBatchInterval
 			};
 			service.BlockExplorerService = new RPCBlockExplorerService(rpc, cache, repository)
 			{
-				BatchInterval = useBatching ? TimeSpan.FromSeconds(5) : TimeSpan.Zero
+				BatchInterval = useBatching ? TimeSpan.FromSeconds(5) : clientBatchInterval
 			};
 			service.TrustedBroadcastService = new RPCTrustedBroadcastService(rpc, service.BroadcastService, service.BlockExplorerService, repository, cache, tracker)
 			{
