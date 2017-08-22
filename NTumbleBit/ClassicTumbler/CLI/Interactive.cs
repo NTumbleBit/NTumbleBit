@@ -179,7 +179,7 @@ namespace NTumbleBit.ClassicTumbler.CLI
 
 				try
 				{
-					var regex = System.Text.RegularExpressions.Regex.Match(options.Query, @"(\d+)(([+|-])(\d))?");
+					var regex = System.Text.RegularExpressions.Regex.Match(options.Query, @"^(\d+)(([+|-])(\d))?$");
 					if(regex.Success)
 					{
 						options.CycleId = int.Parse(regex.Groups[1].Value);
@@ -282,35 +282,37 @@ namespace NTumbleBit.ClassicTumbler.CLI
 						{
 							var builder = new StringBuilder();
 							builder.AppendLine(group.Key.ToString());
+							var transactions = group.Where(o => o.RecordType == RecordType.Transaction).ToArray();
 
 							if(state == null)
 							{
-								var isBob = group.Any(o => o.RecordType == RecordType.Transaction && o.TransactionType == TransactionType.TumblerEscrow);
-								var isAlice = group.Any(o => o.RecordType == RecordType.Transaction && o.TransactionType == TransactionType.ClientEscrow);
+								var isBob = transactions.Any(o => o.TransactionType == TransactionType.TumblerEscrow);
+								var isAlice = group.Any(o => o.TransactionType == TransactionType.ClientEscrow);
 								if(isBob)
 									stats.BobCount++;
 								if(isAlice)
 									stats.AliceCount++;
 
-								var isOffer = group.Any(o => o.RecordType == RecordType.Transaction && o.TransactionType == TransactionType.ClientFulfill);
-								if(isOffer)
+								var isUncooperative = transactions.Any(o => o.TransactionType == TransactionType.ClientFulfill) &&
+													  transactions.All(o => o.TransactionType != TransactionType.ClientEscape);
+								if(isUncooperative)
 								{
 									stats.UncooperativeCount++;
 								}
 
-								var isCashout = group.Any(o => o.RecordType == RecordType.Transaction && (o.TransactionType == TransactionType.ClientEscape || o.TransactionType == TransactionType.ClientFulfill));
+								var isCashout = transactions.Any(o => (o.TransactionType == TransactionType.ClientEscape || o.TransactionType == TransactionType.ClientFulfill));
 								if(isCashout)
 									stats.CashoutCount++;
 							}
 							else
 							{
-								var isOffer = group.Any(o => o.RecordType == RecordType.Transaction && (o.TransactionType == TransactionType.ClientOffer || o.TransactionType == TransactionType.ClientOfferRedeem));
-								if(isOffer)
+								var isUncooperative = transactions.Any(o => (o.TransactionType == TransactionType.ClientOffer || o.TransactionType == TransactionType.ClientOfferRedeem));
+								if(isUncooperative)
 								{
 									stats.UncooperativeCount++;
 								}
 
-								var isCashout = group.Any(o => o.RecordType == RecordType.Transaction && (o.TransactionType == TransactionType.TumblerCashout));
+								var isCashout = transactions.Any(o => (o.TransactionType == TransactionType.TumblerCashout));
 								if(isCashout)
 									stats.CashoutCount++;
 							}							
