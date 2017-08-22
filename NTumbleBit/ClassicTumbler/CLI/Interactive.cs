@@ -278,44 +278,47 @@ namespace NTumbleBit.ClassicTumbler.CLI
 						stats.CorrelationGroupCount++;
 						hasData = true;
 						Console.WriteLine("========");
+
+						var transactions = correlationGroup.Where(o => o.RecordType == RecordType.Transaction).ToArray();
+
+						if(state == null)
+						{
+							var isBob = transactions.Any(o => o.TransactionType == TransactionType.TumblerEscrow);
+							var isAlice = transactions.Any(o => o.TransactionType == TransactionType.ClientEscrow);
+							if(isBob)
+								stats.BobCount++;
+							if(isAlice)
+								stats.AliceCount++;
+
+							var isUncooperative = transactions.Any(o => o.TransactionType == TransactionType.ClientFulfill) &&
+												  transactions.All(o => o.TransactionType != TransactionType.ClientEscape);
+							if(isUncooperative)
+							{
+								stats.UncooperativeCount++;
+							}
+
+							var isCashout = transactions.Any(o => (o.TransactionType == TransactionType.ClientEscape || o.TransactionType == TransactionType.ClientFulfill));
+							if(isCashout)
+								stats.CashoutCount++;
+						}
+						else
+						{
+							var isUncooperative = transactions.Any(o => (o.TransactionType == TransactionType.ClientOffer || o.TransactionType == TransactionType.ClientOfferRedeem));
+							if(isUncooperative)
+							{
+								stats.UncooperativeCount++;
+							}
+
+							var isCashout = transactions.Any(o => (o.TransactionType == TransactionType.TumblerCashout));
+							if(isCashout)
+								stats.CashoutCount++;
+						}
+
+
 						foreach(var group in correlationGroup.GroupBy(r => r.TransactionType).OrderBy(r => (int)r.Key))
 						{
 							var builder = new StringBuilder();
 							builder.AppendLine(group.Key.ToString());
-							var transactions = group.Where(o => o.RecordType == RecordType.Transaction).ToArray();
-
-							if(state == null)
-							{
-								var isBob = transactions.Any(o => o.TransactionType == TransactionType.TumblerEscrow);
-								var isAlice = group.Any(o => o.TransactionType == TransactionType.ClientEscrow);
-								if(isBob)
-									stats.BobCount++;
-								if(isAlice)
-									stats.AliceCount++;
-
-								var isUncooperative = transactions.Any(o => o.TransactionType == TransactionType.ClientFulfill) &&
-													  transactions.All(o => o.TransactionType != TransactionType.ClientEscape);
-								if(isUncooperative)
-								{
-									stats.UncooperativeCount++;
-								}
-
-								var isCashout = transactions.Any(o => (o.TransactionType == TransactionType.ClientEscape || o.TransactionType == TransactionType.ClientFulfill));
-								if(isCashout)
-									stats.CashoutCount++;
-							}
-							else
-							{
-								var isUncooperative = transactions.Any(o => (o.TransactionType == TransactionType.ClientOffer || o.TransactionType == TransactionType.ClientOfferRedeem));
-								if(isUncooperative)
-								{
-									stats.UncooperativeCount++;
-								}
-
-								var isCashout = transactions.Any(o => (o.TransactionType == TransactionType.TumblerCashout));
-								if(isCashout)
-									stats.CashoutCount++;
-							}							
 						
 							foreach(var data in group.OrderBy(g => g.RecordType))
 							{
