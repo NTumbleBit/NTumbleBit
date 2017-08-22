@@ -6,7 +6,7 @@ using System.Text;
 
 namespace NTumbleBit.ClassicTumbler.Server
 {
-    public class TumblerExceptionFilter : ActionFilterAttribute
+	public class TumblerExceptionFilter : ActionFilterAttribute
 	{
 		public override void OnActionExecuted(ActionExecutedContext context)
 		{
@@ -17,6 +17,13 @@ namespace NTumbleBit.ClassicTumbler.Server
 				context.ExceptionDispatchInfo = null;
 				context.ExceptionHandled = true;
 				context.Result = ((Controller)context.Controller).BadRequest("invalid-tumbler");
+			}
+			if(ex != null && ex.ParamName == "channelId")
+			{
+				context.Exception = null;
+				context.ExceptionDispatchInfo = null;
+				context.ExceptionHandled = true;
+				context.Result = ((Controller)context.Controller).BadRequest("invalid-channel");
 			}
 			base.OnActionExecuted(context);
 		}

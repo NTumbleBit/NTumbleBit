@@ -350,6 +350,8 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 
 		private SolverServerSession GetSolverServerSession(int cycleId, uint160 channelId, CyclePhase expectedPhase)
 		{
+				if(channelId == null)
+					throw new ArgumentNullException("channelId");
 			var height = Services.BlockExplorerService.GetCurrentHeight();
 			var session = Repository.GetSolverServerSession(cycleId, channelId);
 			if(session == null)
