@@ -20,6 +20,10 @@ namespace NTumbleBit.Services.RPC
 		{
 			get; set;
 		}
+		public Transaction Transaction
+		{
+			get; set;
+		}
 	}
 
 	/// <summary>
@@ -71,36 +75,30 @@ namespace NTumbleBit.Services.RPC
 
 		public Transaction GetTransaction(uint256 txId)
 		{
-			var cached = GetCachedTransaction(txId);
-			if(cached != null)
-				return cached;
-			var tx = FetchTransaction(txId);
-			if(tx == null)
-				return null;
-			PutCached(tx);
-			return tx;
+			RPCWalletEntry entry = null;
+			if(_WalletEntries.TryGetValue(txId, out entry))
+			{
+				return entry.Transaction;
+			}
+			return null;
 		}
 
-		ConcurrentDictionary<uint256, Transaction> _TransactionsByTxId = new ConcurrentDictionary<uint256, Transaction>();
 
-
-		private Transaction FetchTransaction(uint256 txId)
+		private static async Task<Transaction> FetchTransactionAsync(RPCClient rpc, uint256 txId)
 		{
 			try
 			{
-				//check in the wallet tx
-				var result = _RPCClient.SendCommandNoThrows("gettransaction", txId.ToString(), true);
-				if(result == null || result.Error != null)
-				{
-					//check in the txindex
-					result = _RPCClient.SendCommandNoThrows("getrawtransaction", txId.ToString(), 1);
-					if(result == null || result.Error != null)
-						return null;
-				}
+
+				var result = await rpc.SendCommandNoThrowsAsync("gettransaction", txId.ToString(), true).ConfigureAwait(false);
 				var tx = new Transaction((string)result.Result["hex"]);
 				return tx;
 			}
-			catch(RPCException) { return null; }
+			catch(RPCException ex)
+			{
+				if(ex.RPCCode == RPCErrorCode.RPC_INVALID_ADDRESS_OR_KEY)
+					return null;
+				throw;
+			}
 		}
 
 		public ICollection<RPCWalletEntry> GetEntries()
@@ -108,32 +106,51 @@ namespace NTumbleBit.Services.RPC
 			return _WalletEntries.Values;
 		}
 
-		private void PutCached(Transaction tx)
+		public IEnumerable<RPCWalletEntry> GetEntriesFromScript(Script script)
 		{
-			tx.CacheHashes();
-			_Repo.UpdateOrInsert("CachedTransactions", tx.GetHash().ToString(), tx, (a, b) => b);
-			_TransactionsByTxId.TryAdd(tx.GetHash(), tx);
-		}
-
-		private Transaction GetCachedTransaction(uint256 txId)
-		{
-
-			Transaction tx = null;
-			if(_TransactionsByTxId.TryGetValue(txId, out tx))
+			lock(_TxByScriptId)
 			{
-				return tx;
+				IReadOnlyCollection<RPCWalletEntry> transactions = null;
+				if(_TxByScriptId.TryGetValue(script, out transactions))
+					return transactions.ToArray();
+				return new RPCWalletEntry[0];
 			}
-			var cached = _Repo.Get<Transaction>("CachedTransactions", txId.ToString());
-			if(cached != null)
-				_TransactionsByTxId.TryAdd(txId, cached);
-			return cached;
 		}
 
+		private void AddTxByScriptId(uint256 txId, RPCWalletEntry entry)
+		{
+			IEnumerable<Script> scripts = GetScriptsOf(entry.Transaction);
+			lock(_TxByScriptId)
+			{
+				foreach(var s in scripts)
+				{
+					_TxByScriptId.Add(s, entry);
+				}
+			}
+		}
 
+		private void RemoveTxByScriptId(RPCWalletEntry entry)
+		{
+			IEnumerable<Script> scripts = GetScriptsOf(entry.Transaction);
+			lock(_TxByScriptId)
+			{
+				foreach(var s in scripts)
+				{
+					_TxByScriptId.Remove(s, entry);
+				}
+			}
+		}
+
+		private static IEnumerable<Script> GetScriptsOf(Transaction tx)
+		{
+			return tx.Outputs.Select(o => o.ScriptPubKey)
+									.Concat(tx.Inputs.Select(o => o.ScriptSig.GetSigner().ScriptPubKey));
+		}
+
+		MultiValueDictionary<Script, RPCWalletEntry> _TxByScriptId = new MultiValueDictionary<Script, RPCWalletEntry>();
 		ConcurrentDictionary<uint256, RPCWalletEntry> _WalletEntries = new ConcurrentDictionary<uint256, RPCWalletEntry>();
 		void ListTransactions()
 		{
-			var removeFromCache = new HashSet<uint256>(_TransactionsByTxId.Values.Select(tx => tx.GetHash()));
 			var removeFromWalletEntries = new HashSet<uint256>(_WalletEntries.Keys);
 
 			int count = 100;
@@ -145,26 +162,47 @@ namespace NTumbleBit.Services.RPC
 				var result = _RPCClient.SendCommand("listtransactions", "*", count, skip, true);
 				skip += count;
 				var transactions = (JArray)result.Result;
+
+				var batch = _RPCClient.PrepareBatch();
+				var fetchingTransactions = new List<Tuple<RPCWalletEntry, Task<Transaction>>>();
 				foreach(var obj in transactions)
 				{
 					var entry = new RPCWalletEntry();
 					entry.Confirmations = obj["confirmations"] == null ? 0 : (int)obj["confirmations"];
 					entry.TransactionId = new uint256((string)obj["txid"]);
-					removeFromCache.Remove(entry.TransactionId);
 					removeFromWalletEntries.Remove(entry.TransactionId);
-					_WalletEntries.AddOrUpdate(entry.TransactionId, entry, (k, existing) => entry);
+
+					RPCWalletEntry existing;
+					if(_WalletEntries.TryGetValue(entry.TransactionId, out existing))
+					{
+						existing.Confirmations = entry.Confirmations;
+						entry = existing;
+					}
+
+					if(entry.Transaction == null)
+					{
+						fetchingTransactions.Add(Tuple.Create(entry, FetchTransactionAsync(batch, entry.TransactionId)));
+					}
 					if(obj["confirmations"] != null)
 					{
 						highestConfirmation = Math.Max(highestConfirmation, (int)obj["confirmations"]);
 					}
 				}
+				batch.SendBatchAsync();
+
+				foreach(var fetching in fetchingTransactions)
+				{
+					var entry = fetching.Item1;
+					entry.Transaction = fetching.Item2.GetAwaiter().GetResult();
+					if(entry.Transaction != null)
+					{
+						if(_WalletEntries.TryAdd(entry.TransactionId, entry))
+							AddTxByScriptId(entry.TransactionId, entry);
+					}
+				}
+
 				if(transactions.Count < count || highestConfirmation >= 1400)
 					break;
-			}
-			foreach(var remove in removeFromCache)
-			{
-				Transaction opt;
-				_TransactionsByTxId.TryRemove(remove, out opt);
 			}
 			foreach(var remove in removeFromWalletEntries)
 			{
@@ -173,15 +211,17 @@ namespace NTumbleBit.Services.RPC
 			}
 		}
 
-
 		public void ImportTransaction(Transaction transaction, int confirmations)
 		{
-			PutCached(transaction);
-			_WalletEntries.TryAdd(transaction.GetHash(), new RPCWalletEntry()
+			var txId = transaction.GetHash();
+			var entry = new RPCWalletEntry()
 			{
 				Confirmations = confirmations,
-				TransactionId = transaction.GetHash()
-			});
+				TransactionId = transaction.GetHash(),
+				Transaction = transaction
+			};
+			if(_WalletEntries.TryAdd(txId, entry))
+				AddTxByScriptId(txId, entry);
 		}
 	}
 }

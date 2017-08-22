@@ -76,8 +76,13 @@ namespace NTumbleBit.Services.RPC
 				throw new ArgumentNullException(nameof(scriptPubKey));
 			
 
-			var walletTransactions = _Cache.GetEntries();
-			List<TransactionInformation> results = Filter(walletTransactions, !withProof, scriptPubKey);
+			var results = _Cache
+										.GetEntriesFromScript(scriptPubKey)
+										.Select(entry => new TransactionInformation()
+										{
+											Confirmations = entry.Confirmations,
+											Transaction = entry.Transaction
+										}).ToList();
 
 			if(withProof)
 			{
