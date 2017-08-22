@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using Xunit;
 
 namespace NTumbleBit.Tests
@@ -98,10 +99,10 @@ namespace NTumbleBit.Tests
 		[Fact]
 		public void CanCompleteCycleWithMachineState()
 		{
+			CanCompleteCycleWithMachineStateCore(true, true);
 			CanCompleteCycleWithMachineStateCore(true, false);
 			CanCompleteCycleWithMachineStateCore(false, true);
 			CanCompleteCycleWithMachineStateCore(false, false);
-			CanCompleteCycleWithMachineStateCore(true, true);
 		}
 
 		[Fact]
@@ -205,6 +206,10 @@ namespace NTumbleBit.Tests
 
 
 				machine.Update();
+				Assert.Equal(PaymentStateMachineStatus.TumblerChannelCreating, machine.Status);
+
+				Thread.Sleep(1000);
+				machine.Update();
 				Assert.Equal(PaymentStateMachineStatus.TumblerChannelBroadcasted, machine.Status);
 
 
@@ -224,6 +229,9 @@ namespace NTumbleBit.Tests
 
 
 				machine.Update();
+
+				//Wait escape transaction to be broadcasted
+				Thread.Sleep(1000);
 				Block block = server.TumblerNode.FindBlock(1).First();
 
 				if(cooperativeClient && cooperativeTumbler)
@@ -410,6 +418,11 @@ namespace NTumbleBit.Tests
 
 				server.MineTo(server.AliceNode, cycle, CyclePhase.TumblerChannelEstablishment);
 				machine.Update();
+				Assert.Equal(PaymentStateMachineStatus.TumblerChannelCreating, machine.Status);
+
+				Thread.Sleep(1000);
+				machine.Update();
+				Assert.Equal(PaymentStateMachineStatus.TumblerChannelBroadcasted, machine.Status);
 
 				//Make sure the tumbler escrow is broadcasted an mined
 				var broadcasted = server.ServerRuntime.Services.BroadcastService.TryBroadcast();

@@ -46,14 +46,18 @@ namespace NTumbleBit
 			}
 		}
 
-		public virtual void ConfigureEscrowedCoin(uint160 channelId, ScriptCoin escrowedCoin, Key escrowKey)
+		public void SetChannelId(uint160 channelId)
+		{
+			if(channelId == null)
+				throw new ArgumentNullException(nameof(channelId));
+			InternalState.ChannelId = channelId;
+		}
+		public virtual void ConfigureEscrowedCoin(ScriptCoin escrowedCoin, Key escrowKey)
 		{
 			if(escrowedCoin == null)
 				throw new ArgumentNullException(nameof(escrowedCoin));
 			if(escrowKey == null)
 				throw new ArgumentNullException(nameof(escrowKey));
-
-			InternalState.ChannelId = channelId;
 			InternalState.EscrowKey = escrowKey;
 			InternalState.EscrowedCoin = escrowedCoin;
 		}

@@ -77,6 +77,11 @@ namespace NTumbleBit.ClassicTumbler
 				get;
 				set;
 			}
+			public uint160 ChannelId
+			{
+				get;
+				set;
+			}
 		}
 		public ClientChannelNegotiation(ClassicTumblerParameters parameters, int cycleStart)
 		{
@@ -205,10 +210,8 @@ namespace NTumbleBit.ClassicTumbler
 			return result;
 		}
 
-		public PromiseClientSession ReceiveTumblerEscrowedCoin(ScriptCoin escrowedCoin, uint160 channelId)
+		public PromiseClientSession ReceiveTumblerEscrowedCoin(ScriptCoin escrowedCoin)
 		{
-			if(channelId == null)
-				throw new ArgumentNullException(nameof(channelId));
 			AssertState(TumblerClientSessionStates.WaitingTumblerEscrow);
 			var escrow = EscrowScriptPubKeyParameters.GetFromCoin(escrowedCoin);
 			var expectedEscrow = new EscrowScriptPubKeyParameters()
@@ -225,9 +228,15 @@ namespace NTumbleBit.ClassicTumbler
 
 			InternalState.Status = TumblerClientSessionStates.PromisePhase;
 			var session = new PromiseClientSession(Parameters.CreatePromiseParamaters());
-			session.ConfigureEscrowedCoin(channelId, escrowedCoin, InternalState.TumblerEscrowKey);
+			session.SetChannelId(InternalState.ChannelId);
+			session.ConfigureEscrowedCoin(escrowedCoin, InternalState.TumblerEscrowKey);
 			InternalState.TumblerEscrowKey = null;
 			return session;
+		}
+
+		internal void SetChannelId(uint160 channelId)
+		{
+			InternalState.ChannelId = channelId;
 		}
 
 		public CycleParameters GetCycle()

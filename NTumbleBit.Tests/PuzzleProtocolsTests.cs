@@ -179,7 +179,7 @@ namespace NTumbleBit.Tests
 
 			var coin = CreateEscrowCoin(serverEscrow.PubKey, clientEscrow.PubKey);
 
-			client.ConfigureEscrowedCoin(uint160.Zero, coin, clientEscrow);
+			client.ConfigureEscrowedCoin(coin, clientEscrow);
 			SignaturesRequest request = client.CreateSignatureRequest(clientEscrow.PubKey.Hash, FeeRate);
 			RoundTrip(ref client, parameters);
 			RoundTrip(ref request);
@@ -265,7 +265,7 @@ namespace NTumbleBit.Tests
 			RoundTrip(ref client, parameters);
 			RoundTrip(ref puzzles);
 
-			server.ConfigureEscrowedCoin(uint160.Zero, escrow, serverEscrow);
+			server.ConfigureEscrowedCoin(escrow, serverEscrow);
 			var commitments = server.SolvePuzzles(puzzles);
 			RoundTrip(ref server, parameters, key);
 			RoundTrip(ref commitments);

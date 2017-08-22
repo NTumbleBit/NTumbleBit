@@ -25,6 +25,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 		TumblerChannelConfirmed,
 		PuzzleSolutionObtained,
 		UncooperativeTumbler,
+		TumblerChannelCreating,
 	}
 	public class PaymentStateMachine
 	{
@@ -292,16 +293,18 @@ namespace NTumbleBit.ClassicTumbler.Client
 						}
 						break;
 					case CyclePhase.TumblerChannelEstablishment:
-						if(ClientChannelNegotiation != null && ClientChannelNegotiation.Status == TumblerClientSessionStates.WaitingGenerateTumblerTransactionKey)
+
+						bob = Runtime.CreateTumblerClient(cycle.Start, Identity.Bob);
+						if(Status == PaymentStateMachineStatus.TumblerVoucherObtained)
 						{
-							Logs.Client.LogInformation("Asking the tumbler to open the channel...");
-							bob = Runtime.CreateTumblerClient(cycle.Start, Identity.Bob);
+
+							Logs.Client.LogInformation("Begin ask to open the channel...");
 							//Client asks the Tumbler to make a channel
 							var bobEscrowInformation = ClientChannelNegotiation.GetOpenChannelRequest();
-							OpenChannelResponse openChannelResponse = null;
+							uint160 channelId = null;
 							try
 							{
-								openChannelResponse = bob.OpenChannel(bobEscrowInformation);
+								channelId = bob.BeginOpenChannel(bobEscrowInformation);
 							}
 							catch(Exception ex)
 							{
@@ -312,7 +315,22 @@ namespace NTumbleBit.ClassicTumbler.Client
 								}
 								throw;
 							}
-							PromiseClientSession = ClientChannelNegotiation.ReceiveTumblerEscrowedCoin(openChannelResponse.ScriptCoin, openChannelResponse.ChannelId);
+
+
+							ClientChannelNegotiation.SetChannelId(channelId);
+							Status = PaymentStateMachineStatus.TumblerChannelCreating;
+
+						}
+						else if(Status == PaymentStateMachineStatus.TumblerChannelCreating)
+						{
+							var tumblerEscrow = bob.EndOpenChannel(cycle.Start, ClientChannelNegotiation.GetInternalState().ChannelId);
+							if(tumblerEscrow == null)
+							{
+								Logs.Client.LogInformation("Tumbler escrow still creating...");
+								break;
+							}
+
+							PromiseClientSession = ClientChannelNegotiation.ReceiveTumblerEscrowedCoin(tumblerEscrow);
 							Logs.Client.LogInformation("Tumbler escrow broadcasted");
 							//Tell to the block explorer we need to track that address (for checking if it is confirmed in payment phase)
 							Services.BlockExplorerService.TrackAsync(PromiseClientSession.EscrowedCoin.ScriptPubKey).GetAwaiter().GetResult();
@@ -387,7 +405,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 										{
 											var signature = SolverClientSession.SignEscape();
 											// No need to await for it, it is a just nice for the tumbler (we don't want the underlying socks connection cut before the escape key is sent)
-											alice.GiveEscapeKeyAsync(SolverClientSession.Id, signature).Wait(2000);
+											alice.GiveEscapeKeyAsync(SolverClientSession.Id, signature).GetAwaiter().GetResult();
 											Logs.Client.LogInformation("Gave escape signature to the tumbler");
 										}
 									}
@@ -449,7 +467,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 			}
 			Status = PaymentStateMachineStatus.TumblerChannelConfirmed;
 		}
-		
+
 		private TransactionInformation GetTransactionInformation(ICoin coin, bool withProof)
 		{
 			var tx = Services.BlockExplorerService
