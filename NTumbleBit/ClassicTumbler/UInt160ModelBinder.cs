@@ -33,10 +33,18 @@ namespace NTumbleBit.ClassicTumbler
 				bindingContext.Model = null;
 				return TaskCache.CompletedTask;
 			}
-			var value = uint160.Parse(key);
-			if(value.ToString().StartsWith(uint160.Zero.ToString()))
-				throw new FormatException("Invalid hash format");
-			bindingContext.Result = ModelBindingResult.Success(value);
+			try
+			{
+
+				var value = uint160.Parse(key);
+				if(value.ToString().StartsWith(uint160.Zero.ToString()))
+					throw new FormatException("Invalid hash format");
+				bindingContext.Result = ModelBindingResult.Success(value);
+			}
+			catch(FormatException)
+			{
+				bindingContext.Result = ModelBindingResult.Failed();
+			}
 			return TaskCache.CompletedTask;
 		}
 
