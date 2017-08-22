@@ -3,6 +3,7 @@ using NBitcoin.Crypto;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Linq;
 
 namespace NTumbleBit
 {
@@ -10,6 +11,11 @@ namespace NTumbleBit
 	{
 		public static CorrelationId Parse(string str)
 		{
+			uint256 v;
+			//To eventually remove in september 2017, prevent old stuff from crashing
+			if(uint256.TryParse(str, out v))
+				return new CorrelationId(new uint160(v.ToBytes().Take(20).ToArray()));
+			///////
 			return new CorrelationId(uint160.Parse(str));
 		}
 
