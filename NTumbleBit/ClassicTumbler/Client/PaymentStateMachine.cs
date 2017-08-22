@@ -202,7 +202,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 			try
 			{
 
-				var correlation = SolverClientSession == null ? CorrelationId.Zero : GetCorrelation(SolverClientSession.EscrowedCoin);
+				var correlation = SolverClientSession == null ? CorrelationId.Zero : new CorrelationId(SolverClientSession.Id);
 
 				FeeRate feeRate = null;
 				switch(phase)
@@ -245,10 +245,11 @@ namespace NTumbleBit.ClassicTumbler.Client
 							}
 
 							var redeemDestination = Services.WalletService.GenerateAddress().ScriptPubKey;
-							SolverClientSession = ClientChannelNegotiation.SetClientSignedTransaction(clientEscrowTx, redeemDestination);
+							var channelId = new uint160(RandomUtils.GetBytes(20));
+							SolverClientSession = ClientChannelNegotiation.SetClientSignedTransaction(channelId, clientEscrowTx, redeemDestination);
 
 
-							correlation = GetCorrelation(SolverClientSession.EscrowedCoin);
+							correlation = new CorrelationId(SolverClientSession.Id);
 
 							Tracker.AddressCreated(cycle.Start, TransactionType.ClientEscrow, escrowTxOut.ScriptPubKey, correlation);
 							Tracker.TransactionCreated(cycle.Start, TransactionType.ClientEscrow, clientEscrowTx.GetHash(), correlation);
@@ -282,7 +283,8 @@ namespace NTumbleBit.ClassicTumbler.Client
 									KeyReference = state.TumblerEscrowKeyReference,
 									UnsignedVoucher = state.BlindedVoucher,
 									Cycle = cycle.Start,
-									ClientEscrowKey = state.ClientEscrowKey.PubKey
+									ClientEscrowKey = state.ClientEscrowKey.PubKey,
+									ChannelId = SolverClientSession.Id
 								});
 								ClientChannelNegotiation.CheckVoucherSolution(voucher);
 								Status = PaymentStateMachineStatus.TumblerVoucherObtained;
@@ -296,10 +298,10 @@ namespace NTumbleBit.ClassicTumbler.Client
 							bob = Runtime.CreateTumblerClient(cycle.Start, Identity.Bob);
 							//Client asks the Tumbler to make a channel
 							var bobEscrowInformation = ClientChannelNegotiation.GetOpenChannelRequest();
-							ScriptCoin tumblerInformation = null;
+							OpenChannelResponse openChannelResponse = null;
 							try
 							{
-								tumblerInformation = bob.OpenChannel(bobEscrowInformation);
+								openChannelResponse = bob.OpenChannel(bobEscrowInformation);
 							}
 							catch(Exception ex)
 							{
@@ -310,7 +312,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 								}
 								throw;
 							}
-							PromiseClientSession = ClientChannelNegotiation.ReceiveTumblerEscrowedCoin(tumblerInformation);
+							PromiseClientSession = ClientChannelNegotiation.ReceiveTumblerEscrowedCoin(openChannelResponse.ScriptCoin, openChannelResponse.ChannelId);
 							Logs.Client.LogInformation("Tumbler escrow broadcasted");
 							//Tell to the block explorer we need to track that address (for checking if it is confirmed in payment phase)
 							Services.BlockExplorerService.TrackAsync(PromiseClientSession.EscrowedCoin.ScriptPubKey).GetAwaiter().GetResult();
@@ -447,12 +449,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 			}
 			Status = PaymentStateMachineStatus.TumblerChannelConfirmed;
 		}
-
-		private CorrelationId GetCorrelation(ScriptCoin escrowCoin)
-		{
-			return new CorrelationId(escrowCoin);
-		}
-
+		
 		private TransactionInformation GetTransactionInformation(ICoin coin, bool withProof)
 		{
 			var tx = Services.BlockExplorerService

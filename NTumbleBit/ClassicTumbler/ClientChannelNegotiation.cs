@@ -163,13 +163,13 @@ namespace NTumbleBit.ClassicTumbler
 			return new TxOut(Parameters.Denomination + Parameters.Fee, InternalState.ClientEscrow.Hash);
 		}
 		
-		public SolverClientSession SetClientSignedTransaction(Transaction transaction, Script redeemDestination)
+		public SolverClientSession SetClientSignedTransaction(uint160 channelId, Transaction transaction, Script redeemDestination)
 		{
 			AssertState(TumblerClientSessionStates.WaitingClientTransaction);
 			var expectedTxout = BuildClientEscrowTxOut();
 			var output = transaction.Outputs.AsIndexedOutputs().Single(o => o.TxOut.ScriptPubKey == expectedTxout.ScriptPubKey && o.TxOut.Value == expectedTxout.Value);
 			var solver = new SolverClientSession(Parameters.CreateSolverParamaters());
-			solver.ConfigureEscrowedCoin(new Coin(output).ToScriptCoin(InternalState.ClientEscrow), InternalState.ClientEscrowKey, redeemDestination);
+			solver.ConfigureEscrowedCoin(channelId, new Coin(output).ToScriptCoin(InternalState.ClientEscrow), InternalState.ClientEscrowKey, redeemDestination);
 			InternalState.Status = TumblerClientSessionStates.WaitingSolvedVoucher;
 			return solver;
 		}
@@ -205,8 +205,10 @@ namespace NTumbleBit.ClassicTumbler
 			return result;
 		}
 
-		public PromiseClientSession ReceiveTumblerEscrowedCoin(ScriptCoin escrowedCoin)
+		public PromiseClientSession ReceiveTumblerEscrowedCoin(ScriptCoin escrowedCoin, uint160 channelId)
 		{
+			if(channelId == null)
+				throw new ArgumentNullException(nameof(channelId));
 			AssertState(TumblerClientSessionStates.WaitingTumblerEscrow);
 			var escrow = EscrowScriptPubKeyParameters.GetFromCoin(escrowedCoin);
 			var expectedEscrow = new EscrowScriptPubKeyParameters()
@@ -223,7 +225,7 @@ namespace NTumbleBit.ClassicTumbler
 
 			InternalState.Status = TumblerClientSessionStates.PromisePhase;
 			var session = new PromiseClientSession(Parameters.CreatePromiseParamaters());
-			session.ConfigureEscrowedCoin(escrowedCoin, InternalState.TumblerEscrowKey);
+			session.ConfigureEscrowedCoin(channelId, escrowedCoin, InternalState.TumblerEscrowKey);
 			InternalState.TumblerEscrowKey = null;
 			return session;
 		}

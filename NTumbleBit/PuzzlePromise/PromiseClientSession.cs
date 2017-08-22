@@ -224,10 +224,10 @@ namespace NTumbleBit.PuzzlePromise
 		}
 
 
-		public override void ConfigureEscrowedCoin(ScriptCoin escrowedCoin, Key escrowKey)
+		public override void ConfigureEscrowedCoin(uint160 channelId, ScriptCoin escrowedCoin, Key escrowKey)
 		{
 			AssertState(PromiseClientStates.WaitingEscrow);
-			base.ConfigureEscrowedCoin(escrowedCoin, escrowKey);
+			base.ConfigureEscrowedCoin(channelId, escrowedCoin, escrowKey);
 			InternalState.Status = PromiseClientStates.WaitingSignatureRequest;
 		}
 

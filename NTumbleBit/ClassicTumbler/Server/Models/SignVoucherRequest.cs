@@ -92,6 +92,20 @@ namespace NTumbleBit.ClassicTumbler.Server.Models
 			}
 		}
 
+
+		uint160 _ChannelId;
+		public uint160 ChannelId
+		{
+			get
+			{
+				return _ChannelId;
+			}
+			set
+			{
+				_ChannelId = value;
+			}
+		}
+
 		public void ReadWrite(BitcoinStream stream)
 		{
 			stream.ReadWrite(ref _Cycle);
@@ -100,6 +114,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Models
 			stream.ReadWrite(ref _MerkleProof);
 			stream.ReadWriteC(ref _ClientEscrowKey);
 			stream.ReadWrite(ref _Transaction);
+			stream.ReadWrite(ref _ChannelId);
 		}
 	}
 }

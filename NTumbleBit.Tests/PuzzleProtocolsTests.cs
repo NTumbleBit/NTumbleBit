@@ -179,12 +179,12 @@ namespace NTumbleBit.Tests
 
 			var coin = CreateEscrowCoin(serverEscrow.PubKey, clientEscrow.PubKey);
 
-			client.ConfigureEscrowedCoin(coin, clientEscrow);
+			client.ConfigureEscrowedCoin(uint160.Zero, coin, clientEscrow);
 			SignaturesRequest request = client.CreateSignatureRequest(clientEscrow.PubKey.Hash, FeeRate);
 			RoundTrip(ref client, parameters);
 			RoundTrip(ref request);
 
-			server.ConfigureEscrowedCoin(coin, serverEscrow, new Key().ScriptPubKey);
+			server.ConfigureEscrowedCoin(uint160.Zero, coin, serverEscrow, new Key().ScriptPubKey);
 			PuzzlePromise.ServerCommitment[] commitments = server.SignHashes(request);
 			RoundTrip(ref server, parameters);
 			RoundTrip(ref commitments);
@@ -257,7 +257,7 @@ namespace NTumbleBit.Tests
 
 			var escrow = CreateEscrowCoin(clientEscrow.PubKey, serverEscrow.PubKey);
 			var redeemDestination = new Key().ScriptPubKey;
-			client.ConfigureEscrowedCoin(escrow, clientEscrow, redeemDestination);
+			client.ConfigureEscrowedCoin(uint160.Zero, escrow, clientEscrow, redeemDestination);
 			client.AcceptPuzzle(puzzle.PuzzleValue);
 			RoundTrip(ref client, parameters);
 			Assert.True(client.GetInternalState().RedeemDestination == redeemDestination);
@@ -265,7 +265,7 @@ namespace NTumbleBit.Tests
 			RoundTrip(ref client, parameters);
 			RoundTrip(ref puzzles);
 
-			server.ConfigureEscrowedCoin(escrow, serverEscrow);
+			server.ConfigureEscrowedCoin(uint160.Zero, escrow, serverEscrow);
 			var commitments = server.SolvePuzzles(puzzles);
 			RoundTrip(ref server, parameters, key);
 			RoundTrip(ref commitments);

@@ -1,4 +1,5 @@
 ﻿using NBitcoin;
+using NBitcoin.Crypto;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -9,31 +10,18 @@ namespace NTumbleBit
 	{
 		public static CorrelationId Parse(string str)
 		{
-			uint v;
-			//To eventually remove in august 2017, prevent old stuff from crashing
-			if(uint.TryParse(str, out v))
-				return new CorrelationId(v);
-			///////
-			return new CorrelationId(uint256.Parse(str));
+			return new CorrelationId(uint160.Parse(str));
 		}
-		public CorrelationId(uint256 id)
+
+		public CorrelationId(uint160 id)
 		{
 			if(id == null)
 				throw new ArgumentNullException(nameof(id));
 			_Id = id;
 		}
 
-		public CorrelationId(Script redeem) : this(new uint256(redeem.WitHash.ToBytes()))
-		{
-
-		}
-
-		public CorrelationId(ScriptCoin coin) : this(coin.Redeem)
-		{
-		}
-
-		readonly uint256 _Id;
-		public static readonly CorrelationId Zero = new CorrelationId(uint256.Zero);
+		readonly uint160 _Id;
+		public static readonly CorrelationId Zero = new CorrelationId(uint160.Zero);
 
 		public override bool Equals(object obj)
 		{

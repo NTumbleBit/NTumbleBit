@@ -174,6 +174,8 @@ namespace NTumbleBit.Tests
 				Assert.Equal(1, escrow2.KeyIndex);
 				machine.Update();
 
+				Assert.NotEqual(uint160.Zero, machine.SolverClientSession.Id);
+				Assert.NotNull(machine.SolverClientSession.Id);
 				clientTracker.AssertKnown(TransactionType.ClientEscrow, machine.SolverClientSession.EscrowedCoin.ScriptPubKey);
 				clientTracker.AssertKnown(TransactionType.ClientEscrow, machine.SolverClientSession.EscrowedCoin.Outpoint.Hash);
 
@@ -206,6 +208,9 @@ namespace NTumbleBit.Tests
 				Assert.Equal(PaymentStateMachineStatus.TumblerChannelBroadcasted, machine.Status);
 
 
+				Assert.NotEqual(uint160.Zero, machine.PromiseClientSession.Id);
+				Assert.NotEqual(machine.SolverClientSession.Id, machine.PromiseClientSession.Id);
+				Assert.NotNull(machine.PromiseClientSession.Id);
 				serverTracker.AssertKnown(TransactionType.TumblerEscrow, machine.PromiseClientSession.EscrowedCoin.ScriptPubKey);
 				serverTracker.AssertKnown(TransactionType.TumblerEscrow, machine.PromiseClientSession.EscrowedCoin.Outpoint.Hash);
 				clientTracker.AssertKnown(TransactionType.TumblerEscrow, machine.PromiseClientSession.EscrowedCoin.ScriptPubKey);

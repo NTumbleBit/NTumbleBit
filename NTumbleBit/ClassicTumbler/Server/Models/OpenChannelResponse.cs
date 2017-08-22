@@ -5,17 +5,21 @@ using System.Text;
 
 namespace NTumbleBit.ClassicTumbler.Server.Models
 {
-	public class ScriptCoinModel : IBitcoinSerializable
+	public class OpenChannelResponse : IBitcoinSerializable
 	{
-		public ScriptCoinModel()
+		public OpenChannelResponse()
 		{
 
 		}
-		public ScriptCoinModel(ScriptCoin coin)
+		public OpenChannelResponse(ScriptCoin coin)
 		{
 			ScriptCoin = coin;
 		}
 		public ScriptCoin ScriptCoin
+		{
+			get; set;
+		}
+		public uint160 ChannelId
 		{
 			get; set;
 		}
@@ -26,15 +30,19 @@ namespace NTumbleBit.ClassicTumbler.Server.Models
 				stream.ReadWrite(ScriptCoin.Redeem);
 				stream.ReadWrite(ScriptCoin.Outpoint);
 				stream.ReadWrite(ScriptCoin.TxOut);
+				stream.ReadWrite(ChannelId);
 			}
 			else
 			{
 				Script redeem = null;
 				OutPoint outpoint = null;
 				TxOut txout = null;
+				uint160 channelId = null;
 				stream.ReadWrite(ref redeem);
 				stream.ReadWrite(ref outpoint);
 				stream.ReadWrite(ref txout);
+				stream.ReadWrite(ref channelId);
+				ChannelId = channelId;
 				ScriptCoin = new ScriptCoin(outpoint, txout, redeem);
 			}
 		}
