@@ -361,7 +361,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 						{
 							CheckTumblerChannelConfirmed(cycle);
 						}
-						if(PromiseClientSession != null && Status == PaymentStateMachineStatus.TumblerChannelConfirmed)
+						if(Status == PaymentStateMachineStatus.TumblerChannelConfirmed)
 						{
 							TransactionInformation tumblerTx = GetTransactionInformation(PromiseClientSession.EscrowedCoin, false);
 							//Ensure the tumbler coin is confirmed before paying anything
@@ -462,6 +462,16 @@ namespace NTumbleBit.ClassicTumbler.Client
 				var bobCount = Parameters.CountEscrows(tumblerTx.Transaction, Identity.Bob);
 				Logs.Client.LogInformation($"Tumbler escrow reached {cycle.SafetyPeriodDuration} confirmations");
 				Logs.Client.LogInformation($"Tumbler escrow transaction has {bobCount} users");
+			}
+
+			if(tumblerTx == null)
+			{
+				Logs.Client.LogInformation($"Tumbler escrow not yet broadcasted");
+			}
+
+			if(tumblerTx != null && tumblerTx.Confirmations < cycle.SafetyPeriodDuration)
+			{
+				Logs.Client.LogInformation($"Tumbler escrow need {cycle.SafetyPeriodDuration - tumblerTx.Confirmations} more confirmation");
 			}
 			Status = PaymentStateMachineStatus.TumblerChannelConfirmed;
 		}
