@@ -482,8 +482,8 @@ namespace NTumbleBit.ClassicTumbler.Client
 			if(tumblerTx != null && tumblerTx.Confirmations < cycle.SafetyPeriodDuration)
 			{
 				Logs.Client.LogInformation($"Tumbler escrow need {cycle.SafetyPeriodDuration - tumblerTx.Confirmations} more confirmation");
+				Status = PaymentStateMachineStatus.TumblerChannelConfirmed;
 			}
-			Status = PaymentStateMachineStatus.TumblerChannelConfirmed;
 		}
 
 		private TransactionInformation GetTransactionInformation(ICoin coin, bool withProof)
