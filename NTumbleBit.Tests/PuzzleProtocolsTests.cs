@@ -231,7 +231,7 @@ namespace NTumbleBit.Tests
 				new TxOut
 				{
 					Value = Money.Coins(1.5m),
-					ScriptPubKey = redeem.Hash.ScriptPubKey
+					ScriptPubKey = redeem.WitHash.ScriptPubKey.Hash.ScriptPubKey
 				}).ToScriptCoin(redeem);
 			return scriptCoin;
 		}

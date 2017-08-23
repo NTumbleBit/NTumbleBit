@@ -315,7 +315,7 @@ namespace NTumbleBit.PuzzleSolver
 			}.ToScript();
 
 			var escrowCoin = InternalState.EscrowedCoin;
-			var txOut = new TxOut(escrowCoin.Amount - offerInformation.Fee, offerScript.Hash);
+			var txOut = new TxOut(escrowCoin.Amount - offerInformation.Fee, offerScript.WitHash.ScriptPubKey.Hash);
 			var offerCoin = new Coin(escrowCoin.Outpoint, txOut).ToScriptCoin(offerScript);
 
 
@@ -356,6 +356,7 @@ namespace NTumbleBit.PuzzleSolver
 			tx.Inputs[0].ScriptSig = new Script(
 				Op.GetPushOp(TrustedBroadcastRequest.PlaceholderSignature),
 				Op.GetPushOp(InternalState.OfferCoin.Redeem.ToBytes()));
+			tx.Inputs[0].Witnessify();
 			tx.Outputs[0].Value -= feeRate.GetFee(tx.GetVirtualSize());
 
 			var redeemTransaction = new TrustedBroadcastRequest
@@ -394,7 +395,7 @@ namespace NTumbleBit.PuzzleSolver
 			AssertState(SolverClientStates.WaitingPuzzleSolutions);
 			foreach(var input in fulfillTx.Inputs)
 			{
-				var solutions = SolverScriptBuilder.ExtractSolutions(input.ScriptSig, Parameters.RealPuzzleCount);
+				var solutions = SolverScriptBuilder.ExtractSolutions(input.WitScript, Parameters.RealPuzzleCount);
 				if(solutions == null)
 					continue;
 				try

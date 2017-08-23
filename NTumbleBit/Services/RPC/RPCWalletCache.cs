@@ -144,7 +144,8 @@ namespace NTumbleBit.Services.RPC
 		private static IEnumerable<Script> GetScriptsOf(Transaction tx)
 		{
 			return tx.Outputs.Select(o => o.ScriptPubKey)
-									.Concat(tx.Inputs.Select(o => o.ScriptSig.GetSigner().ScriptPubKey));
+									.Concat(tx.Inputs.Select(o => o.GetSigner()?.ScriptPubKey))
+									.Where(script => script != null);
 		}
 
 		MultiValueDictionary<Script, RPCWalletEntry> _TxByScriptId = new MultiValueDictionary<Script, RPCWalletEntry>();

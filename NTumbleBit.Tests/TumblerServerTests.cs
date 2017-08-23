@@ -138,8 +138,9 @@ namespace NTumbleBit.Tests
 				k1 = wrpc.GetNewDestination();
 				k2 = wrpc.GetNewDestination();
 
-				Assert.Equal(new KeyPath("0'/0'/1'"), wrpc.GetKeyPath(k1));
-				Assert.Equal(new KeyPath("0'/0'/2'"), wrpc.GetKeyPath(k2));
+				// The setup give an address to Alice
+				Assert.Equal(new KeyPath("0'/0'/2'"), wrpc.GetKeyPath(k1));
+				Assert.Equal(new KeyPath("0'/0'/3'"), wrpc.GetKeyPath(k2));
 				Assert.Null(w.GetKeyPath(new Key().ScriptPubKey));
 			}
 		}
@@ -150,11 +151,6 @@ namespace NTumbleBit.Tests
 			{
 				server.ServerRuntime.Cooperative = cooperativeTumbler;
 				server.ClientRuntime.Cooperative = cooperativeClient;
-
-				server.AliceNode.FindBlock(1);
-				server.TumblerNode.FindBlock(1);
-				server.BobNode.FindBlock(103);
-				server.SyncNodes();
 
 				var machine = server.CreateStateMachine();
 
@@ -250,7 +246,6 @@ namespace NTumbleBit.Tests
 				server.MineTo(server.TumblerNode, cycle, CyclePhase.PaymentPhase, true);
 
 				Transaction[] transactions = null;
-				Transaction unmalleatedOffer = null;
 				if(!cooperativeClient || !cooperativeTumbler)
 				{
 					//Offer + Fulfill should be broadcasted
@@ -266,28 +261,6 @@ namespace NTumbleBit.Tests
 
 					serverTracker.AssertKnown(TransactionType.ClientOffer, transactions[0].GetHash());
 					serverTracker.AssertKnown(TransactionType.ClientFulfill, transactions[1].GetHash());
-
-					//Offer got malleated
-					unmalleatedOffer = transactions[0];
-					server.TumblerNode.Malleate(transactions[0].GetHash());
-					block = server.TumblerNode.FindBlock(1).First();
-					server.SyncNodes();
-					Assert.Equal(2, block.Transactions.Count); //Offer get mined
-
-					var malleatedOffer = block.Transactions[1];
-
-					//Fulfill get resigned and broadcasted
-					transactions = server.ServerRuntime.Services.TrustedBroadcastService.TryBroadcast();
-					Assert.Equal(1, transactions.Length);
-					block = server.TumblerNode.FindBlock(1).First();
-					Assert.Equal(2, block.Transactions.Count); //Fulfill get mined
-
-					var malleatedFulfill = block.Transactions[1];
-
-					Assert.NotEqual(unmalleatedTransactions[0].GetHash(), malleatedOffer.GetHash());
-					Assert.NotEqual(unmalleatedTransactions[1].GetHash(), malleatedFulfill.GetHash());
-					serverTracker.AssertNotKnown(malleatedOffer.GetHash()); //Offer got sneakily malleated, so the server did not broadcasted this version
-					serverTracker.AssertKnown(TransactionType.ClientFulfill, malleatedFulfill.GetHash());
 				}
 
 				server.MineTo(server.TumblerNode, cycle, CyclePhase.ClientCashoutPhase);
@@ -315,13 +288,6 @@ namespace NTumbleBit.Tests
 
 				var allTransactions = server.AliceNode.CreateNodeClient().GetBlocks().SelectMany(b => b.Transactions).ToDictionary(t => t.GetHash());
 				var expectedRate = new FeeRate(100, 1);
-
-
-				if(unmalleatedOffer != null)
-				{
-					allTransactions.Add(unmalleatedOffer.GetHash(), unmalleatedOffer);
-					AssertRate(allTransactions, expectedRate, unmalleatedOffer);
-				}
 
 				foreach(var txId in new[]
 				{
@@ -386,11 +352,6 @@ namespace NTumbleBit.Tests
 		{
 			using(var server = TumblerServerTester.Create())
 			{
-				server.AliceNode.FindBlock(1);
-				server.TumblerNode.FindBlock(1);
-				server.BobNode.FindBlock(103);
-				server.SyncNodes();
-
 				var machine = server.CreateStateMachine();
 				machine.Update();
 				var cycle = machine.ClientChannelNegotiation.GetCycle();

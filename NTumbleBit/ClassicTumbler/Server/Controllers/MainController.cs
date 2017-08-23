@@ -192,7 +192,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 
 			var expectedEscrow = new EscrowScriptPubKeyParameters(request.ClientEscrowKey, key.PubKey, cycle.GetClientLockTime());
 
-			var expectedTxOut = new TxOut(Parameters.Denomination + Parameters.Fee, expectedEscrow.ToScript().Hash);
+			var expectedTxOut = new TxOut(Parameters.Denomination + Parameters.Fee, expectedEscrow.ToScript().WitHash.ScriptPubKey.Hash);
 			var escrowedCoin =
 				transaction
 				.Outputs
@@ -262,7 +262,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 				escrow.Initiator = escrowKey.PubKey;
 				var channelId = new uint160(RandomUtils.GetBytes(20));
 				Logs.Tumbler.LogInformation($"Cycle {cycle.Start} Asked to open channel");
-				var txOut = new TxOut(Parameters.Denomination, escrow.ToScript().Hash);
+				var txOut = new TxOut(Parameters.Denomination, escrow.ToScript().WitHash.ScriptPubKey.Hash);
 
 				var unused = Services.WalletService.FundTransactionAsync(txOut, fee)
 					.ContinueWith(async (Task<Transaction> task) =>

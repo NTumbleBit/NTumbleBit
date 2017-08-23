@@ -165,7 +165,7 @@ namespace NTumbleBit.ClassicTumbler
 		public TxOut BuildClientEscrowTxOut()
 		{
 			AssertState(TumblerClientSessionStates.WaitingClientTransaction);
-			return new TxOut(Parameters.Denomination + Parameters.Fee, InternalState.ClientEscrow.Hash);
+			return new TxOut(Parameters.Denomination + Parameters.Fee, InternalState.ClientEscrow.WitHash.ScriptPubKey.Hash);
 		}
 		
 		public SolverClientSession SetClientSignedTransaction(uint160 channelId, Transaction transaction, Script redeemDestination)

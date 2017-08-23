@@ -118,6 +118,7 @@ namespace NTumbleBit.Services.RPC
 				Op.GetPushOp(TrustedBroadcastRequest.PlaceholderSignature),
 				Op.GetPushOp(input.EscrowedCoin.Redeem.ToBytes())
 				);
+				txin.Witnessify();
 				tx.AddInput(txin);
 			}
 
@@ -141,6 +142,7 @@ namespace NTumbleBit.Services.RPC
 				Op.GetPushOp(signature.ToBytes()),
 				Op.GetPushOp(input.EscrowedCoin.Redeem.ToBytes())
 				);
+				txin.Witnessify();
 			}
 			await _RPCClient.SendRawTransactionAsync(tx).ConfigureAwait(false);
 			return tx;

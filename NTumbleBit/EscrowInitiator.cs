@@ -86,6 +86,7 @@ namespace NTumbleBit
 				new Script(
 					Op.GetPushOp(TrustedBroadcastRequest.PlaceholderSignature), 
 					Op.GetPushOp(escrowCoin.Redeem.ToBytes()));
+			tx.Inputs[0].Witnessify();
 			tx.Inputs[0].Sequence = 0;
 			
 			tx.Outputs.Add(new TxOut(escrowCoin.Amount, InternalState.RedeemDestination));			

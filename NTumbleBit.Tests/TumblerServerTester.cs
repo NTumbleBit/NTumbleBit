@@ -17,6 +17,7 @@ using System.Net;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Threading;
+using Newtonsoft.Json.Linq;
 
 namespace NTumbleBit.Tests
 {
@@ -53,14 +54,20 @@ namespace NTumbleBit.Tests
 				_NodeBuilder = NodeBuilder.Create(directory);
 				_NodeBuilder.ConfigParameters.Add("prematurewitness", "1");
 				_NodeBuilder.ConfigParameters.Add("walletprematurewitness", "1");
+
 				_TumblerNode = _NodeBuilder.CreateNode(false);
 				_AliceNode = _NodeBuilder.CreateNode(false);
 				_BobNode = _NodeBuilder.CreateNode(false);
-
+				
 				Directory.CreateDirectory(directory);
 
 				_NodeBuilder.StartAll();
 
+				//Activate segwit
+				SyncNodes();
+				_TumblerNode.Generate(440);
+				_TumblerNode.CreateRPCClient().SendToAddress(_AliceNode.CreateRPCClient().GetNewAddress(), Money.Coins(100m));
+				_TumblerNode.Generate(1);
 				SyncNodes();
 
 				var conf = new TumblerConfiguration();
