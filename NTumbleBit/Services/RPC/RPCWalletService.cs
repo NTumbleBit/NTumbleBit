@@ -46,8 +46,9 @@ namespace NTumbleBit.Services.RPC
 
 		public IDestination GenerateAddress()
 		{
-			var result = _RPCClient.SendCommand("getnewaddress", "");
-			return BitcoinAddress.Create(result.ResultString, _RPCClient.Network);
+			var address = _RPCClient.GetNewAddress();
+			var witAddress = _RPCClient.SendCommand("addwitnessaddress", address.ToString());
+			return BitcoinAddress.Create(witAddress.ResultString, _RPCClient.Network);
 		}
 
 		public Coin AsCoin(UnspentCoin c)

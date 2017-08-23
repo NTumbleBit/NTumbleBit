@@ -51,6 +51,8 @@ namespace NTumbleBit.Tests
 				}
 
 				_NodeBuilder = NodeBuilder.Create(directory);
+				_NodeBuilder.ConfigParameters.Add("prematurewitness", "1");
+				_NodeBuilder.ConfigParameters.Add("walletprematurewitness", "1");
 				_TumblerNode = _NodeBuilder.CreateNode(false);
 				_AliceNode = _NodeBuilder.CreateNode(false);
 				_BobNode = _NodeBuilder.CreateNode(false);
