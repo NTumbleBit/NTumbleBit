@@ -74,6 +74,16 @@ namespace NTumbleBit
 				return transaction;
 			}
 			transaction.Inputs[0].PrevOut = coin.Outpoint;
+
+			//TODO: REMOVE THIS LATER hack so old tx do not crash client
+			if(transaction.Inputs[0].WitScript.PushCount == 0)
+			{
+				transaction.Inputs[0].WitScript = Signature;
+				transaction.Inputs[0].PrevOut = SignedOutpoint;
+				cached = true;
+				return transaction;
+			}
+
 			var redeem = new Script(transaction.Inputs[0].WitScript.Pushes.Last());
 			var scriptCoin = coin.ToScriptCoin(redeem);
 			byte[] signature = transaction.SignInput(Key, scriptCoin).ToBytes();
