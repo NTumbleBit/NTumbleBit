@@ -90,6 +90,11 @@ namespace NTumbleBit.ClassicTumbler.Client
 								Logs.Client.LogInformation("Skipping update, need to wait for tor circuit renewal");
 								break;
 							}
+							catch(InvalidStateException ex)
+							{
+								Logs.Client.LogDebug(new EventId(), ex, "Invalid State, do not save, the payment is wasted");
+								noSave = true;
+							}
 							catch(Exception ex)
 							{
 								var invalidPhase = ex.Message.IndexOf("invalid-phase", StringComparison.OrdinalIgnoreCase) >= 0;

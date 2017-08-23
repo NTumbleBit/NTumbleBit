@@ -297,7 +297,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 						bob = Runtime.CreateTumblerClient(cycle.Start, Identity.Bob);
 						if(Status == PaymentStateMachineStatus.TumblerVoucherObtained)
 						{
-
 							Logs.Client.LogInformation("Begin ask to open the channel...");
 							//Client asks the Tumbler to make a channel
 							var bobEscrowInformation = ClientChannelNegotiation.GetOpenChannelRequest();
