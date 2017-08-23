@@ -26,6 +26,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 		PuzzleSolutionObtained,
 		UncooperativeTumbler,
 		TumblerChannelCreating,
+		Wasted
 	}
 	public class PaymentStateMachine
 	{

@@ -77,6 +77,8 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 						foreach(var state in machineStates)
 						{
+							if(state.Status == PaymentStateMachineStatus.Wasted)
+								continue;
 							bool noSave = false;
 							var machine = new PaymentStateMachine(Runtime, state);
 							var statusBefore = machine.GetInternalState();
@@ -92,8 +94,8 @@ namespace NTumbleBit.ClassicTumbler.Client
 							}
 							catch(InvalidStateException ex)
 							{
-								Logs.Client.LogDebug(new EventId(), ex, "Client side Invalid State, do not save, the payment is wasted");
-								noSave = true;
+								Logs.Client.LogDebug(new EventId(), ex, "Client side Invalid State, the payment is wasted");
+								machine.Status = PaymentStateMachineStatus.Wasted;
 							}
 							catch(Exception ex)
 							{
@@ -114,8 +116,8 @@ namespace NTumbleBit.ClassicTumbler.Client
 								}
 								else if(invalidState)
 								{
-									Logs.Client.LogDebug(new EventId(), ex, "Tumbler side Invalid State, do not save, the payment is wasted");
-									noSave = true;
+									Logs.Client.LogDebug(new EventId(), ex, "Tumbler side Invalid State, the payment is wasted");
+									machine.Status = PaymentStateMachineStatus.Wasted;
 								}
 								else
 								{
