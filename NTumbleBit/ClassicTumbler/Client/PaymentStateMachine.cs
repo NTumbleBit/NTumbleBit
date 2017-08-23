@@ -329,7 +329,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 							}
 
 							PromiseClientSession = ClientChannelNegotiation.ReceiveTumblerEscrowedCoin(tumblerEscrow);
-							Logs.Client.LogInformation("Tumbler escrow broadcasted");
+							Logs.Client.LogInformation("Tumbler expected escrowed coin received");
 							//Tell to the block explorer we need to track that address (for checking if it is confirmed in payment phase)
 							Services.BlockExplorerService.TrackAsync(PromiseClientSession.EscrowedCoin.ScriptPubKey).GetAwaiter().GetResult();
 							Tracker.AddressCreated(cycle.Start, TransactionType.TumblerEscrow, PromiseClientSession.EscrowedCoin.ScriptPubKey, correlation);
