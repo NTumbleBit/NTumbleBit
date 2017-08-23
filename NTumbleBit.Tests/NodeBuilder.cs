@@ -314,7 +314,7 @@ namespace NTumbleBit.Tests
 				{"txindex", "0"},
 				{"rpcuser", creds.UserName},
 				{"rpcpassword", creds.Password},
-				{"port", ports[0].ToString()},
+				{"whitebind", "127.0.0.1:" + ports[0].ToString()},
 				{"rpcport", ports[1].ToString()},
 				{"printtoconsole", "1"},
 				{"keypool", "10"}

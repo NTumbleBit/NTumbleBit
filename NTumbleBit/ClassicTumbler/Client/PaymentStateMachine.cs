@@ -472,6 +472,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 				var bobCount = Parameters.CountEscrows(tumblerTx.Transaction, Identity.Bob);
 				Logs.Client.LogInformation($"Tumbler escrow reached {cycle.SafetyPeriodDuration} confirmations");
 				Logs.Client.LogInformation($"Tumbler escrow transaction has {bobCount} users");
+				Status = PaymentStateMachineStatus.TumblerChannelConfirmed;
 			}
 
 			if(tumblerTx == null)
@@ -482,7 +483,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 			if(tumblerTx != null && tumblerTx.Confirmations < cycle.SafetyPeriodDuration)
 			{
 				Logs.Client.LogInformation($"Tumbler escrow need {cycle.SafetyPeriodDuration - tumblerTx.Confirmations} more confirmation");
-				Status = PaymentStateMachineStatus.TumblerChannelConfirmed;
+				Status = PaymentStateMachineStatus.TumblerChannelBroadcasted;
 			}
 		}
 

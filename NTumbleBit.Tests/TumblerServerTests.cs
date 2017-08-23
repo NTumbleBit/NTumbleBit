@@ -199,15 +199,7 @@ namespace NTumbleBit.Tests
 
 
 				server.MineTo(server.AliceNode, cycle, CyclePhase.TumblerChannelEstablishment);
-
-
-				machine.Update();
-				Assert.Equal(PaymentStateMachineStatus.TumblerChannelCreating, machine.Status);
-
-				Thread.Sleep(1000);
-				machine.Update();
-				Assert.Equal(PaymentStateMachineStatus.TumblerChannelBroadcasted, machine.Status);
-
+				MakeTumblerChannelConfirmed(server, machine);
 
 				Assert.NotEqual(uint160.Zero, machine.PromiseClientSession.Id);
 				Assert.NotEqual(machine.SolverClientSession.Id, machine.PromiseClientSession.Id);
@@ -222,12 +214,10 @@ namespace NTumbleBit.Tests
 				Assert.Equal(PaymentStateMachineStatus.TumblerChannelConfirmed, machine.Status);
 
 				server.MineTo(server.TumblerNode, cycle, CyclePhase.PaymentPhase);
-
-
 				machine.Update();
 
 				//Wait escape transaction to be broadcasted
-				Thread.Sleep(1500);
+				Thread.Sleep(1000);
 				Block block = server.TumblerNode.FindBlock(1).First();
 
 				if(cooperativeClient && cooperativeTumbler)
@@ -329,6 +319,21 @@ namespace NTumbleBit.Tests
 			}
 		}
 
+		private static void MakeTumblerChannelConfirmed(TumblerServerTester server, PaymentStateMachine machine)
+		{
+			machine.Update();
+			Assert.Equal(PaymentStateMachineStatus.TumblerChannelCreating, machine.Status);
+
+			CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+			while(machine.Status != PaymentStateMachineStatus.TumblerChannelBroadcasted)
+			{
+				cts.Token.ThrowIfCancellationRequested();
+				server.RefreshWalletCache();
+				Assert.Equal(machine.Status, PaymentStateMachineStatus.TumblerChannelCreating);
+				machine.Update();
+			}
+		}
+
 		private static void AssertRate(Dictionary<uint256, Transaction> allTransactions, FeeRate expectedRate, Transaction tx)
 		{
 			var previousCoins = tx.Inputs.Select(t => t.PrevOut).Select(t => allTransactions[t.Hash].Outputs.AsCoins().ToArray()[(int)t.N]).ToArray();
@@ -379,7 +384,7 @@ namespace NTumbleBit.Tests
 
 				server.MineTo(server.AliceNode, cycle, CyclePhase.TumblerChannelEstablishment);
 				machine.Update();
-				Assert.Equal(PaymentStateMachineStatus.TumblerChannelCreating, machine.Status);
+				MakeTumblerChannelConfirmed(server, machine);
 
 				Thread.Sleep(1000);
 				machine.Update();
