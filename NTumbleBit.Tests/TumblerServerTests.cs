@@ -231,7 +231,7 @@ namespace NTumbleBit.Tests
 				machine.Update();
 
 				//Wait escape transaction to be broadcasted
-				Thread.Sleep(1000);
+				Thread.Sleep(1500);
 				Block block = server.TumblerNode.FindBlock(1).First();
 
 				if(cooperativeClient && cooperativeTumbler)

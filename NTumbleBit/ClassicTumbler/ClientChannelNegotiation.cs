@@ -249,7 +249,7 @@ namespace NTumbleBit.ClassicTumbler
 		private void AssertState(TumblerClientSessionStates state)
 		{
 			if(state != InternalState.Status)
-				throw new InvalidOperationException("Invalid state, actual " + InternalState.Status + " while expected is " + state);
+				throw new InvalidStateException("Invalid state, actual " + InternalState.Status + " while expected is " + state);
 		}
 	}
 }

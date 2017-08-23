@@ -127,7 +127,9 @@ namespace NTumbleBit.Services.RPC
 				Value = data.Select(c => c.EscrowedCoin.Amount).Sum()
 			});
 
-			tx.Outputs[0].Value -= FeeRate.GetFee(tx);
+			//should be zero, but for later improvement...
+			var currentFee = tx.GetFee(data.Select(d => d.EscrowedCoin).ToArray());
+			tx.Outputs[0].Value -= FeeRate.GetFee(tx) - currentFee;
 
 			for(int i = 0; i < data.Length; i++)
 			{
