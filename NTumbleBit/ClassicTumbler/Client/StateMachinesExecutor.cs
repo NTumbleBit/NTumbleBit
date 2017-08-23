@@ -68,19 +68,23 @@ namespace NTumbleBit.ClassicTumbler.Client
 												.SelectMany(c => Runtime.Repository.List<PaymentStateMachine.State>(GetPartitionKey(c.Start)))
 												.Where(m => m.TumblerParametersHash == _ParametersHash)
 												.ToArray();
-						NBitcoin.Utils.Shuffle(machineStates);						
+						NBitcoin.Utils.Shuffle(machineStates);
 						bool hadInvalidPhase = false;
 
 						//Waiting for the block to propagate to server so invalid-phase happens less often
-						cancellationToken.WaitHandle.WaitOne(10000); 
+						cancellationToken.WaitHandle.WaitOne(10000);
 						cancellationToken.ThrowIfCancellationRequested();
 
 						foreach(var state in machineStates)
 						{
-							if(state.Status == PaymentStateMachineStatus.Wasted)
-								continue;
 							bool noSave = false;
 							var machine = new PaymentStateMachine(Runtime, state);
+							if(machine.Status == PaymentStateMachineStatus.Wasted)
+							{
+								Logs.Client.LogDebug($"Skipping cycle {machine.StartCycle}, because if is wasted");
+								continue;
+							}
+
 							var statusBefore = machine.GetInternalState();
 							try
 							{
@@ -92,15 +96,9 @@ namespace NTumbleBit.ClassicTumbler.Client
 								Logs.Client.LogInformation("Skipping update, need to wait for tor circuit renewal");
 								break;
 							}
-							catch(InvalidStateException ex)
-							{
-								Logs.Client.LogDebug(new EventId(), ex, "Client side Invalid State, the payment is wasted");
-								machine.Status = PaymentStateMachineStatus.Wasted;
-							}
 							catch(Exception ex)
 							{
 								var invalidPhase = ex.Message.IndexOf("invalid-phase", StringComparison.OrdinalIgnoreCase) >= 0;
-								var invalidState = ex.Message.IndexOf("invalid-state", StringComparison.OrdinalIgnoreCase) >= 0;
 								if(invalidPhase)
 								{
 									if(!hadInvalidPhase)
@@ -113,11 +111,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 										}
 									}
 									noSave = true;
-								}
-								else if(invalidState)
-								{
-									Logs.Client.LogDebug(new EventId(), ex, "Tumbler side Invalid State, the payment is wasted");
-									machine.Status = PaymentStateMachineStatus.Wasted;
 								}
 								else
 								{

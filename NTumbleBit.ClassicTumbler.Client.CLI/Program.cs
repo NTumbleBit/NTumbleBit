@@ -25,7 +25,6 @@ namespace NTumbleBit.ClassicTumbler.Client.CLI
 			var argsConf = new TextFileConfiguration(args);
 			var debug = argsConf.GetOrDefault<bool>("debug", false);
 			Logs.Configure(new FuncLoggerFactory(i => new CustomerConsoleLogger(i, Logs.SupportDebug(debug), false)));
-
 			using(var interactive = new Interactive())
 			{
 

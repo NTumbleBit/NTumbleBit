@@ -439,6 +439,16 @@ namespace NTumbleBit.ClassicTumbler.Client
 						break;
 				}
 			}
+			catch(InvalidStateException ex)
+			{
+				Logs.Client.LogDebug(new EventId(), ex, "Client side Invalid State, the payment is wasted");
+				Status = PaymentStateMachineStatus.Wasted;
+			}
+			catch(Exception ex) when (ex.Message.IndexOf("invalid-state", StringComparison.OrdinalIgnoreCase) >= 0)
+			{
+				Logs.Client.LogDebug(new EventId(), ex, "Tumbler side Invalid State, the payment is wasted");
+				Status = PaymentStateMachineStatus.Wasted;
+			}
 			finally
 			{
 				if(previousState != Status)
