@@ -85,7 +85,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 			if(request == null)
 				throw new ArgumentNullException(nameof(request));
 			var c = await SendAsync<uint160.MutableUint160>(HttpMethod.Post, request, $"channels/beginopen").ConfigureAwait(false);
-			return c.Value;
+			return c?.Value;
 		}
 
 		public ScriptCoin EndOpenChannel(int cycleId, uint160 channelId)

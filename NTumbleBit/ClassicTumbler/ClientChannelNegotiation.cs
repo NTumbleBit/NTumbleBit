@@ -236,6 +236,8 @@ namespace NTumbleBit.ClassicTumbler
 
 		internal void SetChannelId(uint160 channelId)
 		{
+			if(channelId == null)
+				throw new ArgumentNullException(nameof(channelId));
 			InternalState.ChannelId = channelId;
 		}
 

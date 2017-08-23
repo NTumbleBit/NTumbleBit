@@ -315,8 +315,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 								}
 								throw;
 							}
-
-
 							ClientChannelNegotiation.SetChannelId(channelId);
 							Status = PaymentStateMachineStatus.TumblerChannelCreating;
 
