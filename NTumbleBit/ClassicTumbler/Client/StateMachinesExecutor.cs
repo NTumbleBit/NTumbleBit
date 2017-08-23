@@ -92,12 +92,13 @@ namespace NTumbleBit.ClassicTumbler.Client
 							}
 							catch(InvalidStateException ex)
 							{
-								Logs.Client.LogDebug(new EventId(), ex, "Invalid State, do not save, the payment is wasted");
+								Logs.Client.LogDebug(new EventId(), ex, "Client side Invalid State, do not save, the payment is wasted");
 								noSave = true;
 							}
 							catch(Exception ex)
 							{
 								var invalidPhase = ex.Message.IndexOf("invalid-phase", StringComparison.OrdinalIgnoreCase) >= 0;
+								var invalidState = ex.Message.IndexOf("invalid-state", StringComparison.OrdinalIgnoreCase) >= 0;
 								if(invalidPhase)
 								{
 									if(!hadInvalidPhase)
@@ -109,6 +110,11 @@ namespace NTumbleBit.ClassicTumbler.Client
 											Logs.Client.LogError(new EventId(), ex, $"Invalid-Phase happened repeatedly, check that your node currently at height {height} is currently sync to the network");
 										}
 									}
+									noSave = true;
+								}
+								else if(invalidState)
+								{
+									Logs.Client.LogDebug(new EventId(), ex, "Tumbler side Invalid State, do not save, the payment is wasted");
 									noSave = true;
 								}
 								else
