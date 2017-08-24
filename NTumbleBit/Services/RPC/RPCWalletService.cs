@@ -1,4 +1,5 @@
 ﻿using NBitcoin;
+using Microsoft.Extensions.Logging;
 using System.Linq;
 using NBitcoin.RPC;
 using Newtonsoft.Json.Linq;
@@ -7,6 +8,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using NTumbleBit.Logging;
 
 namespace NTumbleBit.Services.RPC
 {
@@ -65,7 +67,9 @@ namespace NTumbleBit.Services.RPC
 		public async Task<Transaction> FundTransactionAsync(TxOut txOut, FeeRate feeRate)
 		{
 			_FundingBatch.FeeRate = feeRate;
-			return await _FundingBatch.WaitTransactionAsync(txOut).ConfigureAwait(false);
+			var task = _FundingBatch.WaitTransactionAsync(txOut).ConfigureAwait(false);
+			Logs.Tumbler.LogDebug($"TumblerEscrow batch count {_FundingBatch.BatchCount}");
+			return await task;
 		}
 
 		
@@ -74,12 +78,14 @@ namespace NTumbleBit.Services.RPC
 		public async Task<Transaction> ReceiveAsync(ScriptCoin escrowedCoin, TransactionSignature clientSignature, Key escrowKey, FeeRate feeRate)
 		{
 			_ReceiveBatch.FeeRate = feeRate;
-			return await _ReceiveBatch.WaitTransactionAsync(new ClientEscapeData()
+			var task = _ReceiveBatch.WaitTransactionAsync(new ClientEscapeData()
 			{
 				ClientSignature = clientSignature,
 				EscrowedCoin = escrowedCoin,
 				EscrowKey = escrowKey
 			}).ConfigureAwait(false);
+			Logs.Tumbler.LogDebug($"ClientEscape batch count {_ReceiveBatch.BatchCount}");
+			return await task;
 		}
 	}
 }

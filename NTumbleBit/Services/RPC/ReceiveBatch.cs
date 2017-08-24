@@ -16,6 +16,14 @@ namespace NTumbleBit.Services.RPC
 		{
 			get; set;
 		}
+
+		public int BatchCount
+		{
+			get
+			{
+				return Data.Count;
+			}
+		}
 		protected ConcurrentQueue<T> Data = new ConcurrentQueue<T>();
 		public async Task<Transaction> WaitTransactionAsync(T data)
 		{
