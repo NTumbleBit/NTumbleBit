@@ -337,7 +337,8 @@ namespace NTumbleBit.ClassicTumbler.CLI
 						Console.WriteLine("Cycle " + cycle.Start + " has no data");
 					}
 
-					Console.WriteLine(stats.ToString());
+					Console.WriteLine("Status for " + cycle.Start + ":");
+					Console.Write(stats.ToString());
 					Console.WriteLine("=====================================");
 
 					statsTotal = statsTotal + stats;
@@ -354,7 +355,7 @@ namespace NTumbleBit.ClassicTumbler.CLI
 					}
 				}
 				Console.WriteLine("Stats Total:");
-				Console.WriteLine(statsTotal.ToString());
+				Console.Write(statsTotal.ToString());
 			}
 
 			if(options.TxId != null)
