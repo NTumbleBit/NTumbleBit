@@ -33,7 +33,7 @@ namespace NTumbleBit.Services.RPC
 			_Repository = repository;
 			_Cache = cache;
 			_BlockExplorerService = new RPCBlockExplorerService(rpc, cache, repository);
-			_RPCBatch = new RPCBatch(_RPCClient);
+			_RPCBatch = new RPCBatch<bool>(_RPCClient);
 		}
 
 		public TimeSpan BatchInterval
@@ -50,7 +50,7 @@ namespace NTumbleBit.Services.RPC
 
 
 		private readonly RPCBlockExplorerService _BlockExplorerService;
-		private readonly RPCBatch _RPCBatch;
+		private readonly RPCBatch<bool> _RPCBatch;
 
 		public RPCBlockExplorerService BlockExplorerService
 		{
@@ -154,7 +154,7 @@ namespace NTumbleBit.Services.RPC
 
 				try
 				{
-					await _RPCBatch.Do(async batch =>
+					await _RPCBatch.WaitTransactionAsync(async batch =>
 					{
 						await batch.SendRawTransactionAsync(tx.Transaction).ConfigureAwait(false);
 						return true;

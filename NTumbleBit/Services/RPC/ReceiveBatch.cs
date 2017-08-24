@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit.Services.RPC
 {
-	abstract class BatchBase<T>
+	abstract class BatchBase<T, TResult>
 	{
 		public TimeSpan BatchInterval
 		{
@@ -25,10 +25,10 @@ namespace NTumbleBit.Services.RPC
 			}
 		}
 		protected ConcurrentQueue<T> Data = new ConcurrentQueue<T>();
-		public async Task<Transaction> WaitTransactionAsync(T data)
+		public async Task<TResult> WaitTransactionAsync(T data)
 		{
 			var isFirstOutput = false;
-			TaskCompletionSource<Transaction> completion = null;
+			TaskCompletionSource<TResult> completion = null;
 			lock(Data)
 			{
 				completion = _TransactionCreated;
@@ -52,11 +52,11 @@ namespace NTumbleBit.Services.RPC
 			
 			List<T> data = new List<T>();
 			T output = default(T);
-			TaskCompletionSource<Transaction> completion = null;
+			TaskCompletionSource<TResult> completion = null;
 			lock(Data)
 			{
 				completion = _TransactionCreated;
-				_TransactionCreated = new TaskCompletionSource<Transaction>();
+				_TransactionCreated = new TaskCompletionSource<TResult>();
 				while(Data.TryDequeue(out output))
 				{
 					data.Add(output);
@@ -70,7 +70,7 @@ namespace NTumbleBit.Services.RPC
 
 			try
 			{
-				completion.TrySetResult(await SendTransactionAsync(dataArray).ConfigureAwait(false));
+				completion.TrySetResult(await RunAsync(dataArray).ConfigureAwait(false));
 			}
 			catch(Exception ex)
 			{
@@ -78,9 +78,9 @@ namespace NTumbleBit.Services.RPC
 			}
 		}
 
-		protected abstract Task<Transaction> SendTransactionAsync(T[] data);
+		protected abstract Task<TResult> RunAsync(T[] data);
 
-		TaskCompletionSource<Transaction> _TransactionCreated = new TaskCompletionSource<Transaction>();
+		TaskCompletionSource<TResult> _TransactionCreated = new TaskCompletionSource<TResult>();
 	}
 	class ClientEscapeData
 	{
@@ -100,7 +100,7 @@ namespace NTumbleBit.Services.RPC
 			set;
 		}
 	}
-	class ReceiveBatch : BatchBase<ClientEscapeData>
+	class ReceiveBatch : BatchBase<ClientEscapeData, Transaction>
 	{
 		public ReceiveBatch(RPCClient rpc)
 		{
@@ -114,7 +114,7 @@ namespace NTumbleBit.Services.RPC
 			get; set;
 		}
 		
-		protected override async Task<Transaction> SendTransactionAsync(ClientEscapeData[] data)
+		protected override async Task<Transaction> RunAsync(ClientEscapeData[] data)
 		{
 			Utils.Shuffle(data);
 			var cashout = await _RPCClient.GetNewAddressAsync().ConfigureAwait(false);

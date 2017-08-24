@@ -46,10 +46,10 @@ namespace NTumbleBit.Services.RPC
 			}
 		}
 
-		public IDestination GenerateAddress()
+		public async Task<IDestination> GenerateAddressAsync()
 		{
-			var address = _RPCClient.GetNewAddress();
-			var witAddress = _RPCClient.SendCommand("addwitnessaddress", address.ToString());
+			var address = await _RPCClient.GetNewAddressAsync().ConfigureAwait(false);
+			var witAddress = await _RPCClient.SendCommandAsync("addwitnessaddress", address.ToString()).ConfigureAwait(false);
 			return BitcoinAddress.Create(witAddress.ResultString, _RPCClient.Network);
 		}
 

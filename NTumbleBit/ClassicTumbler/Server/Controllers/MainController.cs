@@ -281,11 +281,11 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 								await Services.BroadcastService.BroadcastAsync(tx).ConfigureAwait(false);
 							}
 
-							await Services.BlockExplorerService.TrackAsync(txOut.ScriptPubKey);
+							await Services.BlockExplorerService.TrackAsync(txOut.ScriptPubKey).ConfigureAwait(false);
 							Tracker.AddressCreated(cycle.Start, TransactionType.TumblerEscrow, txOut.ScriptPubKey, correlation);
 							var coin = tx.Outputs.AsCoins().First(o => o.ScriptPubKey == txOut.ScriptPubKey && o.TxOut.Value == txOut.Value);
 							var session = new PromiseServerSession(Parameters.CreatePromiseParamaters());
-							var redeem = Services.WalletService.GenerateAddress();
+							var redeem = await Services.WalletService.GenerateAddressAsync().ConfigureAwait(false);
 							session.ConfigureEscrowedCoin(channelId, coin.ToScriptCoin(escrow.ToScript()), escrowKey, redeem.ScriptPubKey);
 							var redeemTx = session.CreateRedeemTransaction(fee);
 							Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.TumblerRedeem, correlation, redeemTx);
@@ -470,7 +470,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			if(session.Status != SolverServerStates.WaitingFulfillment)
 				throw new InvalidStateException("Invalid state, actual " + session.Status + " while expected is " + SolverServerStates.WaitingFulfillment);
 			var cycle = GetCycle(cycleId);
-			var cashout = Services.WalletService.GenerateAddress();
+			var cashout = await Services.WalletService.GenerateAddressAsync();
 
 			var fulfill = session.FulfillOffer(signature, cashout.ScriptPubKey, feeRate);
 			fulfill.BroadcastAt = new LockTime(cycle.GetPeriods().Payment.End - 1);

@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace NTumbleBit.Services.RPC
 {
-	class FundingBatch : BatchBase<TxOut>
+	class FundingBatch : BatchBase<TxOut, Transaction>
 	{
 		public FundingBatch(RPCClient rpc)
 		{
@@ -22,7 +22,7 @@ namespace NTumbleBit.Services.RPC
 			get; set;
 		}
 
-		protected override async Task<Transaction> SendTransactionAsync(TxOut[] data)
+		protected override async Task<Transaction> RunAsync(TxOut[] data)
 		{
 			Utils.Shuffle(data);
 			var tx = new Transaction();

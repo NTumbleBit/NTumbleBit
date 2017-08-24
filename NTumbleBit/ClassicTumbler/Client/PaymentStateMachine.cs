@@ -246,7 +246,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 								break;
 							}
 
-							var redeemDestination = Services.WalletService.GenerateAddress().ScriptPubKey;
+							var redeemDestination = Services.WalletService.GenerateAddressAsync().GetAwaiter().GetResult().ScriptPubKey;
 							var channelId = new uint160(RandomUtils.GetBytes(20));
 							SolverClientSession = ClientChannelNegotiation.SetClientSignedTransaction(channelId, clientEscrowTx, redeemDestination);
 
