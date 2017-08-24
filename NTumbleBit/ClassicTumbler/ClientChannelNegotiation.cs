@@ -214,13 +214,12 @@ namespace NTumbleBit.ClassicTumbler
 		{
 			AssertState(TumblerClientSessionStates.WaitingTumblerEscrow);
 			var escrow = EscrowScriptPubKeyParameters.GetFromCoin(escrowedCoin);
-			var expectedEscrow = new EscrowScriptPubKeyParameters()
-			{
-				Initiator = escrow?.Initiator,
-				Receiver = InternalState.TumblerEscrowKey.PubKey,
-				LockTime = GetCycle().GetTumblerLockTime()
-			};
-			if(escrow == null || escrow != expectedEscrow)
+			if(escrow == null)
+				throw new PuzzleException("invalid-escrow");
+			if(!escrowedCoin.IsP2SH || escrowedCoin.RedeemType != RedeemType.WitnessV0)
+				throw new PuzzleException("invalid-escrow");
+			var expectedEscrow = GetTumblerEscrowParameters(escrow.Initiator);
+			if(escrow != expectedEscrow)
 				throw new PuzzleException("invalid-escrow");
 			if(escrowedCoin.Amount != Parameters.Denomination)
 				throw new PuzzleException("invalid-amount");
@@ -232,6 +231,16 @@ namespace NTumbleBit.ClassicTumbler
 			session.ConfigureEscrowedCoin(escrowedCoin, InternalState.TumblerEscrowKey);
 			InternalState.TumblerEscrowKey = null;
 			return session;
+		}
+
+		public EscrowScriptPubKeyParameters GetTumblerEscrowParameters(PubKey pubkey)
+		{
+			return new EscrowScriptPubKeyParameters()
+			{
+				Initiator = pubkey,
+				Receiver = InternalState.TumblerEscrowKey.PubKey,
+				LockTime = GetCycle().GetTumblerLockTime()
+			};
 		}
 
 		internal void SetChannelId(uint160 channelId)

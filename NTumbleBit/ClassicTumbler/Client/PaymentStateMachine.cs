@@ -328,13 +328,25 @@ namespace NTumbleBit.ClassicTumbler.Client
 								break;
 							}
 
-							PromiseClientSession = ClientChannelNegotiation.ReceiveTumblerEscrowedCoin(tumblerEscrow);
+							if(tumblerEscrow.OutputIndex >= tumblerEscrow.Transaction.Outputs.Count)
+							{
+								Logs.Client.LogError("Tumbler escrow ouptut out-of-bound");
+								Status = PaymentStateMachineStatus.Wasted;
+								break;
+							}
+
+							var txOut = tumblerEscrow.Transaction.Outputs[tumblerEscrow.OutputIndex];
+							var outpoint = new OutPoint(tumblerEscrow.Transaction.GetHash(), tumblerEscrow.OutputIndex);
+							var escrowCoin = new Coin(outpoint, txOut).ToScriptCoin(ClientChannelNegotiation.GetTumblerEscrowParameters(tumblerEscrow.EscrowInitiatorKey).ToScript());
+
+							PromiseClientSession = ClientChannelNegotiation.ReceiveTumblerEscrowedCoin(escrowCoin);
 							Logs.Client.LogInformation("Tumbler expected escrowed coin received");
 							//Tell to the block explorer we need to track that address (for checking if it is confirmed in payment phase)
 							Services.BlockExplorerService.TrackAsync(PromiseClientSession.EscrowedCoin.ScriptPubKey).GetAwaiter().GetResult();
 							Tracker.AddressCreated(cycle.Start, TransactionType.TumblerEscrow, PromiseClientSession.EscrowedCoin.ScriptPubKey, correlation);
 							Tracker.TransactionCreated(cycle.Start, TransactionType.TumblerEscrow, PromiseClientSession.EscrowedCoin.Outpoint.Hash, correlation);
 
+							Services.BroadcastService.BroadcastAsync(tumblerEscrow.Transaction).GetAwaiter().GetResult();
 							//Channel is done, now need to run the promise protocol to get valid puzzle
 							var cashoutDestination = DestinationWallet.GetNewDestination();
 							Tracker.AddressCreated(cycle.Start, TransactionType.TumblerCashout, cashoutDestination, correlation);
@@ -470,23 +482,25 @@ namespace NTumbleBit.ClassicTumbler.Client
 		private void CheckTumblerChannelConfirmed(CycleParameters cycle)
 		{
 			TransactionInformation tumblerTx = GetTransactionInformation(PromiseClientSession.EscrowedCoin, false);
-			if(tumblerTx != null && tumblerTx.Confirmations >= cycle.SafetyPeriodDuration)
+			if(tumblerTx == null)
+			{
+				Logs.Client.LogInformation($"Tumbler escrow not yet broadcasted");
+				return;
+			}
+
+			if(tumblerTx.Confirmations >= cycle.SafetyPeriodDuration)
 			{
 				var bobCount = Parameters.CountEscrows(tumblerTx.Transaction, Identity.Bob);
 				Logs.Client.LogInformation($"Tumbler escrow reached {cycle.SafetyPeriodDuration} confirmations");
 				Logs.Client.LogInformation($"Tumbler escrow transaction has {bobCount} users");
 				Status = PaymentStateMachineStatus.TumblerChannelConfirmed;
+				return;
 			}
-
-			if(tumblerTx == null)
-			{
-				Logs.Client.LogInformation($"Tumbler escrow not yet broadcasted");
-			}
-
-			if(tumblerTx != null && tumblerTx.Confirmations < cycle.SafetyPeriodDuration)
+			
+			if(tumblerTx.Confirmations < cycle.SafetyPeriodDuration)
 			{
 				Logs.Client.LogInformation($"Tumbler escrow need {cycle.SafetyPeriodDuration - tumblerTx.Confirmations} more confirmation");
-				Status = PaymentStateMachineStatus.TumblerChannelBroadcasted;
+				return;
 			}
 		}
 

@@ -307,7 +307,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 		}
 
 		[HttpPost("api/v1/tumblers/{tumblerId}/channels/{cycleId}/{channelId}/endopen")]
-		public ScriptCoinModel EndOpenChannel(
+		public TumblerEscrowData EndOpenChannel(
 			[ModelBinder(BinderType = typeof(TumblerParametersModelBinder))]
 			ClassicTumblerParameters tumblerId,
 			int cycleId,
@@ -319,10 +319,16 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 				throw new ActionResultException(BadRequest("invalid-phase"));
 
 			var session = GetPromiseServerSession(cycle.Start, channelId, CyclePhase.TumblerChannelEstablishment);
-			if(session == null)
+			var tx = Services.BlockExplorerService.GetTransaction(session.EscrowedCoin.Outpoint.Hash)?.Transaction;
+			if(session == null || tx == null)
 				return null;
 			AssertNotDuplicateQuery(cycle.Start, channelId);
-			return new ScriptCoinModel(session.EscrowedCoin);
+			return new TumblerEscrowData()
+			{
+				Transaction = tx,
+				OutputIndex = (int)session.EscrowedCoin.Outpoint.N,
+				EscrowInitiatorKey = session.GetInternalState().EscrowKey.PubKey
+			};
 		}
 
 		[HttpPost("api/v1/tumblers/{tumblerId}/channels/{cycleId}/{channelId}/signhashes")]
