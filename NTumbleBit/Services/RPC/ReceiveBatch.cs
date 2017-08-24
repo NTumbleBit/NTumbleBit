@@ -116,6 +116,7 @@ namespace NTumbleBit.Services.RPC
 		
 		protected override async Task<Transaction> SendTransactionAsync(ClientEscapeData[] data)
 		{
+			Utils.Shuffle(data);
 			var cashout = await _RPCClient.GetNewAddressAsync().ConfigureAwait(false);
 			var tx = new Transaction();
 			foreach(var input in data)

@@ -24,6 +24,7 @@ namespace NTumbleBit.Services.RPC
 
 		protected override async Task<Transaction> SendTransactionAsync(TxOut[] data)
 		{
+			Utils.Shuffle(data);
 			var tx = new Transaction();
 			tx.Outputs.AddRange(data);
 			var changeAddress = _RPCClient.GetRawChangeAddress();
