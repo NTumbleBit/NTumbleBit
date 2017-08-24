@@ -372,6 +372,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 								{
 									feeRate = GetFeeRate();
 									alice = Runtime.CreateTumblerClient(cycle.Start, Identity.Alice);
+									Logs.Client.LogDebug("Starting the puzzle solver protocol...");
 									var puzzles = SolverClientSession.GeneratePuzzles();
 									var commmitments = alice.SolvePuzzles(SolverClientSession.Id, puzzles);
 									var revelation2 = SolverClientSession.Reveal(commmitments);
@@ -382,6 +383,8 @@ namespace NTumbleBit.ClassicTumbler.Client
 									var offerSignature = SolverClientSession.SignOffer(offerInformation);
 
 									var offerRedeem = SolverClientSession.CreateOfferRedeemTransaction(feeRate);
+									Logs.Client.LogDebug("Puzzle solver protocol ended...");
+
 									//May need to find solution in the fulfillment transaction
 									Services.BlockExplorerService.TrackAsync(offerRedeem.PreviousScriptPubKey).GetAwaiter().GetResult();
 									Tracker.AddressCreated(cycle.Start, TransactionType.ClientOfferRedeem, SolverClientSession.GetInternalState().RedeemDestination, correlation);
@@ -392,7 +395,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 										SolverClientSession.CheckSolutions(solutionKeys);
 										var tumblingSolution = SolverClientSession.GetSolution();
 										var transaction = PromiseClientSession.GetSignedTransaction(tumblingSolution);
-										Logs.Client.LogInformation("Got puzzle solution cooperatively from the tumbler");
+										Logs.Client.LogDebug("Got puzzle solution cooperatively from the tumbler");
 										Status = PaymentStateMachineStatus.PuzzleSolutionObtained;
 										Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.TumblerCashout, correlation, new TrustedBroadcastRequest()
 										{
