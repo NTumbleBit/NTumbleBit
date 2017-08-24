@@ -114,6 +114,7 @@ namespace NTumbleBit.Tests
 				//Overrides server fee
 				((RPCFeeService)runtime.Services.FeeService).FallBackFeeRate = new FeeRate(Money.Satoshis(100), 1);
 				((RPCWalletService)runtime.Services.WalletService).BatchInterval = TimeSpan.FromMilliseconds(10);
+				((RPCWalletService)runtime.Services.WalletService).AddressGenerationBatchInterval = TimeSpan.FromMilliseconds(10);
 				((RPCBroadcastService)runtime.Services.BroadcastService).BatchInterval = TimeSpan.FromMilliseconds(10);
 				((RPCBlockExplorerService)runtime.Services.BlockExplorerService).BatchInterval = TimeSpan.FromMilliseconds(10);
 

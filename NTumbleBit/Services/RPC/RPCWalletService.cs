@@ -21,8 +21,12 @@ namespace NTumbleBit.Services.RPC
 			_RPCClient = rpc;
 			_FundingBatch = new FundingBatch(rpc);
 			_ReceiveBatch = new ReceiveBatch(rpc);
+			_RPCBatch = new RPCBatch<bool>(rpc);
 			BatchInterval = TimeSpan.Zero;
+			AddressGenerationBatchInterval = TimeSpan.Zero;
 		}
+
+		RPCBatch<bool> _RPCBatch;
 
 		public TimeSpan BatchInterval
 		{
@@ -37,6 +41,18 @@ namespace NTumbleBit.Services.RPC
 			}
 		}
 
+		public TimeSpan AddressGenerationBatchInterval
+		{
+			get
+			{
+				return _RPCBatch.BatchInterval;
+			}
+			set
+			{
+				_RPCBatch.BatchInterval = value;
+			}
+		}
+
 		private readonly RPCClient _RPCClient;
 		public RPCClient RPCClient
 		{
@@ -48,8 +64,20 @@ namespace NTumbleBit.Services.RPC
 
 		public async Task<IDestination> GenerateAddressAsync()
 		{
-			var address = await _RPCClient.GetNewAddressAsync().ConfigureAwait(false);
-			var witAddress = await _RPCClient.SendCommandAsync("addwitnessaddress", address.ToString()).ConfigureAwait(false);
+			BitcoinAddress address = null;
+			await _RPCBatch.WaitTransactionAsync(async batch =>
+			{
+				address = await batch.GetNewAddressAsync().ConfigureAwait(false);
+				return true;
+			}).ConfigureAwait(false);
+
+			RPCResponse witAddress = null;
+			await _RPCBatch.WaitTransactionAsync(async batch =>
+			{
+				witAddress = await _RPCClient.SendCommandAsync("addwitnessaddress", address.ToString()).ConfigureAwait(false);
+				return true;
+			}).ConfigureAwait(false);
+			
 			return BitcoinAddress.Create(witAddress.ResultString, _RPCClient.Network);
 		}
 
