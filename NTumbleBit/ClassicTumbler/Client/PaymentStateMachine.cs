@@ -441,7 +441,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 							//If the tumbler is uncooperative, he published solutions on the blockchain
 							if(SolverClientSession.Status == SolverClientStates.WaitingPuzzleSolutions)
 							{
-								var transactions = Services.BlockExplorerService.GetTransactions(SolverClientSession.GetInternalState().OfferCoin.ScriptPubKey, false);
+								var transactions = Services.BlockExplorerService.GetTransactionsAsync(SolverClientSession.GetInternalState().OfferCoin.ScriptPubKey, false).GetAwaiter().GetResult();
 								if(transactions.Count != 0)
 								{
 									SolverClientSession.CheckSolutions(transactions.Select(t => t.Transaction).ToArray());
@@ -510,7 +510,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 		private TransactionInformation GetTransactionInformation(ICoin coin, bool withProof)
 		{
 			var tx = Services.BlockExplorerService
-				.GetTransactions(coin.TxOut.ScriptPubKey, withProof)
+				.GetTransactionsAsync(coin.TxOut.ScriptPubKey, withProof).GetAwaiter().GetResult()
 				.FirstOrDefault(t => t.Transaction.Outputs.AsCoins().Any(c => c.Outpoint == coin.Outpoint));
 			return tx;
 		}

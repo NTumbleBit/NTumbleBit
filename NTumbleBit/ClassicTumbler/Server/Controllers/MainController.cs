@@ -307,7 +307,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 		}
 
 		[HttpPost("api/v1/tumblers/{tumblerId}/channels/{cycleId}/{channelId}/endopen")]
-		public TumblerEscrowData EndOpenChannel(
+		public async Task<TumblerEscrowData> EndOpenChannel(
 			[ModelBinder(BinderType = typeof(TumblerParametersModelBinder))]
 			ClassicTumblerParameters tumblerId,
 			int cycleId,
@@ -319,8 +319,8 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 				throw new ActionResultException(BadRequest("invalid-phase"));
 
 			var session = GetPromiseServerSession(cycle.Start, channelId, CyclePhase.TumblerChannelEstablishment);
-			var tx = Services.BlockExplorerService
-							.GetTransactions(session.EscrowedCoin.TxOut.ScriptPubKey, true)
+			var tx = (await Services.BlockExplorerService
+							.GetTransactionsAsync(session.EscrowedCoin.TxOut.ScriptPubKey, true))
 							.FirstOrDefault(t => t.Transaction.GetHash() == session.EscrowedCoin.Outpoint.Hash);
 			if(session == null || tx == null)
 				return null;
