@@ -208,7 +208,10 @@ namespace NTumbleBit.Services.RPC
 			foreach(var remove in removeFromWalletEntries)
 			{
 				RPCWalletEntry opt;
-				_WalletEntries.TryRemove(remove, out opt);
+				if(_WalletEntries.TryRemove(remove, out opt))
+				{
+					RemoveTxByScriptId(opt);
+				}
 			}
 		}
 
