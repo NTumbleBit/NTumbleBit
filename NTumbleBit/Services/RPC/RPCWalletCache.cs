@@ -1,10 +1,12 @@
 ﻿using NBitcoin;
 using NBitcoin.RPC;
 using Newtonsoft.Json.Linq;
+using NTumbleBit.Logging;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -55,7 +57,9 @@ namespace NTumbleBit.Services.RPC
 				if(Interlocked.Exchange(ref _BlockCount, newBlockCount) != newBlockCount)
 				{
 					_RefreshedAtBlock = currentBlock;
+					var startTime = DateTimeOffset.UtcNow;
 					ListTransactions();
+					Logs.Wallet.LogInformation($"Updated {_WalletEntries.Count} cached transactions in {(long)(DateTimeOffset.UtcNow - startTime).TotalSeconds} seconds");
 				}
 			}
 		}
@@ -150,32 +154,69 @@ namespace NTumbleBit.Services.RPC
 
 		MultiValueDictionary<Script, RPCWalletEntry> _TxByScriptId = new MultiValueDictionary<Script, RPCWalletEntry>();
 		ConcurrentDictionary<uint256, RPCWalletEntry> _WalletEntries = new ConcurrentDictionary<uint256, RPCWalletEntry>();
+		const int MaxConfirmations = 1400;
+
 		void ListTransactions()
 		{
 			var removeFromWalletEntries = new HashSet<uint256>(_WalletEntries.Keys);
 
 			int count = 100;
 			int skip = 0;
-			int highestConfirmation = 0;
+			HashSet<uint256> processedTransacions = new HashSet<uint256>();
+			int updatedConfirmationGap = -1;
 
+			//If this one is true after asking for a batch, just update every "removeFromWalletEntries" transactions by updatedConfirmationGap
+			bool canMakeSimpleUpdate = false;
+
+			bool transactionTooOld = false;
 			while(true)
 			{
+				updatedConfirmationGap = -1;
+				canMakeSimpleUpdate = false;
 				var result = _RPCClient.SendCommand("listtransactions", "*", count, skip, true);
 				skip += count;
 				var transactions = (JArray)result.Result;
+				if(transactions.Count < count)
+				{
+					updatedConfirmationGap = 0;
+					canMakeSimpleUpdate = false;
+				}
 
 				var batch = _RPCClient.PrepareBatch();
 				var fetchingTransactions = new List<Tuple<RPCWalletEntry, Task<Transaction>>>();
 				foreach(var obj in transactions)
 				{
+
 					var entry = new RPCWalletEntry();
 					entry.Confirmations = obj["confirmations"] == null ? 0 : (int)obj["confirmations"];
+					if(entry.Confirmations >= MaxConfirmations)
+					{
+						transactionTooOld = true;
+						break;
+					}
 					entry.TransactionId = new uint256((string)obj["txid"]);
+					if(!processedTransacions.Add(entry.TransactionId))
+						continue;
 					removeFromWalletEntries.Remove(entry.TransactionId);
 
 					RPCWalletEntry existing;
 					if(_WalletEntries.TryGetValue(entry.TransactionId, out existing))
 					{
+						var confirmationGap = entry.Confirmations - existing.Confirmations;
+						if(entry.Confirmations == 0)
+						{
+							updatedConfirmationGap = 0;
+							canMakeSimpleUpdate = false;
+						}
+						if(updatedConfirmationGap != -1 && updatedConfirmationGap != confirmationGap)
+							canMakeSimpleUpdate = false;
+
+						if(updatedConfirmationGap == -1)
+						{
+							canMakeSimpleUpdate = true;
+							updatedConfirmationGap = confirmationGap;
+						}
+
 						existing.Confirmations = entry.Confirmations;
 						entry = existing;
 					}
@@ -183,10 +224,6 @@ namespace NTumbleBit.Services.RPC
 					if(entry.Transaction == null)
 					{
 						fetchingTransactions.Add(Tuple.Create(entry, FetchTransactionAsync(batch, entry.TransactionId)));
-					}
-					if(obj["confirmations"] != null)
-					{
-						highestConfirmation = Math.Max(highestConfirmation, (int)obj["confirmations"]);
 					}
 				}
 				batch.SendBatchAsync();
@@ -201,10 +238,27 @@ namespace NTumbleBit.Services.RPC
 							AddTxByScriptId(entry.TransactionId, entry);
 					}
 				}
-
-				if(transactions.Count < count || highestConfirmation >= 1400)
+				if(transactions.Count < count || transactionTooOld || canMakeSimpleUpdate)
 					break;
 			}
+
+			if(canMakeSimpleUpdate)
+			{
+				foreach(var tx in removeFromWalletEntries.ToList())
+				{
+					RPCWalletEntry entry = null;
+					if(_WalletEntries.TryGetValue(tx, out entry))
+					{
+						if(entry.Confirmations != 0)
+						{
+							entry.Confirmations += updatedConfirmationGap;
+							if(entry.Confirmations <= MaxConfirmations)
+								removeFromWalletEntries.Remove(entry.TransactionId);
+						}
+					}
+				}
+			}
+
 			foreach(var remove in removeFromWalletEntries)
 			{
 				RPCWalletEntry opt;
