@@ -60,7 +60,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 							{
 								var stateMachine = new PaymentStateMachine(Runtime, null);
 								stateMachine.NeedSave = true;
-								Save(stateMachine);
+								Save(stateMachine, cycle.Start);
 							}
 						}
 
@@ -155,10 +155,10 @@ namespace NTumbleBit.ClassicTumbler.Client
 			return "Cycle_" + cycle;
 		}
 
-		private void Save(PaymentStateMachine stateMachine)
+		private void Save(PaymentStateMachine stateMachine, int? cycleStart = null)
 		{
 			if(stateMachine.NeedSave)
-				Runtime.Repository.UpdateOrInsert(GetPartitionKey(stateMachine.StartCycle), "", stateMachine.GetInternalState(), (o, n) => n);
+				Runtime.Repository.UpdateOrInsert(GetPartitionKey(cycleStart ?? stateMachine.StartCycle), "", stateMachine.GetInternalState(), (o, n) => n);
 		}
 	}
 }
