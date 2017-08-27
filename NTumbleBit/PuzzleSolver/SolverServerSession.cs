@@ -176,15 +176,22 @@ namespace NTumbleBit.PuzzleSolver
 			AssertState(SolverServerStates.WaitingPuzzles);
 			List<ServerCommitment> commitments = new List<ServerCommitment>();
 			List<SolvedPuzzle> solvedPuzzles = new List<SolvedPuzzle>();
-			foreach(var puzzle in puzzles)
+
+			var items = puzzles.AsParallel()
+					.Select(p => new
+					{
+						Puzzle = p,
+						Solution = p.Solve(ServerKey)
+					})
+					.ToArray();
+			foreach(var item in items)
 			{
-				var solution = puzzle.Solve(ServerKey);
 				byte[] key = null;
-				var encryptedSolution = Utils.ChachaEncrypt(solution.ToBytes(), ref key);
+				var encryptedSolution = Utils.ChachaEncrypt(item.Solution.ToBytes(), ref key);
 				var solutionKey = new SolutionKey(key);
 				uint160 keyHash = solutionKey.GetHash();
 				commitments.Add(new ServerCommitment(keyHash, encryptedSolution));
-				solvedPuzzles.Add(new SolvedPuzzle(puzzle, solutionKey, solution));
+				solvedPuzzles.Add(new SolvedPuzzle(item.Puzzle, solutionKey, item.Solution));
 			}
 			InternalState.SolvedPuzzles = solvedPuzzles.ToArray();
 			InternalState.Status = SolverServerStates.WaitingRevelation;
