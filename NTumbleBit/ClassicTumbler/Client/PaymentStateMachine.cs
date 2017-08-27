@@ -172,6 +172,11 @@ namespace NTumbleBit.ClassicTumbler.Client
 			set;
 		}
 
+		public bool NeedSave
+		{
+			get; set;
+		}
+
 		public void Update()
 		{
 			int height = Services.BlockExplorerService.GetCurrentHeight();
@@ -221,6 +226,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 							bob = Runtime.CreateTumblerClient(cycle.Start, Identity.Bob);
 							//Client asks for voucher
 							var voucherResponse = bob.AskUnsignedVoucher();
+							NeedSave = true;
 							//Client ensures he is in the same cycle as the tumbler (would fail if one tumbler or client's chain isn't sync)
 							var tumblerCycle = Parameters.CycleGenerator.GetCycle(voucherResponse.CycleStart);
 							Assert(tumblerCycle.Start == cycle.Start, "invalid-phase");
@@ -236,6 +242,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 						{
 							alice = Runtime.CreateTumblerClient(cycle.Start, Identity.Alice);
 							var key = alice.RequestTumblerEscrowKey();
+							NeedSave = true;
 							ClientChannelNegotiation.ReceiveTumblerEscrowKey(key.PubKey, key.KeyIndex);
 							//Client create the escrow
 							var escrowTxOut = ClientChannelNegotiation.BuildClientEscrowTxOut();
@@ -294,6 +301,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 									ClientEscrowKey = state.ClientEscrowKey.PubKey,
 									ChannelId = SolverClientSession.Id
 								});
+								NeedSave = true;
 								ClientChannelNegotiation.CheckVoucherSolution(voucher);
 								Status = PaymentStateMachineStatus.TumblerVoucherObtained;
 							}
@@ -311,6 +319,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 							try
 							{
 								channelId = bob.BeginOpenChannel(bobEscrowInformation);
+								NeedSave = true;
 							}
 							catch(Exception ex)
 							{
@@ -333,6 +342,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 								Logs.Client.LogInformation("Tumbler escrow still creating...");
 								break;
 							}
+							NeedSave = true;
 
 							if(tumblerEscrow.OutputIndex >= tumblerEscrow.Transaction.Outputs.Count)
 							{
@@ -391,6 +401,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 								Logs.Client.LogDebug("Starting the puzzle solver protocol...");
 								var puzzles = SolverClientSession.GeneratePuzzles();
 								var commmitments = alice.SolvePuzzles(SolverClientSession.Id, puzzles);
+								NeedSave = true;
 								var revelation2 = SolverClientSession.Reveal(commmitments);
 								var solutionKeys = alice.CheckRevelation(SolverClientSession.Id, revelation2);
 								var blindFactors = SolverClientSession.GetBlindFactors(solutionKeys);
@@ -446,6 +457,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 								{
 									SolverClientSession.CheckSolutions(transactions.Select(t => t.Transaction).ToArray());
 									Logs.Client.LogInformation("Puzzle solution recovered from tumbler's fulfill transaction");
+									NeedSave = true;
 									Status = PaymentStateMachineStatus.PuzzleSolutionObtained;
 									var tumblingSolution = SolverClientSession.GetSolution();
 									var transaction = PromiseClientSession.GetSignedTransaction(tumblingSolution);
@@ -497,6 +509,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 				Logs.Client.LogInformation($"Tumbler escrow reached {cycle.SafetyPeriodDuration} confirmations");
 				Logs.Client.LogInformation($"Tumbler escrow transaction has {bobCount} users");
 				Status = PaymentStateMachineStatus.TumblerChannelSecured;
+				NeedSave = true;
 				return;
 			}
 
