@@ -30,7 +30,9 @@ namespace NTumbleBit.ClassicTumbler.Server.CLI
 		{
 			var argsConf = new TextFileConfiguration(args);
 			var debug = argsConf.GetOrDefault<bool>("debug", false);
-			Logs.Configure(new FuncLoggerFactory(i => new CustomerConsoleLogger(i, Logs.SupportDebug(debug), false)));
+
+			ConsoleLoggerProcessor loggerProcessor = new ConsoleLoggerProcessor();
+			Logs.Configure(new FuncLoggerFactory(i => new CustomerConsoleLogger(i, Logs.SupportDebug(debug), false, loggerProcessor)));
 
 			using(var interactive = new Interactive())
 			{

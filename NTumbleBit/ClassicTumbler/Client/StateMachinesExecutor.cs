@@ -44,7 +44,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 				int lastCycle = 0;
 				while(true)
 				{
-					Exception unhandled = null;
 					try
 					{
 						lastBlock = Runtime.Services.BlockExplorerService.WaitBlock(lastBlock, cancellationToken);
@@ -73,7 +72,11 @@ namespace NTumbleBit.ClassicTumbler.Client
 						bool hadInvalidPhase = false;
 
 						//Waiting for the block to propagate to server so invalid-phase happens less often
-						cancellationToken.WaitHandle.WaitOne(10000);
+						//This also make the server less overwhelmed by sudden request peak
+						var waitRandom = TimeSpan.FromSeconds(RandomUtils.GetUInt32() % 50 + 10);
+						Logs.Client.LogDebug("Waiting " + (int)waitRandom.TotalDays + " before updating machine states...");
+
+						cancellationToken.WaitHandle.WaitOne(waitRandom);
 						cancellationToken.ThrowIfCancellationRequested();
 
 						foreach(var state in machineStates)
@@ -96,50 +99,42 @@ namespace NTumbleBit.ClassicTumbler.Client
 								Logs.Client.LogInformation("Skipping update, need to wait for tor circuit renewal");
 								break;
 							}
-							catch(Exception ex)
+							catch(Exception ex) when(IsInvalidPhase(ex))
 							{
-								var invalidPhase = ex.Message.IndexOf("invalid-phase", StringComparison.OrdinalIgnoreCase) >= 0;
-								if(invalidPhase)
+								if(!hadInvalidPhase)
 								{
-									if(!hadInvalidPhase)
+									hadInvalidPhase = true;
+									InvalidPhaseCount++;
+									if(InvalidPhaseCount > 2)
 									{
-										hadInvalidPhase = true;
-										InvalidPhaseCount++;
-										if(InvalidPhaseCount > 2)
-										{
-											Logs.Client.LogError(new EventId(), ex, $"Invalid-Phase happened repeatedly, check that your node currently at height {height} is currently sync to the network");
-										}
+										Logs.Client.LogError(new EventId(), ex, $"Invalid-Phase happened repeatedly, check that your node currently at height {height} is currently sync to the network");
 									}
 								}
-								else
-								{
-									Logs.Client.LogError(new EventId(), ex, "Unhandled StateMachine Error");
-								}
+							}
+							catch(Exception ex)
+							{
+								Logs.Client.LogError(new EventId(), ex, "Unhandled StateMachine Error");
 							}
 							Save(machine);
 						}
 					}
-					catch(OperationCanceledException ex)
+					catch(OperationCanceledException) when(cancellationToken.IsCancellationRequested)
 					{
-						if(cancellationToken.IsCancellationRequested)
-						{
-							Stopped();
-							break;
-						}
-						else
-							unhandled = ex;
+						Stopped();
+						break;
 					}
 					catch(Exception ex)
 					{
-						unhandled = ex;
-					}
-					if(unhandled != null)
-					{
-						Logs.Client.LogError("StateMachineExecutor Error: " + unhandled.ToString());
+						Logs.Client.LogError(new EventId(), ex, "StateMachineExecutor Error: " + ex.ToString());
 						cancellationToken.WaitHandle.WaitOne(5000);
 					}
 				}
 			}).Start();
+		}
+
+		private bool IsInvalidPhase(Exception ex)
+		{
+			return ex.Message.IndexOf("invalid-phase", StringComparison.OrdinalIgnoreCase) >= 0;
 		}
 
 		public PaymentStateMachine.State GetPaymentStateMachineState(CycleParameters cycle)
