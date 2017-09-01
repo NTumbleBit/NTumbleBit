@@ -73,7 +73,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 						//Waiting for the block to propagate to server so invalid-phase happens less often
 						//This also make the server less overwhelmed by sudden request peak
-						var waitRandom = TimeSpan.FromSeconds(RandomUtils.GetUInt32() % 50 + 10);
+						var waitRandom = TimeSpan.FromSeconds(RandomUtils.GetUInt32() % 120 + 10);
 						Logs.Client.LogDebug("Waiting " + (int)waitRandom.TotalDays + " before updating machine states...");
 
 						cancellationToken.WaitHandle.WaitOne(waitRandom);
