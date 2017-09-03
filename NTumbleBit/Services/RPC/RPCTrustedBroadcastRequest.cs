@@ -118,12 +118,13 @@ namespace NTumbleBit.Services.RPC
 			record.TransactionType = transactionType;
 			record.Cycle = cycleStart;
 			record.Correlation = correlation;
+			Logs.Broadcasters.LogInformation($"Planning to broadcast {record.TransactionType} of cycle {record.Cycle} on block {record.Request.BroadcastableHeight}");
 			AddBroadcast(record);
 		}
+		
 
 		private void AddBroadcast(Record broadcast)
 		{
-			Logs.Broadcasters.LogInformation($"Planning to broadcast {broadcast.TransactionType} of cycle {broadcast.Cycle} on block {broadcast.Request.BroadcastableHeight}");
 			Repository.UpdateOrInsert("TrustedBroadcasts", broadcast.Request.Transaction.GetHash().ToString(), broadcast, (o, n) => n);
 		}
 
@@ -153,9 +154,16 @@ namespace NTumbleBit.Services.RPC
 
 			DateTimeOffset startTime = DateTimeOffset.UtcNow;
 			int totalEntries = 0;
+
 			HashSet<uint256> knownBroadcastedSet = new HashSet<uint256>(knownBroadcasted ?? new uint256[0]);
+			foreach(var confirmedTx in _Cache.GetEntries().Where(e => e.Confirmations > 6).Select(t => t.TransactionId))
+			{
+				knownBroadcastedSet.Add(confirmedTx);
+			}
 
 			List<Transaction> broadcasted = new List<Transaction>();
+			var broadcasting = new List<Tuple<Record, Transaction, Task<bool>>>();
+
 			foreach(var broadcast in GetRequests())
 			{
 				totalEntries++;
@@ -167,34 +175,36 @@ namespace NTumbleBit.Services.RPC
 					RecordMaping(broadcast, transaction, txHash);
 
 					if(!knownBroadcastedSet.Contains(txHash)
-						&& broadcast.Request.IsBroadcastableAt(height)
-						&& _Broadcaster.Broadcast(transaction))
+						&& broadcast.Request.IsBroadcastableAt(height))
 					{
-						LogBroadcasted(broadcast);
-						broadcasted.Add(transaction);
+						broadcasting.Add(Tuple.Create(broadcast, transaction, _Broadcaster.BroadcastAsync(transaction)));
 					}
 					knownBroadcastedSet.Add(txHash);
 				}
 				else
 				{
-					foreach(var tx in GetReceivedTransactions(broadcast.Request.PreviousScriptPubKey))
+					foreach(var tx in GetReceivedTransactions(broadcast.Request.PreviousScriptPubKey)
+						//Currently broadcasting transaction might have received transactions for PreviousScriptPubKey
+						.Concat(broadcasting.ToArray().Select(b => b.Item2)))
 					{
 						foreach(var coin in tx.Outputs.AsCoins())
 						{
 							if(coin.ScriptPubKey == broadcast.Request.PreviousScriptPubKey)
 							{
-								var transaction = broadcast.Request.ReSign(coin);
+								bool cached;
+								var transaction = broadcast.Request.ReSign(coin, out cached);
 								var txHash = transaction.GetHash();
-								_Tracker.TransactionCreated(broadcast.Cycle, broadcast.TransactionType, txHash, broadcast.Correlation);
-
-								RecordMaping(broadcast, transaction, txHash);
+								if(!cached)
+								{
+									_Tracker.TransactionCreated(broadcast.Cycle, broadcast.TransactionType, txHash, broadcast.Correlation);
+									RecordMaping(broadcast, transaction, txHash);
+									AddBroadcast(broadcast);
+								}
 
 								if(!knownBroadcastedSet.Contains(txHash)
-									&& broadcast.Request.IsBroadcastableAt(height)
-									&& _Broadcaster.Broadcast(transaction))
+									&& broadcast.Request.IsBroadcastableAt(height))
 								{
-									LogBroadcasted(broadcast);
-									broadcasted.Add(transaction);
+									broadcasting.Add(Tuple.Create(broadcast, transaction, _Broadcaster.BroadcastAsync(transaction)));
 								}
 								knownBroadcastedSet.Add(txHash);
 							}
@@ -208,6 +218,15 @@ namespace NTumbleBit.Services.RPC
 			}
 
 			knownBroadcasted = knownBroadcastedSet.ToArray();
+
+			foreach(var b in broadcasting)
+			{
+				if(b.Item3.GetAwaiter().GetResult())
+				{
+					LogBroadcasted(b.Item1);
+					broadcasted.Add(b.Item2);
+				}
+			}
 
 			Logs.Broadcasters.LogInformation($"Trusted Broadcaster is monitoring {totalEntries} entries in {(long)(DateTimeOffset.UtcNow - startTime).TotalSeconds} seconds");
 			return broadcasted.ToArray();
@@ -257,7 +276,7 @@ namespace NTumbleBit.Services.RPC
 			if(scriptPubKey == null)
 				throw new ArgumentNullException(nameof(scriptPubKey));
 			return
-				BlockExplorer.GetTransactions(scriptPubKey, false)
+				BlockExplorer.GetTransactionsAsync(scriptPubKey, false).GetAwaiter().GetResult()
 				.Where(t => t.Transaction.Outputs.Any(o => o.ScriptPubKey == scriptPubKey))
 				.Select(t => t.Transaction)
 				.ToArray();

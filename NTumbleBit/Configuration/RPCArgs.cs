@@ -8,6 +8,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
+using System.Net;
 
 namespace NTumbleBit.Configuration
 {
@@ -29,6 +30,12 @@ namespace NTumbleBit.Configuration
 		{
 			get; set;
 		}
+		public string AuthenticationString
+		{
+			get;
+			set;
+		}
+
 		public RPCClient ConfigureRPCClient(Network network)
 		{
 			RPCClient rpcClient = null;
@@ -44,7 +51,7 @@ namespace NTumbleBit.Configuration
 					try
 					{
 
-						rpcClient = new RPCClient(File.ReadAllText(CookieFile), url, network);
+						rpcClient = new RPCClient(new RPCCredentialString() { CookieFile = CookieFile }, url, network);
 					}
 					catch(IOException)
 					{
@@ -52,11 +59,16 @@ namespace NTumbleBit.Configuration
 					}
 				}
 
+				if(AuthenticationString != null)
+				{
+					rpcClient = new RPCClient(RPCCredentialString.Parse(AuthenticationString), url, network);
+				}
+
 				if(rpcClient == null)
 				{
 					try
 					{
-						rpcClient = new RPCClient(network);
+						rpcClient = new RPCClient(null as NetworkCredential, url, network);
 					}
 					catch { }
 					if(rpcClient == null)
@@ -110,12 +122,7 @@ namespace NTumbleBit.Configuration
 			return rpcClient;
 		}
 
-		public RPCClient ConfigureRPCClient(object network)
-		{
-			throw new NotImplementedException();
-		}
-
-		const int MIN_CORE_VERSION = 130100;
+		const int MIN_CORE_VERSION = 140100;
 		public static RPCClient ConfigureRPCClient(TextFileConfiguration confArgs, Network network, string prefix = null)
 		{
 			RPCArgs args = Parse(confArgs, network, prefix);
@@ -138,7 +145,8 @@ namespace NTumbleBit.Configuration
 					User = confArgs.GetOrDefault<string>(prefix + "rpc.user", null),
 					Password = confArgs.GetOrDefault<string>(prefix + "rpc.password", null),
 					CookieFile = confArgs.GetOrDefault<string>(prefix + "rpc.cookiefile", null),
-					Url = url == null ? null : new Uri(url)
+					Url = url == null ? null : new Uri(url),
+					AuthenticationString = confArgs.GetOrDefault<string>(prefix + "rpc.auth", null)
 				};
 			}
 			catch(FormatException)

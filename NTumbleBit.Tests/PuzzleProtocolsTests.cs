@@ -91,9 +91,9 @@ namespace NTumbleBit.Tests
 
 			var kotori = cycles.GetStandardCycle("kotori");
 			Assert.Equal(Money.Coins(1), kotori.Denomination);
-			Assert.Equal(TimeSpan.FromDays(1), kotori.GetLength(false));
-			Assert.Equal(TimeSpan.FromDays(2), kotori.GetLength(true));
-			Assert.Equal(Money.Coins(1), kotori.CoinsPerDay());
+			Assert.Equal(TimeSpan.FromHours(4), kotori.GetLength(false));
+			Assert.Equal(TimeSpan.FromHours(19.5), kotori.GetLength(true));
+			Assert.Equal(Money.Coins(6), kotori.CoinsPerDay());
 		}
 
 		[Fact]
@@ -184,7 +184,7 @@ namespace NTumbleBit.Tests
 			RoundTrip(ref client, parameters);
 			RoundTrip(ref request);
 
-			server.ConfigureEscrowedCoin(coin, serverEscrow, new Key().ScriptPubKey);
+			server.ConfigureEscrowedCoin(uint160.Zero, coin, serverEscrow, new Key().ScriptPubKey);
 			PuzzlePromise.ServerCommitment[] commitments = server.SignHashes(request);
 			RoundTrip(ref server, parameters);
 			RoundTrip(ref commitments);
@@ -231,7 +231,7 @@ namespace NTumbleBit.Tests
 				new TxOut
 				{
 					Value = Money.Coins(1.5m),
-					ScriptPubKey = redeem.Hash.ScriptPubKey
+					ScriptPubKey = redeem.WitHash.ScriptPubKey.Hash.ScriptPubKey
 				}).ToScriptCoin(redeem);
 			return scriptCoin;
 		}
@@ -257,7 +257,7 @@ namespace NTumbleBit.Tests
 
 			var escrow = CreateEscrowCoin(clientEscrow.PubKey, serverEscrow.PubKey);
 			var redeemDestination = new Key().ScriptPubKey;
-			client.ConfigureEscrowedCoin(escrow, clientEscrow, redeemDestination);
+			client.ConfigureEscrowedCoin(uint160.Zero, escrow, clientEscrow, redeemDestination);
 			client.AcceptPuzzle(puzzle.PuzzleValue);
 			RoundTrip(ref client, parameters);
 			Assert.True(client.GetInternalState().RedeemDestination == redeemDestination);
@@ -301,9 +301,16 @@ namespace NTumbleBit.Tests
 			txBuilder.AddCoins(client.EscrowedCoin);
 			Assert.True(txBuilder.Verify(resigned));
 
-			resigned = fulfill.ReSign(offerCoin);
+			bool cached;
+			resigned = fulfill.ReSign(offerCoin, out cached);
+			Assert.False(cached);
 			txBuilder = new TransactionBuilder();
 			txBuilder.AddCoins(offerCoin);
+			Assert.True(txBuilder.Verify(resigned));
+
+			//Test again to see if cached signature works well
+			resigned = fulfill.ReSign(offerCoin, out cached);
+			Assert.True(cached);
 			Assert.True(txBuilder.Verify(resigned));
 
 			var offerRedeemTx = offerRedeem.ReSign(offerCoin);

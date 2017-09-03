@@ -176,15 +176,22 @@ namespace NTumbleBit.PuzzleSolver
 			AssertState(SolverServerStates.WaitingPuzzles);
 			List<ServerCommitment> commitments = new List<ServerCommitment>();
 			List<SolvedPuzzle> solvedPuzzles = new List<SolvedPuzzle>();
-			foreach(var puzzle in puzzles)
+
+			var items = puzzles.AsParallel()
+					.Select(p => new
+					{
+						Puzzle = p,
+						Solution = p.Solve(ServerKey)
+					})
+					.ToArray();
+			foreach(var item in items)
 			{
-				var solution = puzzle.Solve(ServerKey);
 				byte[] key = null;
-				var encryptedSolution = Utils.ChachaEncrypt(solution.ToBytes(), ref key);
+				var encryptedSolution = Utils.ChachaEncrypt(item.Solution.ToBytes(), ref key);
 				var solutionKey = new SolutionKey(key);
 				uint160 keyHash = solutionKey.GetHash();
 				commitments.Add(new ServerCommitment(keyHash, encryptedSolution));
-				solvedPuzzles.Add(new SolvedPuzzle(puzzle, solutionKey, solution));
+				solvedPuzzles.Add(new SolvedPuzzle(item.Puzzle, solutionKey, item.Solution));
 			}
 			InternalState.SolvedPuzzles = solvedPuzzles.ToArray();
 			InternalState.Status = SolverServerStates.WaitingRevelation;
@@ -255,6 +262,7 @@ namespace NTumbleBit.PuzzleSolver
 				Op.GetPushOp(TrustedBroadcastRequest.PlaceholderSignature),
 				Op.GetPushOp(InternalState.EscrowedCoin.Redeem.ToBytes())
 			);
+			dummy.Inputs[0].Witnessify();
 			dummy.AddOutput(new TxOut(InternalState.EscrowedCoin.Amount, new Key().ScriptPubKey.Hash));
 
 			var offerTransactionFee = feeRate.GetFee(dummy.GetVirtualSize());
@@ -269,7 +277,7 @@ namespace NTumbleBit.PuzzleSolver
 				Expiration = escrowInformation.LockTime,
 				RedeemKey = escrowInformation.Initiator
 			}.ToScript();
-			var txOut = new TxOut(escrow.Amount - offerTransactionFee, redeem.Hash.ScriptPubKey);
+			var txOut = new TxOut(escrow.Amount - offerTransactionFee, redeem.WitHash.ScriptPubKey.Hash);
 			InternalState.OfferCoin = new Coin(escrow.Outpoint, txOut).ToScriptCoin(redeem);
 			InternalState.Status = SolverServerStates.WaitingFulfillment;
 			return new OfferInformation
@@ -293,11 +301,12 @@ namespace NTumbleBit.PuzzleSolver
 			AssertState(SolverServerStates.WaitingEscape);
 			var offerTransaction = GetUnsignedOfferTransaction();
 			offerTransaction.Inputs[0].PrevOut = new OutPoint();
-			offerTransaction.Inputs[0].ScriptSig = new Script(
+			offerTransaction.Inputs[0].ScriptSig = new WitScript(
 					Op.GetPushOp(InternalState.OfferClientSignature.ToBytes()),
 					Op.GetPushOp(CreateOfferSignature().ToBytes()),
 					Op.GetPushOp(InternalState.EscrowedCoin.Redeem.ToBytes())
 				);
+			offerTransaction.Inputs[0].Witnessify();
 			return new TrustedBroadcastRequest
 			{
 				Key = InternalState.EscrowKey,
@@ -321,7 +330,7 @@ namespace NTumbleBit.PuzzleSolver
 		private void AssertState(SolverServerStates state)
 		{
 			if(state != InternalState.Status)
-				throw new InvalidOperationException("Invalid state, actual " + InternalState.Status + " while expected is " + state);
+				throw new InvalidStateException("Invalid state, actual " + InternalState.Status + " while expected is " + state);
 		}
 
 		public TrustedBroadcastRequest FulfillOffer(
@@ -342,6 +351,7 @@ namespace NTumbleBit.PuzzleSolver
 					Op.GetPushOp(CreateOfferSignature().ToBytes()),
 					Op.GetPushOp(InternalState.EscrowedCoin.Redeem.ToBytes())
 				);
+			offer.Inputs[0].Witnessify();
 
 			if(!offer.Inputs.AsIndexedInputs().First().VerifyScript(InternalState.EscrowedCoin))
 				throw new PuzzleException("invalid-tumbler-signature");
@@ -354,6 +364,7 @@ namespace NTumbleBit.PuzzleSolver
 
 			var fulfillScript = SolverScriptBuilder.CreateFulfillScript(null, solutions);
 			fulfill.Inputs[0].ScriptSig = fulfillScript + Op.GetPushOp(InternalState.OfferCoin.Redeem.ToBytes());
+			fulfill.Inputs[0].Witnessify();
 			fulfill.Outputs[0].Value -= feeRate.GetFee(fulfill.GetVirtualSize());
 
 			InternalState.OfferClientSignature = clientSignature;
@@ -393,6 +404,7 @@ namespace NTumbleBit.PuzzleSolver
 				Op.GetPushOp(TrustedBroadcastRequest.PlaceholderSignature),
 				Op.GetPushOp(InternalState.EscrowedCoin.Redeem.ToBytes())
 				);
+			escapeTx.Inputs[0].Witnessify();
 			escapeTx.Outputs[0].Value -= feeRate.GetFee(escapeTx);
 			AssertValidSignature(clientSignature, escapeTx);
 
@@ -402,7 +414,8 @@ namespace NTumbleBit.PuzzleSolver
 				Op.GetPushOp(tumblerSignature.ToBytes()),
 				Op.GetPushOp(InternalState.EscrowedCoin.Redeem.ToBytes())
 				);
-			
+			escapeTx.Inputs[0].Witnessify();
+
 			if(!escapeTx.Inputs.AsIndexedInputs().First().VerifyScript(InternalState.EscrowedCoin))
 				throw new PuzzleException("invalid-tumbler-signature");
 

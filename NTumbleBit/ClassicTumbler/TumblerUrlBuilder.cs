@@ -121,17 +121,25 @@ namespace NTumbleBit.ClassicTumbler
 			get; set;
 		}
 
-		public Uri RoutableUri
+		public Uri GetRoutableUri(bool includeConfigurationHash)
+		{
+			UriBuilder builder = new UriBuilder();
+			builder.Scheme = "http";
+			builder.Host = Host;
+			if(builder.Port != 80)
+				builder.Port = Port;
+			if(includeConfigurationHash)
+			{
+				builder.Path = "api/v1/tumblers/" + ConfigurationHash;
+			}
+			return builder.Uri;
+		}
+
+		public bool IsOnion
 		{
 			get
 			{
-				UriBuilder builder = new UriBuilder();
-				builder.Scheme = "http";
-				builder.Host = Host;
-				if(builder.Port != 80)
-					builder.Port = Port;
-				builder.Path = "api/v1/tumblers/" + ConfigurationHash;
-				return builder.Uri;
+				return Host.EndsWith(".onion", StringComparison.Ordinal);
 			}
 		}
 

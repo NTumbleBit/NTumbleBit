@@ -132,7 +132,7 @@ namespace NTumbleBit.ClassicTumbler.Server
 
 			if(ConfigurationFile == null)
 			{
-				ConfigurationFile = GetDefaultConfigurationFile();
+				ConfigurationFile = GetDefaultConfigurationFile(Network);
 			}
 			Logs.Configuration.LogInformation("Network: " + Network);
 
@@ -154,13 +154,16 @@ namespace NTumbleBit.ClassicTumbler.Server
 			}
 
 			var standardCycles = new StandardCycles(Network);
-			var cycleName = config.GetOrDefault<string>("cycle", standardCycles.Debug ? "shorty" : "kotori");
+			var cycleName = config.GetOrDefault<string>("cycle", standardCycles.Debug ? "shorty2x" : "kotori");
 
 			Logs.Configuration.LogInformation($"Using cycle {cycleName}");
-			ClassicTumblerParameters.CycleGenerator = standardCycles.GetStandardCycle(cycleName)?.Generator;
-			if(ClassicTumblerParameters.CycleGenerator == null)
+			
+			var standardCycle = standardCycles.GetStandardCycle(cycleName);
+			if(standardCycle == null)
 				throw new ConfigException($"Invalid cycle name, choose among {String.Join(",", standardCycles.ToEnumerable().Select(c => c.FriendlyName).ToArray())}");
 
+			ClassicTumblerParameters.CycleGenerator = standardCycle.Generator;
+			ClassicTumblerParameters.Denomination = standardCycle.Denomination;
 			var torEnabled = config.GetOrDefault<bool>("tor.enabled", true);
 			if(torEnabled)
 			{
@@ -175,21 +178,8 @@ namespace NTumbleBit.ClassicTumbler.Server
 			Listen = new IPEndPoint(IPAddress.Parse("127.0.0.1"), defaultPort);
 
 			RPC = RPCArgs.Parse(config, Network);
-			TorPath = config.GetOrDefault<string>("torpath", "tor");		    
-			DBreezeRepository = new DBreezeRepository(Path.Combine(DataDir, "db2"));
-			Tracker = new Tracker(DBreezeRepository, Network);
-
-			RPCClient rpc = null;
-			try
-			{
-				rpc = RPC.ConfigureRPCClient(Network);
-			}
-			catch
-			{
-				throw new ConfigException("Please, fix rpc settings in " + ConfigurationFile);
-			}
-
-			Services = ExternalServices.CreateFromRPCClient(rpc, DBreezeRepository, Tracker);
+			ClassicTumblerParameters.Fee = config.GetOrDefault<Money>("tumbler.fee", Money.Coins(0.001m));
+			TorPath = config.GetOrDefault<string>("torpath", "tor");
 			return this;
 		}
 
@@ -202,8 +192,18 @@ namespace NTumbleBit.ClassicTumbler.Server
 			get;
 			internal set;
 		}
+		public bool NoRSAProof
+		{
+			get;
+			set;
+		} = false;
+		public bool TorMandatory
+		{
+			get;
+			set;
+		} = true;
 
-		public string GetDefaultConfigurationFile()
+		public string GetDefaultConfigurationFile(Network network)
 		{
 			var config = Path.Combine(DataDir, "server.config");
 			Logs.Configuration.LogInformation("Configuration file set to " + config);
@@ -217,6 +217,15 @@ namespace NTumbleBit.ClassicTumbler.Server
 				builder.AppendLine("#rpc.user=bitcoinuser");
 				builder.AppendLine("#rpc.password=bitcoinpassword");
 				builder.AppendLine("#rpc.cookiefile=yourbitcoinfolder/.cookie");
+
+				builder.AppendLine();
+				builder.AppendLine();
+
+				builder.AppendLine("####Tumbler settings####");
+				builder.AppendLine("## The fees in BTC");
+				builder.AppendLine("#tumbler.fee=0.01");
+				builder.AppendLine("## The cycle used among " + string.Join(",", new StandardCycles(Network).ToEnumerable().Select(c => c.FriendlyName)));
+				builder.AppendLine("#cycle=kotori");
 
 				builder.AppendLine();
 				builder.AppendLine();

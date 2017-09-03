@@ -30,8 +30,8 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="1.1.2" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="1.1.2" />
     <PackageReference Include="Microsoft.Extensions.Logging.Filter" Version="1.1.2" />
-    <PackageReference Include="NStratis" Version="4.0.0.15" />
-    <PackageReference Include="TCPServer" Version="1.0.9" />
+    <PackageReference Include="NStratis" Version="4.0.0.32" />
+    <PackageReference Include="TCPServer" Version="1.0.12" />
   </ItemGroup>
 
 </Project>

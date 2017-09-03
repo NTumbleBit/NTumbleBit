@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TumbleBitSetup;
 
 namespace NTumbleBit
 {
@@ -94,6 +95,90 @@ namespace NTumbleBit
 			}
 		}
 
+		public static void ReadWriteC(this BitcoinStream bs, ref PermutationTestProof proof)
+		{
+			if(bs.Serializing)
+			{
+				if(proof == null)
+				{
+					uint o = 0;
+					bs.ReadWriteAsVarInt(ref o);
+					return;
+				}
+				var len = (uint)proof.Signatures.Length;
+				bs.ReadWriteAsVarInt(ref len);
+				for(int i = 0; i < len; i++)
+				{
+					var sig = proof.Signatures[i];
+					bs.ReadWriteAsVarString(ref sig);
+				}
+			}
+			else
+			{
+				uint len = 0;
+				bs.ReadWriteAsVarInt(ref len);
+				if(len == 0)
+				{
+					proof = null;
+					return;
+				}
+				if(len > bs.MaxArraySize)
+					throw new ArgumentOutOfRangeException("Array is too big");
+				var signatures = new byte[len][];
+				for(int i = 0; i < len; i++)
+				{
+					byte[] sig = null;
+					bs.ReadWriteAsVarString(ref sig);
+					signatures[i] = sig;
+				}
+				proof = new PermutationTestProof(signatures);
+			}
+		}
+
+		public static void ReadWriteC(this BitcoinStream bs, ref PoupardSternProof proof)
+		{
+			if(bs.Serializing)
+			{
+				if(proof == null)
+				{
+					uint o = 0;
+					bs.ReadWriteAsVarInt(ref o);
+					return;
+				}
+				var len = (uint)proof.XValues.Length;
+				bs.ReadWriteAsVarInt(ref len);
+				for(int i = 0; i < len; i++)
+				{
+					var n = proof.XValues[i];
+					bs.ReadWriteC(ref n);
+				}
+				var yvalue = proof.YValue;
+				bs.ReadWriteC(ref yvalue);
+			}
+			else
+			{
+				uint len = 0;
+				bs.ReadWriteAsVarInt(ref len);
+				if(len == 0)
+				{
+					proof = null;
+					return;
+				}
+				if(len > bs.MaxArraySize)
+					throw new ArgumentOutOfRangeException("Array is too big");
+				var xValues = new NTumbleBit.BouncyCastle.Math.BigInteger[len];
+				for(int i = 0; i < len; i++)
+				{
+					NTumbleBit.BouncyCastle.Math.BigInteger b = null;
+					bs.ReadWriteC(ref b);
+					xValues[i] = b;
+				}
+				NTumbleBit.BouncyCastle.Math.BigInteger yValue = null;
+				bs.ReadWriteC(ref yValue);
+				proof = new PoupardSternProof(Tuple.Create(xValues, yValue));
+			}
+		}
+
 		public static void ReadWriteC(this BitcoinStream bs, ref Money money)
 		{
 			if(bs.Serializing)
@@ -112,6 +197,15 @@ namespace NTumbleBit
 		public static RPCResponse SendCommandNoThrows(this RPCClient client, string commandName, params object[] parameters)
 		{
 			return client.SendCommand(new RPCRequest
+			{
+				Method = commandName,
+				Params = parameters
+			}, throwIfRPCError: false);
+		}
+
+		public static Task<RPCResponse> SendCommandNoThrowsAsync(this RPCClient client, string commandName, params object[] parameters)
+		{
+			return client.SendCommandAsync(new RPCRequest
 			{
 				Method = commandName,
 				Params = parameters

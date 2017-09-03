@@ -62,17 +62,45 @@ namespace NTumbleBit.ClassicTumbler.Client
 			AliceSettings = configuration.AliceConnectionSettings;
 			AllowInsecure = configuration.AllowInsecure;
 
-			await SetupTorAsync(interaction, configuration.TorPath).ConfigureAwait(false);
-		
+			if (this.TumblerServer.IsOnion)
+				await SetupTorAsync(interaction, configuration.TorPath).ConfigureAwait(false);
+			else if (configuration.TorMandatory)
+				throw new ConfigException("The tumbler server should use TOR");
+
+			RPCClient rpc = null;
+			try
+			{
+				rpc = configuration.RPCArgs.ConfigureRPCClient(configuration.Network);
+			}
+			catch
+			{
+				throw new ConfigException("Please, fix rpc settings in " + configuration.ConfigurationFile);
+			}
+
+			var dbreeze = new DBreezeRepository(Path.Combine(configuration.DataDir, "db2"));
 			Cooperative = configuration.Cooperative;
-			Repository = configuration.DBreezeRepository;
-			_Disposables.Add(Repository);
-			Tracker = configuration.Tracker;
-			Services = configuration.Services;
-			DestinationWallet = configuration.DestinationWallet;
+			Repository = dbreeze;
+			_Disposables.Add(dbreeze);
+			Tracker = new Tracker(dbreeze, Network);
+			Services = ExternalServices.CreateFromRPCClient(rpc, dbreeze, Tracker, false);
 
+			if(configuration.OutputWallet.RootKey != null && configuration.OutputWallet.KeyPath != null)
+				DestinationWallet = new ClientDestinationWallet(configuration.OutputWallet.RootKey, configuration.OutputWallet.KeyPath, dbreeze, configuration.Network);
+			else if(configuration.OutputWallet.RPCArgs != null)
+			{
+				try
+				{
+					DestinationWallet = new RPCDestinationWallet(configuration.OutputWallet.RPCArgs.ConfigureRPCClient(Network));
+				}
+				catch
+				{
+					throw new ConfigException("Please, fix outputwallet rpc settings in " + configuration.ConfigurationFile);
+				}
+			}
+			else
+				throw new ConfigException("Missing configuration for outputwallet");
 
-			TumblerParameters = Repository.Get<ClassicTumbler.ClassicTumblerParameters>("Configuration", configuration.TumblerServer.ToString());
+			TumblerParameters = dbreeze.Get<ClassicTumbler.ClassicTumblerParameters>("Configuration", TumblerServer.ToString());
 
 			if (TumblerParameters != null && TumblerParameters.GetHash() != configuration.TumblerServer.ConfigurationHash)
 				TumblerParameters = null;
@@ -92,7 +120,9 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 					var standardCycles = new StandardCycles(configuration.Network);
 					var standardCycle = standardCycles.GetStandardCycle(parameters);
-
+					if(parameters.ExpectedAddress != TumblerServer.GetRoutableUri(false).AbsoluteUri)
+						throw new ConfigException("This tumbler has parameters used for an unexpected uri");
+					Logs.Configuration.LogInformation("Checking RSA key proof and standardness of the settings...");
 					if(standardCycle == null || !parameters.IsStandard())
 					{
 						Logs.Configuration.LogWarning("This tumbler has non standard parameters");
@@ -123,7 +153,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 		{
 			var tor = settings as ITorConnectionSettings;
 			if(tor == null)
-				return;
+				throw new ConfigException("TOR Settings not properly configured");
 			_Disposables.Add(await tor.SetupAsync(interaction, torPath).ConfigureAwait(false));
 		}
 
@@ -165,7 +195,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 		{
 			if(!AllowInsecure && DateTimeOffset.UtcNow - previousHandlerCreationDate < CircuitRenewInterval)
 			{
-				throw new InvalidOperationException("premature-request");
+				throw new PrematureRequestException();
 			}
 			previousHandlerCreationDate = DateTime.UtcNow;
 			var client = new TumblerClient(Network, TumblerServer, cycleId);

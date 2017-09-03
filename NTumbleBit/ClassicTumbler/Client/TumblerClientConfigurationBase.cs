@@ -1,14 +1,19 @@
 ﻿using NTumbleBit.ClassicTumbler.Client.ConnectionSettings;
 using NBitcoin;
+using NTumbleBit.Configuration;
 using NTumbleBit.Services;
 
 namespace NTumbleBit.ClassicTumbler.Client
 {
     public abstract class TumblerClientConfigurationBase
     {
+        public string ConfigurationFile { get; set; }
+
         public string DataDir { get; set; }
 
         public Network Network { get; set; }
+
+        public RPCArgs RPCArgs { get; set; } = new RPCArgs();
 
         public bool OnlyMonitor { get; set; }
 
@@ -27,6 +32,8 @@ namespace NTumbleBit.ClassicTumbler.Client
         public bool AllowInsecure { get; set; } = false;
 
         public string TorPath { get; set; }
+
+        public bool TorMandatory { get; set; }
 
         public Tracker Tracker { get; set; }
 

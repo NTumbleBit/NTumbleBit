@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using NBitcoin;
 using NBitcoin.RPC;
+using System.Threading;
 
 namespace NTumbleBit.Services.RPC
 {
@@ -32,12 +33,31 @@ namespace NTumbleBit.Services.RPC
 		{
 			get; set;
 		}
-		public FeeRate GetFeeRate()
+
+		FeeRate _CachedValue;
+		DateTimeOffset _CachedValueTime;
+		TimeSpan CacheExpiration = TimeSpan.FromSeconds(60 * 5);
+		public async Task<FeeRate> GetFeeRateAsync()
 		{
-			var rate = _RPCClient.TryEstimateFeeRate(1) ??
-				   _RPCClient.TryEstimateFeeRate(2) ??
-				   _RPCClient.TryEstimateFeeRate(3) ??
-				   FallBackFeeRate;
+			if(DateTimeOffset.UtcNow - _CachedValueTime > CacheExpiration)
+			{
+				var rate = await FetchRateAsync();
+				_CachedValue = rate;
+				_CachedValueTime = DateTimeOffset.UtcNow;
+				return rate;
+			}
+			else
+			{
+				return _CachedValue;
+			}
+		}
+
+		private async Task<FeeRate> FetchRateAsync()
+		{
+			var rate = await _RPCClient.TryEstimateFeeRateAsync(1).ConfigureAwait(false) ??
+							   await _RPCClient.TryEstimateFeeRateAsync(2).ConfigureAwait(false) ??
+							   await _RPCClient.TryEstimateFeeRateAsync(3).ConfigureAwait(false) ??
+							   FallBackFeeRate;
 			if(rate == null)
 				throw new FeeRateUnavailableException("The fee rate is unavailable");
 			if(rate < MinimumFeeRate)

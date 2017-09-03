@@ -32,17 +32,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 	public class TumblerClientConfiguration : TumblerClientConfigurationBase
 	{
-		public string ConfigurationFile
-		{
-			get;
-			set;
-		}
-
-		public RPCArgs RPCArgs
-		{
-			get; set;
-		} = new RPCArgs();
-
 		public TumblerClientConfiguration LoadArgs(String[] args)
 		{
 			ConfigurationFile = args.Where(a => a.StartsWith("-conf=", StringComparison.Ordinal)).Select(a => a.Substring("-conf=".Length).Replace("\"", "")).FirstOrDefault();
@@ -58,16 +47,16 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 			Network = args.Contains("-testnet", StringComparer.OrdinalIgnoreCase) ? Network.TestNet :
 				args.Contains("-regtest", StringComparer.OrdinalIgnoreCase) ? Network.RegTest :
-				Network.Main;
+				null;
 
 			if(ConfigurationFile != null)
 			{
 				AssetConfigFileExists();
 				var configTemp = TextFileConfiguration.Parse(File.ReadAllText(ConfigurationFile));
-				Network = configTemp.GetOrDefault<bool>("testnet", false) ? Network.TestNet :
-						  configTemp.GetOrDefault<bool>("regtest", false) ? Network.RegTest :
-						  Network.Main;
+				Network = Network ?? (configTemp.GetOrDefault<bool>("testnet", false) ? Network.TestNet :
+						  configTemp.GetOrDefault<bool>("regtest", false) ? Network.RegTest : null);
 			}
+			Network = Network ?? Network.Main;
 
 			if(DataDir == null)
 			{
@@ -151,7 +140,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 			DBreezeRepository = new DBreezeRepository(Path.Combine(DataDir, "db2"));
 			Tracker = new Tracker(DBreezeRepository, Network);
-			Services = ExternalServices.CreateFromRPCClient(rpc, DBreezeRepository, Tracker);
+			Services = ExternalServices.CreateFromRPCClient(rpc, DBreezeRepository, Tracker, true);
 
 			if (OutputWallet.RootKey != null && OutputWallet.KeyPath != null)
 				DestinationWallet = new ClientDestinationWallet(OutputWallet.RootKey, OutputWallet.KeyPath, DBreezeRepository, Network);

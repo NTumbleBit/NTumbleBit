@@ -47,7 +47,7 @@ namespace NTumbleBit.PuzzlePromise
 			}
 			private readonly ScriptCoin _Escrow;
 			private readonly Transaction _BaseTransaction;
-			public LockTime LockTime
+			public Money FeeVariation
 			{
 				get; set;
 			}
@@ -63,7 +63,7 @@ namespace NTumbleBit.PuzzlePromise
 			public Transaction GetTransaction()
 			{
 				var clone = _BaseTransaction.Clone();
-				clone.LockTime = LockTime;
+				clone.Outputs[0].Value -= FeeVariation;
 				return clone;
 			}
 		}
@@ -127,7 +127,7 @@ namespace NTumbleBit.PuzzlePromise
 				get;
 				set;
 			}
-			public LockTime[] LockTimes
+			public Money[] FeeVariations
 			{
 				get;
 				set;
@@ -180,7 +180,7 @@ namespace NTumbleBit.PuzzlePromise
 					{
 						hash = new RealHash(InternalState.Cashout, InternalState.EscrowedCoin)
 						{
-							LockTime = InternalState.LockTimes[realI++]
+							FeeVariation = InternalState.FeeVariations[realI++]
 						};
 					}
 					hash.Index = i;
@@ -194,13 +194,13 @@ namespace NTumbleBit.PuzzlePromise
 		{
 			State state = Serializer.Clone(InternalState);
 			state.FakeSalts = null;
-			state.LockTimes = null;
+			state.FeeVariations = null;
 			state.Commitments = null;
 			if(_Hashes != null)
 			{
 				var commitments = new List<ServerCommitment>();
 				var fakeSalts = new List<uint256>();
-				var lockTimes = new List<LockTime>();
+				var feeVariations = new List<Money>();
 				for(int i = 0; i < _Hashes.Length; i++)
 				{
 					commitments.Add(_Hashes[i].Commitment);
@@ -213,11 +213,11 @@ namespace NTumbleBit.PuzzlePromise
 					var real = _Hashes[i] as RealHash;
 					if(real != null)
 					{
-						lockTimes.Add(real.LockTime);
+						feeVariations.Add(real.FeeVariation);
 					}
 				}
 				state.FakeSalts = fakeSalts.ToArray();
-				state.LockTimes = lockTimes.ToArray();
+				state.FeeVariations = feeVariations.ToArray();
 				state.Commitments = commitments.ToArray();
 			}
 			return state;
@@ -252,17 +252,16 @@ namespace NTumbleBit.PuzzlePromise
 				Op.GetPushOp(TrustedBroadcastRequest.PlaceholderSignature),
 				Op.GetPushOp(InternalState.EscrowedCoin.Redeem.ToBytes())
 				);
+			cashout.Inputs[0].Witnessify();
 			cashout.AddOutput(new TxOut(InternalState.EscrowedCoin.Amount, cashoutDestination));
 			cashout.Outputs[0].Value -= feeRate.GetFee(cashout.GetVirtualSize());
 
 
 			List<HashBase> hashes = new List<HashBase>();
-			LockTime lockTime = new LockTime(0);
 			for(int i = 0; i < Parameters.RealTransactionCount; i++)
 			{
 				RealHash h = new RealHash(cashout, InternalState.EscrowedCoin);
-				h.LockTime = lockTime;
-				lockTime++;
+				h.FeeVariation = Money.Satoshis(i);
 				hashes.Add(h);
 			}
 
@@ -407,11 +406,12 @@ namespace NTumbleBit.PuzzlePromise
 					continue;
 				var transaction = hash.GetTransaction();
 				var bobSig = transaction.SignInput(InternalState.EscrowKey, InternalState.EscrowedCoin);
-				transaction.Inputs[0].ScriptSig = new Script(
+				transaction.Inputs[0].WitScript = new WitScript(
 					Op.GetPushOp(new TransactionSignature(tumblerSig, SigHash.All).ToBytes()),
 					Op.GetPushOp(bobSig.ToBytes()),
 					Op.GetPushOp(InternalState.EscrowedCoin.Redeem.ToBytes())
 					);
+				//transaction is already witnessified
 				if(transaction.Inputs.AsIndexedInputs().First().VerifyScript(InternalState.EscrowedCoin))
 					yield return transaction;
 			}
@@ -448,7 +448,7 @@ namespace NTumbleBit.PuzzlePromise
 		private void AssertState(PromiseClientStates state)
 		{
 			if(state != InternalState.Status)
-				throw new InvalidOperationException("Invalid state, actual " + InternalState.Status + " while expected is " + state);
+				throw new InvalidStateException("Invalid state, actual " + InternalState.Status + " while expected is " + state);
 		}
 	}
 }

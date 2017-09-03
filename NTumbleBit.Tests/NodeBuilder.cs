@@ -314,7 +314,7 @@ namespace NTumbleBit.Tests
 				{"txindex", "0"},
 				{"rpcuser", creds.UserName},
 				{"rpcpassword", creds.Password},
-				{"port", ports[0].ToString()},
+				{"whitebind", "127.0.0.1:" + ports[0].ToString()},
 				{"rpcport", ports[1].ToString()},
 				{"printtoconsole", "1"},
 				{"keypool", "10"}
@@ -487,58 +487,11 @@ namespace NTumbleBit.Tests
 		public Block[] Generate(int blockCount, bool includeUnbroadcasted = true, bool broadcast = true)
 		{
 			var rpc = CreateRPCClient();
-			BitcoinSecret dest = GetFirstSecret(rpc);
-			var bestBlock = rpc.GetBestBlockHash();
-			ConcurrentChain chain = null;
-			List<Block> blocks = new List<Block>();
-			DateTimeOffset now = MockTime == null ? DateTimeOffset.UtcNow : MockTime.Value;
-#if !NOSOCKET
-			using(var node = CreateNodeClient())
-			{
-
-				node.VersionHandshake();
-				chain = bestBlock == node.Network.GenesisHash ? new ConcurrentChain(node.Network) : node.GetChain();
-				for(int i = 0; i < blockCount; i++)
-				{
-					uint nonce = 0;
-					Block block = new Block();
-					block.Header.HashPrevBlock = chain.Tip.HashBlock;
-					block.Header.Bits = block.Header.GetWorkRequired(rpc.Network, chain.Tip);
-					block.Header.UpdateTime(now, rpc.Network, chain.Tip);
-					var coinbase = new Transaction();
-					coinbase.AddInput(TxIn.CreateCoinbase(chain.Height + 1));
-					coinbase.AddOutput(new TxOut(rpc.Network.GetReward(chain.Height + 1), dest.GetAddress()));
-					block.AddTransaction(coinbase);
-					if(includeUnbroadcasted)
-					{
-						foreach(var tx in transactions.ToList())
-						{
-							if(tx.Inputs.Any(input => _ToMalleate.Contains(input.PrevOut.Hash)))
-								transactions.Remove(tx);
-						}
-						transactions = Reorder(transactions);
-						block.Transactions.AddRange(transactions);
-						for(int y = 0; y < block.Transactions.Count; y++)
-						{
-							if(_ToMalleate.Contains(block.Transactions[y].GetHash()))
-							{
-								block.Transactions[y] = DoMalleate(block.Transactions[y]);
-							}
-						}
-						transactions.Clear();
-						_ToMalleate.Clear();
-					}
-					block.UpdateMerkleRoot();
-					while(!block.CheckProofOfWork())
-						block.Header.Nonce = ++nonce;
-					blocks.Add(block);
-					chain.SetTip(block.Header);
-				}
-				if(broadcast)
-					BroadcastBlocks(blocks.ToArray(), node);
-			}
-			return blocks.ToArray();
-#endif
+			var blocks = rpc.Generate(blockCount);
+			rpc = rpc.PrepareBatch();
+			var tasks = blocks.Select(b => rpc.GetBlockAsync(b)).ToArray();
+			rpc.SendBatch();
+			return tasks.Select(b => b.Result).ToArray();
 		}
 
 		private List<uint256> _ToMalleate = new List<uint256>();

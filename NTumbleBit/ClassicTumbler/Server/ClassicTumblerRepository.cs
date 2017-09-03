@@ -39,7 +39,7 @@ namespace NTumbleBit.ClassicTumbler.Server
 
 		public void Save(int cycleId, PromiseServerSession session)
 		{
-			Repository.UpdateOrInsert(GetCyclePartition(cycleId), session.Id, session.GetInternalState(), (o, n) =>
+			Repository.UpdateOrInsert(GetCyclePartition(cycleId), session.Id.ToString(), session.GetInternalState(), (o, n) =>
 			{
 				if(o.ETag != n.ETag)
 					throw new InvalidOperationException("Optimistic concurrency failure");
@@ -50,7 +50,7 @@ namespace NTumbleBit.ClassicTumbler.Server
 
 		public void Save(int cycleId, SolverServerSession session)
 		{
-			Repository.UpdateOrInsert(GetCyclePartition(cycleId), session.Id, session.GetInternalState(), (o, n) =>
+			Repository.UpdateOrInsert(GetCyclePartition(cycleId), session.Id.ToString(), session.GetInternalState(), (o, n) =>
 			{
 				if(o.ETag != n.ETag)
 					throw new InvalidOperationException("Optimistic concurrency failure");
@@ -59,18 +59,18 @@ namespace NTumbleBit.ClassicTumbler.Server
 			});
 		}
 
-		public PromiseServerSession GetPromiseServerSession(int cycleId, string id)
+		public PromiseServerSession GetPromiseServerSession(int cycleId, uint160 channelId)
 		{
-			var session = Repository.Get<PromiseServerSession.State>(GetCyclePartition(cycleId), id);
+			var session = Repository.Get<PromiseServerSession.State>(GetCyclePartition(cycleId), channelId.ToString());
 			if(session == null)
 				return null;
 			return new PromiseServerSession(session,
 				_Runtime.ClassicTumblerParameters.CreatePromiseParamaters());
 		}
 
-		public SolverServerSession GetSolverServerSession(int cycleId, string id)
+		public SolverServerSession GetSolverServerSession(int cycleId, uint160 channelId)
 		{
-			var session = Repository.Get<SolverServerSession.State>(GetCyclePartition(cycleId), id);
+			var session = Repository.Get<SolverServerSession.State>(GetCyclePartition(cycleId), channelId.ToString());
 			if(session == null)
 				return null;
 			return new SolverServerSession(_Runtime.TumblerKey,
@@ -127,6 +127,12 @@ namespace NTumbleBit.ClassicTumbler.Server
 				return n;
 			});
 			return !used;
+		}
+
+		public bool IsUsed(int cycle, uint160 nonce)
+		{
+			var partition = GetCyclePartition(cycle);
+			return Repository.Get<bool>(partition, "Nonces-" + nonce);
 		}
 	}
 }

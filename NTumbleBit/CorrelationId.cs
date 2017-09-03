@@ -1,7 +1,9 @@
 ﻿using NBitcoin;
+using NBitcoin.Crypto;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Linq;
 
 namespace NTumbleBit
 {
@@ -9,31 +11,23 @@ namespace NTumbleBit
 	{
 		public static CorrelationId Parse(string str)
 		{
-			uint v;
-			//To eventually remove in august 2017, prevent old stuff from crashing
-			if(uint.TryParse(str, out v))
-				return new CorrelationId(v);
+			uint256 v;
+			//To eventually remove in september 2017, prevent old stuff from crashing
+			if(uint256.TryParse(str, out v))
+				return new CorrelationId(new uint160(v.ToBytes().Take(20).ToArray()));
 			///////
-			return new CorrelationId(uint256.Parse(str));
+			return new CorrelationId(uint160.Parse(str));
 		}
-		public CorrelationId(uint256 id)
+
+		public CorrelationId(uint160 id)
 		{
 			if(id == null)
 				throw new ArgumentNullException(nameof(id));
 			_Id = id;
 		}
 
-		public CorrelationId(Script redeem) : this(new uint256(redeem.WitHash.ToBytes()))
-		{
-
-		}
-
-		public CorrelationId(ScriptCoin coin) : this(coin.Redeem)
-		{
-		}
-
-		readonly uint256 _Id;
-		public static readonly CorrelationId Zero = new CorrelationId(uint256.Zero);
+		readonly uint160 _Id;
+		public static readonly CorrelationId Zero = new CorrelationId(uint160.Zero);
 
 		public override bool Equals(object obj)
 		{
@@ -61,9 +55,22 @@ namespace NTumbleBit
 			return _Id.GetHashCode();
 		}
 
+
 		public override string ToString()
 		{
-			return _Id.ToString();
+			return ToString(true);
+		}
+
+		public string ToString(bool longForm)
+		{
+			if(longForm)
+				return _Id.ToString();
+			return _Id.GetLow64().ToString();
+		}
+
+		public byte[] ToBytes()
+		{
+			return _Id.ToBytes();
 		}
 	}
 }

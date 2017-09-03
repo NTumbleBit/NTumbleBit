@@ -35,12 +35,7 @@ namespace NTumbleBit.Logging
 			_newLineWithMessagePadding = Environment.NewLine + _messagePadding;
 		}
 
-		public CustomerConsoleLogger(string name, Func<string, LogLevel, bool> filter, bool includeScopes)
-			: this(name, filter, includeScopes, new ConsoleLoggerProcessor())
-		{
-		}
-
-		internal CustomerConsoleLogger(string name, Func<string, LogLevel, bool> filter, bool includeScopes, ConsoleLoggerProcessor loggerProcessor)
+		public CustomerConsoleLogger(string name, Func<string, LogLevel, bool> filter, bool includeScopes, ConsoleLoggerProcessor loggerProcessor)
 		{
 			if(name == null)
 			{
@@ -357,6 +352,8 @@ namespace NTumbleBit.Logging
 		// for testing
 		internal virtual void WriteMessage(LogMessageEntry message)
 		{
+			var dateTime = $"[{DateTimeOffset.Now.ToString("yy-MM-dd HH:mm:ss")}] ";
+			Console.Write(dateTime, message.MessageColor, message.MessageColor);
 			if(message.LevelString != null)
 			{
 				Console.Write(message.LevelString, message.LevelBackground, message.LevelForeground);

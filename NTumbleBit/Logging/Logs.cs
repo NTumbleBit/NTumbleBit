@@ -42,6 +42,15 @@ namespace NTumbleBit.Logging
 		{
 			get; set;
 		}
+
+		public static Func<string, LogLevel, bool> SupportDebug(bool debug)
+		{
+			return (a, filter) =>
+			{
+				return (debug && filter == LogLevel.Debug) || filter > LogLevel.Debug;
+			};
+		}
+
 		public static ILogger Configuration
 		{
 			get; set;

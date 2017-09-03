@@ -7,12 +7,14 @@ using NBitcoin;
 using Newtonsoft.Json.Linq;
 using NBitcoin.DataEncoders;
 using System.Threading;
+using System.Collections.Concurrent;
 
 namespace NTumbleBit.Services.RPC
 {
 	public class RPCBlockExplorerService : IBlockExplorerService
 	{
 		RPCWalletCache _Cache;
+		RPCBatch<bool> _RPCBatch;
 		public RPCBlockExplorerService(RPCClient client, RPCWalletCache cache, IRepository repo)
 		{
 			if(client == null)
@@ -24,6 +26,19 @@ namespace NTumbleBit.Services.RPC
 			_RPCClient = client;
 			_Repo = repo;
 			_Cache = cache;
+			_RPCBatch = new RPCBatch<bool>(client);
+		}
+
+		public TimeSpan BatchInterval
+		{
+			get
+			{
+				return _RPCBatch.BatchInterval;
+			}
+			set
+			{
+				_RPCBatch.BatchInterval = value;
+			}
 		}
 
 		IRepository _Repo;
@@ -56,36 +71,63 @@ namespace NTumbleBit.Services.RPC
 			}
 		}
 
-		public TransactionInformation[] GetTransactions(Script scriptPubKey, bool withProof)
+		public async Task<ICollection<TransactionInformation>> GetTransactionsAsync(Script scriptPubKey, bool withProof)
 		{
 			if(scriptPubKey == null)
 				throw new ArgumentNullException(nameof(scriptPubKey));
 
-			var address = scriptPubKey.GetDestinationAddress(RPCClient.Network);
-			if(address == null)
-				return new TransactionInformation[0];
 
-			var walletTransactions = _Cache.GetEntries();
-			List<TransactionInformation> results = Filter(walletTransactions, !withProof, address);
+			var results = _Cache
+										.GetEntriesFromScript(scriptPubKey)
+										.Select(entry => new TransactionInformation()
+										{
+											Confirmations = entry.Confirmations,
+											Transaction = entry.Transaction
+										}).ToList();
 
 			if(withProof)
 			{
+
 				foreach(var tx in results.ToList())
 				{
-					MerkleBlock proof = null;
-					var result = RPCClient.SendCommandNoThrows("gettxoutproof", new JArray(tx.Transaction.GetHash().ToString()));
-					if(result == null || result.Error != null)
+					var completion = new TaskCompletionSource<MerkleBlock>();
+					bool isRequester = true;
+					var txid = tx.Transaction.GetHash();
+					_GettingProof.AddOrUpdate(txid, completion, (k, o) =>
 					{
-						results.Remove(tx);
-						continue;
+						isRequester = false;
+						completion = o;
+						return o;
+					});
+					if(isRequester)
+					{
+						try
+						{
+							MerkleBlock proof = null;
+							var result = await RPCClient.SendCommandNoThrowsAsync("gettxoutproof", new JArray(tx.Transaction.GetHash().ToString())).ConfigureAwait(false);
+							if(result == null || result.Error != null)
+							{
+								completion.TrySetResult(null);
+								continue;
+							}
+							proof = new MerkleBlock();
+							proof.ReadWrite(Encoders.Hex.DecodeData(result.ResultString));
+							tx.MerkleProof = proof;
+							completion.TrySetResult(proof);
+						}
+						catch(Exception ex) { completion.TrySetException(ex); }
+						finally { _GettingProof.TryRemove(txid, out completion); }
 					}
-					proof = new MerkleBlock();
-					proof.ReadWrite(Encoders.Hex.DecodeData(result.ResultString));
-					tx.MerkleProof = proof;
+
+					var merkleBlock = await completion.Task.ConfigureAwait(false);
+					if(merkleBlock == null)
+						results.Remove(tx);
 				}
 			}
-			return results.ToArray();
+			return results;
 		}
+
+		ConcurrentDictionary<uint256, TaskCompletionSource<MerkleBlock>> _GettingProof = new ConcurrentDictionary<uint256, TaskCompletionSource<MerkleBlock>>();
 
 		private List<TransactionInformation> QueryWithListReceivedByAddress(bool withProof, BitcoinAddress address)
 		{
@@ -112,7 +154,7 @@ namespace NTumbleBit.Services.RPC
 			return results;
 		}
 
-		private List<TransactionInformation> Filter(RPCWalletEntry[] entries, bool includeUnconf, BitcoinAddress address)
+		private List<TransactionInformation> Filter(ICollection<RPCWalletEntry> entries, bool includeUnconf, Script scriptPubKey)
 		{
 			List<TransactionInformation> results = new List<TransactionInformation>();
 			HashSet<uint256> resultsSet = new HashSet<uint256>();
@@ -127,8 +169,8 @@ namespace NTumbleBit.Services.RPC
 					if(tx == null || (!includeUnconf && confirmations == 0))
 						continue;
 
-					if(tx.Outputs.Any(o => o.ScriptPubKey == address.ScriptPubKey) ||
-					   tx.Inputs.Any(o => o.ScriptSig.GetSigner().ScriptPubKey == address.ScriptPubKey))
+					if(tx.Outputs.Any(o => o.ScriptPubKey == scriptPubKey) ||
+					   tx.Inputs.Any(o => o.ScriptSig.GetSigner().ScriptPubKey == scriptPubKey))
 					{
 
 						resultsSet.Add(obj.TransactionId);
@@ -169,9 +211,13 @@ namespace NTumbleBit.Services.RPC
 			catch(RPCException) { return null; }
 		}
 
-		public void Track(Script scriptPubkey)
+		public async Task TrackAsync(Script scriptPubkey)
 		{
-			RPCClient.ImportAddress(scriptPubkey, "", false);
+			await _RPCBatch.WaitTransactionAsync(async batch =>
+			{
+				await batch.ImportAddressAsync(scriptPubkey, "", false).ConfigureAwait(false);
+				return true;
+			}).ConfigureAwait(false);
 		}
 
 		public int GetBlockConfirmations(uint256 blockId)
@@ -182,14 +228,19 @@ namespace NTumbleBit.Services.RPC
 			return (int)result.Result["confirmations"];
 		}
 
-		public bool TrackPrunedTransaction(Transaction transaction, MerkleBlock merkleProof)
+		public async Task<bool> TrackPrunedTransactionAsync(Transaction transaction, MerkleBlock merkleProof)
 		{
-			var result = RPCClient.SendCommandNoThrows("importprunedfunds", transaction.ToHex(), Encoders.Hex.EncodeData(merkleProof.ToBytes()));
-			var success = result != null && result.Error == null;
-			if(success)
+			bool success = false;
+			await _RPCBatch.WaitTransactionAsync(async batch =>
 			{
-				_Cache.ImportTransaction(transaction, GetBlockConfirmations(merkleProof.Header.GetHash()));
-			}
+				var result = await batch.SendCommandNoThrowsAsync("importprunedfunds", transaction.ToHex(), Encoders.Hex.EncodeData(merkleProof.ToBytes())).ConfigureAwait(false);
+				success = result != null && result.Error == null;
+				if(success)
+				{
+					_Cache.ImportTransaction(transaction, GetBlockConfirmations(merkleProof.Header.GetHash()));
+				}
+				return success;
+			}).ConfigureAwait(false);
 			return success;
 		}
 	}

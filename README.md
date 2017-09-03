@@ -29,6 +29,13 @@ As a user, you will need:
 1. [NET Core SDK 1.0.4](https://github.com/dotnet/core/blob/master/release-notes/download-archives/1.0.4-sdk-download.md) (see below)
 2. [Bitcoin Core 0.13.1](https://bitcoin.org/bin/bitcoin-core-0.13.1/) fully sync, rpc enabled.
 
+On Tumbler server side, run Bitcoin Core with a big RPC work queue. TumbleBit has peak of activity making it likely to reach the limit.
+```
+bitcoind -rpcworkqueue=100
+```
+
+Alternatively, you can also put the `rpcworkqueue=100` in the configuration file of your bitcoin instance.
+
 You can easily install the SDK on ubuntu systems after having installed the runtime by running
 ```
 sudo apt-get install dotnet-dev-1.0.4

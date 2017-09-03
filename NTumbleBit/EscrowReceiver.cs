@@ -21,7 +21,16 @@ namespace NTumbleBit
 			{
 				get;
 				set;
-			}			
+			}
+
+			/// <summary>
+			/// Identify the channel to the tumbler
+			/// </summary>
+			public uint160 ChannelId
+			{
+				get;
+				set;
+			}
 		}
 
 		protected State InternalState
@@ -29,21 +38,26 @@ namespace NTumbleBit
 			get; set;
 		}
 
-		public string Id
+		public uint160 Id
 		{
 			get
 			{
-				return InternalState.EscrowedCoin.ScriptPubKey.ToHex();
+				return InternalState.ChannelId;
 			}
 		}
 
+		public void SetChannelId(uint160 channelId)
+		{
+			if(channelId == null)
+				throw new ArgumentNullException(nameof(channelId));
+			InternalState.ChannelId = channelId;
+		}
 		public virtual void ConfigureEscrowedCoin(ScriptCoin escrowedCoin, Key escrowKey)
 		{
 			if(escrowedCoin == null)
 				throw new ArgumentNullException(nameof(escrowedCoin));
 			if(escrowKey == null)
 				throw new ArgumentNullException(nameof(escrowKey));
-						
 			InternalState.EscrowKey = escrowKey;
 			InternalState.EscrowedCoin = escrowedCoin;
 		}

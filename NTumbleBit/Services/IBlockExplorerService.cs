@@ -26,11 +26,11 @@ namespace NTumbleBit.Services
     public interface IBlockExplorerService
     {
 		int GetCurrentHeight();
-		TransactionInformation[] GetTransactions(Script scriptPubKey, bool withProof);
+		Task<ICollection<TransactionInformation>> GetTransactionsAsync(Script scriptPubKey, bool withProof);
 		TransactionInformation GetTransaction(uint256 txId);
 		uint256 WaitBlock(uint256 currentBlock, CancellationToken cancellation);
-		void Track(Script scriptPubkey);
+		Task TrackAsync(Script scriptPubkey);
 		int GetBlockConfirmations(uint256 blockId);
-		bool TrackPrunedTransaction(Transaction transaction, MerkleBlock merkleProof);
+		Task<bool> TrackPrunedTransactionAsync(Transaction transaction, MerkleBlock merkleProof);
 	}
 }

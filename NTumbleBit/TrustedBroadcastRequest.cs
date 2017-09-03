@@ -15,6 +15,16 @@ namespace NTumbleBit
 		{
 			get; set;
 		}
+		public OutPoint SignedOutpoint
+		{
+			get;
+			set;
+		}
+
+		public WitScript Signature
+		{
+			get; set;
+		}
 		public Transaction Transaction
 		{
 			get; set;
@@ -28,7 +38,6 @@ namespace NTumbleBit
 			get;
 			set;
 		}
-		
 		public bool IsBroadcastableAt(int height)
 		{
 			return height >= BroadcastAt.Height && Transaction.IsFinal(DateTimeOffset.UtcNow, height + 1);
@@ -51,23 +60,48 @@ namespace NTumbleBit
 
 		public Transaction ReSign(Coin coin)
 		{
+			bool a;
+			return ReSign(coin, out a);
+		}
+		public Transaction ReSign(Coin coin, out bool cached)
+		{
 			var transaction = Transaction.Clone();
+			if(coin.Outpoint == SignedOutpoint)
+			{
+				transaction.Inputs[0].WitScript = Signature;
+				transaction.Inputs[0].PrevOut = SignedOutpoint;
+				cached = true;
+				return transaction;
+			}
 			transaction.Inputs[0].PrevOut = coin.Outpoint;
-			var redeem = new Script(transaction.Inputs[0].ScriptSig.ToOps().Last().PushData);
+
+			//TODO: REMOVE THIS LATER hack so old tx do not crash client
+			if(transaction.Inputs[0].WitScript.PushCount == 0)
+			{
+				transaction.Inputs[0].WitScript = Signature;
+				transaction.Inputs[0].PrevOut = SignedOutpoint;
+				cached = true;
+				return transaction;
+			}
+
+			var redeem = new Script(transaction.Inputs[0].WitScript.Pushes.Last());
 			var scriptCoin = coin.ToScriptCoin(redeem);
 			byte[] signature = transaction.SignInput(Key, scriptCoin).ToBytes();
-			List<Op> resignedScriptSig = new List<Op>();
-			foreach(var op in transaction.Inputs[0].ScriptSig.ToOps())
+			List<byte[]> resignedScriptSig = new List<byte[]>();
+			foreach(var op in transaction.Inputs[0].WitScript.Pushes)
 			{
-				resignedScriptSig.Add(IsPlaceholder(op) ? Op.GetPushOp(signature) : op);
+				resignedScriptSig.Add(IsPlaceholder(op) ? signature : op);
 			}
-			transaction.Inputs[0].ScriptSig = new Script(resignedScriptSig.ToArray());
+			Signature = new WitScript(resignedScriptSig.ToArray());
+			SignedOutpoint = coin.Outpoint;
+			transaction.Inputs[0].WitScript = Signature;
+			cached = false;
 			return transaction;
 		}
 
-		private static bool IsPlaceholder(Op op)
+		private static bool IsPlaceholder(byte[] op)
 		{
-			return op.PushData != null && op.PushData.SequenceEqual(PlaceholderSignature);
+			return op != null && op.SequenceEqual(PlaceholderSignature);
 		}
 	}
 }

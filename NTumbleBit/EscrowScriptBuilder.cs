@@ -63,12 +63,7 @@ namespace NTumbleBit
 		{
 			get; set;
 		}
-
-		public CorrelationId GetCorrelation()
-		{
-			return new CorrelationId(ToScript());
-		}
-
+		
 		public Script ToScript()
 		{
 			if(Initiator == null || Receiver == null || LockTime == default(LockTime))

@@ -8,11 +8,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TumbleBitSetup;
+using NTumbleBit.Services;
+using NTumbleBit.ClassicTumbler.Client;
 
 namespace NTumbleBit.ClassicTumbler
 {
 	public class ClassicTumblerParameters : IBitcoinSerializable
 	{
+		const int LAST_VERSION = 1;
 		public ClassicTumblerParameters()
 		{
 			var solver = new SolverParameters();
@@ -25,8 +29,22 @@ namespace NTumbleBit.ClassicTumbler
 			FakeFormat = promise.FakeFormat;
 
 			Denomination = Money.Coins(1.0m);
-			Fee = Money.Coins(0.01m);
+			Fee = Money.Coins(0.001m);
 			CycleGenerator = new OverlappedCycleGenerator();
+		}
+
+
+		uint _Version = LAST_VERSION;
+		public uint Version
+		{
+			get
+			{
+				return _Version;
+			}
+			set
+			{
+				_Version = value;
+			}
 		}
 
 		Network _Network;
@@ -57,8 +75,8 @@ namespace NTumbleBit.ClassicTumbler
 		}
 
 
-		RsaPubKey _ServerKey;
-		public RsaPubKey ServerKey
+		RSAKeyData _ServerKey;
+		public RSAKeyData ServerKey
 		{
 			get
 			{
@@ -71,8 +89,8 @@ namespace NTumbleBit.ClassicTumbler
 		}
 
 
-		RsaPubKey _VoucherKey;
-		public RsaPubKey VoucherKey
+		RSAKeyData _VoucherKey;
+		public RSAKeyData VoucherKey
 		{
 			get
 			{
@@ -98,6 +116,14 @@ namespace NTumbleBit.ClassicTumbler
 			}
 		}
 
+		internal string PrettyPrint()
+		{
+			//Strip keys so we can read
+			var parameters = this.Clone();
+			parameters.ServerKey = null;
+			parameters.VoucherKey = null;
+			return Serializer.ToString(parameters, parameters.Network, true);
+		}
 
 		Money _Fee;
 		public Money Fee
@@ -184,16 +210,20 @@ namespace NTumbleBit.ClassicTumbler
 
 		public void ReadWrite(BitcoinStream stream)
 		{
+			stream.ReadWrite(ref _Version);
+			if(_Version != LAST_VERSION)
+				throw new FormatException($"Tumbler is running an invalid version ({_Version} while expected is {LAST_VERSION})");
 			stream.ReadWriteC(ref _Network);
 			stream.ReadWrite(ref _CycleGenerator);
-			stream.ReadWriteC(ref _ServerKey);
-			stream.ReadWriteC(ref _VoucherKey);
+			stream.ReadWrite(ref _ServerKey);
+			stream.ReadWrite(ref _VoucherKey);
 			stream.ReadWriteC(ref _Denomination);
 			stream.ReadWriteC(ref _Fee);
 			stream.ReadWrite(ref _FakePuzzleCount);
 			stream.ReadWrite(ref _RealPuzzleCount);
 			stream.ReadWrite(ref _FakeTransactionCount);
 			stream.ReadWrite(ref _RealTransactionCount);
+			stream.ReadWriteC(ref _ExpectedAddress);
 		}
 
 		public bool Check(PromiseParameters promiseParams)
@@ -214,7 +244,7 @@ namespace NTumbleBit.ClassicTumbler
 			{
 				FakePuzzleCount = FakePuzzleCount,
 				RealPuzzleCount = RealPuzzleCount,
-				ServerKey = ServerKey
+				ServerKey = ServerKey.PublicKey
 			};
 		}
 
@@ -225,7 +255,7 @@ namespace NTumbleBit.ClassicTumbler
 				FakeFormat = FakeFormat,
 				FakeTransactionCount = FakeTransactionCount,
 				RealTransactionCount = RealTransactionCount,
-				ServerKey = ServerKey
+				ServerKey = ServerKey.PublicKey
 			};
 		}
 
@@ -240,10 +270,10 @@ namespace NTumbleBit.ClassicTumbler
 
 		public bool IsStandard()
 		{
-			//TODO check RSA proof for the pubkeys
 			return
-				this.VoucherKey.GetKeySize() == RsaKey.KeySize &&
-				this.ServerKey.GetKeySize() == RsaKey.KeySize &&
+				this.Version == LAST_VERSION &&
+				this.VoucherKey.CheckKey() &&
+				this.ServerKey.CheckKey() &&
 				this.FakePuzzleCount == 285 &&
 				this.RealPuzzleCount == 15 &&
 				this.RealTransactionCount == 42 &&
@@ -251,6 +281,20 @@ namespace NTumbleBit.ClassicTumbler
 				this.Fee < this.Denomination &&
 				this.FakeFormat == new uint256(Enumerable.Range(0, 32).Select(o => o == 0 ? (byte)0 : (byte)1).ToArray());
 
+		}
+
+
+		string _ExpectedAddress = "";
+		public string ExpectedAddress
+		{
+			get
+			{
+				return _ExpectedAddress;
+			}
+			set
+			{
+				_ExpectedAddress = value;
+			}
 		}
 
 
@@ -287,6 +331,88 @@ namespace NTumbleBit.ClassicTumbler
 		public override int GetHashCode()
 		{
 			return GetHash().GetHashCode();
+		}
+
+		public int CountEscrows(Transaction tx, Identity identity)
+		{
+			var amount = identity == Identity.Bob ? Denomination : Denomination + Fee;
+			return tx.Outputs.Where(o => o.Value == amount).Count();
+		}
+	}
+
+	public class RSAKeyData : IBitcoinSerializable
+	{
+
+		RsaPubKey _PublicKey;
+		public RsaPubKey PublicKey
+		{
+			get
+			{
+				return _PublicKey;
+			}
+			set
+			{
+				_PublicKey = value;
+			}
+		}
+
+
+		PermutationTestProof _PermutationTestProof;
+		public PermutationTestProof PermutationTestProof
+		{
+			get
+			{
+				return _PermutationTestProof;
+			}
+			set
+			{
+				_PermutationTestProof = value;
+			}
+		}
+
+
+		PoupardSternProof _PoupardSternProof;
+		public PoupardSternProof PoupardSternProof
+		{
+			get
+			{
+				return _PoupardSternProof;
+			}
+			set
+			{
+				_PoupardSternProof = value;
+			}
+		}
+
+		public void ReadWrite(BitcoinStream stream)
+		{
+			stream.ReadWriteC(ref _PublicKey);
+			stream.ReadWriteC(ref _PermutationTestProof);
+			stream.ReadWriteC(ref _PoupardSternProof);
+		}
+
+
+		public static readonly PoupardSternSetup PoupardSetup = new PoupardSternSetup()
+		{
+			KeySize = RsaKey.KeySize,
+			SecurityParameter = 128,
+			PublicString = new uint256("000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f").ToBytes(lendian: true)
+		};
+
+		public static readonly PermutationTestSetup PermutationSetup = new PermutationTestSetup()
+		{
+			KeySize = RsaKey.KeySize,
+			SecurityParameter = 128,
+			PublicString = new uint256("000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f").ToBytes(lendian: true),
+			Alpha = 41
+		};
+
+		public bool CheckKey()
+		{
+			return
+				PoupardSternProof != null && _PermutationTestProof != null &&
+				PoupardStern.VerifyPoupardStern(_PublicKey._Key, PoupardSternProof, PoupardSetup) &&
+				PermutationTest.VerifyPermutationTest(_PublicKey._Key, PermutationTestProof, PermutationSetup);
 		}
 	}
 }

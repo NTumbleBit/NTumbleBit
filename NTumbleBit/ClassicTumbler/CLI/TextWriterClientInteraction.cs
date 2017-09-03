@@ -1,4 +1,5 @@
 ﻿using NTumbleBit.ClassicTumbler;
+using NBitcoin;
 using NTumbleBit.ClassicTumbler.CLI;
 using NTumbleBit.ClassicTumbler.Client.ConnectionSettings;
 using System;
@@ -38,15 +39,15 @@ namespace NTumbleBit
 
 		public Task ConfirmParametersAsync(ClassicTumblerParameters parameters, StandardCycle standardCyle)
 		{
-			var feeRate = ((decimal)parameters.Fee.Satoshi / (decimal)parameters.Denomination.Satoshi);
+			var feeRate = ((decimal)parameters.Fee.Satoshi / (decimal)parameters.Denomination.Satoshi) * 100.0m;
 			if(standardCyle == null)
 			{
 				_Output.WriteLine("------");
 				_Output.WriteLine("Do you confirm the following non standard tumbler settings? (type 'yes' to accept)");
 				_Output.WriteLine("------");
-				_Output.WriteLine(Serializer.ToString(parameters, parameters.Network, true));
+				_Output.WriteLine(parameters.PrettyPrint());
 				_Output.WriteLine("--");
-				_Output.WriteLine("Tumbler Fee: " + parameters.Fee.ToString());
+				_Output.WriteLine("Tumbler Fee: " + parameters.Fee.ToString() + $" ({feeRate.ToString("0.00")}%)");
 				_Output.WriteLine("Denomination: " + parameters.Denomination.ToString());
 				var periods = parameters.CycleGenerator.FirstCycle.GetPeriods();
 				_Output.WriteLine("Total cycle length: " + (periods.Total.End - periods.Total.Start) + " blocks");

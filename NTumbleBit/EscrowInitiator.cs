@@ -35,6 +35,15 @@ namespace NTumbleBit
 				get;
 				set;
 			}
+
+			/// <summary>
+			/// Identify the channel to the tumbler
+			/// </summary>
+			public uint160 ChannelId
+			{
+				get;
+				set;
+			}
 		}
 
 		protected State InternalState
@@ -42,7 +51,7 @@ namespace NTumbleBit
 			get; set;
 		}
 
-		public virtual void ConfigureEscrowedCoin(ScriptCoin escrowedCoin, Key escrowKey, Script redeemDestination)
+		public virtual void ConfigureEscrowedCoin(uint160 channelId, ScriptCoin escrowedCoin, Key escrowKey, Script redeemDestination)
 		{
 			if(escrowedCoin == null)
 				throw new ArgumentNullException(nameof(escrowedCoin));
@@ -54,6 +63,9 @@ namespace NTumbleBit
 			if(escrow == null || 
 				escrow.Initiator != escrowKey.PubKey)
 				throw new PuzzleException("Invalid escrow");
+			if(channelId == null)
+				throw new ArgumentNullException(nameof(channelId));
+			InternalState.ChannelId = channelId;
 			InternalState.EscrowedCoin = escrowedCoin;
 			InternalState.EscrowKey = escrowKey;
 			InternalState.RedeemDestination = redeemDestination;
@@ -74,6 +86,7 @@ namespace NTumbleBit
 				new Script(
 					Op.GetPushOp(TrustedBroadcastRequest.PlaceholderSignature), 
 					Op.GetPushOp(escrowCoin.Redeem.ToBytes()));
+			tx.Inputs[0].Witnessify();
 			tx.Inputs[0].Sequence = 0;
 			
 			tx.Outputs.Add(new TxOut(escrowCoin.Amount, InternalState.RedeemDestination));			
@@ -90,11 +103,11 @@ namespace NTumbleBit
 
 		public abstract LockTime GetLockTime(CycleParameters cycle);
 
-		public string Id
+		public uint160 Id
 		{
 			get
 			{
-				return InternalState.EscrowedCoin.ScriptPubKey.ToHex();
+				return InternalState.ChannelId;
 			}
 		}
 

@@ -8,7 +8,8 @@ namespace NTumbleBit.Services
 {
 	public interface IWalletService
     {
-		IDestination GenerateAddress();
-		Transaction FundTransaction(TxOut txOut, FeeRate feeRate);
+		Task<IDestination> GenerateAddressAsync();
+		Task<Transaction> FundTransactionAsync(TxOut txOut, FeeRate feeRate);
+		Task<Transaction> ReceiveAsync(ScriptCoin escrowedCoin, TransactionSignature clientSignature, Key escrowKey, FeeRate feeRate);
 	}
 }

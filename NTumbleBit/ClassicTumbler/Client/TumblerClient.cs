@@ -80,17 +80,30 @@ namespace NTumbleBit.ClassicTumbler.Client
 			return SignVoucherAsync(signVoucherRequest).GetAwaiter().GetResult();
 		}
 
-		public async Task<ScriptCoin> OpenChannelAsync(OpenChannelRequest request)
+		public async Task<uint160> BeginOpenChannelAsync(OpenChannelRequest request)
 		{
 			if(request == null)
 				throw new ArgumentNullException(nameof(request));
-			var c = await SendAsync<ScriptCoinModel>(HttpMethod.Post, request, $"channels/").ConfigureAwait(false);
-			return c.ScriptCoin;
+			var c = await SendAsync<uint160.MutableUint160>(HttpMethod.Post, request, $"channels/beginopen").ConfigureAwait(false);
+			return c?.Value;
 		}
 
-		public ScriptCoin OpenChannel(OpenChannelRequest request)
+		public TumblerEscrowData EndOpenChannel(int cycleId, uint160 channelId)
 		{
-			return OpenChannelAsync(request).GetAwaiter().GetResult();
+			return EndOpenChannelAsync(cycleId, channelId).GetAwaiter().GetResult();
+		}
+
+		public async Task<TumblerEscrowData> EndOpenChannelAsync(int cycleId, uint160 channelId)
+		{
+			if(channelId == null)
+				throw new ArgumentNullException(nameof(channelId));
+			var c = await SendAsync<TumblerEscrowData>(HttpMethod.Post, null, $"channels/{cycleId}/{channelId}/endopen").ConfigureAwait(false);
+			return c;
+		}
+
+		public uint160 BeginOpenChannel(OpenChannelRequest request)
+		{
+			return BeginOpenChannelAsync(request).GetAwaiter().GetResult();
 		}
 
 		public Task<TumblerEscrowKeyResponse> RequestTumblerEscrowKeyAsync()
@@ -106,7 +119,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 		{
 			relativePath = String.Format(relativePath, parameters ?? new object[0]);
 
-			var uri = _Address.RoutableUri.AbsoluteUri;
+			var uri = _Address.GetRoutableUri(true).AbsoluteUri;
 			if(!uri.EndsWith("/", StringComparison.Ordinal))
 				uri += "/";
 			uri += relativePath;
@@ -151,6 +164,8 @@ namespace NTumbleBit.ClassicTumbler.Client
 				return (T)(object)str;
 
 			var bytes = await result.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+			if(bytes.Length == 0)
+				return default(T);
 			var stream = new BitcoinStream(new MemoryStream(bytes), false);
 
 			var data = new T();
@@ -158,43 +173,43 @@ namespace NTumbleBit.ClassicTumbler.Client
 			return data;
 		}
 
-		public ServerCommitmentsProof CheckRevelation(string channelId, PuzzlePromise.ClientRevelation revelation)
+		public ServerCommitmentsProof CheckRevelation(uint160 channelId, PuzzlePromise.ClientRevelation revelation)
 		{
 			return CheckRevelationAsync(channelId, revelation).GetAwaiter().GetResult();
 		}
 
-		private Task<ServerCommitmentsProof> CheckRevelationAsync(string channelId, PuzzlePromise.ClientRevelation revelation)
+		private Task<ServerCommitmentsProof> CheckRevelationAsync(uint160 channelId, PuzzlePromise.ClientRevelation revelation)
 		{
 			return SendAsync<ServerCommitmentsProof>(HttpMethod.Post, revelation, $"channels/{cycleId}/{channelId}/checkrevelation");
 		}
 
-		public async Task<PuzzlePromise.ServerCommitment[]> SignHashesAsync(string channelId, SignaturesRequest sigReq)
+		public async Task<PuzzlePromise.ServerCommitment[]> SignHashesAsync(uint160 channelId, SignaturesRequest sigReq)
 		{
 			var result = await SendAsync<ArrayWrapper<PuzzlePromise.ServerCommitment>>(HttpMethod.Post, sigReq, $"channels/{cycleId}/{channelId}/signhashes").ConfigureAwait(false);
 			return result.Elements;
 		}
 
-		public SolutionKey[] CheckRevelation(string channelId, PuzzleSolver.ClientRevelation revelation)
+		public SolutionKey[] CheckRevelation(uint160 channelId, PuzzleSolver.ClientRevelation revelation)
 		{
 			return CheckRevelationAsync(channelId, revelation).GetAwaiter().GetResult();
 		}
-		public async Task<SolutionKey[]> CheckRevelationAsync(string channelId, PuzzleSolver.ClientRevelation revelation)
+		public async Task<SolutionKey[]> CheckRevelationAsync(uint160 channelId, PuzzleSolver.ClientRevelation revelation)
 		{
 			var result = await SendAsync<ArrayWrapper<SolutionKey>>(HttpMethod.Post, revelation, $"clientschannels/{cycleId}/{channelId}/checkrevelation").ConfigureAwait(false);
 			return result.Elements;
 		}
 
-		public OfferInformation CheckBlindFactors(string channelId, BlindFactor[] blindFactors)
+		public OfferInformation CheckBlindFactors(uint160 channelId, BlindFactor[] blindFactors)
 		{
 			return CheckBlindFactorsAsync(channelId, blindFactors).GetAwaiter().GetResult();
 		}
 
-		public Task<OfferInformation> CheckBlindFactorsAsync(string channelId, BlindFactor[] blindFactors)
+		public Task<OfferInformation> CheckBlindFactorsAsync(uint160 channelId, BlindFactor[] blindFactors)
 		{
 			return SendAsync<OfferInformation>(HttpMethod.Post, new ArrayWrapper<BlindFactor>(blindFactors), $"clientschannels/{cycleId}/{channelId}/checkblindfactors");
 		}
 
-		public PuzzleSolver.ServerCommitment[] SolvePuzzles(string channelId, PuzzleValue[] puzzles)
+		public PuzzleSolver.ServerCommitment[] SolvePuzzles(uint160 channelId, PuzzleValue[] puzzles)
 		{
 			return SolvePuzzlesAsync(channelId, puzzles).GetAwaiter().GetResult();
 		}
@@ -204,7 +219,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 			Client = new HttpClient(handler);
 		}
 
-		public async Task<PuzzleSolver.ServerCommitment[]> SolvePuzzlesAsync(string channelId, PuzzleValue[] puzzles)
+		public async Task<PuzzleSolver.ServerCommitment[]> SolvePuzzlesAsync(uint160 channelId, PuzzleValue[] puzzles)
 		{
 			var result = await SendAsync<ArrayWrapper<PuzzleSolver.ServerCommitment>>(HttpMethod.Post, new ArrayWrapper<PuzzleValue>(puzzles), $"clientchannels/{cycleId}/{channelId}/solvepuzzles").ConfigureAwait(false);
 			return result.Elements;
@@ -212,27 +227,27 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 
 
-		public PuzzlePromise.ServerCommitment[] SignHashes(string channelId, SignaturesRequest sigReq)
+		public PuzzlePromise.ServerCommitment[] SignHashes(uint160 channelId, SignaturesRequest sigReq)
 		{
 			return SignHashesAsync(channelId, sigReq).GetAwaiter().GetResult();
 		}
 
-		public SolutionKey[] FulfillOffer(string channelId, TransactionSignature signature)
+		public SolutionKey[] FulfillOffer(uint160 channelId, TransactionSignature signature)
 		{
 			return FulfillOfferAsync(cycleId, channelId, signature).GetAwaiter().GetResult();
 		}
 
-		public async Task<SolutionKey[]> FulfillOfferAsync(int cycleId, string channelId, TransactionSignature signature)
+		public async Task<SolutionKey[]> FulfillOfferAsync(int cycleId, uint160 channelId, TransactionSignature signature)
 		{
 			var result = await SendAsync<ArrayWrapper<SolutionKey>>(HttpMethod.Post, new SignatureWrapper(signature), $"clientchannels/{cycleId}/{channelId}/offer").ConfigureAwait(false);
 			return result.Elements;
 		}
 
-		public void GiveEscapeKey(string channelId, TransactionSignature signature)
+		public void GiveEscapeKey(uint160 channelId, TransactionSignature signature)
 		{
 			GiveEscapeKeyAsync(channelId, signature).GetAwaiter().GetResult();
 		}
-		public Task GiveEscapeKeyAsync(string channelId, TransactionSignature signature)
+		public Task GiveEscapeKeyAsync(uint160 channelId, TransactionSignature signature)
 		{
 			return SendAsync<NoData>(HttpMethod.Post, new SignatureWrapper(signature), $"clientchannels/{cycleId}/{channelId}/escape");
 		}

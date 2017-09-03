@@ -77,6 +77,11 @@ namespace NTumbleBit.ClassicTumbler
 				get;
 				set;
 			}
+			public uint160 ChannelId
+			{
+				get;
+				set;
+			}
 		}
 		public ClientChannelNegotiation(ClassicTumblerParameters parameters, int cycleStart)
 		{
@@ -128,7 +133,7 @@ namespace NTumbleBit.ClassicTumbler
 		public void ReceiveUnsignedVoucher(UnsignedVoucherInformation voucher)
 		{
 			AssertState(TumblerClientSessionStates.WaitingVoucher);
-			var puzzle = new Puzzle(Parameters.VoucherKey, voucher.Puzzle);
+			var puzzle = new Puzzle(Parameters.VoucherKey.PublicKey, voucher.Puzzle);
 			InternalState.UnsignedVoucher = voucher;
 			BlindFactor factor = null;
 			InternalState.BlindedVoucher = puzzle.Blind(ref factor).PuzzleValue;
@@ -160,16 +165,16 @@ namespace NTumbleBit.ClassicTumbler
 		public TxOut BuildClientEscrowTxOut()
 		{
 			AssertState(TumblerClientSessionStates.WaitingClientTransaction);
-			return new TxOut(Parameters.Denomination + Parameters.Fee, InternalState.ClientEscrow.Hash);
+			return new TxOut(Parameters.Denomination + Parameters.Fee, InternalState.ClientEscrow.WitHash.ScriptPubKey.Hash);
 		}
 		
-		public SolverClientSession SetClientSignedTransaction(Transaction transaction, Script redeemDestination)
+		public SolverClientSession SetClientSignedTransaction(uint160 channelId, Transaction transaction, Script redeemDestination)
 		{
 			AssertState(TumblerClientSessionStates.WaitingClientTransaction);
 			var expectedTxout = BuildClientEscrowTxOut();
 			var output = transaction.Outputs.AsIndexedOutputs().Single(o => o.TxOut.ScriptPubKey == expectedTxout.ScriptPubKey && o.TxOut.Value == expectedTxout.Value);
 			var solver = new SolverClientSession(Parameters.CreateSolverParamaters());
-			solver.ConfigureEscrowedCoin(new Coin(output).ToScriptCoin(InternalState.ClientEscrow), InternalState.ClientEscrowKey, redeemDestination);
+			solver.ConfigureEscrowedCoin(channelId, new Coin(output).ToScriptCoin(InternalState.ClientEscrow), InternalState.ClientEscrowKey, redeemDestination);
 			InternalState.Status = TumblerClientSessionStates.WaitingSolvedVoucher;
 			return solver;
 		}
@@ -177,8 +182,8 @@ namespace NTumbleBit.ClassicTumbler
 		public void CheckVoucherSolution(PuzzleSolution blindedVoucherSignature)
 		{
 			AssertState(TumblerClientSessionStates.WaitingSolvedVoucher);
-			var solution = blindedVoucherSignature.Unblind(Parameters.VoucherKey, InternalState.BlindedVoucherFactor);
-			if(!InternalState.UnsignedVoucher.Puzzle.WithRsaKey(Parameters.VoucherKey).Verify(solution))
+			var solution = blindedVoucherSignature.Unblind(Parameters.VoucherKey.PublicKey, InternalState.BlindedVoucherFactor);
+			if(!InternalState.UnsignedVoucher.Puzzle.WithRsaKey(Parameters.VoucherKey.PublicKey).Verify(solution))
 				throw new PuzzleException("Incorrect puzzle solution");
 			InternalState.BlindedVoucherFactor = null;
 			InternalState.SignedVoucher = new XORKey(solution).XOR(InternalState.UnsignedVoucher.EncryptedSignature);
@@ -209,13 +214,12 @@ namespace NTumbleBit.ClassicTumbler
 		{
 			AssertState(TumblerClientSessionStates.WaitingTumblerEscrow);
 			var escrow = EscrowScriptPubKeyParameters.GetFromCoin(escrowedCoin);
-			var expectedEscrow = new EscrowScriptPubKeyParameters()
-			{
-				Initiator = escrow?.Initiator,
-				Receiver = InternalState.TumblerEscrowKey.PubKey,
-				LockTime = GetCycle().GetTumblerLockTime()
-			};
-			if(escrow == null || escrow != expectedEscrow)
+			if(escrow == null)
+				throw new PuzzleException("invalid-escrow");
+			if(!escrowedCoin.IsP2SH || escrowedCoin.RedeemType != RedeemType.WitnessV0)
+				throw new PuzzleException("invalid-escrow");
+			var expectedEscrow = GetTumblerEscrowParameters(escrow.Initiator);
+			if(escrow != expectedEscrow)
 				throw new PuzzleException("invalid-escrow");
 			if(escrowedCoin.Amount != Parameters.Denomination)
 				throw new PuzzleException("invalid-amount");
@@ -223,9 +227,27 @@ namespace NTumbleBit.ClassicTumbler
 
 			InternalState.Status = TumblerClientSessionStates.PromisePhase;
 			var session = new PromiseClientSession(Parameters.CreatePromiseParamaters());
+			session.SetChannelId(InternalState.ChannelId);
 			session.ConfigureEscrowedCoin(escrowedCoin, InternalState.TumblerEscrowKey);
 			InternalState.TumblerEscrowKey = null;
 			return session;
+		}
+
+		public EscrowScriptPubKeyParameters GetTumblerEscrowParameters(PubKey pubkey)
+		{
+			return new EscrowScriptPubKeyParameters()
+			{
+				Initiator = pubkey,
+				Receiver = InternalState.TumblerEscrowKey.PubKey,
+				LockTime = GetCycle().GetTumblerLockTime()
+			};
+		}
+
+		internal void SetChannelId(uint160 channelId)
+		{
+			if(channelId == null)
+				throw new ArgumentNullException(nameof(channelId));
+			InternalState.ChannelId = channelId;
 		}
 
 		public CycleParameters GetCycle()
@@ -236,7 +258,7 @@ namespace NTumbleBit.ClassicTumbler
 		private void AssertState(TumblerClientSessionStates state)
 		{
 			if(state != InternalState.Status)
-				throw new InvalidOperationException("Invalid state, actual " + InternalState.Status + " while expected is " + state);
+				throw new InvalidStateException("Invalid state, actual " + InternalState.Status + " while expected is " + state);
 		}
 	}
 }
