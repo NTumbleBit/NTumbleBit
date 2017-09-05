@@ -1,4 +1,5 @@
-﻿using NBitcoin.RPC;
+﻿using NBitcoin;
+using NBitcoin.RPC;
 using NTumbleBit.Services.RPC;
 using System;
 using System.Collections.Generic;
@@ -19,8 +20,8 @@ namespace NTumbleBit.Services
 				MinimumFeeRate = minimumRate
 			};
 
-			// on regtest the estimatefee always fails
-			if (rpc.Network == NBitcoin.Network.RegTest)
+			// on regtest or testnet the estimatefee often fails
+			if (rpc.Network == NBitcoin.Network.RegTest || rpc.Network == Network.TestNet)
 			{
 				service.FeeService = new RPCFeeService(rpc)
 				{
