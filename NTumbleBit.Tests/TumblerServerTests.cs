@@ -182,7 +182,8 @@ namespace NTumbleBit.Tests
 
 				//Server does not track anything until Alice gives proof of the escrow
 				Assert.Equal(0, server.ServerRuntime.Services.BlockExplorerService
-						.GetTransactions(machine.SolverClientSession.EscrowedCoin.ScriptPubKey, false)
+						.GetTransactionsAsync(machine.SolverClientSession.EscrowedCoin.ScriptPubKey, false)
+						.GetAwaiter().GetResult()
 						.Count());
 				serverTracker.AssertNotKnown(machine.SolverClientSession.EscrowedCoin.ScriptPubKey);
 
@@ -191,7 +192,8 @@ namespace NTumbleBit.Tests
 
 				//Server is now tracking Alice's escrow
 				Assert.Equal(1, server.ServerRuntime.Services.BlockExplorerService
-						.GetTransactions(machine.SolverClientSession.EscrowedCoin.ScriptPubKey, false)
+						.GetTransactionsAsync(machine.SolverClientSession.EscrowedCoin.ScriptPubKey, false)
+						.GetAwaiter().GetResult()
 						.Count());
 				serverTracker.AssertKnown(TransactionType.ClientEscrow, machine.SolverClientSession.EscrowedCoin.ScriptPubKey);
 				serverTracker.AssertKnown(TransactionType.ClientEscrow, machine.SolverClientSession.EscrowedCoin.Outpoint.Hash);
@@ -363,14 +365,16 @@ namespace NTumbleBit.Tests
 
 				//Server does not track anything until Alice gives proof of the escrow
 				Assert.Equal(0, server.ServerRuntime.Services.BlockExplorerService
-						.GetTransactions(machine.SolverClientSession.EscrowedCoin.ScriptPubKey, false)
+						.GetTransactionsAsync(machine.SolverClientSession.EscrowedCoin.ScriptPubKey, false)
+						.GetAwaiter().GetResult()
 						.Count());
 
 				machine.Update();
 
 				//Server is now tracking Alice's escrow
 				Assert.Equal(1, server.ServerRuntime.Services.BlockExplorerService
-						.GetTransactions(machine.SolverClientSession.EscrowedCoin.ScriptPubKey, false)
+						.GetTransactionsAsync(machine.SolverClientSession.EscrowedCoin.ScriptPubKey, false)
+						.GetAwaiter().GetResult()
 						.Count());
 
 				server.MineTo(server.AliceNode, cycle, CyclePhase.TumblerChannelEstablishment);

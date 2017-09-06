@@ -276,7 +276,7 @@ namespace NTumbleBit.Services.RPC
 			if(scriptPubKey == null)
 				throw new ArgumentNullException(nameof(scriptPubKey));
 			return
-				BlockExplorer.GetTransactions(scriptPubKey, false)
+				BlockExplorer.GetTransactionsAsync(scriptPubKey, false).GetAwaiter().GetResult()
 				.Where(t => t.Transaction.Outputs.Any(o => o.ScriptPubKey == scriptPubKey))
 				.Select(t => t.Transaction)
 				.ToArray();

@@ -71,7 +71,7 @@ namespace NTumbleBit.Services.RPC
 			}
 		}
 
-		public ICollection<TransactionInformation> GetTransactions(Script scriptPubKey, bool withProof)
+		public async Task<ICollection<TransactionInformation>> GetTransactionsAsync(Script scriptPubKey, bool withProof)
 		{
 			if(scriptPubKey == null)
 				throw new ArgumentNullException(nameof(scriptPubKey));
@@ -104,7 +104,7 @@ namespace NTumbleBit.Services.RPC
 						try
 						{
 							MerkleBlock proof = null;
-							var result = RPCClient.SendCommandNoThrows("gettxoutproof", new JArray(tx.Transaction.GetHash().ToString()));
+							var result = await RPCClient.SendCommandNoThrowsAsync("gettxoutproof", new JArray(tx.Transaction.GetHash().ToString())).ConfigureAwait(false);
 							if(result == null || result.Error != null)
 							{
 								completion.TrySetResult(null);
@@ -119,7 +119,7 @@ namespace NTumbleBit.Services.RPC
 						finally { _GettingProof.TryRemove(txid, out completion); }
 					}
 
-					var merkleBlock = completion.Task.GetAwaiter().GetResult();
+					var merkleBlock = await completion.Task.ConfigureAwait(false);
 					if(merkleBlock == null)
 						results.Remove(tx);
 				}

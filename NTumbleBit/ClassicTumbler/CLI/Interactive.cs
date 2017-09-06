@@ -392,11 +392,6 @@ namespace NTumbleBit.ClassicTumbler.CLI
 					tx = txInfo?.Transaction;
 				if(txInfo != null)
 				{
-					foreach(var o in txInfo.Transaction.Outputs)
-					{
-						var aa = Runtime.Services.BlockExplorerService.GetTransactions(o.ScriptPubKey, false);
-					}
-
 					if(txInfo.Confirmations != 0)
 						Console.WriteLine(txInfo.Confirmations + " Confirmations");
 					else
