@@ -536,15 +536,15 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			var unused = Runtime.Services.WalletService.ReceiveAsync(state.EscrowedCoin, clientSignature, state.EscrowKey, fee)
 				.ContinueWith(async (Task<Transaction> task) =>
 				{
+					var correlation = GetCorrelation(session);
+					Tracker.AddressCreated(cycleId, TransactionType.ClientEscape, tx.Outputs[0].ScriptPubKey, correlation);
+					Tracker.TransactionCreated(cycleId, TransactionType.ClientEscape, tx.GetHash(), correlation);
 					try
 					{
 						tx = await task.ConfigureAwait(false);
 						if(Repository.MarkUsedNonce(cycleId, new uint160(tx.GetHash().ToBytes().Take(20).ToArray())))
 						{
 							Logs.Tumbler.LogInformation($"Cashing out from {tx.Inputs.Count} Alices");
-							var correlation = GetCorrelation(session);
-							Tracker.AddressCreated(cycleId, TransactionType.ClientEscape, tx.Outputs[0].ScriptPubKey, correlation);
-							Tracker.TransactionCreated(cycleId, TransactionType.ClientEscape, tx.GetHash(), correlation);
 							await Services.BroadcastService.BroadcastAsync(tx).ConfigureAwait(false);
 						}
 					}
