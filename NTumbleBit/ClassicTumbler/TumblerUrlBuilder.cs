@@ -135,6 +135,14 @@ namespace NTumbleBit.ClassicTumbler
 			}
 		}
 
+		public bool IsOnion
+		{
+			get
+			{
+				return Host.EndsWith(".onion", StringComparison.Ordinal);
+			}
+		}
+
 		private static void WriteParameters(Dictionary<string, string> parameters, StringBuilder builder)
 		{
 			bool first = true;

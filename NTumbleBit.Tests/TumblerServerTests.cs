@@ -24,7 +24,15 @@ namespace NTumbleBit.Tests
 				Assert.NotEqual(0, parameters.FakeTransactionCount);
 				Assert.NotNull(parameters.FakeFormat);
 				Assert.True(parameters.FakeFormat != uint256.Zero);
-				Assert.Equal(RsaKey.KeySize, parameters.VoucherKey.GetKeySize());
+				Assert.Equal(RsaKey.KeySize, parameters.VoucherKey.PublicKey.GetKeySize());
+			}
+		}
+
+		[Fact]
+		public void TestStandard()
+		{
+			using(var server = TumblerServerTester.Create("TestStandard", true))
+			{
 			}
 		}
 
@@ -99,7 +107,7 @@ namespace NTumbleBit.Tests
 		[Fact]
 		public void CanParseAndGenerateTBAddresses()
 		{
-			Assert.Equal("ctb://ye33yfa66xpqsjdu.onion?h=2fc0fba4f88fae783dd6e8f972920d51586e3084", 
+			Assert.Equal("ctb://ye33yfa66xpqsjdu.onion?h=2fc0fba4f88fae783dd6e8f972920d51586e3084",
 				new TumblerUrlBuilder("ctb://ye33yfa66xpqsjdu.onion?h=2fc0fba4f88fae783dd6e8f972920d51586e3084").ToString());
 			Assert.Equal("ctb://ye33yfa66xpqsjdu.onion?h=2fc0fba4f88fae783dd6e8f972920d51586e3084",
 				new TumblerUrlBuilder("ctb://ye33yfa66xpqsjdu.onion/?h=2fc0fba4f88fae783dd6e8f972920d51586e3084").ToString());

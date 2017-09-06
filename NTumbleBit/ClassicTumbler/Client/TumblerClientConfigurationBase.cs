@@ -1,5 +1,5 @@
-﻿using NTumbleBit.ClassicTumbler.Client.ConnectionSettings;
-using NBitcoin;
+﻿using NBitcoin;
+using NTumbleBit.ClassicTumbler.Client.ConnectionSettings;
 using NTumbleBit.Services;
 
 namespace NTumbleBit.ClassicTumbler.Client
@@ -27,6 +27,8 @@ namespace NTumbleBit.ClassicTumbler.Client
         public bool AllowInsecure { get; set; } = false;
 
         public string TorPath { get; set; }
+
+        public bool AllowHttp { get; set; } = false;
 
         public Tracker Tracker { get; set; }
 

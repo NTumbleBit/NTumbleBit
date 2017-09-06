@@ -62,8 +62,11 @@ namespace NTumbleBit.ClassicTumbler.Client
 			AliceSettings = configuration.AliceConnectionSettings;
 			AllowInsecure = configuration.AllowInsecure;
 
-			await SetupTorAsync(interaction, configuration.TorPath).ConfigureAwait(false);
-		
+			if (this.TumblerServer.IsOnion)
+				await SetupTorAsync(interaction, configuration.TorPath).ConfigureAwait(false);
+			else if (!configuration.AllowHttp)
+				throw new ConfigException("The tumbler server should use TOR");
+			
 			Cooperative = configuration.Cooperative;
 			Repository = configuration.DBreezeRepository;
 			_Disposables.Add(Repository);
@@ -93,6 +96,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 					var standardCycles = new StandardCycles(configuration.Network);
 					var standardCycle = standardCycles.GetStandardCycle(parameters);
 
+					Logs.Configuration.LogWarning("Checking RSA key proof and standardness of the settings...");
 					if(standardCycle == null || !parameters.IsStandard())
 					{
 						Logs.Configuration.LogWarning("This tumbler has non standard parameters");
@@ -123,7 +127,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 		{
 			var tor = settings as ITorConnectionSettings;
 			if(tor == null)
-				return;
+				throw new ConfigException("TOR Settings not properly configured");
 			_Disposables.Add(await tor.SetupAsync(interaction, torPath).ConfigureAwait(false));
 		}
 
