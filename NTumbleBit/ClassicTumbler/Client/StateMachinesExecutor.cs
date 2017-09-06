@@ -18,9 +18,10 @@ namespace NTumbleBit.ClassicTumbler.Client
 			if(runtime == null)
 				throw new ArgumentNullException("runtime");
 			Runtime = runtime;
+			_ParametersHash = Runtime.TumblerParameters.GetHash();
 		}
 
-
+		uint160 _ParametersHash;
 		public TumblerClientRuntime Runtime
 		{
 			get; set;
@@ -63,7 +64,13 @@ namespace NTumbleBit.ClassicTumbler.Client
 						}
 
 						var cycles = Runtime.TumblerParameters.CycleGenerator.GetCycles(height);
-						foreach(var state in cycles.SelectMany(c => Runtime.Repository.List<PaymentStateMachine.State>(GetPartitionKey(c.Start))))
+						var machineStates = cycles
+												.SelectMany(c => Runtime.Repository.List<PaymentStateMachine.State>(GetPartitionKey(c.Start)))
+												.Where(m => m.TumblerParametersHash == _ParametersHash)
+												.ToArray();
+						NBitcoin.Utils.Shuffle(machineStates);
+						bool hadInvalidPhase = false;
+						foreach(var state in machineStates)
 						{
 							bool noSave = false;
 							var machine = new PaymentStateMachine(Runtime, state);
@@ -81,20 +88,20 @@ namespace NTumbleBit.ClassicTumbler.Client
 							catch(Exception ex)
 							{
 								var invalidPhase = ex.Message.IndexOf("invalid-phase", StringComparison.OrdinalIgnoreCase) >= 0;
-
 								if(invalidPhase)
 								{
-									InvalidPhaseCount++;
+									if(!hadInvalidPhase)
+									{
+										hadInvalidPhase = true;
+										InvalidPhaseCount++;
+										if(InvalidPhaseCount > 2)
+										{
+											Logs.Client.LogError(new EventId(), ex, $"Invalid-Phase happened repeatedly, check that your node currently at height {height} is currently sync to the network");
+										}
+									}
 									noSave = true;
 								}
 								else
-									InvalidPhaseCount = 0;
-
-								if(invalidPhase && InvalidPhaseCount > 2)
-								{
-									Logs.Client.LogError(new EventId(), ex, $"Invalid-Phase happened repeatedly, check that your node currently at height {height} is currently sync to the network");
-								}
-								else if(!invalidPhase)
 								{
 									Logs.Client.LogError(new EventId(), ex, "Unhandled StateMachine Error");
 								}
@@ -128,7 +135,10 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 		public PaymentStateMachine.State GetPaymentStateMachineState(CycleParameters cycle)
 		{
-			return Runtime.Repository.Get<PaymentStateMachine.State>(GetPartitionKey(cycle.Start), "");
+			var state = Runtime.Repository.Get<PaymentStateMachine.State>(GetPartitionKey(cycle.Start), "");
+			if(state == null)
+				return null;
+			return state.TumblerParametersHash == _ParametersHash ? state : null;
 		}
 
 		private string GetPartitionKey(int cycle)

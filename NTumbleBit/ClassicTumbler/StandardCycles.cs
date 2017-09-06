@@ -31,7 +31,7 @@ namespace NTumbleBit.ClassicTumbler
 
 		public Money CoinsPerDay()
 		{
-			var satoshisPerDay = (decimal)Denomination.Satoshi / (decimal)GetLength(false).TotalDays;
+			var satoshisPerDay = Math.Round((decimal)Denomination.Satoshi / (decimal)GetLength(false).TotalDays);
 			return Money.Satoshis(satoshisPerDay);
 		}
 
@@ -103,8 +103,8 @@ namespace NTumbleBit.ClassicTumbler
 						Start = 1,
 						RegistrationDuration = GetBlocksCount(consensus, 20 * 2) + 1,
 						SafetyPeriodDuration = GetBlocksCount(consensus, 10),
-						ClientChannelEstablishmentDuration = GetBlocksCount(consensus, 20 * 2),
-						TumblerChannelEstablishmentDuration = GetBlocksCount(consensus, 20 * 2),
+						ClientChannelEstablishmentDuration = GetBlocksCount(consensus, 20 * 4),
+						TumblerChannelEstablishmentDuration = GetBlocksCount(consensus, 20 * 4),
 						PaymentPhaseDuration = GetBlocksCount(consensus, 20 * 2),
 						TumblerCashoutDuration = GetBlocksCount(consensus, 40 * 2),
 						ClientCashoutDuration = GetBlocksCount(consensus, 20 * 2),
@@ -124,13 +124,13 @@ namespace NTumbleBit.ClassicTumbler
 					{
 						Start = 0,
 						//one cycle per day
-						RegistrationDuration = GetBlocksCount(consensus, 24 * 60) + 1,
+						RegistrationDuration = GetBlocksCount(consensus, 60 * 4) + 1,
 						//make sure tor circuit get renewed
 						SafetyPeriodDuration = GetBlocksCount(consensus, 20),
-						ClientChannelEstablishmentDuration = GetBlocksCount(consensus, 4 * 60),
-						TumblerChannelEstablishmentDuration = GetBlocksCount(consensus, 4 * 60),
-						PaymentPhaseDuration = GetBlocksCount(consensus, 4 * 60 + 30),
-						TumblerCashoutDuration = GetBlocksCount(consensus, 9 * 60 + 30),
+						ClientChannelEstablishmentDuration = GetBlocksCount(consensus, 120),
+						TumblerChannelEstablishmentDuration = GetBlocksCount(consensus, 120),
+						PaymentPhaseDuration = GetBlocksCount(consensus, 30),
+						TumblerCashoutDuration = GetBlocksCount(consensus, 5 * 60),
 						ClientCashoutDuration = GetBlocksCount(consensus, 5 * 60)
 					}
 				}

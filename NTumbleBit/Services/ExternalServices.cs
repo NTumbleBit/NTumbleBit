@@ -9,7 +9,7 @@ namespace NTumbleBit.Services
 {
 	public class ExternalServices : IExternalServices
     {
-		public static ExternalServices CreateFromRPCClient(RPCClient rpc, IRepository repository, Tracker tracker)
+		public static ExternalServices CreateFromRPCClient(RPCClient rpc, IRepository repository, Tracker tracker, bool aggregateFunding)
 		{
 			var info = rpc.SendCommand(RPCOperations.getinfo);
 			var minimumRate = new NBitcoin.FeeRate(NBitcoin.Money.Coins((decimal)(double)((Newtonsoft.Json.Linq.JValue)(info.Result["relayfee"])).Value * 2), 1000);
@@ -30,7 +30,7 @@ namespace NTumbleBit.Services
 			}
 
 			var cache = new RPCWalletCache(rpc, repository);
-			service.WalletService = new RPCWalletService(rpc);
+			service.WalletService = new RPCWalletService(rpc) { BatchInterval = aggregateFunding ? TimeSpan.FromSeconds(30) : TimeSpan.Zero};
 			service.BroadcastService = new RPCBroadcastService(rpc, cache, repository);
 			service.BlockExplorerService = new RPCBlockExplorerService(rpc, cache, repository);
 			service.TrustedBroadcastService = new RPCTrustedBroadcastService(rpc, service.BroadcastService, service.BlockExplorerService, repository, cache, tracker)

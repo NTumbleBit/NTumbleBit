@@ -1,12 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using NBitcoin;
 using System.Linq;
-using System.Threading.Tasks;
-using NBitcoin;
 using NBitcoin.RPC;
 using Newtonsoft.Json.Linq;
-using NTumbleBit.PuzzlePromise;
-using NBitcoin.DataEncoders;
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace NTumbleBit.Services.RPC
 {
@@ -17,6 +17,22 @@ namespace NTumbleBit.Services.RPC
 			if(rpc == null)
 				throw new ArgumentNullException(nameof(rpc));
 			_RPCClient = rpc;
+			_FundingBatch = new FundingBatch(rpc);
+			_ReceiveBatch = new ReceiveBatch(rpc);
+			BatchInterval = TimeSpan.Zero;
+		}
+
+		public TimeSpan BatchInterval
+		{
+			get
+			{
+				return _FundingBatch.BatchInterval;
+			}
+			set
+			{
+				_FundingBatch.BatchInterval = value;
+				_ReceiveBatch.BatchInterval = value;
+			}
 		}
 
 		private readonly RPCClient _RPCClient;
@@ -42,35 +58,27 @@ namespace NTumbleBit.Services.RPC
 			return coin;
 		}
 
-		public Transaction FundTransaction(TxOut txOut, FeeRate feeRate)
+		
+
+		FundingBatch _FundingBatch;
+		public async Task<Transaction> FundTransactionAsync(TxOut txOut, FeeRate feeRate)
 		{
-			Transaction tx = new Transaction();
-			tx.Outputs.Add(txOut);
+			_FundingBatch.FeeRate = feeRate;
+			return await _FundingBatch.WaitTransactionAsync(txOut).ConfigureAwait(false);
+		}
 
-			var changeAddress = _RPCClient.GetRawChangeAddress();
+		
 
-			FundRawTransactionResponse response = null;
-			try
+		ReceiveBatch _ReceiveBatch;
+		public async Task<Transaction> ReceiveAsync(ScriptCoin escrowedCoin, TransactionSignature clientSignature, Key escrowKey, FeeRate feeRate)
+		{
+			_ReceiveBatch.FeeRate = feeRate;
+			return await _ReceiveBatch.WaitTransactionAsync(new ClientEscapeData()
 			{
-				response = _RPCClient.FundRawTransaction(tx, new FundRawTransactionOptions()
-				{
-					ChangeAddress = changeAddress,
-					FeeRate = feeRate,
-					LockUnspents = true
-				});
-			}
-			catch(RPCException)
-			{
-				var balance = _RPCClient.GetBalance(0, false);
-				var needed = tx.Outputs.Select(o => o.Value).Sum()
-							  + feeRate.GetFee(2000);
-				var missing = needed - balance;
-				if(missing > Money.Zero)
-					throw new NotEnoughFundsException("Not enough funds", "", missing);
-				throw;
-			}
-			var result = _RPCClient.SendCommand("signrawtransaction", response.Transaction.ToHex());
-			return new Transaction(((JObject)result.Result)["hex"].Value<string>());
+				ClientSignature = clientSignature,
+				EscrowedCoin = escrowedCoin,
+				EscrowKey = escrowKey
+			}).ConfigureAwait(false);
 		}
 	}
 }

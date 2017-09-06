@@ -91,9 +91,9 @@ namespace NTumbleBit.Tests
 
 			var kotori = cycles.GetStandardCycle("kotori");
 			Assert.Equal(Money.Coins(1), kotori.Denomination);
-			Assert.Equal(TimeSpan.FromDays(1), kotori.GetLength(false));
-			Assert.Equal(TimeSpan.FromDays(2), kotori.GetLength(true));
-			Assert.Equal(Money.Coins(1), kotori.CoinsPerDay());
+			Assert.Equal(TimeSpan.FromHours(4), kotori.GetLength(false));
+			Assert.Equal(TimeSpan.FromHours(19.5), kotori.GetLength(true));
+			Assert.Equal(Money.Coins(6), kotori.CoinsPerDay());
 		}
 
 		[Fact]

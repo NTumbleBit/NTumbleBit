@@ -84,7 +84,8 @@ namespace NTumbleBit.ClassicTumbler.Server
 					tumblerUri.Port = result.HiddenServiceUri.Port;
 					tumblerUri.Host = result.HiddenServiceUri.Host;
 					TumblerUris.Add(tumblerUri);
-					TorUri = tumblerUri.RoutableUri;
+					TorUri = tumblerUri.GetRoutableUri(false);
+					ClassicTumblerParameters.ExpectedAddress = TorUri.AbsoluteUri;
 					Logs.Configuration.LogInformation($"Tor configured on {result.HiddenServiceUri}");
 					torConfigured = true;
 				}
@@ -115,17 +116,19 @@ namespace NTumbleBit.ClassicTumbler.Server
 			TumblerKey = tumlerKeyData.Item1;
 			VoucherKey = voucherKeyData.Item1;
 
-			ClassicTumblerParametersHash = ClassicTumblerParameters.GetHash();
 
 			if(!conf.TorMandatory)
 			{
-				TumblerUris.Add(new TumblerUrlBuilder()
+				var httpUri = new TumblerUrlBuilder()
 				{
 					Host = LocalEndpoint.Address.ToString(),
 					Port = LocalEndpoint.Port,
-				});
+				};
+				TumblerUris.Add(httpUri);
+				if(String.IsNullOrEmpty(ClassicTumblerParameters.ExpectedAddress))
+					ClassicTumblerParameters.ExpectedAddress = httpUri.GetRoutableUri(false).AbsoluteUri;
 			}
-
+			ClassicTumblerParametersHash = ClassicTumblerParameters.GetHash();
 			var configurationHash = ClassicTumblerParameters.GetHash();
 			foreach(var uri in TumblerUris)
 			{

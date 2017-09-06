@@ -1,4 +1,12 @@
-﻿using Microsoft.AspNetCore.Hosting;
+﻿using System;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
+using System.Threading;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using NBitcoin;
@@ -7,20 +15,12 @@ using NTumbleBit.ClassicTumbler;
 using NTumbleBit.ClassicTumbler.CLI;
 using NTumbleBit.ClassicTumbler.Client;
 using NTumbleBit.ClassicTumbler.Server;
-using NTumbleBit.Services.RPC;
-using System;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Runtime.CompilerServices;
-using System.Text.RegularExpressions;
-using System.Threading;
 using NTumbleBit.Services;
+using NTumbleBit.Services.RPC;
 
 namespace NTumbleBit.Tests
 {
-	public class TumblerServerTester : IDisposable
+    public class TumblerServerTester : IDisposable
 	{
 		public static TumblerServerTester Create([CallerMemberNameAttribute]string caller = null, bool shouldBeStandard = false)
 		{
@@ -89,13 +89,13 @@ namespace NTumbleBit.Tests
 				}
 				else
 				{
-					var standard = new StandardCycles(conf.Network).Shorty;
+					var standard = new StandardCycles(conf.Network).Shorty2x;
 					conf.ClassicTumblerParameters.CycleGenerator = standard.Generator;
 					conf.ClassicTumblerParameters.Denomination = standard.Denomination;
 				}
 
 				RPCClient rpc = conf.RPC.ConfigureRPCClient(conf.Network);
-				conf.Services = ExternalServices.CreateFromRPCClient(rpc, conf.DBreezeRepository, conf.Tracker);
+				conf.Services = ExternalServices.CreateFromRPCClient(rpc, conf.DBreezeRepository, conf.Tracker, true);
 
 				var runtime = TumblerRuntime.FromConfiguration(conf, new AcceptAllClientInteraction());
 				_Host = new WebHostBuilder()
@@ -109,6 +109,7 @@ namespace NTumbleBit.Tests
 
 				//Overrides server fee
 				((RPCFeeService)runtime.Services.FeeService).FallBackFeeRate = new FeeRate(Money.Satoshis(100), 1);
+				((RPCWalletService)runtime.Services.WalletService).BatchInterval = TimeSpan.FromMilliseconds(100);
 
 
 				var clientConfig = new TumblerClientConfiguration();
@@ -129,7 +130,7 @@ namespace NTumbleBit.Tests
 				clientConfig.TumblerServer = runtime.TumblerUris.First();
 
 				RPCClient rpcClient = clientConfig.RPCArgs.ConfigureRPCClient(clientConfig.Network);
-				clientConfig.Services = ExternalServices.CreateFromRPCClient(rpcClient, clientConfig.DBreezeRepository, clientConfig.Tracker);
+				clientConfig.Services = ExternalServices.CreateFromRPCClient(rpcClient, clientConfig.DBreezeRepository, clientConfig.Tracker, false);
 				clientConfig.DestinationWallet = new ClientDestinationWallet(clientConfig.OutputWallet.RootKey, clientConfig.OutputWallet.KeyPath, clientConfig.DBreezeRepository, clientConfig.Network);
 				ClientRuntime = TumblerClientRuntime.FromConfiguration(clientConfig, new AcceptAllClientInteraction());
 

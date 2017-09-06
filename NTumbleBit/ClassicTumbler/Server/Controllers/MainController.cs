@@ -131,6 +131,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			}
 			catch(InvalidOperationException)
 			{
+				Logs.Tumbler.LogDebug($"Invalid cycle received {cycleStart}");
 				throw new ActionResultException(BadRequest("invalid-cycle"));
 			}
 		}
@@ -152,23 +153,34 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			if(request.ClientEscrowKey == null)
 				throw new ActionResultException(BadRequest("Missing ClientEscrowKey"));
 
-			if(request.MerkleProof.PartialMerkleTree
-				.GetMatchedTransactions()
-				.FirstOrDefault() != request.Transaction.GetHash() || !request.MerkleProof.Header.CheckProofOfWork())
-				throw new ActionResultException(BadRequest("invalid-merkleproof"));
-
-			var confirmations = Services.BlockExplorerService.GetBlockConfirmations(request.MerkleProof.Header.GetHash());
-			if((confirmations < Parameters.CycleGenerator.FirstCycle.SafetyPeriodDuration))
-				throw new ActionResultException(BadRequest("not-enough-confirmation"));
-
-			var transaction = request.Transaction;
-			if(transaction.Outputs.Count > 2)
-				throw new ActionResultException(BadRequest("invalid-transaction"));
-
 			var cycle = GetCycle(request.Cycle);
 			var height = Services.BlockExplorerService.GetCurrentHeight();
 			if(!cycle.IsInPhase(CyclePhase.ClientChannelEstablishment, height))
+			{
 				throw new ActionResultException(BadRequest("invalid-phase"));
+			}
+
+			if(request.MerkleProof.PartialMerkleTree
+				.GetMatchedTransactions()
+				.FirstOrDefault() != request.Transaction.GetHash() || !request.MerkleProof.Header.CheckProofOfWork())
+			{
+				Logs.Tumbler.LogDebug("Invalid transaction merkle proof");
+				throw new ActionResultException(BadRequest("invalid-merkleproof"));
+			}
+
+			var confirmations = Services.BlockExplorerService.GetBlockConfirmations(request.MerkleProof.Header.GetHash());
+			if((confirmations < Parameters.CycleGenerator.FirstCycle.SafetyPeriodDuration))
+			{
+				Logs.Tumbler.LogDebug("Not enough confirmations");
+				throw new ActionResultException(BadRequest("not-enough-confirmation"));
+			}
+
+			var transaction = request.Transaction;
+			if(transaction.Outputs.Count > 2)
+			{
+				Logs.Tumbler.LogDebug("Incorrect number of outputs");
+				throw new ActionResultException(BadRequest("invalid-transaction"));
+			}
 
 
 			var key = Repository.GetKey(cycle.Start, request.KeyReference);
@@ -186,7 +198,10 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 				.FirstOrDefault();
 
 			if(escrowedCoin == null)
+			{
+				Logs.Tumbler.LogDebug("Could not find escrowed coin");
 				throw new ActionResultException(BadRequest("invalid-transaction"));
+			}
 
 			try
 			{
@@ -198,7 +213,10 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 					throw new ActionResultException(BadRequest("invalid-merkleproof"));
 
 				if(!Repository.MarkUsedNonce(cycle.Start, new uint160(key.PubKey.Hash.ToBytes())))
+				{
+					Logs.Tumbler.LogDebug("Nonce already marked");
 					throw new ActionResultException(BadRequest("invalid-transaction"));
+				}
 				Repository.Save(cycle.Start, solverServerSession);
 				Logs.Tumbler.LogInformation($"Cycle {cycle.Start} Proof of Escrow signed for " + transaction.GetHash());
 
@@ -208,14 +226,15 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 				var solution = request.UnsignedVoucher.WithRsaKey(Runtime.VoucherKey.PubKey).Solve(Runtime.VoucherKey);
 				return solution;
 			}
-			catch(PuzzleException)
+			catch(PuzzleException ex)
 			{
+				Logs.Tumbler.LogDebug(new EventId(), ex, "Puzzle failed");
 				throw new ActionResultException(BadRequest("invalid-transaction"));
 			}
 		}
 
 		[HttpPost("api/v1/tumblers/{tumblerId}/channels")]
-		public ScriptCoinModel OpenChannel(
+		public async Task<ScriptCoinModel> OpenChannel(
 			[ModelBinder(BinderType = typeof(TumblerParametersModelBinder))]
 			ClassicTumblerParameters tumblerId,
 			[FromBody] OpenChannelRequest request)
@@ -245,14 +264,15 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 
 				Logs.Tumbler.LogInformation($"Cycle {cycle.Start} Asked to open channel");
 				var txOut = new TxOut(Parameters.Denomination, escrow.ToScript().Hash);
-				var tx = Services.WalletService.FundTransaction(txOut, fee);
+				var tx = await Services.WalletService.FundTransactionAsync(txOut, fee);
 				var correlation = escrow.GetCorrelation();
 				var escrowTumblerLabel = $"Cycle {cycle.Start} Tumbler Escrow";
 				Services.BlockExplorerService.Track(txOut.ScriptPubKey);
 
 				Tracker.AddressCreated(cycle.Start, TransactionType.TumblerEscrow, txOut.ScriptPubKey, correlation);
 				Tracker.TransactionCreated(cycle.Start, TransactionType.TumblerEscrow, tx.GetHash(), correlation);
-				Logs.Tumbler.LogInformation($"Cycle {cycle.Start} Channel created " + tx.GetHash());
+				var bobCount = Parameters.CountEscrows(tx, Client.Identity.Bob);
+				Logs.Tumbler.LogInformation($"Cycle {cycle.Start} channel created {tx.GetHash()} with {bobCount} users");
 
 				var coin = tx.Outputs.AsCoins().First(o => o.ScriptPubKey == txOut.ScriptPubKey && o.TxOut.Value == txOut.Value);
 
@@ -432,7 +452,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 
 
 		[HttpPost("api/v1/tumblers/{tumblerId}/clientchannels/{cycleId}/{channelId}/escape")]
-		public NoData GiveEscapeKey(
+		public async Task<NoData> GiveEscapeKey(
 			[ModelBinder(BinderType = typeof(TumblerParametersModelBinder))]
 			ClassicTumblerParameters tumblerId,
 			int cycleId, string channelId, [FromBody]SignatureWrapper wrapper)
@@ -447,11 +467,17 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			var fee = Services.FeeService.GetFeeRate();
 			try
 			{
-				var cashout = Services.WalletService.GenerateAddress();
-				var tx = session.GetSignedEscapeTransaction(clientSignature, fee, cashout.ScriptPubKey);
+				var dummy = new Key().PubKey.Hash.ScriptPubKey;
+				var tx = session.GetSignedEscapeTransaction(clientSignature, fee, dummy);
+				var state = session.GetInternalState();
+
+				// The previous tx is broadcastable, but let's give change to the wallet to join everything in a single transaction
+				tx = await Runtime.Services.WalletService.ReceiveAsync(state.EscrowedCoin, clientSignature, state.EscrowKey, fee);
+
+				Logs.Tumbler.LogInformation($"Cashing out from {tx.Inputs.Count} Alices");
 
 				var correlation = GetCorrelation(session);
-				Tracker.AddressCreated(cycleId, TransactionType.ClientEscape, cashout.ScriptPubKey, correlation);
+				Tracker.AddressCreated(cycleId, TransactionType.ClientEscape, tx.Outputs[0].ScriptPubKey, correlation);
 				Tracker.TransactionCreated(cycleId, TransactionType.ClientEscape, tx.GetHash(), correlation);
 
 				Services.BroadcastService.Broadcast(tx);

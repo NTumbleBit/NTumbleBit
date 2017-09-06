@@ -1,18 +1,18 @@
 ﻿using System;
-using System.Text;
-using System.Linq;
 using System.IO;
-using NBitcoin;
+using System.Linq;
+using System.Text;
 using Microsoft.Extensions.Logging;
-using NTumbleBit.Logging;
-using NTumbleBit.Configuration;
+using NBitcoin;
 using NBitcoin.RPC;
 using NTumbleBit.ClassicTumbler.Client.ConnectionSettings;
+using NTumbleBit.Configuration;
+using NTumbleBit.Logging;
 using NTumbleBit.Services;
 
 namespace NTumbleBit.ClassicTumbler.Client
 {
-	public class OutputWalletConfiguration
+    public class OutputWalletConfiguration
 	{
 		public BitcoinExtPubKey RootKey
 		{
@@ -151,7 +151,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 			DBreezeRepository = new DBreezeRepository(Path.Combine(DataDir, "db2"));
 			Tracker = new Tracker(DBreezeRepository, Network);
-			Services = ExternalServices.CreateFromRPCClient(rpc, DBreezeRepository, Tracker);
+			Services = ExternalServices.CreateFromRPCClient(rpc, DBreezeRepository, Tracker, false);
 
 			if (OutputWallet.RootKey != null && OutputWallet.KeyPath != null)
 				DestinationWallet = new ClientDestinationWallet(OutputWallet.RootKey, OutputWallet.KeyPath, DBreezeRepository, Network);

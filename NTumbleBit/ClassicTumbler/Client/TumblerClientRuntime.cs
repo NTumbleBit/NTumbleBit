@@ -95,7 +95,8 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 					var standardCycles = new StandardCycles(configuration.Network);
 					var standardCycle = standardCycles.GetStandardCycle(parameters);
-
+					if(parameters.ExpectedAddress != TumblerServer.GetRoutableUri(false).AbsoluteUri)
+						throw new ConfigException("This tumbler has parameters used for an unexpected uri");
 					Logs.Configuration.LogInformation("Checking RSA key proof and standardness of the settings...");
 					if(standardCycle == null || !parameters.IsStandard())
 					{

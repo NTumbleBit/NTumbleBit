@@ -9,6 +9,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using TumbleBitSetup;
+using NTumbleBit.Services;
+using NTumbleBit.ClassicTumbler.Client;
 
 namespace NTumbleBit.ClassicTumbler
 {
@@ -27,7 +29,7 @@ namespace NTumbleBit.ClassicTumbler
 			FakeFormat = promise.FakeFormat;
 
 			Denomination = Money.Coins(1.0m);
-			Fee = Money.Coins(0.01m);
+			Fee = Money.Coins(0.001m);
 			CycleGenerator = new OverlappedCycleGenerator();
 		}
 
@@ -114,6 +116,14 @@ namespace NTumbleBit.ClassicTumbler
 			}
 		}
 
+		internal string PrettyPrint()
+		{
+			//Strip keys so we can read
+			var parameters = this.Clone();
+			parameters.ServerKey = null;
+			parameters.VoucherKey = null;
+			return Serializer.ToString(parameters, parameters.Network, true);
+		}
 
 		Money _Fee;
 		public Money Fee
@@ -213,6 +223,7 @@ namespace NTumbleBit.ClassicTumbler
 			stream.ReadWrite(ref _RealPuzzleCount);
 			stream.ReadWrite(ref _FakeTransactionCount);
 			stream.ReadWrite(ref _RealTransactionCount);
+			stream.ReadWriteC(ref _ExpectedAddress);
 		}
 
 		public bool Check(PromiseParameters promiseParams)
@@ -273,6 +284,20 @@ namespace NTumbleBit.ClassicTumbler
 		}
 
 
+		string _ExpectedAddress = "";
+		public string ExpectedAddress
+		{
+			get
+			{
+				return _ExpectedAddress;
+			}
+			set
+			{
+				_ExpectedAddress = value;
+			}
+		}
+
+
 		public uint160 GetHash()
 		{
 			return Hashes.Hash160(this.ToBytes());
@@ -306,6 +331,12 @@ namespace NTumbleBit.ClassicTumbler
 		public override int GetHashCode()
 		{
 			return GetHash().GetHashCode();
+		}
+
+		public int CountEscrows(Transaction tx, Identity identity)
+		{
+			var amount = identity == Identity.Bob ? Denomination : Denomination + Fee;
+			return tx.Outputs.Where(o => o.Value == amount).Count();
 		}
 	}
 
