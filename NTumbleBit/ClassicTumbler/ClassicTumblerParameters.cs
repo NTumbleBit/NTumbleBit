@@ -14,6 +14,7 @@ namespace NTumbleBit.ClassicTumbler
 {
 	public class ClassicTumblerParameters : IBitcoinSerializable
 	{
+		const int LAST_VERSION = 1;
 		public ClassicTumblerParameters()
 		{
 			var solver = new SolverParameters();
@@ -28,6 +29,20 @@ namespace NTumbleBit.ClassicTumbler
 			Denomination = Money.Coins(1.0m);
 			Fee = Money.Coins(0.01m);
 			CycleGenerator = new OverlappedCycleGenerator();
+		}
+
+
+		uint _Version = LAST_VERSION;
+		public uint Version
+		{
+			get
+			{
+				return _Version;
+			}
+			set
+			{
+				_Version = value;
+			}
 		}
 
 		Network _Network;
@@ -185,6 +200,9 @@ namespace NTumbleBit.ClassicTumbler
 
 		public void ReadWrite(BitcoinStream stream)
 		{
+			stream.ReadWrite(ref _Version);
+			if(_Version != LAST_VERSION)
+				throw new FormatException($"Tumbler is running an invalid version ({_Version} while expected is {LAST_VERSION})");
 			stream.ReadWriteC(ref _Network);
 			stream.ReadWrite(ref _CycleGenerator);
 			stream.ReadWrite(ref _ServerKey);
@@ -242,6 +260,7 @@ namespace NTumbleBit.ClassicTumbler
 		public bool IsStandard()
 		{
 			return
+				this.Version == LAST_VERSION &&
 				this.VoucherKey.CheckKey() &&
 				this.ServerKey.CheckKey() &&
 				this.FakePuzzleCount == 285 &&

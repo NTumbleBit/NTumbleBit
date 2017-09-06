@@ -96,7 +96,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 					var standardCycles = new StandardCycles(configuration.Network);
 					var standardCycle = standardCycles.GetStandardCycle(parameters);
 
-					Logs.Configuration.LogWarning("Checking RSA key proof and standardness of the settings...");
+					Logs.Configuration.LogInformation("Checking RSA key proof and standardness of the settings...");
 					if(standardCycle == null || !parameters.IsStandard())
 					{
 						Logs.Configuration.LogWarning("This tumbler has non standard parameters");
