@@ -165,7 +165,7 @@ namespace NTumbleBit.ClassicTumbler
 		public TxOut BuildClientEscrowTxOut()
 		{
 			AssertState(TumblerClientSessionStates.WaitingClientTransaction);
-			return new TxOut(Parameters.Denomination + Parameters.Fee, InternalState.ClientEscrow.Hash);
+			return new TxOut(Parameters.Denomination + Parameters.Fee, InternalState.ClientEscrow.WitHash.ScriptPubKey.Hash);
 		}
 		
 		public SolverClientSession SetClientSignedTransaction(uint160 channelId, Transaction transaction, Script redeemDestination)
@@ -214,13 +214,12 @@ namespace NTumbleBit.ClassicTumbler
 		{
 			AssertState(TumblerClientSessionStates.WaitingTumblerEscrow);
 			var escrow = EscrowScriptPubKeyParameters.GetFromCoin(escrowedCoin);
-			var expectedEscrow = new EscrowScriptPubKeyParameters()
-			{
-				Initiator = escrow?.Initiator,
-				Receiver = InternalState.TumblerEscrowKey.PubKey,
-				LockTime = GetCycle().GetTumblerLockTime()
-			};
-			if(escrow == null || escrow != expectedEscrow)
+			if(escrow == null)
+				throw new PuzzleException("invalid-escrow");
+			if(!escrowedCoin.IsP2SH || escrowedCoin.RedeemType != RedeemType.WitnessV0)
+				throw new PuzzleException("invalid-escrow");
+			var expectedEscrow = GetTumblerEscrowParameters(escrow.Initiator);
+			if(escrow != expectedEscrow)
 				throw new PuzzleException("invalid-escrow");
 			if(escrowedCoin.Amount != Parameters.Denomination)
 				throw new PuzzleException("invalid-amount");
@@ -234,8 +233,20 @@ namespace NTumbleBit.ClassicTumbler
 			return session;
 		}
 
+		public EscrowScriptPubKeyParameters GetTumblerEscrowParameters(PubKey pubkey)
+		{
+			return new EscrowScriptPubKeyParameters()
+			{
+				Initiator = pubkey,
+				Receiver = InternalState.TumblerEscrowKey.PubKey,
+				LockTime = GetCycle().GetTumblerLockTime()
+			};
+		}
+
 		internal void SetChannelId(uint160 channelId)
 		{
+			if(channelId == null)
+				throw new ArgumentNullException(nameof(channelId));
 			InternalState.ChannelId = channelId;
 		}
 
@@ -247,7 +258,7 @@ namespace NTumbleBit.ClassicTumbler
 		private void AssertState(TumblerClientSessionStates state)
 		{
 			if(state != InternalState.Status)
-				throw new InvalidOperationException("Invalid state, actual " + InternalState.Status + " while expected is " + state);
+				throw new InvalidStateException("Invalid state, actual " + InternalState.Status + " while expected is " + state);
 		}
 	}
 }

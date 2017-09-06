@@ -68,17 +68,23 @@ namespace NTumbleBit.ClassicTumbler.Client
 												.SelectMany(c => Runtime.Repository.List<PaymentStateMachine.State>(GetPartitionKey(c.Start)))
 												.Where(m => m.TumblerParametersHash == _ParametersHash)
 												.ToArray();
-						NBitcoin.Utils.Shuffle(machineStates);						
+						NBitcoin.Utils.Shuffle(machineStates);
 						bool hadInvalidPhase = false;
 
 						//Waiting for the block to propagate to server so invalid-phase happens less often
-						cancellationToken.WaitHandle.WaitOne(10000); 
+						cancellationToken.WaitHandle.WaitOne(10000);
 						cancellationToken.ThrowIfCancellationRequested();
 
 						foreach(var state in machineStates)
 						{
 							bool noSave = false;
 							var machine = new PaymentStateMachine(Runtime, state);
+							if(machine.Status == PaymentStateMachineStatus.Wasted)
+							{
+								Logs.Client.LogDebug($"Skipping cycle {machine.StartCycle}, because if is wasted");
+								continue;
+							}
+
 							var statusBefore = machine.GetInternalState();
 							try
 							{

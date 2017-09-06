@@ -204,7 +204,7 @@ namespace NTumbleBit.PuzzlePromise
 		private void AssertState(PromiseServerStates state)
 		{
 			if(state != InternalState.Status)
-				throw new InvalidOperationException("Invalid state, actual " + InternalState.Status + " while expected is " + state);
+				throw new InvalidStateException("Invalid state, actual " + InternalState.Status + " while expected is " + state);
 		}
 
 		public override LockTime GetLockTime(CycleParameters cycle)

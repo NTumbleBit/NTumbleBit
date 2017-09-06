@@ -34,7 +34,8 @@ namespace NTumbleBit.Services
 			var clientBatchInterval = TimeSpan.FromMilliseconds(100);
 			service.WalletService = new RPCWalletService(rpc)
 			{
-				BatchInterval = useBatching ? TimeSpan.FromSeconds(60) : clientBatchInterval
+				BatchInterval = useBatching ? TimeSpan.FromSeconds(60) : clientBatchInterval,
+				AddressGenerationBatchInterval = useBatching ? TimeSpan.FromSeconds(1) : TimeSpan.FromMilliseconds(10)
 			};
 			service.BroadcastService = new RPCBroadcastService(rpc, cache, repository)
 			{

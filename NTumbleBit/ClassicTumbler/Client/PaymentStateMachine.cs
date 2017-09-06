@@ -26,6 +26,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 		PuzzleSolutionObtained,
 		UncooperativeTumbler,
 		TumblerChannelCreating,
+		Wasted
 	}
 	public class PaymentStateMachine
 	{
@@ -245,7 +246,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 								break;
 							}
 
-							var redeemDestination = Services.WalletService.GenerateAddress().ScriptPubKey;
+							var redeemDestination = Services.WalletService.GenerateAddressAsync().GetAwaiter().GetResult().ScriptPubKey;
 							var channelId = new uint160(RandomUtils.GetBytes(20));
 							SolverClientSession = ClientChannelNegotiation.SetClientSignedTransaction(channelId, clientEscrowTx, redeemDestination);
 
@@ -297,7 +298,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 						bob = Runtime.CreateTumblerClient(cycle.Start, Identity.Bob);
 						if(Status == PaymentStateMachineStatus.TumblerVoucherObtained)
 						{
-
 							Logs.Client.LogInformation("Begin ask to open the channel...");
 							//Client asks the Tumbler to make a channel
 							var bobEscrowInformation = ClientChannelNegotiation.GetOpenChannelRequest();
@@ -315,8 +315,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 								}
 								throw;
 							}
-
-
 							ClientChannelNegotiation.SetChannelId(channelId);
 							Status = PaymentStateMachineStatus.TumblerChannelCreating;
 
@@ -330,13 +328,25 @@ namespace NTumbleBit.ClassicTumbler.Client
 								break;
 							}
 
-							PromiseClientSession = ClientChannelNegotiation.ReceiveTumblerEscrowedCoin(tumblerEscrow);
-							Logs.Client.LogInformation("Tumbler escrow broadcasted");
+							if(tumblerEscrow.OutputIndex >= tumblerEscrow.Transaction.Outputs.Count)
+							{
+								Logs.Client.LogError("Tumbler escrow ouptut out-of-bound");
+								Status = PaymentStateMachineStatus.Wasted;
+								break;
+							}
+
+							var txOut = tumblerEscrow.Transaction.Outputs[tumblerEscrow.OutputIndex];
+							var outpoint = new OutPoint(tumblerEscrow.Transaction.GetHash(), tumblerEscrow.OutputIndex);
+							var escrowCoin = new Coin(outpoint, txOut).ToScriptCoin(ClientChannelNegotiation.GetTumblerEscrowParameters(tumblerEscrow.EscrowInitiatorKey).ToScript());
+
+							PromiseClientSession = ClientChannelNegotiation.ReceiveTumblerEscrowedCoin(escrowCoin);
+							Logs.Client.LogInformation("Tumbler expected escrowed coin received");
 							//Tell to the block explorer we need to track that address (for checking if it is confirmed in payment phase)
 							Services.BlockExplorerService.TrackAsync(PromiseClientSession.EscrowedCoin.ScriptPubKey).GetAwaiter().GetResult();
 							Tracker.AddressCreated(cycle.Start, TransactionType.TumblerEscrow, PromiseClientSession.EscrowedCoin.ScriptPubKey, correlation);
 							Tracker.TransactionCreated(cycle.Start, TransactionType.TumblerEscrow, PromiseClientSession.EscrowedCoin.Outpoint.Hash, correlation);
 
+							Services.BroadcastService.BroadcastAsync(tumblerEscrow.Transaction).GetAwaiter().GetResult();
 							//Channel is done, now need to run the promise protocol to get valid puzzle
 							var cashoutDestination = DestinationWallet.GetNewDestination();
 							Tracker.AddressCreated(cycle.Start, TransactionType.TumblerCashout, cashoutDestination, correlation);
@@ -363,7 +373,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 						{
 							CheckTumblerChannelConfirmed(cycle);
 						}
-						if(PromiseClientSession != null && Status == PaymentStateMachineStatus.TumblerChannelConfirmed)
+						if(Status == PaymentStateMachineStatus.TumblerChannelConfirmed)
 						{
 							TransactionInformation tumblerTx = GetTransactionInformation(PromiseClientSession.EscrowedCoin, false);
 							//Ensure the tumbler coin is confirmed before paying anything
@@ -374,6 +384,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 								{
 									feeRate = GetFeeRate();
 									alice = Runtime.CreateTumblerClient(cycle.Start, Identity.Alice);
+									Logs.Client.LogDebug("Starting the puzzle solver protocol...");
 									var puzzles = SolverClientSession.GeneratePuzzles();
 									var commmitments = alice.SolvePuzzles(SolverClientSession.Id, puzzles);
 									var revelation2 = SolverClientSession.Reveal(commmitments);
@@ -384,6 +395,8 @@ namespace NTumbleBit.ClassicTumbler.Client
 									var offerSignature = SolverClientSession.SignOffer(offerInformation);
 
 									var offerRedeem = SolverClientSession.CreateOfferRedeemTransaction(feeRate);
+									Logs.Client.LogDebug("Puzzle solver protocol ended...");
+
 									//May need to find solution in the fulfillment transaction
 									Services.BlockExplorerService.TrackAsync(offerRedeem.PreviousScriptPubKey).GetAwaiter().GetResult();
 									Tracker.AddressCreated(cycle.Start, TransactionType.ClientOfferRedeem, SolverClientSession.GetInternalState().RedeemDestination, correlation);
@@ -394,7 +407,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 										SolverClientSession.CheckSolutions(solutionKeys);
 										var tumblingSolution = SolverClientSession.GetSolution();
 										var transaction = PromiseClientSession.GetSignedTransaction(tumblingSolution);
-										Logs.Client.LogInformation("Got puzzle solution cooperatively from the tumbler");
+										Logs.Client.LogDebug("Got puzzle solution cooperatively from the tumbler");
 										Status = PaymentStateMachineStatus.PuzzleSolutionObtained;
 										Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.TumblerCashout, correlation, new TrustedBroadcastRequest()
 										{
@@ -441,6 +454,16 @@ namespace NTumbleBit.ClassicTumbler.Client
 						break;
 				}
 			}
+			catch(InvalidStateException ex)
+			{
+				Logs.Client.LogDebug(new EventId(), ex, "Client side Invalid State, the payment is wasted");
+				Status = PaymentStateMachineStatus.Wasted;
+			}
+			catch(Exception ex) when (ex.Message.IndexOf("invalid-state", StringComparison.OrdinalIgnoreCase) >= 0)
+			{
+				Logs.Client.LogDebug(new EventId(), ex, "Tumbler side Invalid State, the payment is wasted");
+				Status = PaymentStateMachineStatus.Wasted;
+			}
 			finally
 			{
 				if(previousState != Status)
@@ -459,13 +482,26 @@ namespace NTumbleBit.ClassicTumbler.Client
 		private void CheckTumblerChannelConfirmed(CycleParameters cycle)
 		{
 			TransactionInformation tumblerTx = GetTransactionInformation(PromiseClientSession.EscrowedCoin, false);
-			if(tumblerTx != null && tumblerTx.Confirmations >= cycle.SafetyPeriodDuration)
+			if(tumblerTx == null)
+			{
+				Logs.Client.LogInformation($"Tumbler escrow not yet broadcasted");
+				return;
+			}
+
+			if(tumblerTx.Confirmations >= cycle.SafetyPeriodDuration)
 			{
 				var bobCount = Parameters.CountEscrows(tumblerTx.Transaction, Identity.Bob);
 				Logs.Client.LogInformation($"Tumbler escrow reached {cycle.SafetyPeriodDuration} confirmations");
 				Logs.Client.LogInformation($"Tumbler escrow transaction has {bobCount} users");
+				Status = PaymentStateMachineStatus.TumblerChannelConfirmed;
+				return;
 			}
-			Status = PaymentStateMachineStatus.TumblerChannelConfirmed;
+			
+			if(tumblerTx.Confirmations < cycle.SafetyPeriodDuration)
+			{
+				Logs.Client.LogInformation($"Tumbler escrow need {cycle.SafetyPeriodDuration - tumblerTx.Confirmations} more confirmation");
+				return;
+			}
 		}
 
 		private TransactionInformation GetTransactionInformation(ICoin coin, bool withProof)

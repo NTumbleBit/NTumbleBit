@@ -13,7 +13,7 @@ namespace NTumbleBit.Services.RPC
 	public class RPCBlockExplorerService : IBlockExplorerService
 	{
 		RPCWalletCache _Cache;
-		RPCBatch _RPCBatch;
+		RPCBatch<bool> _RPCBatch;
 		public RPCBlockExplorerService(RPCClient client, RPCWalletCache cache, IRepository repo)
 		{
 			if(client == null)
@@ -25,7 +25,7 @@ namespace NTumbleBit.Services.RPC
 			_RPCClient = client;
 			_Repo = repo;
 			_Cache = cache;
-			_RPCBatch = new RPCBatch(client);
+			_RPCBatch = new RPCBatch<bool>(client);
 		}
 
 		public TimeSpan BatchInterval
@@ -187,7 +187,7 @@ namespace NTumbleBit.Services.RPC
 
 		public async Task TrackAsync(Script scriptPubkey)
 		{
-			await _RPCBatch.Do(async batch =>
+			await _RPCBatch.WaitTransactionAsync(async batch =>
 			{
 				await batch.ImportAddressAsync(scriptPubkey, "", false).ConfigureAwait(false);
 				return true;
@@ -204,16 +204,18 @@ namespace NTumbleBit.Services.RPC
 
 		public async Task<bool> TrackPrunedTransactionAsync(Transaction transaction, MerkleBlock merkleProof)
 		{
-			return await _RPCBatch.Do(async batch =>
+			bool success = false;
+			await _RPCBatch.WaitTransactionAsync(async batch =>
 			{
 				var result = await batch.SendCommandNoThrowsAsync("importprunedfunds", transaction.ToHex(), Encoders.Hex.EncodeData(merkleProof.ToBytes())).ConfigureAwait(false);
-				var success = result != null && result.Error == null;
+				success = result != null && result.Error == null;
 				if(success)
 				{
 					_Cache.ImportTransaction(transaction, GetBlockConfirmations(merkleProof.Header.GetHash()));
 				}
 				return success;
 			}).ConfigureAwait(false);
+			return success;
 		}
 	}
 }

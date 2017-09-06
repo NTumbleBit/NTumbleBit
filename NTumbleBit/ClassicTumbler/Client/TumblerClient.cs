@@ -85,20 +85,20 @@ namespace NTumbleBit.ClassicTumbler.Client
 			if(request == null)
 				throw new ArgumentNullException(nameof(request));
 			var c = await SendAsync<uint160.MutableUint160>(HttpMethod.Post, request, $"channels/beginopen").ConfigureAwait(false);
-			return c.Value;
+			return c?.Value;
 		}
 
-		public ScriptCoin EndOpenChannel(int cycleId, uint160 channelId)
+		public TumblerEscrowData EndOpenChannel(int cycleId, uint160 channelId)
 		{
 			return EndOpenChannelAsync(cycleId, channelId).GetAwaiter().GetResult();
 		}
 
-		public async Task<ScriptCoin> EndOpenChannelAsync(int cycleId, uint160 channelId)
+		public async Task<TumblerEscrowData> EndOpenChannelAsync(int cycleId, uint160 channelId)
 		{
 			if(channelId == null)
 				throw new ArgumentNullException(nameof(channelId));
-			var c = await SendAsync<ScriptCoinModel>(HttpMethod.Post, null, $"channels/{cycleId}/{channelId}/endopen").ConfigureAwait(false);
-			return c?.ScriptCoin;
+			var c = await SendAsync<TumblerEscrowData>(HttpMethod.Post, null, $"channels/{cycleId}/{channelId}/endopen").ConfigureAwait(false);
+			return c;
 		}
 
 		public uint160 BeginOpenChannel(OpenChannelRequest request)

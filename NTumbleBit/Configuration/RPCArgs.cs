@@ -110,11 +110,6 @@ namespace NTumbleBit.Configuration
 			return rpcClient;
 		}
 
-		public RPCClient ConfigureRPCClient(object network)
-		{
-			throw new NotImplementedException();
-		}
-
 		const int MIN_CORE_VERSION = 130100;
 		public static RPCClient ConfigureRPCClient(TextFileConfiguration confArgs, Network network, string prefix = null)
 		{

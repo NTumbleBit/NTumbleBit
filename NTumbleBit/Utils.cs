@@ -29,6 +29,49 @@ namespace NTumbleBit
 			handler.PreAuthenticate = false;
 			return handler;
 		}
+
+		public static void Shuffle<T>(T[] arr, Random rand)
+		{
+			rand = rand ?? new Random();
+			for(int i = 0; i < arr.Length; i++)
+			{
+				var fromIndex = rand.Next(arr.Length);
+				var from = arr[fromIndex];
+
+				var toIndex = rand.Next(arr.Length);
+				var to = arr[toIndex];
+
+				arr[toIndex] = from;
+				arr[fromIndex] = to;
+			}
+		}
+		public static void Shuffle<T>(List<T> arr, Random rand)
+		{
+			rand = rand ?? new Random();
+			for(int i = 0; i < arr.Count; i++)
+			{
+				var fromIndex = rand.Next(arr.Count);
+				var from = arr[fromIndex];
+
+				var toIndex = rand.Next(arr.Count);
+				var to = arr[toIndex];
+
+				arr[toIndex] = from;
+				arr[fromIndex] = to;
+			}
+		}
+		public static void Shuffle<T>(T[] arr, int seed)
+		{
+			Random rand = new Random(seed);
+			Shuffle(arr, rand);
+		}
+
+		public static void Shuffle<T>(T[] arr)
+		{
+			Shuffle(arr, null);
+		}
+
+
 		public static IEnumerable<T> TopologicalSort<T>(this IEnumerable<T> nodes,
 												Func<T, IEnumerable<T>> dependsOn)
 		{
