@@ -59,7 +59,8 @@ namespace NTumbleBit.ClassicTumbler.Client
 							if(state == null)
 							{
 								var stateMachine = new PaymentStateMachine(Runtime, null);
-								Save(stateMachine, cycle.Start);
+								stateMachine.NeedSave = true;
+								Save(stateMachine);
 							}
 						}
 
@@ -77,7 +78,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 						foreach(var state in machineStates)
 						{
-							bool noSave = false;
 							var machine = new PaymentStateMachine(Runtime, state);
 							if(machine.Status == PaymentStateMachineStatus.Wasted)
 							{
@@ -110,15 +110,13 @@ namespace NTumbleBit.ClassicTumbler.Client
 											Logs.Client.LogError(new EventId(), ex, $"Invalid-Phase happened repeatedly, check that your node currently at height {height} is currently sync to the network");
 										}
 									}
-									noSave = true;
 								}
 								else
 								{
 									Logs.Client.LogError(new EventId(), ex, "Unhandled StateMachine Error");
 								}
 							}
-							if(!noSave)
-								Save(machine, machine.StartCycle);
+							Save(machine);
 						}
 					}
 					catch(OperationCanceledException ex)
@@ -157,9 +155,10 @@ namespace NTumbleBit.ClassicTumbler.Client
 			return "Cycle_" + cycle;
 		}
 
-		private void Save(PaymentStateMachine stateMachine, int cycle)
+		private void Save(PaymentStateMachine stateMachine)
 		{
-			Runtime.Repository.UpdateOrInsert(GetPartitionKey(cycle), "", stateMachine.GetInternalState(), (o, n) => n);
+			if(stateMachine.NeedSave)
+				Runtime.Repository.UpdateOrInsert(GetPartitionKey(stateMachine.StartCycle), "", stateMachine.GetInternalState(), (o, n) => n);
 		}
 	}
 }
