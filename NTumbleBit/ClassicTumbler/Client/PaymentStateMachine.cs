@@ -305,7 +305,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 							if(tumblerTx != null && tumblerTx.Confirmations >= cycle.SafetyPeriodDuration)
 							{
-								Logs.Client.LogInformation($"Client escrow reached {cycle.SafetyPeriodDuration} confirmations");
+								Logs.Client.LogInformation($"Tumbler escrow reached {cycle.SafetyPeriodDuration} confirmations");
 
 								if(SolverClientSession.Status == SolverClientStates.WaitingGeneratePuzzles)
 								{

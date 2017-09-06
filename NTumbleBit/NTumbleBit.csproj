@@ -20,6 +20,6 @@
     <PackageReference Include="NStratis" Version="4.0.0.15" />
     <PackageReference Include="System.Diagnostics.Process" Version="4.3.0" />
     <PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
-    <PackageReference Include="TCPServer" Version="1.0.9" />
+    <PackageReference Include="TCPServer" Version="1.0.10" />
   </ItemGroup>
 </Project>
