@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using Xunit;
 
 namespace NTumbleBit.Tests
@@ -99,8 +100,8 @@ namespace NTumbleBit.Tests
 		public void CanCompleteCycleWithMachineState()
 		{
 			CanCompleteCycleWithMachineStateCore(true, true);
-			CanCompleteCycleWithMachineStateCore(false, true);
 			CanCompleteCycleWithMachineStateCore(true, false);
+			CanCompleteCycleWithMachineStateCore(false, true);
 			CanCompleteCycleWithMachineStateCore(false, false);
 		}
 
@@ -174,6 +175,8 @@ namespace NTumbleBit.Tests
 				Assert.Equal(1, escrow2.KeyIndex);
 				machine.Update();
 
+				Assert.NotEqual(uint160.Zero, machine.SolverClientSession.Id);
+				Assert.NotNull(machine.SolverClientSession.Id);
 				clientTracker.AssertKnown(TransactionType.ClientEscrow, machine.SolverClientSession.EscrowedCoin.ScriptPubKey);
 				clientTracker.AssertKnown(TransactionType.ClientEscrow, machine.SolverClientSession.EscrowedCoin.Outpoint.Hash);
 
@@ -203,9 +206,16 @@ namespace NTumbleBit.Tests
 
 
 				machine.Update();
+				Assert.Equal(PaymentStateMachineStatus.TumblerChannelCreating, machine.Status);
+
+				Thread.Sleep(1000);
+				machine.Update();
 				Assert.Equal(PaymentStateMachineStatus.TumblerChannelBroadcasted, machine.Status);
 
 
+				Assert.NotEqual(uint160.Zero, machine.PromiseClientSession.Id);
+				Assert.NotEqual(machine.SolverClientSession.Id, machine.PromiseClientSession.Id);
+				Assert.NotNull(machine.PromiseClientSession.Id);
 				serverTracker.AssertKnown(TransactionType.TumblerEscrow, machine.PromiseClientSession.EscrowedCoin.ScriptPubKey);
 				serverTracker.AssertKnown(TransactionType.TumblerEscrow, machine.PromiseClientSession.EscrowedCoin.Outpoint.Hash);
 				clientTracker.AssertKnown(TransactionType.TumblerEscrow, machine.PromiseClientSession.EscrowedCoin.ScriptPubKey);
@@ -219,6 +229,9 @@ namespace NTumbleBit.Tests
 
 
 				machine.Update();
+
+				//Wait escape transaction to be broadcasted
+				Thread.Sleep(1000);
 				Block block = server.TumblerNode.FindBlock(1).First();
 
 				if(cooperativeClient && cooperativeTumbler)
@@ -405,6 +418,11 @@ namespace NTumbleBit.Tests
 
 				server.MineTo(server.AliceNode, cycle, CyclePhase.TumblerChannelEstablishment);
 				machine.Update();
+				Assert.Equal(PaymentStateMachineStatus.TumblerChannelCreating, machine.Status);
+
+				Thread.Sleep(1000);
+				machine.Update();
+				Assert.Equal(PaymentStateMachineStatus.TumblerChannelBroadcasted, machine.Status);
 
 				//Make sure the tumbler escrow is broadcasted an mined
 				var broadcasted = server.ServerRuntime.Services.BroadcastService.TryBroadcast();

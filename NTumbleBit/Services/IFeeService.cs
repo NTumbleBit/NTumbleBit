@@ -16,6 +16,6 @@ namespace NTumbleBit.Services
 	}
 	public interface IFeeService
     {
-		FeeRate GetFeeRate();
+		Task<FeeRate> GetFeeRateAsync();
     }
 }

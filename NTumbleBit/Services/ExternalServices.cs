@@ -9,7 +9,7 @@ namespace NTumbleBit.Services
 {
 	public class ExternalServices : IExternalServices
     {
-		public static ExternalServices CreateFromRPCClient(RPCClient rpc, IRepository repository, Tracker tracker, bool aggregateFunding)
+		public static ExternalServices CreateFromRPCClient(RPCClient rpc, IRepository repository, Tracker tracker, bool useBatching)
 		{
 			var info = rpc.SendCommand(RPCOperations.getinfo);
 			var minimumRate = new NBitcoin.FeeRate(NBitcoin.Money.Coins((decimal)(double)((Newtonsoft.Json.Linq.JValue)(info.Result["relayfee"])).Value * 2), 1000);
@@ -30,9 +30,20 @@ namespace NTumbleBit.Services
 			}
 
 			var cache = new RPCWalletCache(rpc, repository);
-			service.WalletService = new RPCWalletService(rpc) { BatchInterval = aggregateFunding ? TimeSpan.FromSeconds(30) : TimeSpan.Zero};
-			service.BroadcastService = new RPCBroadcastService(rpc, cache, repository);
-			service.BlockExplorerService = new RPCBlockExplorerService(rpc, cache, repository);
+
+			var clientBatchInterval = TimeSpan.FromMilliseconds(100);
+			service.WalletService = new RPCWalletService(rpc)
+			{
+				BatchInterval = useBatching ? TimeSpan.FromSeconds(60) : clientBatchInterval
+			};
+			service.BroadcastService = new RPCBroadcastService(rpc, cache, repository)
+			{
+				BatchInterval = useBatching ? TimeSpan.FromSeconds(5) : clientBatchInterval
+			};
+			service.BlockExplorerService = new RPCBlockExplorerService(rpc, cache, repository)
+			{
+				BatchInterval = useBatching ? TimeSpan.FromSeconds(5) : clientBatchInterval
+			};
 			service.TrustedBroadcastService = new RPCTrustedBroadcastService(rpc, service.BroadcastService, service.BlockExplorerService, repository, cache, tracker)
 			{
 				//BlockExplorer will already track the addresses, since they used a shared bitcoind, no need of tracking again (this would overwrite labels)

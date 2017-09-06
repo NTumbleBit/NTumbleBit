@@ -25,32 +25,40 @@ namespace NTumbleBit.ClassicTumbler.Server
 
 		public Task<InputFormatterResult> ReadAsync(InputFormatterContext context)
 		{
-			BitcoinStream bs = new BitcoinStream(context.HttpContext.Request.Body, false);
-			Type type = context.ModelType;
+			try
+			{
 
-			var signature = type == typeof(TransactionSignature);
-			if(context.ModelType.IsArray)
-			{
-				var elementType = context.ModelType.GetElementType();
-				type = typeof(ArrayWrapper<>).MakeGenericType(elementType);
-			}
-			if(signature)
-			{
-				type = typeof(SignatureWrapper);
-			}
+				BitcoinStream bs = new BitcoinStream(context.HttpContext.Request.Body, false);
+				Type type = context.ModelType;
 
-			var result = _Parse.MakeGenericMethod(type).Invoke(null, new object[] { bs });
+				var signature = type == typeof(TransactionSignature);
+				if(context.ModelType.IsArray)
+				{
+					var elementType = context.ModelType.GetElementType();
+					type = typeof(ArrayWrapper<>).MakeGenericType(elementType);
+				}
+				if(signature)
+				{
+					type = typeof(SignatureWrapper);
+				}
 
-			if(context.ModelType.IsArray)
-			{
-				var getElements = type.GetTypeInfo().GetProperty("Elements", BindingFlags.Instance | BindingFlags.Public).GetGetMethod();
-				result = getElements.Invoke(result, new object[0]);
+				var result = _Parse.MakeGenericMethod(type).Invoke(null, new object[] { bs });
+
+				if(context.ModelType.IsArray)
+				{
+					var getElements = type.GetTypeInfo().GetProperty("Elements", BindingFlags.Instance | BindingFlags.Public).GetGetMethod();
+					result = getElements.Invoke(result, new object[0]);
+				}
+				if(signature)
+				{
+					result = ((SignatureWrapper)result).Signature;
+				}
+				return InputFormatterResult.SuccessAsync(result);
 			}
-			if(signature)
+			catch
 			{
-				result = ((SignatureWrapper)result).Signature;
+				return InputFormatterResult.FailureAsync();
 			}
-			return InputFormatterResult.SuccessAsync(result);
 		}
 
 		public static T Parse<T>(BitcoinStream bs) where T : IBitcoinSerializable

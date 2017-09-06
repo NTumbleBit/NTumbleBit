@@ -20,6 +20,10 @@ namespace NTumbleBit.Services.RPC
 		{
 			get; set;
 		}
+		public Transaction Transaction
+		{
+			get; set;
+		}
 	}
 
 	/// <summary>
@@ -44,17 +48,14 @@ namespace NTumbleBit.Services.RPC
 
 		public void Refresh(uint256 currentBlock)
 		{
-			var refreshedAt = _RefreshedAtBlock;
-			if(refreshedAt != currentBlock)
+			if(_RefreshedAtBlock != currentBlock)
 			{
-				lock(_Transactions)
+				var newBlockCount = _RPCClient.GetBlockCount();
+				//If we just udpated the value...
+				if(Interlocked.Exchange(ref _BlockCount, newBlockCount) != newBlockCount)
 				{
-					if(refreshedAt != currentBlock)
-					{
-						RefreshBlockCount();
-						_Transactions = ListTransactions(ref _KnownTransactions);
-						_RefreshedAtBlock = currentBlock;
-					}
+					_RefreshedAtBlock = currentBlock;
+					ListTransactions();
 				}
 			}
 		}
@@ -66,144 +67,161 @@ namespace NTumbleBit.Services.RPC
 			{
 				if(_BlockCount == 0)
 				{
-					RefreshBlockCount();
+					_BlockCount = _RPCClient.GetBlockCount();
 				}
 				return _BlockCount;
 			}
 		}
 
-		private void RefreshBlockCount()
-		{
-			Interlocked.Exchange(ref _BlockCount, _RPCClient.GetBlockCount());
-		}
-
 		public Transaction GetTransaction(uint256 txId)
 		{
-			var cached = GetCachedTransaction(txId);
-			if(cached != null)
-				return cached;
-			var tx = FetchTransaction(txId);
-			if(tx == null)
-				return null;
-			PutCached(tx);
-			return tx;
+			RPCWalletEntry entry = null;
+			if(_WalletEntries.TryGetValue(txId, out entry))
+			{
+				return entry.Transaction;
+			}
+			return null;
 		}
 
-		ConcurrentDictionary<uint256, Transaction> _TransactionsByTxId = new ConcurrentDictionary<uint256, Transaction>();
 
-
-		private Transaction FetchTransaction(uint256 txId)
+		private static async Task<Transaction> FetchTransactionAsync(RPCClient rpc, uint256 txId)
 		{
 			try
 			{
-				//check in the wallet tx
-				var result = _RPCClient.SendCommandNoThrows("gettransaction", txId.ToString(), true);
-				if(result == null || result.Error != null)
-				{
-					//check in the txindex
-					result = _RPCClient.SendCommandNoThrows("getrawtransaction", txId.ToString(), 1);
-					if(result == null || result.Error != null)
-						return null;
-				}
+
+				var result = await rpc.SendCommandNoThrowsAsync("gettransaction", txId.ToString(), true).ConfigureAwait(false);
 				var tx = new Transaction((string)result.Result["hex"]);
 				return tx;
 			}
-			catch(RPCException) { return null; }
-		}
-
-		public RPCWalletEntry[] GetEntries()
-		{
-			lock(_Transactions)
+			catch(RPCException ex)
 			{
-				return _Transactions.ToArray();
+				if(ex.RPCCode == RPCErrorCode.RPC_INVALID_ADDRESS_OR_KEY)
+					return null;
+				throw;
 			}
 		}
 
-		private void PutCached(Transaction tx)
+		public ICollection<RPCWalletEntry> GetEntries()
 		{
-			tx.CacheHashes();
-			_Repo.UpdateOrInsert("CachedTransactions", tx.GetHash().ToString(), tx, (a, b) => b);
-			lock(_TransactionsByTxId)
+			return _WalletEntries.Values;
+		}
+
+		public IEnumerable<RPCWalletEntry> GetEntriesFromScript(Script script)
+		{
+			lock(_TxByScriptId)
 			{
-				_TransactionsByTxId.TryAdd(tx.GetHash(), tx);
+				IReadOnlyCollection<RPCWalletEntry> transactions = null;
+				if(_TxByScriptId.TryGetValue(script, out transactions))
+					return transactions.ToArray();
+				return new RPCWalletEntry[0];
 			}
 		}
 
-		private Transaction GetCachedTransaction(uint256 txId)
+		private void AddTxByScriptId(uint256 txId, RPCWalletEntry entry)
 		{
-
-			Transaction tx = null;
-			if(_TransactionsByTxId.TryGetValue(txId, out tx))
+			IEnumerable<Script> scripts = GetScriptsOf(entry.Transaction);
+			lock(_TxByScriptId)
 			{
-				return tx;
+				foreach(var s in scripts)
+				{
+					_TxByScriptId.Add(s, entry);
+				}
 			}
-			var cached = _Repo.Get<Transaction>("CachedTransactions", txId.ToString());
-			if(cached != null)
-				_TransactionsByTxId.TryAdd(txId, cached);
-			return cached;
 		}
 
-
-		List<RPCWalletEntry> _Transactions = new List<RPCWalletEntry>();
-		HashSet<uint256> _KnownTransactions = new HashSet<uint256>();
-		List<RPCWalletEntry> ListTransactions(ref HashSet<uint256> knownTransactions)
+		private void RemoveTxByScriptId(RPCWalletEntry entry)
 		{
-			List<RPCWalletEntry> array = new List<RPCWalletEntry>();
-			knownTransactions = new HashSet<uint256>();
-			var removeFromCache = new HashSet<uint256>(_TransactionsByTxId.Values.Select(tx => tx.GetHash()));
+			IEnumerable<Script> scripts = GetScriptsOf(entry.Transaction);
+			lock(_TxByScriptId)
+			{
+				foreach(var s in scripts)
+				{
+					_TxByScriptId.Remove(s, entry);
+				}
+			}
+		}
+
+		private static IEnumerable<Script> GetScriptsOf(Transaction tx)
+		{
+			return tx.Outputs.Select(o => o.ScriptPubKey)
+									.Concat(tx.Inputs.Select(o => o.ScriptSig.GetSigner().ScriptPubKey));
+		}
+
+		MultiValueDictionary<Script, RPCWalletEntry> _TxByScriptId = new MultiValueDictionary<Script, RPCWalletEntry>();
+		ConcurrentDictionary<uint256, RPCWalletEntry> _WalletEntries = new ConcurrentDictionary<uint256, RPCWalletEntry>();
+		void ListTransactions()
+		{
+			var removeFromWalletEntries = new HashSet<uint256>(_WalletEntries.Keys);
+
 			int count = 100;
 			int skip = 0;
 			int highestConfirmation = 0;
 
 			while(true)
 			{
-				var result = _RPCClient.SendCommandNoThrows("listtransactions", "*", count, skip, true);
+				var result = _RPCClient.SendCommand("listtransactions", "*", count, skip, true);
 				skip += count;
-				if(result.Error != null)
-					return null;
 				var transactions = (JArray)result.Result;
+
+				var batch = _RPCClient.PrepareBatch();
+				var fetchingTransactions = new List<Tuple<RPCWalletEntry, Task<Transaction>>>();
 				foreach(var obj in transactions)
 				{
 					var entry = new RPCWalletEntry();
 					entry.Confirmations = obj["confirmations"] == null ? 0 : (int)obj["confirmations"];
 					entry.TransactionId = new uint256((string)obj["txid"]);
-					removeFromCache.Remove(entry.TransactionId);
-					if(knownTransactions.Add(entry.TransactionId))
+					removeFromWalletEntries.Remove(entry.TransactionId);
+
+					RPCWalletEntry existing;
+					if(_WalletEntries.TryGetValue(entry.TransactionId, out existing))
 					{
-						array.Add(entry);
+						existing.Confirmations = entry.Confirmations;
+						entry = existing;
+					}
+
+					if(entry.Transaction == null)
+					{
+						fetchingTransactions.Add(Tuple.Create(entry, FetchTransactionAsync(batch, entry.TransactionId)));
 					}
 					if(obj["confirmations"] != null)
 					{
 						highestConfirmation = Math.Max(highestConfirmation, (int)obj["confirmations"]);
 					}
 				}
+				batch.SendBatchAsync();
+
+				foreach(var fetching in fetchingTransactions)
+				{
+					var entry = fetching.Item1;
+					entry.Transaction = fetching.Item2.GetAwaiter().GetResult();
+					if(entry.Transaction != null)
+					{
+						if(_WalletEntries.TryAdd(entry.TransactionId, entry))
+							AddTxByScriptId(entry.TransactionId, entry);
+					}
+				}
+
 				if(transactions.Count < count || highestConfirmation >= 1400)
 					break;
 			}
-			foreach(var remove in removeFromCache)
+			foreach(var remove in removeFromWalletEntries)
 			{
-				Transaction opt;
-				_TransactionsByTxId.TryRemove(remove, out opt);
+				RPCWalletEntry opt;
+				_WalletEntries.TryRemove(remove, out opt);
 			}
-			return array;
 		}
-
 
 		public void ImportTransaction(Transaction transaction, int confirmations)
 		{
-			PutCached(transaction);
-			lock(_Transactions)
+			var txId = transaction.GetHash();
+			var entry = new RPCWalletEntry()
 			{
-				if(_KnownTransactions.Add(transaction.GetHash()))
-				{
-					_Transactions.Insert(0,
-						new RPCWalletEntry()
-						{
-							Confirmations = confirmations,
-							TransactionId = transaction.GetHash()
-						});
-				}
-			}
+				Confirmations = confirmations,
+				TransactionId = transaction.GetHash(),
+				Transaction = transaction
+			};
+			if(_WalletEntries.TryAdd(txId, entry))
+				AddTxByScriptId(txId, entry);
 		}
 	}
 }

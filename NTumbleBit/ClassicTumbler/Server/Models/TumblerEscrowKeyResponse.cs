@@ -36,10 +36,25 @@ namespace NTumbleBit.ClassicTumbler.Server.Models
 			}
 		}
 
+
+		uint160 _ChannelId;
+		public uint160 ChannelId
+		{
+			get
+			{
+				return _ChannelId;
+			}
+			set
+			{
+				_ChannelId = value;
+			}
+		}
+
 		public void ReadWrite(BitcoinStream stream)
 		{
 			stream.ReadWrite(ref _KeyIndex);
 			stream.ReadWriteC(ref _PubKey);
+			stream.ReadWrite(ref _ChannelId);
 		}
 	}
 }

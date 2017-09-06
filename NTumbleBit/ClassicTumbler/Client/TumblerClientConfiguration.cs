@@ -58,16 +58,16 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 			Network = args.Contains("-testnet", StringComparer.OrdinalIgnoreCase) ? Network.TestNet :
 				args.Contains("-regtest", StringComparer.OrdinalIgnoreCase) ? Network.RegTest :
-				Network.Main;
+				null;
 
 			if(ConfigurationFile != null)
 			{
 				AssetConfigFileExists();
 				var configTemp = TextFileConfiguration.Parse(File.ReadAllText(ConfigurationFile));
-				Network = configTemp.GetOrDefault<bool>("testnet", false) ? Network.TestNet :
-						  configTemp.GetOrDefault<bool>("regtest", false) ? Network.RegTest :
-						  Network.Main;
+				Network = Network ?? (configTemp.GetOrDefault<bool>("testnet", false) ? Network.TestNet :
+						  configTemp.GetOrDefault<bool>("regtest", false) ? Network.RegTest : null);
 			}
+			Network = Network ?? Network.Main;
 
 			if(DataDir == null)
 			{

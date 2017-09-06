@@ -11,6 +11,7 @@ using NTumbleBit.Services;
 using NTumbleBit.ClassicTumbler.Client;
 using System.Threading.Tasks;
 using CommandLine.Text;
+using System.Text.RegularExpressions;
 
 namespace NTumbleBit.ClassicTumbler.CLI
 {
@@ -164,7 +165,7 @@ namespace NTumbleBit.ClassicTumbler.CLI
 			{
 				bool parsed = false;
 
-				if(options.Query.Equals("now", StringComparison.Ordinal))
+				if(options.Query.StartsWith("now", StringComparison.Ordinal))
 				{
 					var blockCount = Runtime.Services.BlockExplorerService.GetCurrentHeight();
 					options.CycleId =
@@ -173,12 +174,26 @@ namespace NTumbleBit.ClassicTumbler.CLI
 						.Select(o => o.Start)
 						.FirstOrDefault();
 					parsed = options.CycleId != 0;
+					options.Query = options.Query.Replace("now", options.CycleId.Value.ToString());
 				}
 
 				try
 				{
-					options.CycleId = int.Parse(options.Query);
-					parsed = true;
+					var regex = System.Text.RegularExpressions.Regex.Match(options.Query, @"^(\d+)(([+|-])(\d))?$");
+					if(regex.Success)
+					{
+						options.CycleId = int.Parse(regex.Groups[1].Value);
+						if(regex.Groups[3].Success && regex.Groups[4].Success)
+						{
+							int offset = 1;
+							if(regex.Groups[3].Value.Equals("-", StringComparison.OrdinalIgnoreCase))
+								offset = -1;
+							offset = offset * int.Parse(regex.Groups[4].Value);
+							options.CycleOffset = offset;
+						}
+						
+						parsed = true;
+					}
 				}
 				catch { }
 				try
@@ -197,6 +212,9 @@ namespace NTumbleBit.ClassicTumbler.CLI
 					throw new FormatException();
 			}
 
+			Stats stats = new Stats();
+			Stats statsTotal = new Stats();
+
 			if(options.CycleId != null)
 			{
 				while(options.PreviousCount > 0)
@@ -207,6 +225,11 @@ namespace NTumbleBit.ClassicTumbler.CLI
 						cycle = Runtime.TumblerParameters.CycleGenerator.GetCycle(options.CycleId.Value);
 						if(cycle == null)
 							throw new NullReferenceException(); //Cleanup
+						for(int i = 0; i < Math.Abs(options.CycleOffset); i++)
+						{
+							cycle = options.CycleOffset < 0 ? Runtime.TumblerParameters.CycleGenerator.GetPreviousCycle(cycle) : Runtime.TumblerParameters.CycleGenerator.GetNextCycle(cycle);
+						}
+						options.CycleId = cycle.Start;
 					}
 					catch
 					{
@@ -252,12 +275,51 @@ namespace NTumbleBit.ClassicTumbler.CLI
 					Console.WriteLine("Records:");
 					foreach(var correlationGroup in records.GroupBy(r => r.Correlation))
 					{
+						stats.CorrelationGroupCount++;
 						hasData = true;
 						Console.WriteLine("========");
+
+						var transactions = correlationGroup.Where(o => o.RecordType == RecordType.Transaction).ToArray();
+
+						if(state == null)
+						{
+							var isBob = transactions.Any(o => o.TransactionType == TransactionType.TumblerEscrow);
+							var isAlice = transactions.Any(o => o.TransactionType == TransactionType.ClientEscrow);
+							if(isBob)
+								stats.BobCount++;
+							if(isAlice)
+								stats.AliceCount++;
+
+							var isUncooperative = transactions.Any(o => o.TransactionType == TransactionType.ClientFulfill) &&
+												  transactions.All(o => o.TransactionType != TransactionType.ClientEscape);
+							if(isUncooperative)
+							{
+								stats.UncooperativeCount++;
+							}
+
+							var isCashout = transactions.Any(o => (o.TransactionType == TransactionType.ClientEscape || o.TransactionType == TransactionType.ClientFulfill));
+							if(isCashout)
+								stats.CashoutCount++;
+						}
+						else
+						{
+							var isUncooperative = transactions.Any(o => (o.TransactionType == TransactionType.ClientOffer || o.TransactionType == TransactionType.ClientOfferRedeem));
+							if(isUncooperative)
+							{
+								stats.UncooperativeCount++;
+							}
+
+							var isCashout = transactions.Any(o => (o.TransactionType == TransactionType.TumblerCashout));
+							if(isCashout)
+								stats.CashoutCount++;
+						}
+
+
 						foreach(var group in correlationGroup.GroupBy(r => r.TransactionType).OrderBy(r => (int)r.Key))
 						{
 							var builder = new StringBuilder();
 							builder.AppendLine(group.Key.ToString());
+						
 							foreach(var data in group.OrderBy(g => g.RecordType))
 							{
 								builder.Append("\t" + data.RecordType.ToString());
@@ -274,7 +336,12 @@ namespace NTumbleBit.ClassicTumbler.CLI
 					{
 						Console.WriteLine("Cycle " + cycle.Start + " has no data");
 					}
+
+					Console.WriteLine(stats.ToString());
 					Console.WriteLine("=====================================");
+
+					statsTotal = statsTotal + stats;
+					stats = new Stats();
 
 					options.PreviousCount--;
 					try
@@ -286,6 +353,8 @@ namespace NTumbleBit.ClassicTumbler.CLI
 						break;
 					}
 				}
+				Console.WriteLine("Stats Total:");
+				Console.WriteLine(statsTotal.ToString());
 			}
 
 			if(options.TxId != null)
