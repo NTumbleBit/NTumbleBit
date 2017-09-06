@@ -7,6 +7,7 @@ using NBitcoin;
 using Newtonsoft.Json.Linq;
 using NBitcoin.DataEncoders;
 using System.Threading;
+using System.Collections.Concurrent;
 
 namespace NTumbleBit.Services.RPC
 {
@@ -74,7 +75,7 @@ namespace NTumbleBit.Services.RPC
 		{
 			if(scriptPubKey == null)
 				throw new ArgumentNullException(nameof(scriptPubKey));
-			
+
 
 			var results = _Cache
 										.GetEntriesFromScript(scriptPubKey)
@@ -86,22 +87,47 @@ namespace NTumbleBit.Services.RPC
 
 			if(withProof)
 			{
+
 				foreach(var tx in results.ToList())
 				{
-					MerkleBlock proof = null;
-					var result = RPCClient.SendCommandNoThrows("gettxoutproof", new JArray(tx.Transaction.GetHash().ToString()));
-					if(result == null || result.Error != null)
+					var completion = new TaskCompletionSource<MerkleBlock>();
+					bool isRequester = true;
+					var txid = tx.Transaction.GetHash();
+					_GettingProof.AddOrUpdate(txid, completion, (k, o) =>
 					{
-						results.Remove(tx);
-						continue;
+						isRequester = false;
+						completion = o;
+						return o;
+					});
+					if(isRequester)
+					{
+						try
+						{
+							MerkleBlock proof = null;
+							var result = RPCClient.SendCommandNoThrows("gettxoutproof", new JArray(tx.Transaction.GetHash().ToString()));
+							if(result == null || result.Error != null)
+							{
+								completion.TrySetResult(null);
+								continue;
+							}
+							proof = new MerkleBlock();
+							proof.ReadWrite(Encoders.Hex.DecodeData(result.ResultString));
+							tx.MerkleProof = proof;
+							completion.TrySetResult(proof);
+						}
+						catch(Exception ex) { completion.TrySetException(ex); }
+						finally { _GettingProof.TryRemove(txid, out completion); }
 					}
-					proof = new MerkleBlock();
-					proof.ReadWrite(Encoders.Hex.DecodeData(result.ResultString));
-					tx.MerkleProof = proof;
+
+					var merkleBlock = completion.Task.GetAwaiter().GetResult();
+					if(merkleBlock == null)
+						results.Remove(tx);
 				}
 			}
 			return results;
 		}
+
+		ConcurrentDictionary<uint256, TaskCompletionSource<MerkleBlock>> _GettingProof = new ConcurrentDictionary<uint256, TaskCompletionSource<MerkleBlock>>();
 
 		private List<TransactionInformation> QueryWithListReceivedByAddress(bool withProof, BitcoinAddress address)
 		{

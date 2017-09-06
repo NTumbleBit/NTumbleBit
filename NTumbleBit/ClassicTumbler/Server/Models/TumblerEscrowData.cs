@@ -52,10 +52,26 @@ namespace NTumbleBit.ClassicTumbler.Server.Models
 				_Transaction = value;
 			}
 		}
+
+
+		MerkleBlock _MerkleProof;
+		public MerkleBlock MerkleProof
+		{
+			get
+			{
+				return _MerkleProof;
+			}
+			set
+			{
+				_MerkleProof = value;
+			}
+		}
+
 		public void ReadWrite(BitcoinStream stream)
 		{
 			stream.ReadWriteAsVarInt(ref _OutputIndex);
 			stream.ReadWrite(ref _Transaction);
+			stream.ReadWrite(ref _MerkleProof);
 			stream.ReadWriteC(ref _EscrowInitiatorKey);
 		}
 	}

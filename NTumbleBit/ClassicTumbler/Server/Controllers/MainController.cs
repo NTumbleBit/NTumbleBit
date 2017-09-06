@@ -319,15 +319,18 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 				throw new ActionResultException(BadRequest("invalid-phase"));
 
 			var session = GetPromiseServerSession(cycle.Start, channelId, CyclePhase.TumblerChannelEstablishment);
-			var tx = Services.BlockExplorerService.GetTransaction(session.EscrowedCoin.Outpoint.Hash)?.Transaction;
+			var tx = Services.BlockExplorerService
+							.GetTransactions(session.EscrowedCoin.TxOut.ScriptPubKey, true)
+							.FirstOrDefault(t => t.Transaction.GetHash() == session.EscrowedCoin.Outpoint.Hash);
 			if(session == null || tx == null)
 				return null;
 			AssertNotDuplicateQuery(cycle.Start, channelId);
 			return new TumblerEscrowData()
 			{
-				Transaction = tx,
+				Transaction = tx.Transaction,
 				OutputIndex = (int)session.EscrowedCoin.Outpoint.N,
-				EscrowInitiatorKey = session.GetInternalState().EscrowKey.PubKey
+				EscrowInitiatorKey = session.GetInternalState().EscrowKey.PubKey,
+				MerkleProof = tx.MerkleProof
 			};
 		}
 

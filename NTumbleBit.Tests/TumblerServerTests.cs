@@ -199,7 +199,14 @@ namespace NTumbleBit.Tests
 
 
 				server.MineTo(server.AliceNode, cycle, CyclePhase.TumblerChannelEstablishment);
-				MakeTumblerChannelConfirmed(server, machine);
+				machine.Update();
+
+				Assert.Equal(PaymentStateMachineStatus.TumblerChannelCreating, machine.Status);
+				//Wait escrow broadcasted
+				Thread.Sleep(1000);
+				server.TumblerNode.Generate(1);
+				machine.Update();
+				Assert.Equal(PaymentStateMachineStatus.TumblerChannelCreated, machine.Status);
 
 				Assert.NotEqual(uint160.Zero, machine.PromiseClientSession.Id);
 				Assert.NotEqual(machine.SolverClientSession.Id, machine.PromiseClientSession.Id);
@@ -208,10 +215,6 @@ namespace NTumbleBit.Tests
 				serverTracker.AssertKnown(TransactionType.TumblerEscrow, machine.PromiseClientSession.EscrowedCoin.Outpoint.Hash);
 				clientTracker.AssertKnown(TransactionType.TumblerEscrow, machine.PromiseClientSession.EscrowedCoin.ScriptPubKey);
 				clientTracker.AssertKnown(TransactionType.TumblerEscrow, machine.PromiseClientSession.EscrowedCoin.Outpoint.Hash);
-
-				server.MineTo(server.TumblerNode, cycle, CyclePhase.TumblerChannelEstablishment, end: true, offset: -1);
-				machine.Update();
-				Assert.Equal(PaymentStateMachineStatus.TumblerChannelConfirmed, machine.Status);
 
 				server.MineTo(server.TumblerNode, cycle, CyclePhase.PaymentPhase);
 				machine.Update();
@@ -222,6 +225,7 @@ namespace NTumbleBit.Tests
 
 				if(cooperativeClient && cooperativeTumbler)
 				{
+					Assert.Equal(PaymentStateMachineStatus.PuzzleSolutionObtained, machine.Status);
 					//Escape should be mined
 					Assert.Equal(2, block.Transactions.Count);
 
@@ -230,6 +234,8 @@ namespace NTumbleBit.Tests
 				}
 				else
 				{
+					if(!cooperativeTumbler)
+						Assert.Equal(PaymentStateMachineStatus.UncooperativeTumbler, machine.Status);
 					Assert.Equal(1, block.Transactions.Count);
 				}
 
@@ -319,21 +325,6 @@ namespace NTumbleBit.Tests
 			}
 		}
 
-		private static void MakeTumblerChannelConfirmed(TumblerServerTester server, PaymentStateMachine machine)
-		{
-			machine.Update();
-			Assert.Equal(PaymentStateMachineStatus.TumblerChannelCreating, machine.Status);
-
-			CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-			while(machine.Status != PaymentStateMachineStatus.TumblerChannelBroadcasted)
-			{
-				cts.Token.ThrowIfCancellationRequested();
-				server.RefreshWalletCache();
-				Assert.Equal(machine.Status, PaymentStateMachineStatus.TumblerChannelCreating);
-				machine.Update();
-			}
-		}
-
 		private static void AssertRate(Dictionary<uint256, Transaction> allTransactions, FeeRate expectedRate, Transaction tx)
 		{
 			var previousCoins = tx.Inputs.Select(t => t.PrevOut).Select(t => allTransactions[t.Hash].Outputs.AsCoins().ToArray()[(int)t.N]).ToArray();
@@ -384,16 +375,19 @@ namespace NTumbleBit.Tests
 
 				server.MineTo(server.AliceNode, cycle, CyclePhase.TumblerChannelEstablishment);
 				machine.Update();
-				MakeTumblerChannelConfirmed(server, machine);
 
+				Assert.Equal(PaymentStateMachineStatus.TumblerChannelCreating, machine.Status);
+
+				//Wait escrow broadcasted
 				Thread.Sleep(1000);
-				machine.Update();
-				Assert.Equal(PaymentStateMachineStatus.TumblerChannelBroadcasted, machine.Status);
 
 				//Make sure the tumbler escrow is broadcasted an mined
 				var broadcasted = server.ServerRuntime.Services.BroadcastService.TryBroadcast();
 				Assert.Equal(1, broadcasted.Length);
 				server.ServerRuntime.Tracker.AssertKnown(TransactionType.TumblerEscrow, broadcasted[0].GetHash());
+
+				machine.Update();
+				Assert.Equal(PaymentStateMachineStatus.TumblerChannelCreated, machine.Status);
 
 				server.MineTo(server.TumblerNode, cycle, CyclePhase.TumblerChannelEstablishment, end: true, offset: -1);
 				machine.Update();
