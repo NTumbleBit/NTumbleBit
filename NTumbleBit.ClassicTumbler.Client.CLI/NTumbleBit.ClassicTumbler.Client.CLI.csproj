@@ -21,7 +21,7 @@
     <PackageReference Include="CommandLineParser" Version="2.1.1-beta" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="1.1.2" />
     <PackageReference Include="Microsoft.Extensions.Logging.Filter" Version="1.1.2" />
-    <PackageReference Include="NStratis" Version="4.0.0.15" />
+    <PackageReference Include="NStratis" Version="4.0.0.32" />
   </ItemGroup>
 
 </Project>
