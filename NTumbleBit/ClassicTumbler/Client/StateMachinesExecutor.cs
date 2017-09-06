@@ -28,6 +28,12 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 		public override string Name => "mixer";
 
+		public int InvalidPhaseCount
+		{
+			get;
+			private set;
+		}
+
 		protected override void StartCore(CancellationToken cancellationToken)
 		{
 			new Thread(() =>
@@ -48,8 +54,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 						{
 							lastCycle = cycle.Start;
 							Logs.Client.LogInformation("New Cycle: " + cycle.Start);
-
-							var state = Runtime.Repository.Get<PaymentStateMachine.State>(GetPartitionKey(cycle.Start), "");
+							PaymentStateMachine.State state = GetPaymentStateMachineState(cycle);
 							if(state == null)
 							{
 								var stateMachine = new PaymentStateMachine(Runtime, null);
@@ -60,11 +65,13 @@ namespace NTumbleBit.ClassicTumbler.Client
 						var cycles = Runtime.TumblerParameters.CycleGenerator.GetCycles(height);
 						foreach(var state in cycles.SelectMany(c => Runtime.Repository.List<PaymentStateMachine.State>(GetPartitionKey(c.Start))))
 						{
+							bool noSave = false;
 							var machine = new PaymentStateMachine(Runtime, state);
+							var statusBefore = machine.GetInternalState();
 							try
 							{
 								machine.Update();
-								machine.InvalidPhaseCount = 0;
+								InvalidPhaseCount = 0;
 							}
 							catch(PrematureRequestException)
 							{
@@ -76,17 +83,24 @@ namespace NTumbleBit.ClassicTumbler.Client
 								var invalidPhase = ex.Message.IndexOf("invalid-phase", StringComparison.OrdinalIgnoreCase) >= 0;
 
 								if(invalidPhase)
-									machine.InvalidPhaseCount++;
-								else
-									machine.InvalidPhaseCount = 0;
-
-								if(!invalidPhase || machine.InvalidPhaseCount > 2)
 								{
-									Logs.Client.LogError("StateMachine Error: " + ex.ToString());
+									InvalidPhaseCount++;
+									noSave = true;
 								}
+								else
+									InvalidPhaseCount = 0;
 
+								if(invalidPhase && InvalidPhaseCount > 2)
+								{
+									Logs.Client.LogError(new EventId(), ex, $"Invalid-Phase happened repeatedly, check that your node currently at height {height} is currently sync to the network");
+								}
+								else if(!invalidPhase)
+								{
+									Logs.Client.LogError(new EventId(), ex, "Unhandled StateMachine Error");
+								}
 							}
-							Save(machine, machine.StartCycle);
+							if(!noSave)
+								Save(machine, machine.StartCycle);
 						}
 					}
 					catch(OperationCanceledException ex)
@@ -112,10 +126,16 @@ namespace NTumbleBit.ClassicTumbler.Client
 			}).Start();
 		}
 
+		public PaymentStateMachine.State GetPaymentStateMachineState(CycleParameters cycle)
+		{
+			return Runtime.Repository.Get<PaymentStateMachine.State>(GetPartitionKey(cycle.Start), "");
+		}
+
 		private string GetPartitionKey(int cycle)
 		{
 			return "Cycle_" + cycle;
 		}
+
 		private void Save(PaymentStateMachine stateMachine, int cycle)
 		{
 			Runtime.Repository.UpdateOrInsert(GetPartitionKey(cycle), "", stateMachine.GetInternalState(), (o, n) => n);

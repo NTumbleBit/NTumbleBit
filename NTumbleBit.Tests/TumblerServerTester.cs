@@ -71,7 +71,7 @@ namespace NTumbleBit.Tests
 				var creds = ExtractCredentials(File.ReadAllText(_TumblerNode.Config));
 				conf.RPC.User = creds.Item1;
 				conf.RPC.Password = creds.Item2;
-				conf.AllowHttp = true; //So the tests do not need TOR
+				conf.TorMandatory = false;
 				conf.Network = Network.RegTest;
 				conf.Listen = new System.Net.IPEndPoint(IPAddress.Parse("127.0.0.1"), 5000);
 				conf.AllowInsecure = !shouldBeStandard;
@@ -117,7 +117,7 @@ namespace NTumbleBit.Tests
 				Directory.CreateDirectory(clientConfig.DataDir);
 				clientConfig.Network = conf.Network;
 				clientConfig.CheckIp = false;
-				clientConfig.AllowHttp = true; //So the tests do not need TOR
+				clientConfig.TorMandatory = false;
 				clientConfig.OutputWallet.KeyPath = new KeyPath("0");
 				clientConfig.OutputWallet.RootKey = new ExtKey().Neuter().GetWif(conf.Network);
 				clientConfig.RPCArgs.Url = AliceNode.CreateRPCClient().Address;

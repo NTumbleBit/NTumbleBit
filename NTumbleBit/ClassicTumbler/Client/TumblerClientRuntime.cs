@@ -64,7 +64,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 			if (this.TumblerServer.IsOnion)
 				await SetupTorAsync(interaction, configuration.TorPath).ConfigureAwait(false);
-			else if (!configuration.AllowHttp)
+			else if (configuration.TorMandatory)
 				throw new ConfigException("The tumbler server should use TOR");
 			
 			Cooperative = configuration.Cooperative;
@@ -169,7 +169,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 		{
 			if(!AllowInsecure && DateTimeOffset.UtcNow - previousHandlerCreationDate < CircuitRenewInterval)
 			{
-				throw new InvalidOperationException("premature-request");
+				throw new PrematureRequestException();
 			}
 			previousHandlerCreationDate = DateTime.UtcNow;
 			var client = new TumblerClient(Network, TumblerServer, cycleId);

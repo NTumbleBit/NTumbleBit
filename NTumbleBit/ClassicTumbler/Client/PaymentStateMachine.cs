@@ -15,6 +15,16 @@ using NTumbleBit.ClassicTumbler.Server.Models;
 
 namespace NTumbleBit.ClassicTumbler.Client
 {
+	public enum PaymentStateMachineStatus
+	{
+		New,
+		Registered,
+		ClientChannelBroadcasted,
+		TumblerVoucherObtained,
+		TumblerEscrowed,
+		PuzzleSolutionObtained,
+		UncooperativeTumbler,
+	}
 	public class PaymentStateMachine
 	{
 		public TumblerClientRuntime Runtime
@@ -47,12 +57,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 				PromiseClientSession = new PromiseClientSession(runtime.TumblerParameters.CreatePromiseParamaters(), state.PromiseClientState);
 			if(state.SolverClientState != null)
 				SolverClientSession = new SolverClientSession(runtime.TumblerParameters.CreateSolverParamaters(), state.SolverClientState);
-			InvalidPhaseCount = state.InvalidPhaseCount;
-		}
-
-		public int InvalidPhaseCount
-		{
-			get; set;
+			Status = state.Status;
 		}
 
 		public Tracker Tracker
@@ -127,9 +132,10 @@ namespace NTumbleBit.ClassicTumbler.Client
 				get;
 				set;
 			}
-			public int InvalidPhaseCount
+			public PaymentStateMachineStatus Status
 			{
-				get; set;
+				get;
+				set;
 			}
 		}
 
@@ -142,8 +148,14 @@ namespace NTumbleBit.ClassicTumbler.Client
 				s.PromiseClientState = PromiseClientSession.GetInternalState();
 			if(ClientChannelNegotiation != null)
 				s.NegotiationClientState = ClientChannelNegotiation.GetInternalState();
-			s.InvalidPhaseCount = InvalidPhaseCount;
+			s.Status = Status;
 			return s;
+		}
+
+		public PaymentStateMachineStatus Status
+		{
+			get;
+			set;
 		}
 
 		public void Update()
@@ -174,10 +186,12 @@ namespace NTumbleBit.ClassicTumbler.Client
 			}
 
 
+			Logs.Client.LogInformation(Environment.NewLine);
 			Logs.Client.LogInformation("[[[Updating cycle " + cycle.Start + "]]]");
 
 			Logs.Client.LogInformation("Phase " + Enum.GetName(typeof(CyclePhase), phase) + ", ending in " + (cycle.GetPeriods().GetPeriod(phase).End - height) + " blocks");
 
+			var previousState = Status;
 			TumblerClient bob = null, alice = null;
 			try
 			{
@@ -200,7 +214,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 							StartCycle = cycle.Start;
 							ClientChannelNegotiation = new ClientChannelNegotiation(Parameters, cycle.Start);
 							ClientChannelNegotiation.ReceiveUnsignedVoucher(voucherResponse);
-							Logs.Client.LogInformation("Registered");
+							Status = PaymentStateMachineStatus.Registered;
 						}
 						break;
 					case CyclePhase.ClientChannelEstablishment:
@@ -244,7 +258,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 							Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.ClientRedeem, correlation, redeemTx);
 
-							Logs.Client.LogInformation("Client channel broadcasted");
+							Status = PaymentStateMachineStatus.ClientChannelBroadcasted;
 						}
 						else if(ClientChannelNegotiation.Status == TumblerClientSessionStates.WaitingSolvedVoucher)
 						{
@@ -265,13 +279,14 @@ namespace NTumbleBit.ClassicTumbler.Client
 									ClientEscrowKey = state.ClientEscrowKey.PubKey
 								});
 								ClientChannelNegotiation.CheckVoucherSolution(voucher);
-								Logs.Client.LogInformation($"Tumbler escrow voucher obtained");
+								Status = PaymentStateMachineStatus.TumblerVoucherObtained;
 							}
 						}
 						break;
 					case CyclePhase.TumblerChannelEstablishment:
 						if(ClientChannelNegotiation != null && ClientChannelNegotiation.Status == TumblerClientSessionStates.WaitingGenerateTumblerTransactionKey)
 						{
+							Logs.Client.LogInformation("Asking the tumbler to open the channel...");
 							bob = Runtime.CreateTumblerClient(cycle.Start, Identity.Bob);
 							//Client asks the Tumbler to make a channel
 							var bobEscrowInformation = ClientChannelNegotiation.GetOpenChannelRequest();
@@ -289,12 +304,12 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 							feeRate = GetFeeRate();
 							var sigReq = PromiseClientSession.CreateSignatureRequest(cashoutDestination, feeRate);
-							var commiments = bob.SignHashes(PromiseClientSession.Id, sigReq);
-							var revelation = PromiseClientSession.Reveal(commiments);
+							var commitments = bob.SignHashes(PromiseClientSession.Id, sigReq);
+							var revelation = PromiseClientSession.Reveal(commitments);
 							var proof = bob.CheckRevelation(PromiseClientSession.Id, revelation);
 							var puzzle = PromiseClientSession.CheckCommitmentProof(proof);
 							SolverClientSession.AcceptPuzzle(puzzle);
-							Logs.Client.LogInformation("Tumbler escrow puzzle obtained");
+							Status = PaymentStateMachineStatus.TumblerEscrowed;
 						}
 						break;
 					case CyclePhase.PaymentPhase:
@@ -332,6 +347,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 										var tumblingSolution = SolverClientSession.GetSolution();
 										var transaction = PromiseClientSession.GetSignedTransaction(tumblingSolution);
 										Logs.Client.LogInformation("Got puzzle solution cooperatively from the tumbler");
+										Status = PaymentStateMachineStatus.PuzzleSolutionObtained;
 										Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.TumblerCashout, correlation, new TrustedBroadcastRequest()
 										{
 											BroadcastAt = cycle.GetPeriods().ClientCashout.Start,
@@ -346,6 +362,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 									}
 									catch(Exception ex)
 									{
+										Status = PaymentStateMachineStatus.UncooperativeTumbler;
 										Logs.Client.LogWarning("The tumbler did not gave puzzle solution cooperatively");
 										Logs.Client.LogWarning(ex.ToString());
 									}
@@ -364,7 +381,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 								{
 									SolverClientSession.CheckSolutions(transactions.Select(t => t.Transaction).ToArray());
 									Logs.Client.LogInformation("Puzzle solution recovered from tumbler's fulfill transaction");
-
+									Status = PaymentStateMachineStatus.PuzzleSolutionObtained;
 									var tumblingSolution = SolverClientSession.GetSolution();
 									var transaction = PromiseClientSession.GetSignedTransaction(tumblingSolution);
 									Tracker.TransactionCreated(cycle.Start, TransactionType.TumblerCashout, transaction.GetHash(), correlation);
@@ -377,6 +394,10 @@ namespace NTumbleBit.ClassicTumbler.Client
 			}
 			finally
 			{
+				if(previousState != Status)
+				{
+					Logs.Client.LogInformation($"Status changed {previousState} => {Status}");
+				}
 				if(alice != null && bob != null)
 					throw new InvalidOperationException("Bob and Alice have been both initialized, please report the bug to NTumbleBit developers");
 				if(alice != null)

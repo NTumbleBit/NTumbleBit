@@ -16,6 +16,12 @@ namespace NTumbleBit.ClassicTumbler.CLI
 			get; set;
 		}
 
+		[Option('p', "previous", HelpText = "When use with a cycle ID, will show the previous n cycle (example: `cycle 460391 -p 10` will show the last 10 cycle starting from the cycle 460391)")]
+		public int PreviousCount
+		{
+			get; set;
+		} = 1;
+
 		public string TxId
 		{
 			get; set;

@@ -28,7 +28,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 
         public string TorPath { get; set; }
 
-        public bool AllowHttp { get; set; } = false;
+        public bool TorMandatory { get; set; } = false;
 
         public Tracker Tracker { get; set; }
 

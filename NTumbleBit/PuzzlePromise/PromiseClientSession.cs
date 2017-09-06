@@ -257,12 +257,10 @@ namespace NTumbleBit.PuzzlePromise
 
 
 			List<HashBase> hashes = new List<HashBase>();
-			LockTime lockTime = new LockTime(0);
 			for(int i = 0; i < Parameters.RealTransactionCount; i++)
 			{
 				RealHash h = new RealHash(cashout, InternalState.EscrowedCoin);
 				h.FeeVariation = Money.Satoshis(i);
-				lockTime++;
 				hashes.Add(h);
 			}
 

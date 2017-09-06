@@ -207,11 +207,11 @@ namespace NTumbleBit.ClassicTumbler.Server
 			get;
 			set;
 		} = false;
-		public bool AllowHttp
+		public bool TorMandatory
 		{
 			get;
 			set;
-		} = false;
+		} = true;
 
 		public string GetDefaultConfigurationFile()
 		{
