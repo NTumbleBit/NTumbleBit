@@ -34,57 +34,34 @@ namespace NTumbleBit.Services.RPC
 			get; set;
 		}
 
-		class RateCache
-		{
-			public FeeRate Rate;
-			public DateTimeOffset Time;
-			public TaskCompletionSource<bool> _Refreshing;
-			object l = new object();
-			public Task<bool> WaitRefreshed()
-			{
-				lock(l)
-				{
-					if(_Refreshing == null)
-					{
-						_Refreshing = new TaskCompletionSource<bool>();
-						return Task.FromResult(false);
-					}
-					else
-						return _Refreshing.Task;
-				}
-			}
-
-			internal void Done()
-			{
-				lock(l)
-				{
-					_Refreshing.TrySetResult(true);
-					_Refreshing = null;
-				}
-			}
-		}
-		RateCache _Cache = new RateCache();
+		FeeRate _CachedValue;
+		DateTimeOffset _CachedValueTime;
 		TimeSpan CacheExpiration = TimeSpan.FromSeconds(60 * 5);
 		public async Task<FeeRate> GetFeeRateAsync()
 		{
-			if(_Cache != null && (DateTime.UtcNow - _Cache.Time) < CacheExpiration)
+			if(DateTimeOffset.UtcNow - _CachedValueTime > CacheExpiration)
 			{
-				return _Cache.Rate;
+				var rate = await FetchRateAsync();
+				_CachedValue = rate;
+				_CachedValueTime = DateTimeOffset.UtcNow;
+				return rate;
 			}
-			if(await _Cache.WaitRefreshed().ConfigureAwait(false))
-				return _Cache.Rate;
+			else
+			{
+				return _CachedValue;
+			}
+		}
 
+		private async Task<FeeRate> FetchRateAsync()
+		{
 			var rate = await _RPCClient.TryEstimateFeeRateAsync(1).ConfigureAwait(false) ??
-				   await _RPCClient.TryEstimateFeeRateAsync(2).ConfigureAwait(false) ??
-				   await _RPCClient.TryEstimateFeeRateAsync(3).ConfigureAwait(false) ??
-				   FallBackFeeRate;
+							   await _RPCClient.TryEstimateFeeRateAsync(2).ConfigureAwait(false) ??
+							   await _RPCClient.TryEstimateFeeRateAsync(3).ConfigureAwait(false) ??
+							   FallBackFeeRate;
 			if(rate == null)
 				throw new FeeRateUnavailableException("The fee rate is unavailable");
 			if(rate < MinimumFeeRate)
 				rate = MinimumFeeRate;
-			_Cache.Rate = rate;
-			_Cache.Time = DateTimeOffset.UtcNow;
-			_Cache.Done();
 			return rate;
 		}
 	}

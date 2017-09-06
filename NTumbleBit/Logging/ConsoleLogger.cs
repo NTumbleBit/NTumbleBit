@@ -35,12 +35,7 @@ namespace NTumbleBit.Logging
 			_newLineWithMessagePadding = Environment.NewLine + _messagePadding;
 		}
 
-		public CustomerConsoleLogger(string name, Func<string, LogLevel, bool> filter, bool includeScopes)
-			: this(name, filter, includeScopes, new ConsoleLoggerProcessor())
-		{
-		}
-
-		internal CustomerConsoleLogger(string name, Func<string, LogLevel, bool> filter, bool includeScopes, ConsoleLoggerProcessor loggerProcessor)
+		public CustomerConsoleLogger(string name, Func<string, LogLevel, bool> filter, bool includeScopes, ConsoleLoggerProcessor loggerProcessor)
 		{
 			if(name == null)
 			{

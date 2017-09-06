@@ -1,4 +1,7 @@
 ﻿using NBitcoin;
+using NTumbleBit.BouncyCastle.Crypto.Digests;
+using NTumbleBit.BouncyCastle.Crypto.Generators;
+using NTumbleBit.BouncyCastle.Crypto.Parameters;
 using NTumbleBit.BouncyCastle.Math;
 using System;
 using System.Collections.Generic;
@@ -38,12 +41,15 @@ namespace NTumbleBit.PuzzlePromise
 		public byte[] XOR(byte[] data)
 		{
 			byte[] keyBytes = ToBytes();
-			var keyHash = PromiseUtils.SHA512(keyBytes, 0, keyBytes.Length);
+			Sha512Digest sha512 = new Sha512Digest();
+			var generator = new Mgf1BytesGenerator(sha512);
+			generator.Init(new MgfParameters(keyBytes));
+			var keyHash = new byte[data.Length];
+			generator.GenerateBytes(keyHash, 0, keyHash.Length);
 			var encrypted = new byte[data.Length];
 			for(int i = 0; i < encrypted.Length; i++)
 			{
-
-				encrypted[i] = (byte)(data[i] ^ keyHash[i % keyHash.Length]);
+				encrypted[i] = (byte)(data[i] ^ keyHash[i]);
 			}
 			return encrypted;
 		}
