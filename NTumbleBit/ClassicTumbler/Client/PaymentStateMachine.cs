@@ -506,10 +506,24 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 		private TransactionInformation GetTransactionInformation(ICoin coin, bool withProof)
 		{
-			var tx = Services.BlockExplorerService
-				.GetTransactions(coin.TxOut.ScriptPubKey, withProof)
-				.FirstOrDefault(t => t.Transaction.Outputs.AsCoins().Any(c => c.Outpoint == coin.Outpoint));
-			return tx;
+			if(!withProof)
+			{
+				var tx = Services.BlockExplorerService.GetTransaction(coin.Outpoint.Hash);
+				if(coin.Outpoint.N >= tx.Transaction.Outputs.Count)
+					return null;
+				var txOut = tx.Transaction.Outputs[coin.Outpoint.N];
+				if(txOut.Value != coin.TxOut.Value || txOut.ScriptPubKey != coin.TxOut.ScriptPubKey)
+					return null;
+				return tx;
+			}
+			else
+			{
+
+				var tx = Services.BlockExplorerService
+					.GetTransactions(coin.TxOut.ScriptPubKey, withProof)
+					.FirstOrDefault(t => t.Transaction.Outputs.AsCoins().Any(c => c.Outpoint == coin.Outpoint));
+				return tx;
+			}
 		}
 
 		private FeeRate GetFeeRate()

@@ -110,7 +110,7 @@ namespace NTumbleBit.Configuration
 			return rpcClient;
 		}
 
-		const int MIN_CORE_VERSION = 130100;
+		const int MIN_CORE_VERSION = 140100;
 		public static RPCClient ConfigureRPCClient(TextFileConfiguration confArgs, Network network, string prefix = null)
 		{
 			RPCArgs args = Parse(confArgs, network, prefix);
