@@ -1,18 +1,18 @@
 ﻿using System;
-using System.Text;
-using System.Linq;
 using System.IO;
-using NBitcoin;
+using System.Linq;
+using System.Text;
 using Microsoft.Extensions.Logging;
-using NTumbleBit.Logging;
-using NTumbleBit.Configuration;
+using NBitcoin;
 using NBitcoin.RPC;
 using NTumbleBit.ClassicTumbler.Client.ConnectionSettings;
+using NTumbleBit.Configuration;
+using NTumbleBit.Logging;
 using NTumbleBit.Services;
 
 namespace NTumbleBit.ClassicTumbler.Client
 {
-	public class OutputWalletConfiguration
+    public class OutputWalletConfiguration
 	{
 		public BitcoinExtPubKey RootKey
 		{

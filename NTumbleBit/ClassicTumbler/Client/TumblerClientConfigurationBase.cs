@@ -1,4 +1,4 @@
-﻿using NTumbleBit.ClassicTumbler.Client.ConnectionSettings;
+using NTumbleBit.ClassicTumbler.Client.ConnectionSettings;
 using NBitcoin;
 using NTumbleBit.Configuration;
 using NTumbleBit.Services;
