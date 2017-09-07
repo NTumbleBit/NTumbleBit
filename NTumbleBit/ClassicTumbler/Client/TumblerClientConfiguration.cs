@@ -32,17 +32,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 	public class TumblerClientConfiguration : TumblerClientConfigurationBase
 	{
-		public string ConfigurationFile
-		{
-			get;
-			set;
-		}
-
-		public RPCArgs RPCArgs
-		{
-			get; set;
-		} = new RPCArgs();
-
 		public TumblerClientConfiguration LoadArgs(String[] args)
 		{
 			ConfigurationFile = args.Where(a => a.StartsWith("-conf=", StringComparison.Ordinal)).Select(a => a.Substring("-conf=".Length).Replace("\"", "")).FirstOrDefault();

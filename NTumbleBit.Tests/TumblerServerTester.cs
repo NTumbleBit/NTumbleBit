@@ -213,13 +213,13 @@ namespace NTumbleBit.Tests
 				Utils.DeleteRecursivelyWithMagicDust(directory);
 				return true;
 			}
-			catch (DirectoryNotFoundException)
+			catch(DirectoryNotFoundException)
 			{
 				return true;
 			}
-			catch (Exception)
+			catch(Exception)
 			{
-				if (throws)
+				if(throws)
 					throw;
 			}
 			return false;
@@ -293,23 +293,23 @@ namespace NTumbleBit.Tests
 
 		public void Dispose()
 		{
-			if (_Host != null)
+			if(_Host != null)
 			{
 
 				_Host.Dispose();
 				_Host = null;
 			}
-			if (_NodeBuilder != null)
+			if(_NodeBuilder != null)
 			{
 				_NodeBuilder.Dispose();
 				_NodeBuilder = null;
 			}
-			if (ClientRuntime != null)
+			if(ClientRuntime != null)
 			{
 				ClientRuntime.Dispose();
 				ClientRuntime = null;
 			}
-			if (ServerRuntime != null)
+			if(ServerRuntime != null)
 			{
 				ServerRuntime.Dispose();
 				ServerRuntime = null;
