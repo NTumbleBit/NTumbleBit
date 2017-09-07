@@ -1,22 +1,22 @@
-﻿using NBitcoin;
-using System;
+﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
-using NTumbleBit.Logging;
-using Microsoft.Extensions.Logging;
-using System.Text;
 using System.Runtime.InteropServices;
-using NTumbleBit.Configuration;
-using System.Diagnostics;
-using NTumbleBit.ClassicTumbler.Client.ConnectionSettings;
-using NTumbleBit.Services;
+using System.Text;
+using Microsoft.Extensions.Logging;
+using NBitcoin;
 using NBitcoin.RPC;
+using NTumbleBit.ClassicTumbler.Client.ConnectionSettings;
+using NTumbleBit.Configuration;
+using NTumbleBit.Logging;
+using NTumbleBit.Services;
 
 namespace NTumbleBit.ClassicTumbler.Server
 {
 
-	public class TumblerConfiguration
+    public class TumblerConfiguration
 	{
 		public TumblerConfiguration()
 		{
@@ -178,8 +178,22 @@ namespace NTumbleBit.ClassicTumbler.Server
 			Listen = new IPEndPoint(IPAddress.Parse("127.0.0.1"), defaultPort);
 
 			RPC = RPCArgs.Parse(config, Network);
+			TorPath = config.GetOrDefault<string>("torpath", "tor");		    
+			DBreezeRepository = new DBreezeRepository(Path.Combine(DataDir, "db2"));
+			Tracker = new Tracker(DBreezeRepository, Network);
 			ClassicTumblerParameters.Fee = config.GetOrDefault<Money>("tumbler.fee", Money.Coins(0.001m));
-			TorPath = config.GetOrDefault<string>("torpath", "tor");
+
+			RPCClient rpc = null;
+			try
+			{
+				rpc = RPC.ConfigureRPCClient(Network);
+			}
+			catch
+			{
+				throw new ConfigException("Please, fix rpc settings in " + ConfigurationFile);
+			}
+
+			Services = ExternalServices.CreateFromRPCClient(rpc, DBreezeRepository, Tracker, true);
 			return this;
 		}
 
