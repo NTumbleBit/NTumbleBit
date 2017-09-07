@@ -1,4 +1,12 @@
-﻿using Microsoft.AspNetCore.Hosting;
+﻿using System;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
+using System.Threading;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using NBitcoin;
@@ -7,16 +15,8 @@ using NTumbleBit.ClassicTumbler;
 using NTumbleBit.ClassicTumbler.CLI;
 using NTumbleBit.ClassicTumbler.Client;
 using NTumbleBit.ClassicTumbler.Server;
+using NTumbleBit.Services;
 using NTumbleBit.Services.RPC;
-using System;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Runtime.CompilerServices;
-using System.Text.RegularExpressions;
-using System.Threading;
-using Newtonsoft.Json.Linq;
 
 namespace NTumbleBit.Tests
 {
@@ -34,14 +34,14 @@ namespace NTumbleBit.Tests
 				var rootTestData = "TestData";
 				directory = rootTestData + "/" + directory;
 				_Directory = directory;
-				if(!Directory.Exists(rootTestData))
+				if (!Directory.Exists(rootTestData))
 					Directory.CreateDirectory(rootTestData);
 
-				if(!TryDelete(directory, false))
+				if (!TryDelete(directory, false))
 				{
-					foreach(var process in Process.GetProcessesByName("bitcoind"))
+					foreach (var process in Process.GetProcessesByName("bitcoind"))
 					{
-						if(process.MainModule.FileName.Replace("\\", "/").StartsWith(Path.GetFullPath(rootTestData).Replace("\\", "/"), StringComparison.Ordinal))
+						if (process.MainModule.FileName.Replace("\\", "/").StartsWith(Path.GetFullPath(rootTestData).Replace("\\", "/"), StringComparison.Ordinal))
 						{
 							process.Kill();
 							process.WaitForExit();
@@ -83,6 +83,8 @@ namespace NTumbleBit.Tests
 				conf.Network = Network.RegTest;
 				conf.Listen = new System.Net.IPEndPoint(IPAddress.Parse("127.0.0.1"), 5000);
 				conf.AllowInsecure = !shouldBeStandard;
+				conf.DBreezeRepository = new DBreezeRepository(Path.Combine(conf.DataDir, "db2"));
+				conf.Tracker = new Tracker(conf.DBreezeRepository, conf.Network);
 
 				conf.NoRSAProof = !shouldBeStandard;
 				if(!shouldBeStandard)
@@ -99,6 +101,9 @@ namespace NTumbleBit.Tests
 					conf.ClassicTumblerParameters.CycleGenerator = standard.Generator;
 					conf.ClassicTumblerParameters.Denomination = standard.Denomination;
 				}
+
+				RPCClient rpc = conf.RPC.ConfigureRPCClient(conf.Network);
+				conf.Services = ExternalServices.CreateFromRPCClient(rpc, conf.DBreezeRepository, conf.Tracker, true);
 
 				var runtime = TumblerRuntime.FromConfiguration(conf, new AcceptAllClientInteraction());
 				_Host = new WebHostBuilder()
@@ -131,8 +136,13 @@ namespace NTumbleBit.Tests
 				creds = ExtractCredentials(File.ReadAllText(AliceNode.Config));
 				clientConfig.RPCArgs.User = creds.Item1;
 				clientConfig.RPCArgs.Password = creds.Item2;
+				clientConfig.DBreezeRepository = new DBreezeRepository(Path.Combine(clientConfig.DataDir, "db2"));
+				clientConfig.Tracker = new Tracker(clientConfig.DBreezeRepository, clientConfig.Network);
 				clientConfig.TumblerServer = runtime.TumblerUris.First();
 
+				RPCClient rpcClient = clientConfig.RPCArgs.ConfigureRPCClient(clientConfig.Network);
+				clientConfig.Services = ExternalServices.CreateFromRPCClient(rpcClient, clientConfig.DBreezeRepository, clientConfig.Tracker, false);
+				clientConfig.DestinationWallet = new ClientDestinationWallet(clientConfig.OutputWallet.RootKey, clientConfig.OutputWallet.KeyPath, clientConfig.DBreezeRepository, clientConfig.Network);
 				ClientRuntime = TumblerClientRuntime.FromConfiguration(clientConfig, new AcceptAllClientInteraction());
 
 				//Overrides client fee
@@ -163,7 +173,7 @@ namespace NTumbleBit.Tests
 			var height = node.CreateRPCClient().GetBlockCount();
 			var periodStart = end ? cycle.GetPeriods().GetPeriod(phase).End : cycle.GetPeriods().GetPeriod(phase).Start;
 			var blocksToFind = periodStart - height + offset;
-			if(blocksToFind <= 0)
+			if (blocksToFind <= 0)
 				return;
 
 			node.FindBlock(blocksToFind);
@@ -172,9 +182,9 @@ namespace NTumbleBit.Tests
 
 		public void RefreshWalletCache()
 		{
-			if(ClientRuntime != null)
+			if (ClientRuntime != null)
 				ClientRuntime.Services.BlockExplorerService.WaitBlock(uint256.Zero, default(CancellationToken));
-			if(ServerRuntime != null)
+			if (ServerRuntime != null)
 				ServerRuntime.Services.BlockExplorerService.WaitBlock(uint256.Zero, default(CancellationToken));
 		}
 
@@ -185,11 +195,11 @@ namespace NTumbleBit.Tests
 
 		public void SyncNodes()
 		{
-			foreach(var node in NodeBuilder.Nodes)
+			foreach (var node in NodeBuilder.Nodes)
 			{
-				foreach(var node2 in NodeBuilder.Nodes)
+				foreach (var node2 in NodeBuilder.Nodes)
 				{
-					if(node != node2)
+					if (node != node2)
 						node.Sync(node2, true);
 				}
 			}
