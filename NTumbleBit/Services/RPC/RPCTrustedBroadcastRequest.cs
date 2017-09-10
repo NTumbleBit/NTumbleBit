@@ -193,33 +193,31 @@ namespace NTumbleBit.Services.RPC
 				}
 				else
 				{
-					foreach(var tx in GetReceivedTransactions(broadcast.Request.PreviousScriptPubKey)
+					foreach(var coin in GetReceivedTransactions(broadcast.Request.PreviousScriptPubKey)
 						//Currently broadcasting transaction might have received transactions for PreviousScriptPubKey
-						.Concat(broadcasting.ToArray().Select(b => b.Item2)))
+						.Concat(broadcasting.ToArray().Select(b => b.Item2))
+						.SelectMany(tx => tx.Outputs.AsCoins())
+						.Concat(broadcast.Request.KnownPrevious ?? new Coin[0])
+						.Where(c => c.ScriptPubKey == broadcast.Request.PreviousScriptPubKey))
 					{
-						foreach(var coin in tx.Outputs.AsCoins())
-						{
-							if(coin.ScriptPubKey == broadcast.Request.PreviousScriptPubKey)
-							{
-								bool cached;
-								var transaction = broadcast.Request.ReSign(coin, out cached);
-								var txHash = transaction.GetHash();
-								if(!cached || !broadcast.Tracked)
-								{
-									broadcast.Tracked = true;
-									_Tracker.TransactionCreated(broadcast.Cycle, broadcast.TransactionType, txHash, broadcast.Correlation);
-									RecordMaping(broadcast, transaction, txHash);
-									AddBroadcast(broadcast);
-								}
 
-								if(!knownBroadcastedSet.Contains(txHash)
-									&& broadcast.Request.IsBroadcastableAt(height))
-								{
-									broadcasting.Add(Tuple.Create(broadcast, transaction, _Broadcaster.BroadcastAsync(transaction)));
-								}
-								knownBroadcastedSet.Add(txHash);
-							}
+						bool cached;
+						var transaction = broadcast.Request.ReSign(coin, out cached);
+						var txHash = transaction.GetHash();
+						if(!cached || !broadcast.Tracked)
+						{
+							broadcast.Tracked = true;
+							_Tracker.TransactionCreated(broadcast.Cycle, broadcast.TransactionType, txHash, broadcast.Correlation);
+							RecordMaping(broadcast, transaction, txHash);
+							AddBroadcast(broadcast);
 						}
+
+						if(!knownBroadcastedSet.Contains(txHash)
+							&& broadcast.Request.IsBroadcastableAt(height))
+						{
+							broadcasting.Add(Tuple.Create(broadcast, transaction, _Broadcaster.BroadcastAsync(transaction)));
+						}
+						knownBroadcastedSet.Add(txHash);
 					}
 				}
 

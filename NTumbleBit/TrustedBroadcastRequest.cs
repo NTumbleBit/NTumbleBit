@@ -58,6 +58,12 @@ namespace NTumbleBit
 			}
 		}
 
+		public Coin[] KnownPrevious
+		{
+			get;
+			set;
+		}
+
 		public Transaction ReSign(Coin coin)
 		{
 			bool a;
