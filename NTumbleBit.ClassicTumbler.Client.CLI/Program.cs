@@ -88,7 +88,7 @@ namespace NTumbleBit.ClassicTumbler.Client.CLI
 			{
 				foreach(var record in runtime.Tracker.Search(unspent.ScriptPubKey))
 				{
-					if(record.TransactionType == Services.TransactionType.ClientEscape)
+					if(record.TransactionType == Services.TransactionType.ClientEscrow)
 					{
 						Logs.Client.LogInformation("Client Escrow found " + record.TransactionId);
 						var cycle = runtime.TumblerParameters.CycleGenerator.GetCycle(record.Cycle);
