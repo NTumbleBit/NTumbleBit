@@ -88,9 +88,9 @@ namespace NTumbleBit.ClassicTumbler.Client.CLI
 			{
 				foreach(var record in runtime.Tracker.Search(unspent.ScriptPubKey))
 				{
-					if(record.TransactionType == Services.TransactionType.ClientRedeem)
+					if(record.TransactionType == Services.TransactionType.ClientEscape)
 					{
-						Logs.Client.LogInformation("Redeem found " + record.TransactionId);
+						Logs.Client.LogInformation("Client Escrow found " + record.TransactionId);
 						var cycle = runtime.TumblerParameters.CycleGenerator.GetCycle(record.Cycle);
 						var machineState = runtime.CreateStateMachineJob().GetPaymentStateMachineState(cycle);
 						var solver = new PaymentStateMachine(runtime, machineState).SolverClientSession;
