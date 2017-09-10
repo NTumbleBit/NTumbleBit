@@ -72,7 +72,7 @@ namespace NTumbleBit.ClassicTumbler
 			{
 				FriendlyName = "Shorty",
 				Consensus = consensus,
-				Denomination = Money.Coins(1.0m),
+				Denomination = Money.Coins(0.01m),
 				Generator = new OverlappedCycleGenerator()
 				{
 					RegistrationOverlap = 1,
@@ -94,7 +94,7 @@ namespace NTumbleBit.ClassicTumbler
 			{
 				FriendlyName = "Shorty2x",
 				Consensus = consensus,
-				Denomination = Money.Coins(2.0m),
+				Denomination = Money.Coins(0.02m),
 				Generator = new OverlappedCycleGenerator()
 				{
 					RegistrationOverlap = 1,

@@ -159,7 +159,10 @@ namespace NTumbleBit.ClassicTumbler.Server
 			Listen = new IPEndPoint(IPAddress.Parse("127.0.0.1"), defaultPort);
 
 			RPC = RPCArgs.Parse(config, Network);
-			ClassicTumblerParameters.Fee = config.GetOrDefault<Money>("tumbler.fee", Money.Coins(0.001m));
+
+			//0.1% fee by default
+			var defaultFee = Money.Satoshis((decimal)ClassicTumblerParameters.Denomination.Satoshi * 0.001m);
+			ClassicTumblerParameters.Fee = config.GetOrDefault<Money>("tumbler.fee", defaultFee);
 			TorPath = config.GetOrDefault<string>("torpath", "tor");
 			return this;
 		}
