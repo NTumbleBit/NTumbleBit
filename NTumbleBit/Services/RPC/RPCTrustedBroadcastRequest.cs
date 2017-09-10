@@ -252,7 +252,7 @@ namespace NTumbleBit.Services.RPC
 			var mapping = Repository.Get<TxToRecord>("TxToRecord", txId.ToString());
 			if(mapping == null)
 				return null;
-			var record = Repository.Get<Record>("TrustedBroadcasts", mapping.RecordHash.ToString()).Request;
+			var record = Repository.Get<Record>("TrustedBroadcasts", mapping.RecordHash.ToString())?.Request;
 			if(record == null)
 				return null;
 			record.Transaction = mapping.Transaction;
