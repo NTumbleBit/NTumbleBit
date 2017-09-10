@@ -1,5 +1,5 @@
-﻿using System;
-using NTumbleBit.BouncyCastle.Math;
+﻿using NTumbleBit.BouncyCastle.Math;
+using System;
 
 namespace TumbleBitSetup
 {

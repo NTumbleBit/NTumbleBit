@@ -1,15 +1,14 @@
-﻿using NTumbleBit.BouncyCastle.Math;
-using NTumbleBit.BouncyCastle.Crypto.Parameters;
+﻿using NTumbleBit.BouncyCastle.Crypto.Parameters;
+using NTumbleBit.BouncyCastle.Math;
 using NTumbleBit.BouncyCastle.Security;
 using System;
-
 
 namespace TumbleBitSetup
 {
     internal static class PoupardStern
     {
         /// <summary>
-        /// Proving Algorithm specified in (3.2.1) of the setup
+        /// Proving algorithm as specified in section 3.2.1 of the setup.
         /// </summary> 
         /// <param name="privKey">The secret key</param>
         /// <param name="setup">The setup parameters</param>
@@ -20,14 +19,15 @@ namespace TumbleBitSetup
                 throw new ArgumentNullException(nameof(privKey));
             if (setup == null)
                 throw new ArgumentNullException(nameof(setup));
-            var p = privKey.P;
-            var q = privKey.Q;
-            var e = privKey.PublicExponent;
-            int keyLength = setup.KeySize;
+
+            BigInteger p = privKey.P;
+            BigInteger q = privKey.Q;
+            BigInteger Modulus = privKey.Modulus;
+
             int k = setup.SecurityParameter;
             var psBytes = setup.PublicString;
+            int keyLength = setup.KeySize;
 
-            BigInteger y;
             BigInteger Two = BigInteger.Two;
             // 2^{|N| - 1}
             BigInteger lowerLimit = Two.Pow(keyLength - 1);
@@ -37,24 +37,21 @@ namespace TumbleBitSetup
             // Rounding up k to the closest multiple of 8
             k = Utils.GetByteLength(k) * 8;
 
-            // Generate a keyPair from p, q and e
-            var keyPair = Utils.GeneratePrivate(p, q, e);
-            var pubKey = (RsaKeyParameters)keyPair.Public;
-            var secKey = (RsaPrivateCrtKeyParameters)keyPair.Private;
-
-            BigInteger Modulus = pubKey.Modulus;
-
             // Check if N < 2^{|N|-1}
             if (Modulus.CompareTo(lowerLimit) < 0)
-                throw new ArgumentOutOfRangeException("Bad RSA modulus N");
+                throw new ArgumentOutOfRangeException("RSA modulus smaller than expected");
 
             // if N >= 2^{KeySize}
             if (Modulus.CompareTo(upperLimit) >= 0)
-                throw new ArgumentOutOfRangeException("Bad RSA modulus N");
+                throw new ArgumentOutOfRangeException("RSA modulus larger than expected");
+
+            // if even
+            if ((Modulus.IntValue & 1) == 0)
+                throw new ArgumentException("RSA modulus is even");
 
             // p and q don't produce a modulus N that has the expected bitLength
             if (!(Modulus.BitLength.Equals(keyLength)))
-                throw new ArgumentException("Bad RSA P and Q");
+                throw new ArgumentException("RSA P and Q are bad");
 
             // Calculating phi
             BigInteger pSub1 = p.Subtract(BigInteger.One);
@@ -67,22 +64,25 @@ namespace TumbleBitSetup
             var p11 = Two.Pow(k);
             var p1 = lowerLimit.Divide(NsubPhi.Multiply(p11));
             if (p1.CompareTo(p11) <= 0)
-                throw new ArgumentOutOfRangeException("Bad RSA modulus N");
+                throw new ArgumentOutOfRangeException(nameof(Modulus), "Bad RSA modulus N");
 
             // Generate K
             GetK(k, out int BigK);
+
+            // Extract public key (N, e) from private key.
+            var pubKey = privKey.ToPublicKey();
 
             // Initialize and generate list of z values
             BigInteger[] zValues = new BigInteger[BigK];
             for (int i = 0; i < BigK; i++)
                 zValues[i] = SampleFromZnStar(pubKey, psBytes, i, BigK, keyLength);
-
-            for (;;)
+            BigInteger y;
+            for (; ; )
             {
                 // Initialize list of x values.
                 BigInteger[] xValues = new BigInteger[BigK];
 
-                // Generate r
+                // Get r
                 GetR(keyLength, out BigInteger r);
 
                 for (int i = 0; i < BigK; i++)
@@ -109,7 +109,7 @@ namespace TumbleBitSetup
         }
 
         /// <summary>
-        /// Verifying Algorithm specified in (3.3) of the setup
+        /// Verifying Algorithm as specified in section 3.3 of the setup.
         /// </summary>
         /// <param name="pubKey">Public key used</param>
         /// <param name="proof">The proof.</param>
@@ -129,8 +129,11 @@ namespace TumbleBitSetup
             var y = proof.YValue;
 
             BigInteger rPrime;
-            BigInteger lowerLimit = BigInteger.Two.Pow(keyLength - 1);
-            BigInteger upperLimit = BigInteger.Two.Pow(keyLength);
+            BigInteger Two = BigInteger.Two;
+            // 2^{|N| - 1}
+            BigInteger lowerLimit = Two.Pow(keyLength - 1);
+            // 2^{|N|}
+            BigInteger upperLimit = Two.Pow(keyLength);
 
             // Rounding up k to the closest multiple of 8
             k = Utils.GetByteLength(k) * 8;
@@ -147,6 +150,9 @@ namespace TumbleBitSetup
                 return false;
             // if N < 2^{KeySize-1}
             if (Modulus.CompareTo(lowerLimit) < 0)
+                return false;
+            // if even
+            if ((Modulus.IntValue & 1) == 0)
                 return false;
             // if N >= 2^{KeySize}
             if (Modulus.CompareTo(upperLimit) >= 0)
@@ -180,7 +186,7 @@ namespace TumbleBitSetup
         }
 
         /// <summary>
-        /// Generates a z_i value as specified in (3.3.1) of the setup
+        /// Generate z_i value as specified in section 3.3.1 of the setup.
         /// </summary>
         /// <param name="pubKey">Public key used</param>
         /// <param name="ps">public string specified in the setup</param>
@@ -199,10 +205,9 @@ namespace TumbleBitSetup
             // ASN.1 encoding of the PublicKey
             var keyBytes = pubKey.ToBytes();
             // Combine the OctetString
-            // TODO: Combine now takes multiple lists as input, so no need for the double call
-            var combined = Utils.Combine(keyBytes, Utils.Combine(psBytes, EI));
+            var combined = Utils.Combine(keyBytes, psBytes, EI);
             int j = 2;
-            for (;;)
+            for (; ; )
             {
                 // OctetLength of j
                 var jLen = Utils.GetOctetLen(j);
@@ -225,7 +230,7 @@ namespace TumbleBitSetup
         }
 
         /// <summary>
-        /// Calculates the value of w as specified in the setup.
+        /// Calculate the value of w as specified in section 3.3.2 of the setup.
         /// </summary>
         /// <param name="pubKey">Public key used</param>
         /// <param name="ps">public string specified in the setup</param>
@@ -234,9 +239,6 @@ namespace TumbleBitSetup
         /// <param name="keyLength">The size of the RSA key in bits</param>
         internal static void GetW(RsaKeyParameters pubKey, byte[] psBytes, BigInteger[] xValues, int k, int keyLength, out BigInteger w)
         {
-            if (xValues == null)
-                throw new ArgumentNullException(nameof(xValues));
-
             var BigK = xValues.Length;
 
             // ASN.1 encoding of the PublicKey
@@ -249,12 +251,13 @@ namespace TumbleBitSetup
             byte[] ExComb = new byte[0]; // Empty Array (Initialization)
             for (int i = 0; i < BigK; i++)
             {
+                // Encoding x_i to an OctetString.
                 var tmp = Utils.I2OSP(xValues[i], ExLen);
                 ExComb = Utils.Combine(ExComb, tmp);
             }
+
             // Concatenating the rest of s
-            // TODO: Combine now takes multiple lists as input, so no need for the double call
-            var s = Utils.Combine(keyBytes, Utils.Combine(psBytes, ExComb));
+            var s = Utils.Combine(keyBytes, psBytes, ExComb);
             // Hash the OctetString
             var BigW = Utils.SHA256(s);
             // Truncate to k-bits
@@ -264,7 +267,7 @@ namespace TumbleBitSetup
         }
 
         /// <summary>
-        /// Calculates the value of K as specified in equation 7 of the setup
+        /// Calculate the value of K as specified in equation (7) of the setup.
         /// </summary>
         /// <param name="k">Security parameter specified in the setup</param>
         internal static void GetK(int k, out int BigK)
@@ -274,7 +277,7 @@ namespace TumbleBitSetup
         }
 
         /// <summary>
-        /// Calculates the value of r as specified in the setup.
+        /// Generate r as specified in step 3 of the proving algorithm.
         /// </summary>
         /// <param name="keyLength">The size of the RSA key in bits</param>
         internal static void GetR(int keyLength, out BigInteger r)
@@ -282,7 +285,7 @@ namespace TumbleBitSetup
             // Initialize a cryptographic randomness.
             SecureRandom random = new SecureRandom();
 
-            // bitSize for the random value r.
+            // bitSize for the random value r (|N| - 1).
             int bitSize = keyLength - 1;
 
             // Generate random number that is bitSize long.

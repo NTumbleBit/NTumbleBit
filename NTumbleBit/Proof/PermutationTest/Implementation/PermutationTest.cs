@@ -1,16 +1,15 @@
-﻿using System;
-using System.Linq;
-using System.Collections.Generic;
-using NTumbleBit.BouncyCastle.Crypto.Parameters;
+﻿using NTumbleBit.BouncyCastle.Crypto.Parameters;
 using NTumbleBit.BouncyCastle.Math;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace TumbleBitSetup
 {
-    // TODO: edit the page number references in the comments or remove them.
     internal static class PermutationTest
     {
         /// <summary>
-        /// Proving Algorithm specified in page 7 (2.8.1) of the setup
+        /// Proving algorithm as specified in section 2.6.2 of the setup
         /// </summary>
         /// <param name="privKey">The secret key</param>
         /// <param name="setup">The setup parameters</param>
@@ -25,31 +24,48 @@ namespace TumbleBitSetup
             BigInteger p = privKey.P;
             BigInteger q = privKey.Q;
             BigInteger e = privKey.PublicExponent;
+            BigInteger Modulus = privKey.Modulus;
 
-            int alpha = setup.Alpha;
-            byte[] psBytes = setup.PublicString;
-            int k = setup.SecurityParameter;
+            var keyLength = Modulus.BitLength;
+            var alpha = setup.Alpha;
 
+            BigInteger Two = BigInteger.Two;
+            // 2^{|N| - 1}
+            BigInteger lowerLimit = Two.Pow(keyLength - 1);
+            // 2^{|N|}
+            BigInteger upperLimit = Two.Pow(keyLength);
 
+            // if N < 2^{KeySize-1}
+            if (Modulus.CompareTo(lowerLimit) < 0)
+                throw new ArgumentOutOfRangeException("RSA modulus smaller than expected");
+
+            // if N >= 2^{KeySize}
+            if (Modulus.CompareTo(upperLimit) >= 0)
+                throw new ArgumentOutOfRangeException("RSA modulus larger than expected");
+
+            // Verify alpha and N
+            if (!CheckAlphaN(alpha, Modulus))
+                throw new ArgumentException("RSA modulus has a small prime factor");
+
+            var psBytes = setup.PublicString;
+            var k = setup.SecurityParameter;
 
             byte[][] sigs;
 
             // Generate m1 and m2
             Get_m1_m2((decimal)alpha, e.IntValue, k, out int m1, out int m2);
 
-            // Generate private and public keys
-            BigInteger N = p.Multiply(q);
-            var eN = N.Multiply(e);
+            // Calculate eN
+            var eN = Modulus.Multiply(e);
 
-            // Generate a pair (pub, priv) of keys for e and eN
-            var keyPair = Utils.GeneratePrivate(p, q, e);
+            // Generate a pair (pub, sec) of keys with eN as e.
             var keyPrimePair = Utils.GeneratePrivate(p, q, eN);
 
-            // Extract public key (N, e) from main key.
-            var pubKey = (RsaKeyParameters)keyPair.Public;
+            // Extract public key (N, e) from private key.
+            var pubKey = privKey.ToPublicKey();
 
             // Generate list of rho values
-            GetRhos(m2, psBytes, pubKey, N.BitLength, out byte[][] rhoValues);
+            GetRhos(m2, psBytes, pubKey, keyLength, out byte[][] rhoValues);
 
             // Signing the Rho values
             sigs = new byte[m2][];
@@ -58,13 +74,13 @@ namespace TumbleBitSetup
                 if (i <= m1)
                     sigs[i] = ((RsaPrivateCrtKeyParameters)keyPrimePair.Private).Decrypt(rhoValues[i]);
                 else
-                    sigs[i] = ((RsaPrivateCrtKeyParameters)keyPair.Private).Decrypt(rhoValues[i]);
+                    sigs[i] = privKey.Decrypt(rhoValues[i]);
             }
             return new PermutationTestProof(sigs);
         }
 
         /// <summary>
-        /// Verifying Algorithm specified in page 8 (2.8.2) of the setup
+        /// Verifying algorithm as specified in section 2.6.3 of the setup
         /// </summary>
         /// <param name="pubKey">Public Key used to verify the proof</param>
         /// <param name="proof">Proof</param>
@@ -83,10 +99,13 @@ namespace TumbleBitSetup
             byte[] psBytes = setup.PublicString;
             int k = setup.SecurityParameter;
 
+            BigInteger Modulus = pubKey.Modulus;
+            BigInteger Exponent = pubKey.Exponent;
+
             BigInteger Two = BigInteger.Two;
-            var Modulus = pubKey.Modulus;
-            var Exponent = pubKey.Exponent;
+            // 2^{|N| - 1}
             BigInteger lowerLimit = Two.Pow(keyLength - 1);
+            // 2^{|N|}
             BigInteger upperLimit = Two.Pow(keyLength);
 
             // if N < 2^{KeySize-1}
@@ -135,7 +154,7 @@ namespace TumbleBitSetup
         }
 
         /// <summary>
-        /// Provides the check specified in step 3 of the verifying protocol.
+        /// Provide the check specified in step 4 of the verifying algorithm.
         /// </summary>
         /// <param name="alpha"> Prime number specified in the setup</param>
         /// <param name="N"> Modulus used in the public key</param>
@@ -153,7 +172,7 @@ namespace TumbleBitSetup
         }
 
         /// <summary>
-        /// Generates the values m1 and m2 as specified in the "proving" protocol in section 2.8
+        /// Generate the values m1 and m2 as specified in equation 2 of the setup.
         /// </summary>
         /// <param name="alpha">Prime number specified in the setup</param>
         /// <param name="e">Public Exponent used in the public key</param>
@@ -169,7 +188,8 @@ namespace TumbleBitSetup
         }
 
         /// <summary>
-        /// Generates a list of rho values as specified in the setup (2.8.1)
+        /// Generate a list of rho values as specified in section 2.6.4 in the setup*.
+        /// <para/> *Please note that this function generates all rho values at once, not one by one as specified in the setup.
         /// </summary>
         /// <param name="m2">m2</param>
         /// <param name="psBytes">public string specified in the setup</param>
@@ -190,7 +210,7 @@ namespace TumbleBitSetup
                 var EI = Utils.I2OSP(i, m2Len);
                 int j = 2;
                 // Combine the octet string
-                var combined = Utils.Combine(keyBytes, Utils.Combine(psBytes, EI));
+                var combined = Utils.Combine(keyBytes, psBytes, EI);
                 while (true)
                 {
                     // OctetLength of j
