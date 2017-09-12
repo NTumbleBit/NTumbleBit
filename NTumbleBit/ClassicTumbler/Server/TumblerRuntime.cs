@@ -1,26 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
+using NBitcoin;
 using NBitcoin.RPC;
-using System.IO;
+using NTumbleBit.ClassicTumbler.CLI;
+using NTumbleBit.Configuration;
 using NTumbleBit.Logging;
 using NTumbleBit.Services;
-using NTumbleBit.ClassicTumbler;
-using NBitcoin;
-using NTumbleBit.Configuration;
-using NTumbleBit.ClassicTumbler.Client;
-using NTumbleBit.ClassicTumbler.CLI;
-using System.Text;
-using System.Net;
-using System.Threading;
 using NTumbleBit.Tor;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Net;
+using System.Text;
+using System.Threading.Tasks;
 using TumbleBitSetup;
 
 namespace NTumbleBit.ClassicTumbler.Server
 {
-	public class TumblerRuntime : IDisposable
+    public class TumblerRuntime : IDisposable
 	{
 		public static TumblerRuntime FromConfiguration(TumblerConfiguration conf, ClientInteraction interaction)
 		{
@@ -80,10 +76,12 @@ namespace NTumbleBit.ClassicTumbler.Server
 						Logs.Configuration.LogWarning($"Tor RSA private key generated to {torRSA}");
 					}
 
-					var tumblerUri = new TumblerUrlBuilder();
-					tumblerUri.Port = result.HiddenServiceUri.Port;
-					tumblerUri.Host = result.HiddenServiceUri.Host;
-					TumblerUris.Add(tumblerUri);
+                    var tumblerUri = new TumblerUrlBuilder
+                    {
+                        Port = result.HiddenServiceUri.Port,
+                        Host = result.HiddenServiceUri.Host
+                    };
+                    TumblerUris.Add(tumblerUri);
 					TorUri = tumblerUri.GetRoutableUri(false);
 					ClassicTumblerParameters.ExpectedAddress = TorUri.AbsoluteUri;
 					Logs.Configuration.LogInformation($"Tor configured on {result.HiddenServiceUri}");
