@@ -181,7 +181,10 @@ namespace NTumbleBit.ClassicTumbler.Server
 			TorPath = config.GetOrDefault<string>("torpath", "tor");		    
 			DBreezeRepository = new DBreezeRepository(Path.Combine(DataDir, "db2"));
 			Tracker = new Tracker(DBreezeRepository, Network);
-			ClassicTumblerParameters.Fee = config.GetOrDefault<Money>("tumbler.fee", Money.Coins(0.001m));
+
+		    //0.1% fee by default
+		    var defaultFee = Money.Satoshis((decimal)ClassicTumblerParameters.Denomination.Satoshi * 0.001m);
+		    ClassicTumblerParameters.Fee = config.GetOrDefault<Money>("tumbler.fee", defaultFee);
 
 			RPCClient rpc = null;
 			try

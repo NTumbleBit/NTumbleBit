@@ -43,6 +43,11 @@ namespace NTumbleBit.Services.RPC
 			{
 				get; set;
 			}
+			public bool Tracked
+			{
+				get;
+				set;
+			}
 		}
 
 		public class TxToRecord
@@ -121,7 +126,7 @@ namespace NTumbleBit.Services.RPC
 			Logs.Broadcasters.LogInformation($"Planning to broadcast {record.TransactionType} of cycle {record.Cycle} on block {record.Request.BroadcastableHeight}");
 			AddBroadcast(record);
 		}
-		
+
 
 		private void AddBroadcast(Record broadcast)
 		{
@@ -171,8 +176,13 @@ namespace NTumbleBit.Services.RPC
 				{
 					var transaction = broadcast.Request.Transaction;
 					var txHash = transaction.GetHash();
-					_Tracker.TransactionCreated(broadcast.Cycle, broadcast.TransactionType, txHash, broadcast.Correlation);
-					RecordMaping(broadcast, transaction, txHash);
+					if(!broadcast.Tracked)
+					{
+						broadcast.Tracked = true;
+						_Tracker.TransactionCreated(broadcast.Cycle, broadcast.TransactionType, txHash, broadcast.Correlation);
+						RecordMaping(broadcast, transaction, txHash);
+						AddBroadcast(broadcast);
+					}
 
 					if(!knownBroadcastedSet.Contains(txHash)
 						&& broadcast.Request.IsBroadcastableAt(height))
@@ -183,37 +193,37 @@ namespace NTumbleBit.Services.RPC
 				}
 				else
 				{
-					foreach(var tx in GetReceivedTransactions(broadcast.Request.PreviousScriptPubKey)
+					foreach(var coin in GetReceivedTransactions(broadcast.Request.PreviousScriptPubKey)
 						//Currently broadcasting transaction might have received transactions for PreviousScriptPubKey
-						.Concat(broadcasting.ToArray().Select(b => b.Item2)))
+						.Concat(broadcasting.ToArray().Select(b => b.Item2))
+						.SelectMany(tx => tx.Outputs.AsCoins())
+						.Concat(broadcast.Request.KnownPrevious ?? new Coin[0])
+						.Where(c => c.ScriptPubKey == broadcast.Request.PreviousScriptPubKey))
 					{
-						foreach(var coin in tx.Outputs.AsCoins())
-						{
-							if(coin.ScriptPubKey == broadcast.Request.PreviousScriptPubKey)
-							{
-								bool cached;
-								var transaction = broadcast.Request.ReSign(coin, out cached);
-								var txHash = transaction.GetHash();
-								if(!cached)
-								{
-									_Tracker.TransactionCreated(broadcast.Cycle, broadcast.TransactionType, txHash, broadcast.Correlation);
-									RecordMaping(broadcast, transaction, txHash);
-									AddBroadcast(broadcast);
-								}
 
-								if(!knownBroadcastedSet.Contains(txHash)
-									&& broadcast.Request.IsBroadcastableAt(height))
-								{
-									broadcasting.Add(Tuple.Create(broadcast, transaction, _Broadcaster.BroadcastAsync(transaction)));
-								}
-								knownBroadcastedSet.Add(txHash);
-							}
+						bool cached;
+						var transaction = broadcast.Request.ReSign(coin, out cached);
+						var txHash = transaction.GetHash();
+						if(!cached || !broadcast.Tracked)
+						{
+							broadcast.Tracked = true;
+							_Tracker.TransactionCreated(broadcast.Cycle, broadcast.TransactionType, txHash, broadcast.Correlation);
+							RecordMaping(broadcast, transaction, txHash);
+							AddBroadcast(broadcast);
 						}
+
+						if(!knownBroadcastedSet.Contains(txHash)
+							&& broadcast.Request.IsBroadcastableAt(height))
+						{
+							broadcasting.Add(Tuple.Create(broadcast, transaction, _Broadcaster.BroadcastAsync(transaction)));
+						}
+						knownBroadcastedSet.Add(txHash);
 					}
 				}
 
-				var remove = height >= broadcast.Expiration;
-				if(remove)
+				var isExpired = height >= broadcast.Expiration;
+				var needTracking = broadcast.TransactionType == TransactionType.ClientRedeem;
+				if(isExpired && (!needTracking || broadcast.Tracked))
 					Repository.Delete<Record>("TrustedBroadcasts", broadcast.Request.Transaction.GetHash().ToString());
 			}
 
@@ -252,7 +262,7 @@ namespace NTumbleBit.Services.RPC
 			var mapping = Repository.Get<TxToRecord>("TxToRecord", txId.ToString());
 			if(mapping == null)
 				return null;
-			var record = Repository.Get<Record>("TrustedBroadcasts", mapping.RecordHash.ToString()).Request;
+			var record = Repository.Get<Record>("TrustedBroadcasts", mapping.RecordHash.ToString())?.Request;
 			if(record == null)
 				return null;
 			record.Transaction = mapping.Transaction;
