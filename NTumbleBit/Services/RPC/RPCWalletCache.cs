@@ -175,8 +175,16 @@ namespace NTumbleBit.Services.RPC
 				canMakeSimpleUpdate = false;
 				var result = _RPCClient.SendCommand("listtransactions", "*", count, skip, true);
 				skip += count;
-				var transactions = (JArray)result.Result;
-				if(transactions.Count < count)
+				var transactions = 
+					((JArray)result.Result).Select(obj => new RPCWalletEntry()
+					{
+						Confirmations = obj["confirmations"] == null ? 0 : (int)obj["confirmations"],
+						TransactionId = new uint256((string)obj["txid"])
+					})
+					.OrderBy(e => e.Confirmations)
+					.ToArray();
+
+				if(transactions.Length < count)
 				{
 					updatedConfirmationGap = 0;
 					canMakeSimpleUpdate = false;
@@ -184,17 +192,14 @@ namespace NTumbleBit.Services.RPC
 
 				var batch = _RPCClient.PrepareBatch();
 				var fetchingTransactions = new List<Tuple<RPCWalletEntry, Task<Transaction>>>();
-				foreach(var obj in transactions)
+				foreach(var localEntry in transactions)
 				{
-
-					var entry = new RPCWalletEntry();
-					entry.Confirmations = obj["confirmations"] == null ? 0 : (int)obj["confirmations"];
+					var entry = localEntry;
 					if(entry.Confirmations >= MaxConfirmations)
 					{
 						transactionTooOld = true;
 						break;
 					}
-					entry.TransactionId = new uint256((string)obj["txid"]);
 					if(!processedTransacions.Add(entry.TransactionId))
 						continue;
 					removeFromWalletEntries.Remove(entry.TransactionId);
@@ -238,7 +243,7 @@ namespace NTumbleBit.Services.RPC
 							AddTxByScriptId(entry.TransactionId, entry);
 					}
 				}
-				if(transactions.Count < count || transactionTooOld || canMakeSimpleUpdate)
+				if(transactions.Length < count || transactionTooOld || canMakeSimpleUpdate)
 					break;
 			}
 
