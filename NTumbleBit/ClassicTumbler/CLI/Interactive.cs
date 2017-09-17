@@ -387,7 +387,7 @@ namespace NTumbleBit.ClassicTumbler.CLI
 				{
 					tx = Runtime.Services.BroadcastService.GetKnownTransaction(txId);
 				}
-				var txInfo = Runtime.Services.BlockExplorerService.GetTransaction(txId);
+				var txInfo = Runtime.Services.BlockExplorerService.GetTransaction(txId, false);
 				if(tx == null)
 					tx = txInfo?.Transaction;
 				if(txInfo != null)

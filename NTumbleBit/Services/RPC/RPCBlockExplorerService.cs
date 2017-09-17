@@ -144,7 +144,7 @@ namespace NTumbleBit.Services.RPC
 				//May have duplicates
 				if(!resultsSet.Contains(txId))
 				{
-					var tx = GetTransaction(txId);
+					var tx = GetTransaction(txId, false);
 					if(tx == null || (withProof && tx.Confirmations == 0))
 						continue;
 					resultsSet.Add(txId);
@@ -185,7 +185,7 @@ namespace NTumbleBit.Services.RPC
 			return results;
 		}
 
-		public TransactionInformation GetTransaction(uint256 txId)
+		public TransactionInformation GetTransaction(uint256 txId, bool withProof)
 		{
 			try
 			{
@@ -202,10 +202,24 @@ namespace NTumbleBit.Services.RPC
 				var confirmations = result.Result["confirmations"];
 				var confCount = confirmations == null ? 0 : Math.Max(0, (int)confirmations);
 
+				MerkleBlock proof = null;
+				if(withProof)
+				{
+					if(confCount == 0)
+						return null;
+
+					var result1 = RPCClient.SendCommandNoThrows("gettxoutproof", new JArray(tx.GetHash().ToString()));
+					if(result1 == null || result1.Error != null)
+						return null;
+					proof = new MerkleBlock();
+					proof.ReadWrite(Encoders.Hex.DecodeData(result1.ResultString));
+				}
+
 				return new TransactionInformation
 				{
 					Confirmations = confCount,
-					Transaction = tx
+					Transaction = tx,
+					MerkleProof = proof
 				};
 			}
 			catch(RPCException) { return null; }

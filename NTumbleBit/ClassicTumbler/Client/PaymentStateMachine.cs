@@ -525,6 +525,15 @@ namespace NTumbleBit.ClassicTumbler.Client
 			var tx = Services.BlockExplorerService
 				.GetTransactionsAsync(coin.TxOut.ScriptPubKey, withProof).GetAwaiter().GetResult()
 				.FirstOrDefault(t => t.Transaction.Outputs.AsCoins().Any(c => c.Outpoint == coin.Outpoint));
+			if(tx == null)
+			{
+				//In case of reorg, it is possible the transaction is not returned by the wallet anymore.
+				//In such case, this will look also in mempool/coinview and try to import the transaction
+				tx = Services.BlockExplorerService.GetTransaction(coin.Outpoint.Hash, true);
+				if(tx?.MerkleProof != null)
+					//No await intended
+					Services.BlockExplorerService.TrackPrunedTransactionAsync(tx.Transaction, tx.MerkleProof);
+			}
 			return tx;
 		}
 
