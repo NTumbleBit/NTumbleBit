@@ -136,7 +136,7 @@ namespace NTumbleBit.Services.RPC
 			Logs.Broadcasters.LogInformation($"Broadcasted {broadcasted.Count} transaction(s), monitoring {totalEntries} entries in {(long)(DateTimeOffset.UtcNow - startTime).TotalSeconds} seconds");
 			return broadcasted.ToArray();
 		}
-		
+
 		private async Task<bool> TryBroadcastCoreAsync(Record tx, int currentHeight)
 		{
 			bool remove = false;
@@ -196,11 +196,14 @@ namespace NTumbleBit.Services.RPC
 				if(entry.Confirmations > 0)
 				{
 					var walletTransaction = _Cache.GetTransaction(entry.TransactionId);
-					foreach(var input in walletTransaction.Inputs)
+					if(walletTransaction != null)
 					{
-						if(spentInputs.Contains(input.PrevOut))
+						foreach(var input in walletTransaction.Inputs)
 						{
-							return true;
+							if(spentInputs.Contains(input.PrevOut))
+							{
+								return true;
+							}
 						}
 					}
 				}
