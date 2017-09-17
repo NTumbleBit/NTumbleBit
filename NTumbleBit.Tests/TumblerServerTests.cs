@@ -220,25 +220,30 @@ namespace NTumbleBit.Tests
 
 				server.MineTo(server.TumblerNode, cycle, CyclePhase.PaymentPhase);
 				machine.Update();
+				Assert.Equal(PaymentStateMachineStatus.ProcessingPayment, machine.Status);
 
-				//Wait escape transaction to be broadcasted
-				Thread.Sleep(1000);
-				Block block = server.TumblerNode.FindBlock(1).First();
-
-				if(cooperativeClient && cooperativeTumbler)
+				Block block = null;
+				if(cooperativeTumbler)
 				{
-					Assert.Equal(PaymentStateMachineStatus.PuzzleSolutionObtained, machine.Status);
-					//Escape should be mined
-					Assert.Equal(2, block.Transactions.Count);
+					WaitStatus(machine, PaymentStateMachineStatus.PuzzleSolutionObtained);
+					if(cooperativeClient)
+					{
+						//Escape should be mined
+						Thread.Sleep(1000);
+						block = server.TumblerNode.FindBlock(1).First();
+						Assert.Equal(2, block.Transactions.Count);
 
-					serverTracker.AssertKnown(TransactionType.ClientEscape, block.Transactions[1].GetHash());
-					serverTracker.AssertKnown(TransactionType.ClientEscape, block.Transactions[1].Outputs[0].ScriptPubKey);
+						serverTracker.AssertKnown(TransactionType.ClientEscape, block.Transactions[1].GetHash());
+						serverTracker.AssertKnown(TransactionType.ClientEscape, block.Transactions[1].Outputs[0].ScriptPubKey);
+					}
 				}
 				else
 				{
 					if(!cooperativeTumbler)
+					{
+						WaitStatus(machine, PaymentStateMachineStatus.UncooperativeTumbler);
 						Assert.Equal(PaymentStateMachineStatus.UncooperativeTumbler, machine.Status);
-					Assert.Equal(1, block.Transactions.Count);
+					}
 				}
 
 				server.MineTo(server.TumblerNode, cycle, CyclePhase.PaymentPhase, true);
@@ -324,6 +329,17 @@ namespace NTumbleBit.Tests
 							AssertRate(allTransactions, expectedRate, tx);
 					}
 				}
+			}
+		}
+
+		private void WaitStatus(PaymentStateMachine machine, PaymentStateMachineStatus state)
+		{
+			CancellationTokenSource cts = new CancellationTokenSource(10000);
+			while(machine.Status != state)
+			{
+				machine.Update();
+				Thread.Sleep(10);
+				cts.Token.ThrowIfCancellationRequested();
 			}
 		}
 
@@ -427,7 +443,7 @@ namespace NTumbleBit.Tests
 					//The tumbler plan offer for end of payment period, but not the fulfill
 					server.MineTo(server.AliceNode, cycle, CyclePhase.PaymentPhase);
 					machine.Update();
-
+					WaitStatus(machine, PaymentStateMachineStatus.UncooperativeTumbler);
 					//The tumbler should now broadcast the offer, but not the fulfill
 					server.MineTo(server.TumblerNode, cycle, CyclePhase.PaymentPhase, true);
 					broadcasted = server.ServerRuntime.Services.TrustedBroadcastService.TryBroadcast();

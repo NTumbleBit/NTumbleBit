@@ -15,6 +15,7 @@ using Microsoft.Extensions.Logging;
 using NTumbleBit.ClassicTumbler.Server.Models;
 using System.Text;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 // For more information on enabling Web API for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -406,7 +407,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 		}
 
 		[HttpPost("api/v1/tumblers/{tumblerId}/clientchannels/{cycleId}/{channelId}/solvepuzzles")]
-		public PuzzleSolver.ServerCommitment[] SolvePuzzles(
+		public IActionResult BeginSolvePuzzles(
 			[ModelBinder(BinderType = typeof(TumblerParametersModelBinder))]
 			ClassicTumblerParameters tumblerId,
 			int cycleId,
@@ -417,9 +418,37 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 				throw new ArgumentNullException("tumblerId");
 			var session = GetSolverServerSession(cycleId, channelId, CyclePhase.PaymentPhase);
 			AssertNotDuplicateQuery(cycleId, channelId);
-			var commitments = session.SolvePuzzles(puzzles);
+
+			QueueWork(() =>
+			{
+				session.BeginSolvePuzzles(puzzles);
+				Repository.Save(cycleId, session);
+			});
+			return Ok();
+		}
+
+		[HttpGet("api/v1/tumblers/{tumblerId}/clientchannels/{cycleId}/{channelId}/solvepuzzles")]
+		public PuzzleSolver.ServerCommitment[] EndSolvePuzzles(
+			[ModelBinder(BinderType = typeof(TumblerParametersModelBinder))]
+			ClassicTumblerParameters tumblerId,
+			int cycleId,
+			[ModelBinder(BinderType = typeof(UInt160ModelBinder))]  uint160 channelId)
+		{
+			if(tumblerId == null)
+				throw new ArgumentNullException("tumblerId");
+			var session = GetSolverServerSession(cycleId, channelId, CyclePhase.PaymentPhase);
+			if(session.Status != SolverServerStates.WaitingCommitmentDelivery)
+				return null;
+			AssertNotDuplicateQuery(cycleId, channelId);
+			var commitments = session.EndSolvePuzzles();
 			Repository.Save(cycleId, session);
 			return commitments;
+		}
+
+		private void QueueWork(Action act)
+		{
+			//TODO: Use thread pooling, not sure about Task.Start, as .SolvePuzzles use thread pooling indirectly, this could potentially cause a deadlock
+			new Thread(() => act()).Start();
 		}
 
 		private void AssertNotDuplicateQuery(int cycleId, uint160 channelId, [CallerMemberName]string name = null)

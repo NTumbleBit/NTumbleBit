@@ -125,7 +125,7 @@ namespace NTumbleBit
 			return result;
 		}
 
-		internal const int ChachaKeySize = 128 / 8;
+		public const int ChachaKeySize = 128 / 8;
 		internal static byte[] ChachaDecrypt(byte[] encrypted, byte[] key)
 		{
 			ChaChaEngine engine = new ChaChaEngine();

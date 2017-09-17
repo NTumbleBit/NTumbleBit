@@ -21,7 +21,8 @@ namespace NTumbleBit.PuzzleSolver
 		WaitingBlindFactor,
 		WaitingFulfillment,
 		WaitingEscape,
-		Completed
+		Completed,
+		WaitingCommitmentDelivery
 	}
 	public class SolverServerSession : EscrowReceiver
 	{
@@ -49,6 +50,12 @@ namespace NTumbleBit.PuzzleSolver
 			public PuzzleSolution Solution
 			{
 				get; set;
+			}
+
+			public byte[] GetEncryptedSolution()
+			{
+				byte[] key = SolutionKey.ToBytes(true);
+				return Utils.ChachaEncrypt(Solution.ToBytes(), ref key);
 			}
 		}
 
@@ -167,7 +174,14 @@ namespace NTumbleBit.PuzzleSolver
 			InternalState.Status = SolverServerStates.WaitingPuzzles;
 		}
 
+		//This can take a while if server is busy and thus should be be broken in 2 calls. (Begin/EndSolvePuzzles) This method is just for making testing easier
 		public ServerCommitment[] SolvePuzzles(PuzzleValue[] puzzles)
+		{
+			BeginSolvePuzzles(puzzles);
+			return EndSolvePuzzles();
+		}
+
+		public void BeginSolvePuzzles(PuzzleValue[] puzzles)
 		{
 			if(puzzles == null)
 				throw new ArgumentNullException(nameof(puzzles));
@@ -186,14 +200,21 @@ namespace NTumbleBit.PuzzleSolver
 					.ToArray();
 			foreach(var item in items)
 			{
-				byte[] key = null;
-				var encryptedSolution = Utils.ChachaEncrypt(item.Solution.ToBytes(), ref key);
-				var solutionKey = new SolutionKey(key);
-				uint160 keyHash = solutionKey.GetHash();
-				commitments.Add(new ServerCommitment(keyHash, encryptedSolution));
+				var solutionKey = new SolutionKey(RandomUtils.GetBytes(Utils.ChachaKeySize));
 				solvedPuzzles.Add(new SolvedPuzzle(item.Puzzle, solutionKey, item.Solution));
 			}
 			InternalState.SolvedPuzzles = solvedPuzzles.ToArray();
+			InternalState.Status = SolverServerStates.WaitingCommitmentDelivery;
+		}
+
+		public ServerCommitment[] EndSolvePuzzles()
+		{
+			AssertState(SolverServerStates.WaitingCommitmentDelivery);
+			List<ServerCommitment> commitments = new List<ServerCommitment>();
+			foreach(var solved in InternalState.SolvedPuzzles)
+			{
+				commitments.Add(new ServerCommitment(solved.SolutionKey.GetHash(), solved.GetEncryptedSolution()));
+			}
 			InternalState.Status = SolverServerStates.WaitingRevelation;
 			return commitments.ToArray();
 		}

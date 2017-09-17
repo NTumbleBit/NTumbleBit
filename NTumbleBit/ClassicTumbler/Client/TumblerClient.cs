@@ -209,9 +209,9 @@ namespace NTumbleBit.ClassicTumbler.Client
 			return SendAsync<OfferInformation>(HttpMethod.Post, new ArrayWrapper<BlindFactor>(blindFactors), $"clientschannels/{cycleId}/{channelId}/checkblindfactors");
 		}
 
-		public PuzzleSolver.ServerCommitment[] SolvePuzzles(uint160 channelId, PuzzleValue[] puzzles)
+		public void BeginSolvePuzzles(uint160 channelId, PuzzleValue[] puzzles)
 		{
-			return SolvePuzzlesAsync(channelId, puzzles).GetAwaiter().GetResult();
+			BeginSolvePuzzlesAsync(channelId, puzzles).GetAwaiter().GetResult();
 		}
 
 		public void SetHttpHandler(HttpMessageHandler handler)
@@ -219,13 +219,22 @@ namespace NTumbleBit.ClassicTumbler.Client
 			Client = new HttpClient(handler);
 		}
 
-		public async Task<PuzzleSolver.ServerCommitment[]> SolvePuzzlesAsync(uint160 channelId, PuzzleValue[] puzzles)
+		public Task BeginSolvePuzzlesAsync(uint160 channelId, PuzzleValue[] puzzles)
 		{
-			var result = await SendAsync<ArrayWrapper<PuzzleSolver.ServerCommitment>>(HttpMethod.Post, new ArrayWrapper<PuzzleValue>(puzzles), $"clientchannels/{cycleId}/{channelId}/solvepuzzles").ConfigureAwait(false);
-			return result.Elements;
+			//The Task returns always null 
+			return SendAsync<PuzzlePromise.ServerCommitment>(HttpMethod.Post, new ArrayWrapper<PuzzleValue>(puzzles), $"clientchannels/{cycleId}/{channelId}/solvepuzzles");
 		}
 
+		public PuzzleSolver.ServerCommitment[] EndSolvePuzzles(uint160 channelId)
+		{
+			return EndSolvePuzzlesAsync(channelId).GetAwaiter().GetResult();
+		}
 
+		public async Task<PuzzleSolver.ServerCommitment[]> EndSolvePuzzlesAsync(uint160 channelId)
+		{
+			var result = await SendAsync<ArrayWrapper<PuzzleSolver.ServerCommitment>>(HttpMethod.Get, null, $"clientchannels/{cycleId}/{channelId}/solvepuzzles").ConfigureAwait(false);
+			return result?.Elements;
+		}
 
 		public PuzzlePromise.ServerCommitment[] SignHashes(uint160 channelId, SignaturesRequest sigReq)
 		{
