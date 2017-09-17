@@ -318,7 +318,9 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			if(!cycle.IsInPhase(CyclePhase.TumblerChannelEstablishment, height))
 				throw new ActionResultException(BadRequest("invalid-phase"));
 
-			var session = GetPromiseServerSession(cycle.Start, channelId, CyclePhase.TumblerChannelEstablishment);
+			var session = GetPromiseServerSession(cycle.Start, channelId, CyclePhase.TumblerChannelEstablishment, false);
+			if(session == null)
+				return null;
 			var tx = (await Services.BlockExplorerService
 							.GetTransactionsAsync(session.EscrowedCoin.TxOut.ScriptPubKey, true))
 							.FirstOrDefault(t => t.Transaction.GetHash() == session.EscrowedCoin.Outpoint.Hash);
@@ -368,14 +370,18 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			return proof;
 		}
 
-		private PromiseServerSession GetPromiseServerSession(int cycleId, uint160 channelId, CyclePhase expectedPhase)
+		private PromiseServerSession GetPromiseServerSession(int cycleId, uint160 channelId, CyclePhase expectedPhase, bool throws = true)
 		{
 			if(channelId == null)
 				throw new ArgumentNullException(nameof(channelId));
 			var height = Services.BlockExplorerService.GetCurrentHeight();
 			var session = Repository.GetPromiseServerSession(cycleId, channelId);
 			if(session == null)
-				throw NotFound("channel-not-found").AsException();
+			{
+				if(throws)
+					throw NotFound("channel-not-found").AsException();
+				return null;
+			}
 			CheckPhase(expectedPhase, height, cycleId);
 			return session;
 		}
