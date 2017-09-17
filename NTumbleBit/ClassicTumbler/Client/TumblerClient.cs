@@ -141,10 +141,8 @@ namespace NTumbleBit.ClassicTumbler.Client
 			{
 				message.Content = new ByteArrayContent(body.ToBytes());
 			}
-			
+
 			var result = await Client.SendAsync(message).ConfigureAwait(false);
-			if(result.StatusCode == HttpStatusCode.NotFound)
-				return default(T);
 			if(!result.IsSuccessStatusCode)
 			{
 				string error = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -153,6 +151,8 @@ namespace NTumbleBit.ClassicTumbler.Client
 					throw new HttpRequestException(result.StatusCode + ": " + error);
 				}
 			}
+			if(result.StatusCode == HttpStatusCode.NotFound)
+				return default(T);
 			if(result.Content?.Headers?.ContentLength > MaxContentLength)
 				throw new IOException("Content is too big");
 

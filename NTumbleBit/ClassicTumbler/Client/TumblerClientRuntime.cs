@@ -112,8 +112,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 				{
 					Logs.Configuration.LogInformation("Downloading tumbler information of " + configuration.TumblerServer.ToString());
 					var parameters = Retry(3, () => client.GetTumblerParameters());
-					if(parameters == null)
-						throw new ConfigException("Unable to download tumbler's parameters");
 
 					if(parameters.GetHash() != configuration.TumblerServer.ConfigurationHash)
 						throw new ConfigException("The tumbler returned an invalid configuration");
