@@ -37,6 +37,7 @@ namespace NTumbleBit.PuzzleSolver
 				Puzzle = puzzle;
 				SolutionKey = key;
 				Solution = solution;
+				EncryptedSolution = GetEncryptedSolution();
 			}
 
 			public PuzzleValue Puzzle
@@ -52,6 +53,11 @@ namespace NTumbleBit.PuzzleSolver
 				get; set;
 			}
 
+			public byte[] EncryptedSolution
+			{
+				get; set;
+			}
+			//TODO: Backward compatibility, pass private
 			public byte[] GetEncryptedSolution()
 			{
 				byte[] key = SolutionKey.ToBytes(true);
@@ -213,7 +219,8 @@ namespace NTumbleBit.PuzzleSolver
 			List<ServerCommitment> commitments = new List<ServerCommitment>();
 			foreach(var solved in InternalState.SolvedPuzzles)
 			{
-				commitments.Add(new ServerCommitment(solved.SolutionKey.GetHash(), solved.GetEncryptedSolution()));
+				////TODO: Backward compatibility, pass solved.GetEncryptedSolution private
+				commitments.Add(new ServerCommitment(solved.SolutionKey.GetHash(), solved.EncryptedSolution ?? solved.GetEncryptedSolution()));
 			}
 			InternalState.Status = SolverServerStates.WaitingRevelation;
 			return commitments.ToArray();
