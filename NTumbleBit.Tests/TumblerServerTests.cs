@@ -189,7 +189,7 @@ namespace NTumbleBit.Tests
 
 				machine.Update();
 
-
+				WaitStatus(machine, PaymentStateMachineStatus.TumblerVoucherObtained);
 				//Server is now tracking Alice's escrow
 				Assert.Equal(1, server.ServerRuntime.Services.BlockExplorerService
 						.GetTransactionsAsync(machine.SolverClientSession.EscrowedCoin.ScriptPubKey, false)
@@ -198,8 +198,6 @@ namespace NTumbleBit.Tests
 				serverTracker.AssertKnown(TransactionType.ClientEscrow, machine.SolverClientSession.EscrowedCoin.ScriptPubKey);
 				serverTracker.AssertKnown(TransactionType.ClientEscrow, machine.SolverClientSession.EscrowedCoin.Outpoint.Hash);
 				//
-
-				WaitStatus(machine, PaymentStateMachineStatus.TumblerVoucherObtained);
 
 				server.MineTo(server.AliceNode, cycle, CyclePhase.TumblerChannelEstablishment);
 				machine.Update();
@@ -388,13 +386,13 @@ namespace NTumbleBit.Tests
 
 				machine.Update();
 
+				WaitStatus(machine, PaymentStateMachineStatus.TumblerVoucherObtained);
 				//Server is now tracking Alice's escrow
 				Assert.Equal(1, server.ServerRuntime.Services.BlockExplorerService
 						.GetTransactionsAsync(machine.SolverClientSession.EscrowedCoin.ScriptPubKey, false)
 						.GetAwaiter().GetResult()
 						.Count());
 
-				WaitStatus(machine, PaymentStateMachineStatus.TumblerVoucherObtained);
 				server.MineTo(server.AliceNode, cycle, CyclePhase.TumblerChannelEstablishment);
 				machine.Update();
 

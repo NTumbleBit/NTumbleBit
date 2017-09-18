@@ -213,8 +213,6 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			solverServerSession.SetChannelId(request.ChannelId);
 			solverServerSession.ConfigureEscrowedCoin(escrowedCoin, key);
 			await Services.BlockExplorerService.TrackAsync(escrowedCoin.ScriptPubKey);
-			if(!await Services.BlockExplorerService.TrackPrunedTransactionAsync(request.Transaction, request.MerkleProof))
-				throw new ActionResultException(BadRequest("invalid-merkleproof"));
 
 			//Without this one, someone could spam the nonce db by replaying this request with different channelId
 			if(!Repository.MarkUsedNonce(cycle.Start, Hashes.Hash160(escrowedCoin.Outpoint.ToBytes())))
@@ -223,16 +221,28 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			AssertNotDuplicateQuery(cycle.Start, request.ChannelId);
 
 			Repository.Save(cycle.Start, solverServerSession);
-			Logs.Tumbler.LogInformation($"Cycle {cycle.Start} Proof of Escrow signed for " + transaction.GetHash());
 
-			var correlation = GetCorrelation(solverServerSession);
-			Tracker.AddressCreated(cycle.Start, TransactionType.ClientEscrow, escrowedCoin.ScriptPubKey, correlation);
-			Tracker.TransactionCreated(cycle.Start, TransactionType.ClientEscrow, request.Transaction.GetHash(), correlation);
-
-			QueueWork(() =>
+			QueueWork(async () =>
 			{
-				var solution = request.UnsignedVoucher.WithRsaKey(Runtime.VoucherKey.PubKey).Solve(Runtime.VoucherKey);
-				Repository.SaveSignedVoucher(cycle.Start, request.ChannelId, solution);
+				try
+				{
+
+					if(!await Services.BlockExplorerService.TrackPrunedTransactionAsync(request.Transaction, request.MerkleProof))
+					{
+						Logs.Tumbler.LogDebug("Invalid merkleproof for " + transaction.GetHash());
+						return;
+					}
+					var correlation = GetCorrelation(solverServerSession);
+					Tracker.AddressCreated(cycle.Start, TransactionType.ClientEscrow, escrowedCoin.ScriptPubKey, correlation);
+					Tracker.TransactionCreated(cycle.Start, TransactionType.ClientEscrow, request.Transaction.GetHash(), correlation);
+					var solution = request.UnsignedVoucher.WithRsaKey(Runtime.VoucherKey.PubKey).Solve(Runtime.VoucherKey);
+					Repository.SaveSignedVoucher(cycle.Start, request.ChannelId, solution);
+					Logs.Tumbler.LogInformation($"Cycle {cycle.Start} Proof of Escrow signed for " + transaction.GetHash());
+				}
+				catch(Exception ex)
+				{
+					Logs.Tumbler.LogCritical(new EventId(), ex, "Unhandled error during while signing voucher");
+				}
 			});
 			return Ok();
 		}
