@@ -71,13 +71,23 @@ namespace NTumbleBit.ClassicTumbler.Client
 		}
 
 
-		public Task<PuzzleSolution> SignVoucherAsync(SignVoucherRequest signVoucherRequest)
+		public Task BeginSignVoucherAsync(SignVoucherRequest signVoucherRequest)
 		{
+			//Will always return null
 			return SendAsync<PuzzleSolution>(HttpMethod.Post, signVoucherRequest, $"clientchannels/confirm");
 		}
-		public PuzzleSolution SignVoucher(SignVoucherRequest signVoucherRequest)
+		public void BeginSignVoucher(SignVoucherRequest signVoucherRequest)
 		{
-			return SignVoucherAsync(signVoucherRequest).GetAwaiter().GetResult();
+			BeginSignVoucherAsync(signVoucherRequest).GetAwaiter().GetResult();
+		}
+
+		public Task<PuzzleSolution> EndSignVoucherAsync(uint160 channelId)
+		{
+			return SendAsync<PuzzleSolution>(HttpMethod.Get, null, $"clientchannels/confirm/{cycleId}/{channelId}");
+		}
+		public PuzzleSolution EndSignVoucher(uint160 channelId)
+		{
+			return EndSignVoucherAsync(channelId).GetAwaiter().GetResult();
 		}
 
 		public async Task<uint160> BeginOpenChannelAsync(OpenChannelRequest request)

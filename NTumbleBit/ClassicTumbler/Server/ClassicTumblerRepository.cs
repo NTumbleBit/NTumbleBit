@@ -134,5 +134,15 @@ namespace NTumbleBit.ClassicTumbler.Server
 			var partition = GetCyclePartition(cycle);
 			return Repository.Get<bool>(partition, "Nonces-" + nonce);
 		}
+
+		public void SaveSignedVoucher(int start, uint160 channelId, PuzzleSolution solution)
+		{
+			Repository.UpdateOrInsert(GetCyclePartition(start), "V-" + channelId, solution, (o, n) => o);
+		}
+
+		public PuzzleSolution GetSignedVoucher(int start, uint160 channelId)
+		{
+			return Repository.Get<PuzzleSolution>(GetCyclePartition(start), "V-" + channelId);
+		}
 	}
 }

@@ -140,7 +140,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 		}
 
 		[HttpPost("api/v1/tumblers/{tumblerId}/clientchannels/confirm")]
-		public async Task<PuzzleSolution> SignVoucher(
+		public async Task<IActionResult> BeginSignVoucher(
 			[ModelBinder(BinderType = typeof(TumblerParametersModelBinder))]
 			ClassicTumblerParameters tumblerId,
 			[FromBody]SignVoucherRequest request)
@@ -228,8 +228,33 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			var correlation = GetCorrelation(solverServerSession);
 			Tracker.AddressCreated(cycle.Start, TransactionType.ClientEscrow, escrowedCoin.ScriptPubKey, correlation);
 			Tracker.TransactionCreated(cycle.Start, TransactionType.ClientEscrow, request.Transaction.GetHash(), correlation);
-			var solution = request.UnsignedVoucher.WithRsaKey(Runtime.VoucherKey.PubKey).Solve(Runtime.VoucherKey);
-			return solution;
+
+			QueueWork(() =>
+			{
+				var solution = request.UnsignedVoucher.WithRsaKey(Runtime.VoucherKey.PubKey).Solve(Runtime.VoucherKey);
+				Repository.SaveSignedVoucher(cycle.Start, request.ChannelId, solution);
+			});
+			return Ok();
+		}
+
+		[HttpGet("api/v1/tumblers/{tumblerId}/clientchannels/confirm/{cycleId}/{channelId}")]
+		public PuzzleSolution EndSignVoucher(
+			[ModelBinder(BinderType = typeof(TumblerParametersModelBinder))]
+			ClassicTumblerParameters tumblerId,
+			[ModelBinder(BinderType = typeof(UInt160ModelBinder))]  uint160 channelId,
+			int cycleId)
+		{
+			if(tumblerId == null)
+				throw new ArgumentNullException(nameof(tumblerId));
+			if(channelId == null)
+				throw new ArgumentNullException(nameof(channelId));
+			var cycle = GetCycle(cycleId);
+			var height = Services.BlockExplorerService.GetCurrentHeight();
+			if(!cycle.IsInPhase(CyclePhase.ClientChannelEstablishment, height))
+			{
+				throw new ActionResultException(BadRequest("invalid-phase"));
+			}
+			return Repository.GetSignedVoucher(cycleId, channelId);
 		}
 
 		[HttpPost("api/v1/tumblers/{tumblerId}/channels/beginopen")]

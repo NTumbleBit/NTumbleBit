@@ -199,6 +199,7 @@ namespace NTumbleBit.Tests
 				serverTracker.AssertKnown(TransactionType.ClientEscrow, machine.SolverClientSession.EscrowedCoin.Outpoint.Hash);
 				//
 
+				WaitStatus(machine, PaymentStateMachineStatus.TumblerVoucherObtained);
 
 				server.MineTo(server.AliceNode, cycle, CyclePhase.TumblerChannelEstablishment);
 				machine.Update();
@@ -393,6 +394,7 @@ namespace NTumbleBit.Tests
 						.GetAwaiter().GetResult()
 						.Count());
 
+				WaitStatus(machine, PaymentStateMachineStatus.TumblerVoucherObtained);
 				server.MineTo(server.AliceNode, cycle, CyclePhase.TumblerChannelEstablishment);
 				machine.Update();
 

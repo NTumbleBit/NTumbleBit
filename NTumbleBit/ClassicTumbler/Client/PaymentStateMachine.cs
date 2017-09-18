@@ -20,6 +20,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 		New,
 		Registered,
 		ClientChannelBroadcasted,
+		TumblerVoucherSigning,
 		TumblerVoucherObtained,
 
 		//TODO Remove later, keep so it does not crash testers
@@ -292,7 +293,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 							{
 								Logs.Client.LogInformation($"Client escrow reached {cycle.SafetyPeriodDuration} confirmations");
 								//Client asks the public key of the Tumbler and sends its own
-								var voucher = alice.SignVoucher(new SignVoucherRequest
+								alice.BeginSignVoucher(new SignVoucherRequest
 								{
 									MerkleProof = clientTx.MerkleProof,
 									Transaction = clientTx.Transaction,
@@ -303,7 +304,17 @@ namespace NTumbleBit.ClassicTumbler.Client
 									ChannelId = SolverClientSession.Id
 								});
 								NeedSave = true;
+								Status = PaymentStateMachineStatus.TumblerVoucherSigning;
+							}
+						}
+						else if(Status == PaymentStateMachineStatus.TumblerVoucherSigning)
+						{
+							alice = Runtime.CreateTumblerClient(cycle.Start, Identity.Alice);
+							var voucher = alice.EndSignVoucher(SolverClientSession.Id);
+							if(voucher != null)
+							{
 								ClientChannelNegotiation.CheckVoucherSolution(voucher);
+								NeedSave = true;
 								Status = PaymentStateMachineStatus.TumblerVoucherObtained;
 							}
 						}
