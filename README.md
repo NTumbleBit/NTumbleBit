@@ -15,8 +15,8 @@ An "easy" to understand explanation of the protocol has been presented by Ethan 
 
 As a user, you will need:
 
-1. [NET Core SDK 1.0.4](https://github.com/dotnet/core/blob/master/release-notes/download-archives/1.0.4-sdk-download.md) (see below)
-2. [Bitcoin Core 0.13.1](https://bitcoin.org/bin/bitcoin-core-0.13.1/) fully sync, rpc enabled.
+1. [NET Core SDK 2.0](https://www.microsoft.com/net/core)
+2. At least [Bitcoin Core 0.13.1](https://bitcoin.org/bin/bitcoin-core-0.13.1/) fully sync, rpc enabled.
 
 On Tumbler server side, run Bitcoin Core with a big RPC work queue. TumbleBit has peak of activity making it likely to reach the limit.
 ```
@@ -25,16 +25,9 @@ bitcoind -rpcworkqueue=100
 
 Alternatively, you can also put the `rpcworkqueue=100` in the configuration file of your bitcoin instance.
 
-You can easily install the SDK on ubuntu systems after having installed the runtime by running
-```
-sudo apt-get install dotnet-dev-1.0.4
-```
-You can known more about install on your system on [this link](https://www.microsoft.com/net/core).
-Using Bitcoin Core with later version should work as well.
-
 As a developer, you need additionally one of those:
 
-1. [Visual studio 2017](https://www.visualstudio.com/downloads/) (Windows only)
+1. [Visual studio 2017 with update 3 (15.3)](https://www.visualstudio.com/downloads/) (Windows only)
 2. [Visual studio code](https://code.visualstudio.com/) with [C# Extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.csharp) (Cross plateform)
 
 If you have any issue, please check the [FAQ](https://github.com/NTumbleBit/NTumbleBit/wiki/FAQ), before posting an issue.
@@ -61,4 +54,11 @@ We recommend that you use [Visual studio 2017](https://www.visualstudio.com/down
 You can of course use Visual use command line or [Visual Studio Code](https://code.visualstudio.com/) as well.
 
 ## Acknowledgements
-Special thanks to Ethan Heilman and Leen AlShenibr for their work, their research and proof of work made this project possible.
+
+Thanks to Boston University (Ethan Heilman, Leen AlShenibr, Foteini Baldimtsi, Alessandra Scafuro, and Sharon Goldberg) for inventing the TumbleBit protocol.
+
+Thanks to Omar Sagga and Sharon Goldberg for the crypto review of TumbleBit, and [PoupardStern and PermutationTest proofs](https://github.com/osagga/TumbleBitSetup).
+
+Special thanks to @Yzord (aka @badass.sx on Stratis slack) and the dedicated TumbleBit testers in the Stratis team, which brought TumbleBit to the next level.
+
+Thanks to Stratis to dedicate resources to develop NTumbleBit and integrate it to Breeze wallet.
