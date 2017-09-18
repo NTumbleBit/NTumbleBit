@@ -1,21 +1,16 @@
-﻿using NTumbleBit.ClassicTumbler;
-using NTumbleBit;
-using NTumbleBit.PuzzleSolver;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using Microsoft.Extensions.Logging;
 using NBitcoin;
-using NTumbleBit.PuzzlePromise;
-using Microsoft.Extensions.Logging;
-using NTumbleBit.Logging;
-using NTumbleBit.Services;
-using Microsoft.Extensions.Logging.Abstractions;
 using NTumbleBit.ClassicTumbler.Server.Models;
+using NTumbleBit.Logging;
+using NTumbleBit.PuzzlePromise;
+using NTumbleBit.PuzzleSolver;
+using NTumbleBit.Services;
+using System;
+using System.Linq;
 
 namespace NTumbleBit.ClassicTumbler.Client
 {
-	public enum PaymentStateMachineStatus
+    public enum PaymentStateMachineStatus
 	{
 		New,
 		Registered,
@@ -46,7 +41,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 			TumblerClientRuntime runtime)
 		{
 			if(runtime == null)
-				throw new ArgumentNullException("runtime");
+				throw new ArgumentNullException(nameof(runtime));
 			Runtime = runtime;
 		}
 
@@ -359,7 +354,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 							if(tumblerEscrow.OutputIndex >= tumblerEscrow.Transaction.Outputs.Count)
 							{
-								Logs.Client.LogError("Tumbler escrow ouptut out-of-bound");
+								Logs.Client.LogError("Tumbler escrow output out-of-bound");
 								Status = PaymentStateMachineStatus.Wasted;
 								break;
 							}
