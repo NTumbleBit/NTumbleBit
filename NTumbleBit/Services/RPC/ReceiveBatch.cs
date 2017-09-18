@@ -153,7 +153,8 @@ namespace NTumbleBit.Services.RPC
 				);
 				txin.Witnessify();
 			}
-			await _RPCClient.SendRawTransactionAsync(tx).ConfigureAwait(false);
+
+			//Do not broadcast here, MainController takes care of it
 			return tx;
 		}
 	}
