@@ -17,21 +17,21 @@ namespace NTumbleBit.ClassicTumbler
 		{
 			if(!typeof(uint160).GetTypeInfo().IsAssignableFrom(bindingContext.ModelType))
 			{
-				return TaskCache.CompletedTask;
+				return Task.CompletedTask;
 			}
 
 			ValueProviderResult val = bindingContext.ValueProvider.GetValue(
 				bindingContext.ModelName);
 			if(val == null)
 			{
-				return TaskCache.CompletedTask;
+				return Task.CompletedTask;
 			}
 
 			string key = val.FirstValue as string;
 			if(key == null)
 			{
 				bindingContext.Model = null;
-				return TaskCache.CompletedTask;
+				return Task.CompletedTask;
 			}
 			try
 			{
@@ -45,7 +45,7 @@ namespace NTumbleBit.ClassicTumbler
 			{
 				bindingContext.Result = ModelBindingResult.Failed();
 			}
-			return TaskCache.CompletedTask;
+			return Task.CompletedTask;
 		}
 
 		#endregion

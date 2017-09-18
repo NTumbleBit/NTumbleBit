@@ -10,7 +10,6 @@ using System.Net;
 using NTumbleBit.Configuration;
 using System.Net.Sockets;
 using System.Net.Http;
-using DotNetTor.SocksPort;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Text.RegularExpressions;

@@ -34,6 +34,15 @@ namespace NTumbleBit.ClassicTumbler.Server
 				o.InputFormatters.Add(new BitcoinInputFormatter());
 				o.OutputFormatters.Add(new BitcoinOutputFormatter());
 			});
+
+			services.AddLogging(o =>
+			{
+				o.AddFilter("Microsoft.AspNetCore.Hosting.Internal.WebHost", LogLevel.Error);
+				o.AddFilter("Microsoft.AspNetCore.Mvc", LogLevel.Error);
+				o.AddFilter("Microsoft.AspNetCore.Server.Kestrel", LogLevel.Error);
+				o.AddFilter("TCPServer", LogLevel.Error);
+				o.AddConsole();
+			});
 		}
 
 		// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -67,14 +76,6 @@ namespace NTumbleBit.ClassicTumbler.Server
 					}
 				};
 			});
-			var logging = new FilterLoggerSettings();
-			logging.Add("Microsoft.AspNetCore.Hosting.Internal.WebHost", LogLevel.Error);
-			logging.Add("Microsoft.AspNetCore.Mvc", LogLevel.Error);
-			logging.Add("Microsoft.AspNetCore.Server.Kestrel", LogLevel.Error);
-			logging.Add("TCPServer", LogLevel.Error);
-			loggerFactory
-				.WithFilter(logging)
-				.AddConsole();
 
 			app.UseMvc();
 

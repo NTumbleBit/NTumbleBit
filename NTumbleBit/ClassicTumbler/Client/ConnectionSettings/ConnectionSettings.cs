@@ -25,10 +25,6 @@ namespace NTumbleBit.ClassicTumbler.Client.ConnectionSettings
 				settings.Proxy = server;
 				return settings;
 			}
-			else if(type.Equals("tor", StringComparison.OrdinalIgnoreCase))
-			{
-				return TorConnectionSettings.ParseConnectionSettings(prefix + ".proxy", config);
-			}
 			else
 				throw new ConfigException(prefix + ".proxy.type is not supported, should be socks or http");
 		}

@@ -1,5 +1,4 @@
-﻿using DotNetTor.SocksPort;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using System.Linq;
 using NTumbleBit.ClassicTumbler.CLI;
 using NTumbleBit.Configuration;
@@ -64,16 +63,7 @@ namespace NTumbleBit.ClassicTumbler.Client.ConnectionSettings
 
 		public override HttpMessageHandler CreateHttpHandler()
 		{
-			CancellationTokenSource cts = new CancellationTokenSource();
-			cts.CancelAfter(60000);
-			var client = CreateTorClient();
-			client.ChangeCircuitAsync(cts.Token).GetAwaiter().GetResult();
-			while(!client.IsCircuitEstabilishedAsync(cts.Token).GetAwaiter().GetResult())
-			{
-				cts.Token.ThrowIfCancellationRequested();
-				cts.Token.WaitHandle.WaitOne(100);
-			}
-			return new Tor.SocksMessageHandler(SocksEndpoint, new TCPServer.Client.ClientOptions() {  IncludeHeaders =false });
+			throw new NotSupportedException();
 		}
 
 		public void AutoDetectCookieFile()
@@ -131,24 +121,6 @@ namespace NTumbleBit.ClassicTumbler.Client.ConnectionSettings
 				}
 				return ConnectionTest.Success;
 			}
-		}
-
-		internal DotNetTor.ControlPort.Client CreateTorClient()
-		{
-			if(string.IsNullOrEmpty(Password) && string.IsNullOrEmpty(CookieFile))
-			{
-				return new DotNetTor.ControlPort.Client(Server.Address.ToString(), Server.Port);
-			}
-			if(!string.IsNullOrEmpty(Password))
-			{
-				return new DotNetTor.ControlPort.Client(Server.Address.ToString(), Server.Port, Password);
-			}
-			if(!string.IsNullOrEmpty(CookieFile))
-			{
-				return new DotNetTor.ControlPort.Client(Server.Address.ToString(), Server.Port, new FileInfo(CookieFile));
-			}
-			else
-				throw new ConfigException("Invalid Tor configuration");
 		}
 
 		internal TorClient CreateTorClient2()

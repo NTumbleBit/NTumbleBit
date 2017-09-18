@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using DotNetTor.SocksPort;
 using NTumbleBit.ClassicTumbler.CLI;
 using NTumbleBit.Configuration;
 using NTumbleBit.Logging;

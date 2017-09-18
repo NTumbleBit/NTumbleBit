@@ -27,7 +27,7 @@ namespace NTumbleBit
 				try
 				{
 					host = _HostBuilder();
-					host.Run(cancellationToken);
+					host.RunAsync(cancellationToken).GetAwaiter().GetResult();
 				}
 				catch(Exception ex)
 				{
