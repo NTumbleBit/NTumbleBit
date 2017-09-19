@@ -545,7 +545,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 				throw new ActionResultException(BadRequest("Missing Signature"));
 			var session = GetSolverServerSession(cycleId, channelId, CyclePhase.TumblerCashoutPhase);
 			AssertNotDuplicateQuery(cycleId, channelId);
-			var feeRate = Services.FeeService.GetFeeRateAsync().GetAwaiter().GetResult();
+			var feeRate = await Services.FeeService.GetFeeRateAsync();
 			if(session.Status != SolverServerStates.WaitingFulfillment)
 				throw new InvalidStateException("Invalid state, actual " + session.Status + " while expected is " + SolverServerStates.WaitingFulfillment);
 			var cycle = GetCycle(cycleId);
