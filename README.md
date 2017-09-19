@@ -42,7 +42,7 @@ The current version has an implementation of:
 
 1. TOR integration for Tumbler server and client
 2. Localhost website as user interface for Tumbler server and Tumbler Client.
-3. TumbleBit: Uni-directional Paymen Hub Mode
+3. TumbleBit: Uni-directional Payment Hub Mode
 
 ## Developing on Linux or Mac
 
