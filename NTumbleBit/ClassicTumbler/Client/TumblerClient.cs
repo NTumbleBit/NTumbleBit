@@ -216,6 +216,8 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 		public Task<OfferInformation> CheckBlindFactorsAsync(uint160 channelId, BlindFactor[] blindFactors)
 		{
+			if(channelId == null)
+				throw new ArgumentNullException(nameof(channelId));
 			return SendAsync<OfferInformation>(HttpMethod.Post, new ArrayWrapper<BlindFactor>(blindFactors), $"clientschannels/{cycleId}/{channelId}/checkblindfactors");
 		}
 
