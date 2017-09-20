@@ -20,13 +20,16 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 {
     public class MainController : Controller
 	{
-		public MainController(TumblerRuntime runtime)
+		public MainController(TumblerRuntime runtime, CustomThreadPool threadPool)
 		{
 			if(runtime == null)
 				throw new ArgumentNullException(nameof(runtime));
 			_Runtime = runtime;
 			_Repository = new ClassicTumblerRepository(_Runtime);
+			_ThreadPool = threadPool;
 		}
+
+		CustomThreadPool _ThreadPool;
 
 
 
@@ -479,8 +482,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 
 		private void QueueWork(Action act)
 		{
-			//TODO: Use thread pooling, not sure about Task.Start, as .SolvePuzzles use thread pooling indirectly, this could potentially cause a deadlock
-			new Thread(() => act()).Start();
+			var unused = _ThreadPool.DoAsync(act);
 		}
 
 		private void AssertNotDuplicateQuery(int cycleId, uint160 channelId, [CallerMemberName]string name = null)

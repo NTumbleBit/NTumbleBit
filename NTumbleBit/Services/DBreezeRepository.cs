@@ -2,11 +2,14 @@
 using NBitcoin.Crypto;
 using NBitcoin.DataEncoders;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace NTumbleBit.Services
@@ -23,11 +26,15 @@ namespace NTumbleBit.Services
 			_Folder = folder;
 		}
 
+		CustomThreadPool _CustomThreadPool = new CustomThreadPool(1, "DBreeze");
+
+		BlockingCollection<Action> _Actions = new BlockingCollection<Action>(new ConcurrentQueue<Action>());
+
 		private Dictionary<string, DBreezeEngineReference> _EnginesByParitionKey = new Dictionary<string, DBreezeEngineReference>();
 
 		public void UpdateOrInsert<T>(string partitionKey, string rowKey, T data, Func<T, T, T> update)
 		{
-			lock(_EnginesByParitionKey)
+			_CustomThreadPool.Do(() =>
 			{
 				var engine = GetEngine(partitionKey);
 				using(var tx = engine.GetTransaction())
@@ -43,7 +50,7 @@ namespace NTumbleBit.Services
 					tx.Insert(GetTableName<T>(), rowKey, Zip(Serializer.ToString(newValue)));
 					tx.Commit();
 				}
-			}
+			});
 		}
 
 		private byte[] Zip(string unzipped)
@@ -103,14 +110,15 @@ namespace NTumbleBit.Services
 
 		Queue<DBreezeEngineReference> _EngineReferences = new Queue<DBreezeEngineReference>();
 
+		[DebuggerHidden]
 		public int OpenedEngine
 		{
 			get
 			{
-				lock(_EnginesByParitionKey)
+				return _CustomThreadPool.Do(() =>
 				{
 					return _EngineReferences.Count;
-				}
+				});
 			}
 		}
 		public int MaxOpenedEngine
@@ -147,7 +155,7 @@ namespace NTumbleBit.Services
 
 		public void Delete(string partitionKey)
 		{
-			lock(_EnginesByParitionKey)
+			_CustomThreadPool.Do(() =>
 			{
 				if(!_EnginesByParitionKey.ContainsKey(partitionKey))
 					return;
@@ -156,24 +164,24 @@ namespace NTumbleBit.Services
 				engine.Dispose();
 				_EnginesByParitionKey.Remove(partitionKey);
 				Utils.DeleteRecursivelyWithMagicDust(GetPartitionPath(partitionKey));
-			}
+			});
 		}
 
 		public T[] List<T>(string partitionKey)
 		{
-			lock(_EnginesByParitionKey)
-			{
-				List<T> result = new List<T>();
-				var engine = GetEngine(partitionKey);
-				using(var tx = engine.GetTransaction())
+			List<T> result = new List<T>();
+			_CustomThreadPool.Do(() =>
 				{
-					foreach(var row in tx.SelectForward<string, byte[]>(GetTableName<T>()))
+					var engine = GetEngine(partitionKey);
+					using(var tx = engine.GetTransaction())
 					{
-						result.Add(Serializer.ToObject<T>(Unzip(row.Value)));
+						foreach(var row in tx.SelectForward<string, byte[]>(GetTableName<T>()))
+						{
+							result.Add(Serializer.ToObject<T>(Unzip(row.Value)));
+						}
 					}
-				}
-				return result.ToArray();
-			}
+				});
+			return result.ToArray();
 		}
 
 		private string GetTableName<T>()
@@ -183,14 +191,14 @@ namespace NTumbleBit.Services
 
 		public T Get<T>(string partitionKey, string rowKey)
 		{
-			lock(_EnginesByParitionKey)
+			return _CustomThreadPool.Do(() =>
 			{
 				var engine = GetEngine(partitionKey);
 				using(var tx = engine.GetTransaction())
 				{
 					return Get<T>(rowKey, tx);
 				}
-			}
+			});
 		}
 
 		private T Get<T>(string rowKey, DBreeze.Transactions.Transaction tx)
@@ -207,7 +215,7 @@ namespace NTumbleBit.Services
 
 		public bool Delete<T>(string partitionKey, string rowKey)
 		{
-			lock(_EnginesByParitionKey)
+			return _CustomThreadPool.Do(() =>
 			{
 				bool removed = false;
 				var engine = GetEngine(partitionKey);
@@ -217,20 +225,18 @@ namespace NTumbleBit.Services
 					tx.Commit();
 				}
 				return removed;
-			}
+			});
 		}
 
 		public void Dispose()
 		{
-			lock(_EnginesByParitionKey)
+			_CustomThreadPool.Dispose();
+			foreach(var engine in _EnginesByParitionKey)
 			{
-				foreach(var engine in _EnginesByParitionKey)
-				{
-					engine.Value.Engine.Dispose();
-				}
-				_EngineReferences.Clear();
-				_EnginesByParitionKey.Clear();
+				engine.Value.Engine.Dispose();
 			}
+			_EngineReferences.Clear();
+			_EnginesByParitionKey.Clear();
 		}
 	}
 }
