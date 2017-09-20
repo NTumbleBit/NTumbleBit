@@ -187,6 +187,8 @@ namespace NTumbleBit.Services.RPC
 
 		public TransactionInformation GetTransaction(uint256 txId, bool withProof)
 		{
+			if(txId == null)
+				throw new ArgumentNullException(nameof(txId));
 			try
 			{
 				//check in the wallet tx

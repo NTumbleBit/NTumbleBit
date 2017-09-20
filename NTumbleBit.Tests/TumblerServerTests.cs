@@ -224,7 +224,9 @@ namespace NTumbleBit.Tests
 				Block block = null;
 				if(cooperativeTumbler)
 				{
+					Assert.False(machine.ShouldStayConnected(server.ClientRuntime.Services.BlockExplorerService.GetCurrentHeight()));
 					WaitStatus(machine, PaymentStateMachineStatus.PuzzleSolutionObtained);
+					Assert.True(machine.ShouldStayConnected(server.ClientRuntime.Services.BlockExplorerService.GetCurrentHeight()));
 					if(cooperativeClient)
 					{
 						//Escape should be mined
@@ -276,9 +278,11 @@ namespace NTumbleBit.Tests
 					//Received the solution from the blockchain, the transaction has not been planned in advance
 					transactions = server.ClientRuntime.Services.BroadcastService.TryBroadcast();
 				Assert.Equal(1, transactions.Length);
+				Assert.True(machine.ShouldStayConnected(server.ClientRuntime.Services.BlockExplorerService.GetCurrentHeight()));
 				block = server.AliceNode.FindBlock().First();
 				//Should contains TumblerCashout
 				Assert.Equal(2, block.Transactions.Count);
+				Assert.False(machine.ShouldStayConnected(server.ClientRuntime.Services.BlockExplorerService.GetCurrentHeight()));
 
 				clientTracker.AssertKnown(TransactionType.TumblerCashout, block.Transactions[1].GetHash());
 				clientTracker.AssertKnown(TransactionType.TumblerCashout, block.Transactions[1].Outputs[0].ScriptPubKey);

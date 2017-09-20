@@ -546,7 +546,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 
 		private bool IsConfirmed(CycleParameters cycle, TransactionType transactionType)
 		{
-			foreach(var tx in Tracker.GetRecords(cycle.Start).Where(t => t.TransactionType == transactionType))
+			foreach(var tx in Tracker.GetRecords(cycle.Start).Where(t => t.RecordType == RecordType.Transaction && t.TransactionType == transactionType))
 			{
 				var txInfo = Services.BlockExplorerService.GetTransaction(tx.TransactionId, true);
 				if(txInfo != null && txInfo.Confirmations >= cycle.SafetyPeriodDuration)
