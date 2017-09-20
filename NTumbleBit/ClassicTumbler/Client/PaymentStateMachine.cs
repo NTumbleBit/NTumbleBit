@@ -208,6 +208,10 @@ namespace NTumbleBit.ClassicTumbler.Client
 			Logs.Client.LogInformation($"Cycle {cycle.Start} ({Status})");
 			Logs.Client.LogInformation($"{cycle.ToString(height)} in phase {phase} ({blocksLeft} more blocks)");
 			var previousState = Status;
+
+
+			IsCritical(height, this);
+
 			TumblerClient bob = null, alice = null;
 			try
 			{
@@ -513,6 +517,47 @@ namespace NTumbleBit.ClassicTumbler.Client
 				if(bob != null)
 					bob.Dispose();
 			}
+		}
+
+
+		public bool ShouldStayConnected(int height)
+		{
+			if(ClientChannelNegotiation == null)
+				return false;
+
+			var cycle = ClientChannelNegotiation.GetCycle();
+
+			if(
+				// You get the solution of the puzzle
+				Status == PaymentStateMachineStatus.PuzzleSolutionObtained &&
+				// But have not yet cashed out
+				!IsConfirmed(cycle, TransactionType.TumblerCashout))
+			{
+				return true;
+			}
+
+			if(
+				// You do not have the solution
+				Status == PaymentStateMachineStatus.UncooperativeTumbler &&
+				// But have not yet redeemed or cashed out
+				(IsConfirmed(cycle, TransactionType.ClientRedeem) || IsConfirmed(cycle, TransactionType.TumblerCashout)))
+			{
+				return true;
+			}
+			return false;
+		}
+
+		private bool IsConfirmed(CycleParameters cycle, TransactionType transactionType)
+		{
+			foreach(var tx in Tracker.GetRecords(cycle.Start).Where(t => t.TransactionType == transactionType))
+			{
+				var txInfo = Services.BlockExplorerService.GetTransaction(tx.TransactionId, true);
+				if(txInfo != null && txInfo.Confirmations >= cycle.SafetyPeriodDuration)
+				{
+					return true;
+				}
+			}
+			return false;
 		}
 
 		private void CheckTumblerChannelSecured(CycleParameters cycle)
