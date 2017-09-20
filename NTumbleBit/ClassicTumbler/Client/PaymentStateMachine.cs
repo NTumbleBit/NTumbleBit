@@ -209,9 +209,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 			Logs.Client.LogInformation($"{cycle.ToString(height)} in phase {phase} ({blocksLeft} more blocks)");
 			var previousState = Status;
 
-
-			IsCritical(height, this);
-
 			TumblerClient bob = null, alice = null;
 			try
 			{
