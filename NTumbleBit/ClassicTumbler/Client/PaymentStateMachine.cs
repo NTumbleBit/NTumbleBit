@@ -240,7 +240,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 						{
 							alice = Runtime.CreateTumblerClient(cycle.Start, Identity.Alice);
 							var key = alice.RequestTumblerEscrowKey();
-							NeedSave = true;
 							ClientChannelNegotiation.ReceiveTumblerEscrowKey(key.PubKey, key.KeyIndex);
 							//Client create the escrow
 							var escrowTxOut = ClientChannelNegotiation.BuildClientEscrowTxOut();
@@ -256,7 +255,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 								Logs.Client.LogInformation($"Not enough funds in the wallet to tumble. Missing about {ex.Missing}. Denomination is {Parameters.Denomination}.");
 								break;
 							}
-
+							NeedSave = true;
 							var redeemDestination = Services.WalletService.GenerateAddressAsync().GetAwaiter().GetResult().ScriptPubKey;
 							var channelId = new uint160(RandomUtils.GetBytes(20));
 							SolverClientSession = ClientChannelNegotiation.SetClientSignedTransaction(channelId, clientEscrowTx, redeemDestination);
@@ -277,7 +276,6 @@ namespace NTumbleBit.ClassicTumbler.Client
 							Services.BroadcastService.BroadcastAsync(clientEscrowTx).GetAwaiter().GetResult();
 
 							Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.ClientRedeem, correlation, redeemTx);
-
 							Status = PaymentStateMachineStatus.ClientChannelBroadcasted;
 						}
 						else if(Status == PaymentStateMachineStatus.ClientChannelBroadcasted)
