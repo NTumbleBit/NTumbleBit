@@ -131,11 +131,11 @@ namespace NTumbleBit.Tor
 					return s;
 				}
 			}
-			catch
+			catch(TaskCanceledException ex)
 			{
-				SafeDispose(ref s);
-				throw;
+				throw new TaskCanceledException("TOR failed to not connect to the remote server", ex);
 			}
+			finally { SafeDispose(ref s); }
 		}
 
 		private bool IsTransient(SocksErrorCode code)
