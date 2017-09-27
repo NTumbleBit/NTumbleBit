@@ -99,6 +99,9 @@ namespace NTumbleBit.ClassicTumbler.Client.CLI
 					}
 				}
 			}
+			var lockedOutpoint = await rpc.ListLockUnspentAsync();
+			await rpc.UnlockUnspentAsync(lockedOutpoint);
+			Logs.Client.LogInformation("Unlocking " + lockedOutpoint.Length + " outpoints");
 		}
 	}
 }
