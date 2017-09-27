@@ -54,6 +54,7 @@ namespace NTumbleBit.ClassicTumbler.Server
 			{
 				return async (ctx) =>
 				{
+					DateTimeOffset before = DateTimeOffset.UtcNow;
 					try
 					{
 						await req(ctx);
@@ -74,6 +75,19 @@ namespace NTumbleBit.ClassicTumbler.Server
 						}
 						throw;
 					}
+					finally
+					{
+						var timeSpent = DateTimeOffset.UtcNow - before;
+						var timeSpentStr = $"{timeSpent.TotalSeconds.ToString("0.00")} seconds spent on {ctx.Request.Path}";
+						if(timeSpent > TimeSpan.FromMinutes(1.0))
+						{
+							Logs.Tumbler.LogCritical("Overload detected: " + timeSpentStr);
+						}
+						else
+						{
+							Logs.Tumbler.LogDebug(timeSpentStr);
+						}
+					}
 				};
 			});
 
@@ -87,6 +101,7 @@ namespace NTumbleBit.ClassicTumbler.Server
 			var options = GetMVCOptions(serviceProvider);
 			Serializer.RegisterFrontConverters(options.SerializerSettings, config.Network);
 		}
+		
 
 		public IConfiguration Configuration
 		{
