@@ -69,17 +69,17 @@ namespace NTumbleBit.ClassicTumbler.Server
 					var torRSA = Path.Combine(conf.DataDir, "Tor.rsa");
 
 
-					string privateKey = null;
+					TorPrivateKey = null;
 					if(File.Exists(torRSA))
-						privateKey = File.ReadAllText(torRSA, Encoding.UTF8);
+						TorPrivateKey = File.ReadAllText(torRSA, Encoding.UTF8);
 
 					TorConnection = conf.TorSettings.CreateTorClient2();
 					_Resources.Add(TorConnection);
 
 					await TorConnection.ConnectAsync().ConfigureAwait(false);
 					await TorConnection.AuthenticateAsync().ConfigureAwait(false);
-					var result = await TorConnection.RegisterHiddenServiceAsync(conf.Listen, conf.TorSettings.VirtualPort, privateKey).ConfigureAwait(false);
-					if(privateKey == null)
+					var result = await TorConnection.RegisterHiddenServiceAsync(conf.Listen, conf.TorSettings.VirtualPort, TorPrivateKey).ConfigureAwait(false);
+					if(TorPrivateKey == null)
 					{
 						File.WriteAllText(torRSA, result.PrivateKey, Encoding.UTF8);
 						Logs.Configuration.LogWarning($"Tor RSA private key generated to {torRSA}");
@@ -323,6 +323,11 @@ namespace NTumbleBit.ClassicTumbler.Server
 		{
 			get;
 			set;
+		}
+		public string TorPrivateKey
+		{
+			get;
+			private set;
 		}
 	}
 }

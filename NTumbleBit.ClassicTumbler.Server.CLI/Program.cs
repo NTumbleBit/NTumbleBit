@@ -56,6 +56,10 @@ namespace NTumbleBit.ClassicTumbler.Server.CLI
 					job.Start();
 					interactive.Services.Add(job);
 
+					var tor = new TorRegisterJob(config, runtime);
+					tor.Start();
+					interactive.Services.Add(tor);
+
 					if(!config.OnlyMonitor)
 					{
 						host.Start();
