@@ -88,10 +88,10 @@ namespace NTumbleBit.Tests
 				conf.NoRSAProof = !shouldBeStandard;
 				if(!shouldBeStandard)
 				{
-					conf.ClassicTumblerParameters.FakePuzzleCount /= 4;
-					conf.ClassicTumblerParameters.FakeTransactionCount /= 4;
-					conf.ClassicTumblerParameters.RealTransactionCount /= 4;
-					conf.ClassicTumblerParameters.RealPuzzleCount /= 4;
+					conf.ClassicTumblerParameters.FakePuzzleCount = 10;
+					conf.ClassicTumblerParameters.FakeTransactionCount = 10;
+					conf.ClassicTumblerParameters.RealTransactionCount = 10;
+					conf.ClassicTumblerParameters.RealPuzzleCount = 2;
 					conf.ClassicTumblerParameters.CycleGenerator.FirstCycle.Start = 105;
 				}
 				else

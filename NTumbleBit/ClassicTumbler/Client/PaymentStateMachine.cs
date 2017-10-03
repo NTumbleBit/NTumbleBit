@@ -515,7 +515,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 		}
 
 
-		public bool ShouldStayConnected(int height)
+		public bool ShouldStayConnected()
 		{
 			if(ClientChannelNegotiation == null)
 				return false;
@@ -535,7 +535,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 				// You do not have the solution
 				Status == PaymentStateMachineStatus.UncooperativeTumbler &&
 				// But have not yet redeemed or cashed out
-				(IsConfirmed(cycle, TransactionType.ClientRedeem) || IsConfirmed(cycle, TransactionType.TumblerCashout)))
+				!(IsConfirmed(cycle, TransactionType.ClientRedeem) || IsConfirmed(cycle, TransactionType.ClientOfferRedeem) || IsConfirmed(cycle, TransactionType.TumblerCashout)))
 			{
 				return true;
 			}

@@ -262,7 +262,7 @@ namespace NTumbleBit.ClassicTumbler.CLI
 							Console.WriteLine("Status: " + state.Status);
 
 							var machine = new PaymentStateMachine(stateMachineExecutor.Runtime, state);
-							Console.WriteLine("Should stay connnected: " + machine.ShouldStayConnected(currentHeight));
+							Console.WriteLine("Should stay connnected: " + machine.ShouldStayConnected());
 							hasData = true;
 						}
 						Console.WriteLine("Phases:");
