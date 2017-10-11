@@ -141,9 +141,9 @@ namespace NTumbleBit.Tests
 			var cycleGenerator = new OverlappedCycleGenerator();
 			cycleGenerator.FirstCycle = parameter;
 			cycleGenerator.RegistrationOverlap = 3;
-			Assert.Equal(100, cycleGenerator.GetRegistratingCycle(100).Start);
-			Assert.Equal(100, cycleGenerator.GetRegistratingCycle(106).Start);
-			Assert.Equal(107, cycleGenerator.GetRegistratingCycle(107).Start);
+			Assert.Equal(100, cycleGenerator.GetRegisteringCycle(100).Start);
+			Assert.Equal(100, cycleGenerator.GetRegisteringCycle(106).Start);
+			Assert.Equal(107, cycleGenerator.GetRegisteringCycle(107).Start);
 		}
 
 		[Fact]

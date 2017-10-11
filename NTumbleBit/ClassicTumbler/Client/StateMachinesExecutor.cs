@@ -49,7 +49,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 						lastBlock = Runtime.Services.BlockExplorerService.WaitBlock(lastBlock, cancellationToken);
 						var height = Runtime.Services.BlockExplorerService.GetCurrentHeight();
 						Logs.Client.LogInformation("New Block: " + height);
-						var cycle = Runtime.TumblerParameters.CycleGenerator.GetRegistratingCycle(height);
+						var cycle = Runtime.TumblerParameters.CycleGenerator.GetRegisteringCycle(height);
 						if(lastCycle != cycle.Start)
 						{
 							lastCycle = cycle.Start;

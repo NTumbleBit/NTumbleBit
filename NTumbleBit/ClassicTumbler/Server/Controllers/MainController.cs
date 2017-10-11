@@ -93,7 +93,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			if(tumblerId == null)
 				throw new ArgumentNullException(nameof(tumblerId));
 			var height = Services.BlockExplorerService.GetCurrentHeight();
-			var cycleParameters = Parameters.CycleGenerator.GetRegistratingCycle(height);
+			var cycleParameters = Parameters.CycleGenerator.GetRegisteringCycle(height);
 			PuzzleSolution solution = null;
 			var puzzle = Parameters.VoucherKey.PublicKey.GeneratePuzzle(ref solution);
 			uint160 nonce;

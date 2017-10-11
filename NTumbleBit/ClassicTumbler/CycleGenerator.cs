@@ -43,7 +43,7 @@ namespace NTumbleBit.ClassicTumbler
 			}
 		}
 
-		public CycleParameters GetRegistratingCycle(int blockHeight)
+		public CycleParameters GetRegisteringCycle(int blockHeight)
 		{
 			if(blockHeight < FirstCycle.Start)
 				throw new InvalidOperationException("cycle generation starts at " + FirstCycle.Start);
@@ -91,7 +91,7 @@ namespace NTumbleBit.ClassicTumbler
 		public CycleParameters[] GetCycles(int height)
 		{
 			List<CycleParameters> cycles = new List<CycleParameters>();
-			var cycle = GetRegistratingCycle(height);
+			var cycle = GetRegisteringCycle(height);
 			while(cycle.IsInside(height))
 			{
 				var prev = GetPreviousCycle(cycle);
