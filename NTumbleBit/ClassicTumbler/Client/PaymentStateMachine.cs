@@ -181,7 +181,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 			CyclePhase phase;
 			if(ClientChannelNegotiation == null)
 			{
-				cycle = Parameters.CycleGenerator.GetRegistratingCycle(height);
+				cycle = Parameters.CycleGenerator.GetRegisteringCycle(height);
 				phase = CyclePhase.Registration;
 			}
 			else
