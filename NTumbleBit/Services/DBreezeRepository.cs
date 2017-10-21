@@ -83,14 +83,13 @@ namespace NTumbleBit.Services
 			string partitionPath = GetPartitionPath(partitionKey);
 			if(!Directory.Exists(partitionPath))
 				Directory.CreateDirectory(partitionPath);
-			DBreezeEngineReference engine;
-			if(!_EnginesByParitionKey.TryGetValue(partitionKey, out engine))
-			{
-				engine = new DBreezeEngineReference() { PartitionKey = partitionKey, Engine = new DBreezeEngine(partitionPath) };
-				_EnginesByParitionKey.Add(partitionKey, engine);
-				_EngineReferences.Enqueue(engine);
-			}
-			engine.Used++;
+            if (!_EnginesByParitionKey.TryGetValue(partitionKey, out DBreezeEngineReference engine))
+            {
+                engine = new DBreezeEngineReference() { PartitionKey = partitionKey, Engine = new DBreezeEngine(partitionPath) };
+                _EnginesByParitionKey.Add(partitionKey, engine);
+                _EngineReferences.Enqueue(engine);
+            }
+            engine.Used++;
 			while(_EngineReferences.Count > MaxOpenedEngine)
 			{
 				var reference = _EngineReferences.Dequeue();

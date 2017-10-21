@@ -189,9 +189,8 @@ namespace NTumbleBit.Services.RPC
 						.Where(c => c.ScriptPubKey == broadcast.Request.PreviousScriptPubKey))
 					{
 
-						bool cached;
-						var transaction = broadcast.Request.ReSign(coin, out cached);
-						var txHash = transaction.GetHash();
+                        var transaction = broadcast.Request.ReSign(coin, out bool cached);
+                        var txHash = transaction.GetHash();
 						if(!cached || !broadcast.Tracked)
 						{
 							broadcast.Tracked = true;

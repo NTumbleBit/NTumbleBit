@@ -70,13 +70,12 @@ namespace NTumbleBit.Configuration
 		private void Add(string key, string value, bool sourcePriority)
 		{
 			key = NormalizeKey(key);
-			List<string> list;
-			if(!_Args.TryGetValue(key, out list))
-			{
-				list = new List<string>();
-				_Args.Add(key, list);
-			}
-			if(sourcePriority)
+            if (!_Args.TryGetValue(key, out List<string> list))
+            {
+                list = new List<string>();
+                _Args.Add(key, list);
+            }
+            if (sourcePriority)
 				list.Insert(0, value);
 			else
 				list.Add(value);
@@ -126,13 +125,12 @@ namespace NTumbleBit.Configuration
 
 				var key = split[0];
 				key = NormalizeKey(key);
-				List<string> values;
-				if(!result.TryGetValue(key, out values))
-				{
-					values = new List<string>();
-					result.Add(key, values);
-				}
-				var value = String.Join("=", split.Skip(1).ToArray());
+                if (!result.TryGetValue(key, out List<string> values))
+                {
+                    values = new List<string>();
+                    result.Add(key, values);
+                }
+                var value = String.Join("=", split.Skip(1).ToArray());
 				values.Add(value);
 			}
 			return new TextFileConfiguration(result);
@@ -140,15 +138,13 @@ namespace NTumbleBit.Configuration
 
 		public bool Contains(string key)
 		{
-			List<string> values;
-			return _Args.TryGetValue(key, out values);
-		}
+            return _Args.TryGetValue(key, out List<string> values);
+        }
 		public string[] GetAll(string key)
 		{
-			List<string> values;
-			if(!_Args.TryGetValue(key, out values))
-				return new string[0];
-			return values.ToArray();
+            if (!_Args.TryGetValue(key, out List<string> values))
+                return new string[0];
+            return values.ToArray();
 		}
 
 		private List<Tuple<string, string>> _Aliases = new List<Tuple<string, string>>();
@@ -172,10 +168,9 @@ namespace NTumbleBit.Configuration
 
 			foreach(var alias in aliases)
 			{
-				List<string> values;
-				if(!_Args.TryGetValue(alias, out values))
-					continue;
-				if(values.Count == 0)
+                if (!_Args.TryGetValue(alias, out List<string> values))
+                    continue;
+                if (values.Count == 0)
 					continue;
 				try
 				{

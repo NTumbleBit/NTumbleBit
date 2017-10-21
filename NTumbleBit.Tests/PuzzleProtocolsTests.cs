@@ -60,9 +60,8 @@ namespace NTumbleBit.Tests
 			for(int i = 0; i < 100; i++)
 			{
 				var data = RandomUtils.GetBytes(234);
-				uint160 nonce;
-				var sig = key.Sign(data, out nonce);
-				Assert.True(key.PubKey.Verify(sig, data, nonce));
+                var sig = key.Sign(data, out uint160 nonce);
+                Assert.True(key.PubKey.Verify(sig, data, nonce));
 			}
 
 
@@ -301,9 +300,8 @@ namespace NTumbleBit.Tests
 			txBuilder.AddCoins(client.EscrowedCoin);
 			Assert.True(txBuilder.Verify(resigned));
 
-			bool cached;
-			resigned = fulfill.ReSign(offerCoin, out cached);
-			Assert.False(cached);
+            resigned = fulfill.ReSign(offerCoin, out bool cached);
+            Assert.False(cached);
 			txBuilder = new TransactionBuilder();
 			txBuilder.AddCoins(offerCoin);
 			Assert.True(txBuilder.Verify(resigned));
