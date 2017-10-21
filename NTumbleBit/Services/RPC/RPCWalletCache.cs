@@ -38,12 +38,8 @@ namespace NTumbleBit.Services.RPC
 		private readonly IRepository _Repo;
 		public RPCWalletCache(RPCClient rpc, IRepository repository)
 		{
-			if(rpc == null)
-				throw new ArgumentNullException("rpc");
-			if(repository == null)
-				throw new ArgumentNullException("repository");
-			_RPCClient = rpc;
-			_Repo = repository;
+            _RPCClient = rpc ?? throw new ArgumentNullException("rpc");
+			_Repo = repository ?? throw new ArgumentNullException("repository");
 		}
 
 		volatile uint256 _RefreshedAtBlock;
@@ -79,12 +75,11 @@ namespace NTumbleBit.Services.RPC
 
 		public Transaction GetTransaction(uint256 txId)
 		{
-			RPCWalletEntry entry = null;
-			if(_WalletEntries.TryGetValue(txId, out entry))
-			{
-				return entry.Transaction;
-			}
-			return null;
+            if (_WalletEntries.TryGetValue(txId, out RPCWalletEntry entry))
+            {
+                return entry.Transaction;
+            }
+            return null;
 		}
 
 
@@ -114,10 +109,9 @@ namespace NTumbleBit.Services.RPC
 		{
 			lock(_TxByScriptId)
 			{
-				IReadOnlyCollection<RPCWalletEntry> transactions = null;
-				if(_TxByScriptId.TryGetValue(script, out transactions))
-					return transactions.ToArray();
-				return new RPCWalletEntry[0];
+                if (_TxByScriptId.TryGetValue(script, out IReadOnlyCollection<RPCWalletEntry> transactions))
+                    return transactions.ToArray();
+                return new RPCWalletEntry[0];
 			}
 		}
 
@@ -204,29 +198,28 @@ namespace NTumbleBit.Services.RPC
 						continue;
 					removeFromWalletEntries.Remove(entry.TransactionId);
 
-					RPCWalletEntry existing;
-					if(_WalletEntries.TryGetValue(entry.TransactionId, out existing))
-					{
-						var confirmationGap = entry.Confirmations - existing.Confirmations;
-						if(entry.Confirmations == 0)
-						{
-							updatedConfirmationGap = 0;
-							canMakeSimpleUpdate = false;
-						}
-						if(updatedConfirmationGap != -1 && updatedConfirmationGap != confirmationGap)
-							canMakeSimpleUpdate = false;
+                    if (_WalletEntries.TryGetValue(entry.TransactionId, out RPCWalletEntry existing))
+                    {
+                        var confirmationGap = entry.Confirmations - existing.Confirmations;
+                        if (entry.Confirmations == 0)
+                        {
+                            updatedConfirmationGap = 0;
+                            canMakeSimpleUpdate = false;
+                        }
+                        if (updatedConfirmationGap != -1 && updatedConfirmationGap != confirmationGap)
+                            canMakeSimpleUpdate = false;
 
-						if(updatedConfirmationGap == -1)
-						{
-							canMakeSimpleUpdate = true;
-							updatedConfirmationGap = confirmationGap;
-						}
+                        if (updatedConfirmationGap == -1)
+                        {
+                            canMakeSimpleUpdate = true;
+                            updatedConfirmationGap = confirmationGap;
+                        }
 
-						existing.Confirmations = entry.Confirmations;
-						entry = existing;
-					}
+                        existing.Confirmations = entry.Confirmations;
+                        entry = existing;
+                    }
 
-					if(entry.Transaction == null)
+                    if (entry.Transaction == null)
 					{
 						fetchingTransactions.Add(Tuple.Create(entry, FetchTransactionAsync(batch, entry.TransactionId)));
 					}
@@ -251,27 +244,25 @@ namespace NTumbleBit.Services.RPC
 			{
 				foreach(var tx in removeFromWalletEntries.ToList())
 				{
-					RPCWalletEntry entry = null;
-					if(_WalletEntries.TryGetValue(tx, out entry))
-					{
-						if(entry.Confirmations != 0)
-						{
-							entry.Confirmations += updatedConfirmationGap;
-							if(entry.Confirmations <= MaxConfirmations)
-								removeFromWalletEntries.Remove(entry.TransactionId);
-						}
-					}
-				}
+                    if (_WalletEntries.TryGetValue(tx, out RPCWalletEntry entry))
+                    {
+                        if (entry.Confirmations != 0)
+                        {
+                            entry.Confirmations += updatedConfirmationGap;
+                            if (entry.Confirmations <= MaxConfirmations)
+                                removeFromWalletEntries.Remove(entry.TransactionId);
+                        }
+                    }
+                }
 			}
 
 			foreach(var remove in removeFromWalletEntries)
 			{
-				RPCWalletEntry opt;
-				if(_WalletEntries.TryRemove(remove, out opt))
-				{
-					RemoveTxByScriptId(opt);
-				}
-			}
+                if (_WalletEntries.TryRemove(remove, out RPCWalletEntry opt))
+                {
+                    RemoveTxByScriptId(opt);
+                }
+            }
 		}
 
 		public void ImportTransaction(Transaction transaction, int confirmations)

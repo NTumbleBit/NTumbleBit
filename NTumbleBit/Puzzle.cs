@@ -10,12 +10,8 @@ namespace NTumbleBit
 	{
 		public Puzzle(RsaPubKey rsaPubKey, PuzzleValue puzzleValue)
 		{
-			if(rsaPubKey == null)
-				throw new ArgumentNullException(nameof(rsaPubKey));
-			if(puzzleValue == null)
-				throw new ArgumentNullException(nameof(puzzleValue));
-			_RsaPubKey = rsaPubKey;
-			_PuzzleValue = puzzleValue;
+            _RsaPubKey = rsaPubKey ?? throw new ArgumentNullException(nameof(rsaPubKey));
+			_PuzzleValue = puzzleValue ?? throw new ArgumentNullException(nameof(puzzleValue));
 		}
 
 		public Puzzle Blind(ref BlindFactor blind)

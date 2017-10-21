@@ -51,17 +51,13 @@ namespace NTumbleBit.PuzzlePromise
 		}
 		public PromiseServerSession(PromiseParameters parameters)
 		{
-			if(parameters == null)
-				throw new ArgumentNullException(nameof(parameters));
-			_Parameters = parameters;
+            _Parameters = parameters ?? throw new ArgumentNullException(nameof(parameters));
 			InternalState = new State();
 		}
 
 		public PromiseServerSession(State state, PromiseParameters parameters) : this(parameters)
 		{
-			if(state == null)
-				throw new ArgumentNullException(nameof(state));
-			InternalState = state;
+            InternalState = state ?? throw new ArgumentNullException(nameof(state));
 		}
 
 		public new class State : EscrowInitiator.State

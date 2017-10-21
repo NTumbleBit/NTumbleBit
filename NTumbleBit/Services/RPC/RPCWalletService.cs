@@ -16,9 +16,7 @@ namespace NTumbleBit.Services.RPC
 	{
 		public RPCWalletService(RPCClient rpc)
 		{
-			if(rpc == null)
-				throw new ArgumentNullException(nameof(rpc));
-			_RPCClient = rpc;
+            _RPCClient = rpc ?? throw new ArgumentNullException(nameof(rpc));
 			_FundingBatch = new FundingBatch(rpc);
 			_ReceiveBatch = new ReceiveBatch(rpc);
 			_RPCBatch = new RPCBatch<bool>(rpc);

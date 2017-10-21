@@ -22,9 +22,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 	{
 		public MainController(TumblerRuntime runtime, CustomThreadPool threadPool)
 		{
-			if(runtime == null)
-				throw new ArgumentNullException(nameof(runtime));
-			_Runtime = runtime;
+            _Runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
 			_Repository = new ClassicTumblerRepository(_Runtime);
 			_ThreadPool = threadPool;
 		}
@@ -96,9 +94,8 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			var cycleParameters = Parameters.CycleGenerator.GetRegisteringCycle(height);
 			PuzzleSolution solution = null;
 			var puzzle = Parameters.VoucherKey.PublicKey.GeneratePuzzle(ref solution);
-			uint160 nonce;
-			var cycle = cycleParameters.Start;
-			var signature = Runtime.VoucherKey.Sign(NBitcoin.Utils.ToBytes((uint)cycle, true), out nonce);
+            var cycle = cycleParameters.Start;
+            var signature = Runtime.VoucherKey.Sign(NBitcoin.Utils.ToBytes((uint)cycle, true), out uint160 nonce);
 			return new UnsignedVoucherInformation
 			{
 				CycleStart = cycle,
@@ -119,9 +116,8 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 				throw new ArgumentNullException(nameof(tumblerId));
 			var height = Services.BlockExplorerService.GetCurrentHeight();
 			var cycle = GetCycle(cycleStart);
-			int keyIndex;
-			var key = Repository.GetNextKey(cycle.Start, out keyIndex);
-			if(!cycle.IsInPhase(CyclePhase.ClientChannelEstablishment, height))
+            var key = Repository.GetNextKey(cycle.Start, out int keyIndex);
+            if (!cycle.IsInPhase(CyclePhase.ClientChannelEstablishment, height))
 				throw new ActionResultException(BadRequest("invalid-phase"));
 			return new TumblerEscrowKeyResponse { PubKey = key.PubKey, KeyIndex = keyIndex };
 		}

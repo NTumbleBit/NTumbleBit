@@ -19,12 +19,8 @@ namespace NTumbleBit.ClassicTumbler.Client
 	{
 		public TumblerClient(Network network, TumblerUrlBuilder serverAddress, int cycleId)
 		{
-			if(serverAddress == null)
-				throw new ArgumentNullException(nameof(serverAddress));
-			if(network == null)
-				throw new ArgumentNullException(nameof(network));
-			_Address = serverAddress;
-			_Network = network;
+            _Address = serverAddress ?? throw new ArgumentNullException(nameof(serverAddress));
+			_Network = network ?? throw new ArgumentNullException(nameof(network));
 			this.cycleId = cycleId;
 		}
 

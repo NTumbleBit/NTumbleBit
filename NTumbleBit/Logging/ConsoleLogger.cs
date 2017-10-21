@@ -37,12 +37,7 @@ namespace NTumbleBit.Logging
 
 		public CustomerConsoleLogger(string name, Func<string, LogLevel, bool> filter, bool includeScopes, ConsoleLoggerProcessor loggerProcessor)
 		{
-			if(name == null)
-			{
-				throw new ArgumentNullException(nameof(name));
-			}
-
-			Name = name;
+            Name = name ?? throw new ArgumentNullException(nameof(name));
 			Filter = filter ?? ((category, logLevel) => true);
 			IncludeScopes = includeScopes;
 
@@ -66,12 +61,7 @@ namespace NTumbleBit.Logging
 			}
 			set
 			{
-				if(value == null)
-				{
-					throw new ArgumentNullException(nameof(value));
-				}
-
-				_queueProcessor.Console = value;
+                _queueProcessor.Console = value ?? throw new ArgumentNullException(nameof(value));
 			}
 		}
 
@@ -83,12 +73,7 @@ namespace NTumbleBit.Logging
 			}
 			set
 			{
-				if(value == null)
-				{
-					throw new ArgumentNullException(nameof(value));
-				}
-
-				_filter = value;
+                _filter = value ?? throw new ArgumentNullException(nameof(value));
 			}
 		}
 

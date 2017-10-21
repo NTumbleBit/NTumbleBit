@@ -48,10 +48,10 @@ namespace NTumbleBit.Tests
 	}
 	public class NodeBuilder : IDisposable
 	{
-		public static NodeBuilder Create([CallerMemberNameAttribute]string caller = null, string version = "0.14.1")
+		public static NodeBuilder Create([CallerMemberNameAttribute]string caller = null, string version = "0.15.0")
 		{
-			version = version ?? "0.14.1";
-			var path = EnsureDownloaded(version);
+            version = version ?? "0.15.0";
+            var path = EnsureDownloaded(version);
 			try
 			{
 				Utils.DeleteRecursivelyWithMagicDust(caller);
@@ -280,7 +280,7 @@ namespace NTumbleBit.Tests
 		}
 		public void Start()
 		{
-			StartAsync().Wait();
+			StartAsync().GetAwaiter().GetResult();
 		}
 
 		private readonly NetworkCredential creds;
@@ -424,7 +424,7 @@ namespace NTumbleBit.Tests
 
 			var tasks = txs.Select(t => rpc.GetRawTransactionAsync(t)).ToArray();
 			Task.WaitAll(tasks);
-			transactions.AddRange(tasks.Select(t => t.Result).ToArray());
+			transactions.AddRange(tasks.Select(t => t.GetAwaiter().GetResult()).ToArray());
 		}
 
 		public void Broadcast(Transaction[] txs)
@@ -491,7 +491,7 @@ namespace NTumbleBit.Tests
 			rpc = rpc.PrepareBatch();
 			var tasks = blocks.Select(b => rpc.GetBlockAsync(b)).ToArray();
 			rpc.SendBatch();
-			return tasks.Select(b => b.Result).ToArray();
+			return tasks.Select(b => b.GetAwaiter().GetResult()).ToArray();
 		}
 
 		private List<uint256> _ToMalleate = new List<uint256>();

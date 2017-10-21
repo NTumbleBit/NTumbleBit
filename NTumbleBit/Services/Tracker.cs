@@ -79,12 +79,8 @@ namespace NTumbleBit.Services
 
 		public Tracker(IRepository repo, Network network)
 		{
-			if(repo == null)
-				throw new ArgumentNullException("repo");
-			if(network == null)
-				throw new ArgumentNullException("network");
-			_Repo = repo;
-			_Network = network;
+            _Repo = repo ?? throw new ArgumentNullException("repo");
+			_Network = network ?? throw new ArgumentNullException("network");
 		}
 
 

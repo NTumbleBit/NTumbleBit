@@ -29,12 +29,8 @@ namespace NTumbleBit.ClassicTumbler.Client
 				throw new ArgumentNullException("derivationPath");
 			if(extPubKey == null)
 				throw new ArgumentNullException("extPubKey");
-			if(repository == null)
-				throw new ArgumentNullException("repository");
-			if(network == null)
-				throw new ArgumentNullException("network");
-			_Network = network;
-			_Repository = repository;
+            _Network = network ?? throw new ArgumentNullException("network");
+			_Repository = repository ?? throw new ArgumentNullException("repository");
 			_ExtPubKey = extPubKey.ExtPubKey.Derive(derivationPath);
 			_DerivationPath = derivationPath;
 			_WalletId = "Wallet_" + Encoders.Base58.EncodeData(Hashes.Hash160(Encoding.UTF8.GetBytes(_ExtPubKey.ToString() + "-" + derivationPath.ToString())).ToBytes());

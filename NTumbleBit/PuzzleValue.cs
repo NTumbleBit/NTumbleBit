@@ -26,9 +26,7 @@ namespace NTumbleBit
 		}
 		internal PuzzleValue(BigInteger z)
 		{
-			if(z == null)
-				throw new ArgumentNullException(nameof(z));
-			_Value = z;
+            _Value = z ?? throw new ArgumentNullException(nameof(z));
 		}
 
 		public byte[] ToBytes()

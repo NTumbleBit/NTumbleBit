@@ -11,12 +11,10 @@ namespace TumbleBitSetup
 
         public PermutationTestSetup(byte[] publicString, int alpha, int keySize, int securityParameter = 128)
         {
-            if(publicString == null)
-                throw new ArgumentNullException(nameof(publicString));
-            if(KeySize < 0)
+            if (KeySize < 0)
                 throw new ArgumentOutOfRangeException(nameof(keySize));
             Alpha = alpha;
-            PublicString = publicString;
+            PublicString = publicString ?? throw new ArgumentNullException(nameof(publicString));
             KeySize = keySize;
             SecurityParameter = securityParameter;
         }

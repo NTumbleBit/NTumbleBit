@@ -72,9 +72,7 @@ namespace NTumbleBit.PuzzlePromise
 		{
 			public FakeHash(PromiseParameters parameters)
 			{
-				if(parameters == null)
-					throw new ArgumentNullException(nameof(parameters));
-				Parameters = parameters;
+                Parameters = parameters ?? throw new ArgumentNullException(nameof(parameters));
 			}
 			public uint256 Salt
 			{
@@ -204,18 +202,16 @@ namespace NTumbleBit.PuzzlePromise
 				for(int i = 0; i < _Hashes.Length; i++)
 				{
 					commitments.Add(_Hashes[i].Commitment);
-					var fake = _Hashes[i] as FakeHash;
-					if(fake != null)
-					{
-						fakeSalts.Add(fake.Salt);
-					}
+                    if (_Hashes[i] is FakeHash fake)
+                    {
+                        fakeSalts.Add(fake.Salt);
+                    }
 
-					var real = _Hashes[i] as RealHash;
-					if(real != null)
-					{
-						feeVariations.Add(real.FeeVariation);
-					}
-				}
+                    if (_Hashes[i] is RealHash real)
+                    {
+                        feeVariations.Add(real.FeeVariation);
+                    }
+                }
 				state.FakeSalts = fakeSalts.ToArray();
 				state.FeeVariations = feeVariations.ToArray();
 				state.Commitments = commitments.ToArray();
@@ -337,11 +333,10 @@ namespace NTumbleBit.PuzzlePromise
 
 				if(!new Puzzle(Parameters.ServerKey, fakeHash.Commitment.Puzzle).Verify(solution))
 					throw new PuzzleException("Invalid puzzle solution");
-				
-				ECDSASignature sig;
-				if(!IsValidSignature(solution, fakeHash, out sig))
-					throw new PuzzleException("Invalid ECDSA signature");
-			}
+
+                if (!IsValidSignature(solution, fakeHash, out ECDSASignature sig))
+                    throw new PuzzleException("Invalid ECDSA signature");
+            }
 
 
 			var realHashes = _Hashes.OfType<RealHash>().ToArray();
@@ -401,10 +396,9 @@ namespace NTumbleBit.PuzzlePromise
 				var quotient = i == 0 ? BigInteger.One : InternalState.Quotients[i - 1]._Value;
 				cumul = cumul.Multiply(quotient).Mod(Parameters.ServerKey._Key.Modulus);
 				solution = new PuzzleSolution(cumul);
-				ECDSASignature tumblerSig;
-				if(!IsValidSignature(solution, hash, out tumblerSig))
-					continue;
-				var transaction = hash.GetTransaction();
+                if (!IsValidSignature(solution, hash, out ECDSASignature tumblerSig))
+                    continue;
+                var transaction = hash.GetTransaction();
 				var bobSig = transaction.SignInput(InternalState.EscrowKey, InternalState.EscrowedCoin);
 				transaction.Inputs[0].WitScript = new WitScript(
 					Op.GetPushOp(new TransactionSignature(tumblerSig, SigHash.All).ToBytes()),

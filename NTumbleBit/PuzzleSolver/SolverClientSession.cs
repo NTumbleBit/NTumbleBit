@@ -61,9 +61,7 @@ namespace NTumbleBit.PuzzleSolver
 
 		public SolverClientSession(SolverParameters parameters)
 		{
-			if(parameters == null)
-				throw new ArgumentNullException(nameof(parameters));
-			_Parameters = parameters;
+            _Parameters = parameters ?? throw new ArgumentNullException(nameof(parameters));
 			InternalState = new State();
 		}
 
@@ -110,18 +108,16 @@ namespace NTumbleBit.PuzzleSolver
 				{
 					commitments[i] = _PuzzleElements[i].Commitment;
 					puzzles[i] = _PuzzleElements[i].Puzzle.PuzzleValue;
-					var fake = _PuzzleElements[i] as FakePuzzle;
-					if(fake != null)
-					{
-						fakeSolutions[fakeI++] = fake.Solution;
-					}
+                    if (_PuzzleElements[i] is FakePuzzle fake)
+                    {
+                        fakeSolutions[fakeI++] = fake.Solution;
+                    }
 
-					var real = _PuzzleElements[i] as RealPuzzle;
-					if(real != null)
-					{
-						blinds[realI++] = real.BlindFactor;
-					}
-				}
+                    if (_PuzzleElements[i] is RealPuzzle real)
+                    {
+                        blinds[realI++] = real.BlindFactor;
+                    }
+                }
 				state.FakeSolutions = fakeSolutions;
 				state.BlindFactors = blinds;
 				state.Commitments = commitments;
@@ -207,10 +203,8 @@ namespace NTumbleBit.PuzzleSolver
 
 		public void AcceptPuzzle(PuzzleValue puzzleValue)
 		{
-			if(puzzleValue == null)
-				throw new ArgumentNullException(nameof(puzzleValue));
-			AssertState(SolverClientStates.WaitingPuzzle);
-			InternalState.Puzzle = puzzleValue;
+            AssertState(SolverClientStates.WaitingPuzzle);
+			InternalState.Puzzle = puzzleValue ?? throw new ArgumentNullException(nameof(puzzleValue));
 			InternalState.Status = SolverClientStates.WaitingGeneratePuzzles;
 		}
 

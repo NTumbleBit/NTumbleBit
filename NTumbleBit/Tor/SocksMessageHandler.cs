@@ -73,9 +73,7 @@ namespace NTumbleBit.Tor
 		IPEndPoint _SocksEndpoint;
 		public SocksMessageHandler(IPEndPoint socksEndpoint, ClientOptions options = null) : base(options)
 		{
-			if(socksEndpoint == null)
-				throw new ArgumentNullException(nameof(socksEndpoint));
-			_SocksEndpoint = socksEndpoint;
+            _SocksEndpoint = socksEndpoint ?? throw new ArgumentNullException(nameof(socksEndpoint));
 		}
 
 		protected override async Task<Socket> CreateSocket(ConnectionEndpoint endpoint, CancellationToken cancellation)

@@ -614,13 +614,12 @@ namespace NTumbleBit
 		{
 			if(key == null)
 				throw new ArgumentNullException("key");
-			InnerCollectionView collection;
-			if(!dictionary.TryGetValue(key, out collection))
-			{
-				collection = new InnerCollectionView(key, NewCollectionFactory());
-				dictionary.Add(key, collection);
-			}
-			collection.AddValue(value);
+            if (!dictionary.TryGetValue(key, out InnerCollectionView collection))
+            {
+                collection = new InnerCollectionView(key, NewCollectionFactory());
+                dictionary.Add(key, collection);
+            }
+            collection.AddValue(value);
 			version++;
 		}
 
@@ -643,13 +642,12 @@ namespace NTumbleBit
 			if(values == null)
 				throw new ArgumentNullException("values");
 
-			InnerCollectionView collection;
-			if(!dictionary.TryGetValue(key, out collection))
-			{
-				collection = new InnerCollectionView(key, NewCollectionFactory());
-				dictionary.Add(key, collection);
-			}
-			foreach(TValue value in values)
+            if (!dictionary.TryGetValue(key, out InnerCollectionView collection))
+            {
+                collection = new InnerCollectionView(key, NewCollectionFactory());
+                dictionary.Add(key, collection);
+            }
+            foreach (TValue value in values)
 			{
 				collection.AddValue(value);
 			}
@@ -668,13 +666,12 @@ namespace NTumbleBit
 			if(key == null)
 				throw new ArgumentNullException("key");
 
-			InnerCollectionView collection;
-			if(dictionary.TryGetValue(key, out collection) && dictionary.Remove(key))
-			{
-				version++;
-				return true;
-			}
-			return false;
+            if (dictionary.TryGetValue(key, out InnerCollectionView collection) && dictionary.Remove(key))
+            {
+                version++;
+                return true;
+            }
+            return false;
 		}
 
 		/// <summary>
@@ -696,15 +693,14 @@ namespace NTumbleBit
 			if(key == null)
 				throw new ArgumentNullException("key");
 
-			InnerCollectionView collection;
-			if(dictionary.TryGetValue(key, out collection) && collection.RemoveValue(value))
-			{
-				if(collection.Count == 0)
-					dictionary.Remove(key);
-				version++;
-				return true;
-			}
-			return false;
+            if (dictionary.TryGetValue(key, out InnerCollectionView collection) && collection.RemoveValue(value))
+            {
+                if (collection.Count == 0)
+                    dictionary.Remove(key);
+                version++;
+                return true;
+            }
+            return false;
 		}
 
 		/// <summary>
@@ -720,9 +716,8 @@ namespace NTumbleBit
 			if(key == null)
 				throw new ArgumentNullException("key");
 
-			InnerCollectionView collection;
-			return (dictionary.TryGetValue(key, out collection) && collection.Contains(value));
-		}
+            return (dictionary.TryGetValue(key, out InnerCollectionView collection) && collection.Contains(value));
+        }
 
 		/// <summary>
 		/// Determines if the given <typeparamref name="TValue"/> exists within this <see cref="MultiValueDictionary{TKey,TValue}"/>.
@@ -808,9 +803,8 @@ namespace NTumbleBit
 			if(key == null)
 				throw new ArgumentNullException("key");
 
-			InnerCollectionView collection;
-			var success = dictionary.TryGetValue(key, out collection);
-			value = collection;
+            var success = dictionary.TryGetValue(key, out InnerCollectionView collection);
+            value = collection;
 			return success;
 		}
 
@@ -853,12 +847,11 @@ namespace NTumbleBit
 				if(key == null)
 					throw new ArgumentNullException("key");
 
-				InnerCollectionView collection;
-				if(dictionary.TryGetValue(key, out collection))
-					return collection;
-				else
-					throw new KeyNotFoundException();
-			}
+                if (dictionary.TryGetValue(key, out InnerCollectionView collection))
+                    return collection;
+                else
+                    throw new KeyNotFoundException();
+            }
 		}
 
 		/// <summary>

@@ -44,9 +44,7 @@ namespace NTumbleBit
 		internal readonly RsaKeyParameters _Key;
 		internal RsaPubKey(RsaKeyParameters key)
 		{
-			if(key == null)
-				throw new ArgumentNullException(nameof(key));
-			_Key = key;
+            _Key = key ?? throw new ArgumentNullException(nameof(key));
 		}
 
 		public byte[] ToBytes()

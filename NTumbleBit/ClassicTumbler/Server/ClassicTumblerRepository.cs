@@ -14,9 +14,7 @@ namespace NTumbleBit.ClassicTumbler.Server
 	{
 		public ClassicTumblerRepository(TumblerRuntime runtime)
 		{
-			if(runtime == null)
-				throw new ArgumentNullException(nameof(runtime));
-			_Runtime = runtime;
+            _Runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
 		}
 
 

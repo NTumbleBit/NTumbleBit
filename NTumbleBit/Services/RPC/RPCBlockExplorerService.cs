@@ -17,15 +17,9 @@ namespace NTumbleBit.Services.RPC
 		RPCBatch<bool> _RPCBatch;
 		public RPCBlockExplorerService(RPCClient client, RPCWalletCache cache, IRepository repo)
 		{
-			if(client == null)
-				throw new ArgumentNullException(nameof(client));
-			if(repo == null)
-				throw new ArgumentNullException("repo");
-			if(cache == null)
-				throw new ArgumentNullException("cache");
-			_RPCClient = client;
-			_Repo = repo;
-			_Cache = cache;
+            _RPCClient = client ?? throw new ArgumentNullException(nameof(client));
+			_Repo = repo ?? throw new ArgumentNullException("repo");
+			_Cache = cache ?? throw new ArgumentNullException("cache");
 			_RPCBatch = new RPCBatch<bool>(client);
 		}
 

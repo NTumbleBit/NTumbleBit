@@ -11,19 +11,16 @@ namespace NTumbleBit
 	{
 		public static CorrelationId Parse(string str)
 		{
-			uint256 v;
-			//To eventually remove in september 2017, prevent old stuff from crashing
-			if(uint256.TryParse(str, out v))
-				return new CorrelationId(new uint160(v.ToBytes().Take(20).ToArray()));
-			///////
-			return new CorrelationId(uint160.Parse(str));
+            //To eventually remove in september 2017, prevent old stuff from crashing
+            if (uint256.TryParse(str, out uint256 v))
+                return new CorrelationId(new uint160(v.ToBytes().Take(20).ToArray()));
+            ///////
+            return new CorrelationId(uint160.Parse(str));
 		}
 
 		public CorrelationId(uint160 id)
 		{
-			if(id == null)
-				throw new ArgumentNullException(nameof(id));
-			_Id = id;
+            _Id = id ?? throw new ArgumentNullException(nameof(id));
 		}
 
 		readonly uint160 _Id;

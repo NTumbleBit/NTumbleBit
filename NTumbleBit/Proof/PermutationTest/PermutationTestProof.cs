@@ -6,9 +6,7 @@ namespace TumbleBitSetup
     {
         public PermutationTestProof(byte[][] proof)
         {
-            if(proof == null)
-                throw new ArgumentNullException(nameof(proof));
-            Signatures = proof;
+            Signatures = proof ?? throw new ArgumentNullException(nameof(proof));
         }
 
         public byte[][] Signatures

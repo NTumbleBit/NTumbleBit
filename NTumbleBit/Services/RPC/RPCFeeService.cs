@@ -12,9 +12,7 @@ namespace NTumbleBit.Services.RPC
 	{
 		public RPCFeeService(RPCClient rpc)
 		{
-			if(rpc == null)
-				throw new ArgumentNullException(nameof(rpc));
-			_RPCClient = rpc;
+            _RPCClient = rpc ?? throw new ArgumentNullException(nameof(rpc));
 		}
 
 		private readonly RPCClient _RPCClient;

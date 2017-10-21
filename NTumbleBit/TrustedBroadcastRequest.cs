@@ -66,9 +66,8 @@ namespace NTumbleBit
 
 		public Transaction ReSign(Coin coin)
 		{
-			bool a;
-			return ReSign(coin, out a);
-		}
+            return ReSign(coin, out bool a);
+        }
 		public Transaction ReSign(Coin coin, out bool cached)
 		{
 			var transaction = Transaction.Clone();

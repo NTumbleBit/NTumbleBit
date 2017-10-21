@@ -54,10 +54,10 @@ namespace NTumbleBit.Tests
 				repo.UpdateOrInsert("a", "c", "c", (o, n) => n);
 				Assert.Equal(2, repo.List<string>("a").Length);
 				repo.Delete<string>("a", "c");
-				Assert.Equal(1, repo.List<string>("a").Length);
+				Assert.Single(repo.List<string>("a"));
 				repo.UpdateOrInsert("a", "c", "c", (o, n) => n);
 				repo.Delete("a");
-				Assert.Equal(0, repo.List<string>("a").Length);
+				Assert.Empty(repo.List<string>("a"));
 
 				var dbreezeRepo = (DBreezeRepository)repo;
 
@@ -88,7 +88,7 @@ namespace NTumbleBit.Tests
 				tracker.AddressCreated(1, TransactionType.ClientFulfill, address2, CorrelationId.Zero);
 				tracker.TransactionCreated(1, TransactionType.ClientEscrow, h, CorrelationId.Zero);
 
-				Assert.Equal(0, tracker.GetRecords(2).Length);
+				Assert.Empty(tracker.GetRecords(2));
 				Assert.Equal(3, tracker.GetRecords(1).Length);
 
 				Assert.NotNull(tracker.Search(address));
@@ -145,7 +145,7 @@ namespace NTumbleBit.Tests
 			}
 		}
 
-		public void CanCompleteCycleWithMachineStateCore(bool cooperativeClient, bool cooperativeTumbler)
+		private void CanCompleteCycleWithMachineStateCore(bool cooperativeClient, bool cooperativeTumbler)
 		{
 			using(var server = TumblerServerTester.Create())
 			{
@@ -181,20 +181,20 @@ namespace NTumbleBit.Tests
 				server.SyncNodes();
 
 				//Server does not track anything until Alice gives proof of the escrow
-				Assert.Equal(0, server.ServerRuntime.Services.BlockExplorerService
+				Assert.Empty(server.ServerRuntime.Services.BlockExplorerService
 						.GetTransactionsAsync(machine.SolverClientSession.EscrowedCoin.ScriptPubKey, false)
 						.GetAwaiter().GetResult()
-						.Count());
+);
 				serverTracker.AssertNotKnown(machine.SolverClientSession.EscrowedCoin.ScriptPubKey);
 
 				machine.Update();
 
 				WaitStatus(machine, PaymentStateMachineStatus.TumblerVoucherObtained);
 				//Server is now tracking Alice's escrow
-				Assert.Equal(1, server.ServerRuntime.Services.BlockExplorerService
+				Assert.Single(server.ServerRuntime.Services.BlockExplorerService
 						.GetTransactionsAsync(machine.SolverClientSession.EscrowedCoin.ScriptPubKey, false)
 						.GetAwaiter().GetResult()
-						.Count());
+);
 				serverTracker.AssertKnown(TransactionType.ClientEscrow, machine.SolverClientSession.EscrowedCoin.ScriptPubKey);
 				serverTracker.AssertKnown(TransactionType.ClientEscrow, machine.SolverClientSession.EscrowedCoin.Outpoint.Hash);
 				//
@@ -277,7 +277,7 @@ namespace NTumbleBit.Tests
 				else
 					//Received the solution from the blockchain, the transaction has not been planned in advance
 					transactions = server.ClientRuntime.Services.BroadcastService.TryBroadcast();
-				Assert.Equal(1, transactions.Length);
+				Assert.Single(transactions);
 				Assert.True(machine.ShouldStayConnected());
 				block = server.AliceNode.FindBlock().First();
 				//Should contains TumblerCashout
@@ -292,7 +292,7 @@ namespace NTumbleBit.Tests
 
 				//Just a sanity tests, this one contains escrow redeem and offer redeem, both of which should not be available now
 				transactions = server.ClientRuntime.Services.BroadcastService.TryBroadcast();
-				Assert.Equal(0, transactions.Length);
+				Assert.Empty(transactions);
 
 
 				var allTransactions = server.AliceNode.CreateNodeClient().GetBlocks().SelectMany(b => b.Transactions).ToDictionary(t => t.GetHash());
@@ -386,19 +386,19 @@ namespace NTumbleBit.Tests
 				server.SyncNodes();
 
 				//Server does not track anything until Alice gives proof of the escrow
-				Assert.Equal(0, server.ServerRuntime.Services.BlockExplorerService
+				Assert.Empty(server.ServerRuntime.Services.BlockExplorerService
 						.GetTransactionsAsync(machine.SolverClientSession.EscrowedCoin.ScriptPubKey, false)
 						.GetAwaiter().GetResult()
-						.Count());
+);
 
 				machine.Update();
 
 				WaitStatus(machine, PaymentStateMachineStatus.TumblerVoucherObtained);
 				//Server is now tracking Alice's escrow
-				Assert.Equal(1, server.ServerRuntime.Services.BlockExplorerService
+				Assert.Single(server.ServerRuntime.Services.BlockExplorerService
 						.GetTransactionsAsync(machine.SolverClientSession.EscrowedCoin.ScriptPubKey, false)
 						.GetAwaiter().GetResult()
-						.Count());
+);
 
 				server.MineTo(server.AliceNode, cycle, CyclePhase.TumblerChannelEstablishment);
 				machine.Update();
@@ -410,7 +410,7 @@ namespace NTumbleBit.Tests
 
 				//Make sure the tumbler escrow is broadcasted an mined
 				var broadcasted = server.ServerRuntime.Services.BroadcastService.TryBroadcast();
-				Assert.Equal(1, broadcasted.Length);
+				Assert.Single(broadcasted);
 				server.ServerRuntime.Tracker.AssertKnown(TransactionType.TumblerEscrow, broadcasted[0].GetHash());
 
 				machine.Update();
@@ -424,20 +424,20 @@ namespace NTumbleBit.Tests
 					//Client Refund broadcasted exactly when we are at ClientCashoutPhase + SafetyPeriodDuration
 					server.MineTo(server.AliceNode, cycle, CyclePhase.ClientCashoutPhase, offset: cycle.SafetyPeriodDuration - 1);
 					broadcasted = server.ClientRuntime.Services.TrustedBroadcastService.TryBroadcast();
-					Assert.Equal(0, broadcasted.Length);
+					Assert.Empty(broadcasted);
 					server.MineTo(server.AliceNode, cycle, CyclePhase.ClientCashoutPhase, offset: cycle.SafetyPeriodDuration);
 					broadcasted = server.ClientRuntime.Services.TrustedBroadcastService.TryBroadcast();
-					Assert.Equal(1, broadcasted.Length);
+					Assert.Single(broadcasted);
 					server.ClientRuntime.Tracker.AssertKnown(TransactionType.ClientRedeem, broadcasted[0].GetHash());
 					////////////////////////////////////////////////////////////////////////////////
 
 					//Tumbler Refund broadcasted exactly when we are at end of ClientCashoutPhase + SafetyPeriodDuration
 					server.MineTo(server.AliceNode, cycle, CyclePhase.ClientCashoutPhase, end: true, offset: cycle.SafetyPeriodDuration - 1);
 					broadcasted = server.ServerRuntime.Services.TrustedBroadcastService.TryBroadcast();
-					Assert.Equal(0, broadcasted.Length);
+					Assert.Empty(broadcasted);
 					server.MineTo(server.AliceNode, cycle, CyclePhase.ClientCashoutPhase, end: true, offset: cycle.SafetyPeriodDuration);
 					broadcasted = server.ServerRuntime.Services.TrustedBroadcastService.TryBroadcast();
-					Assert.Equal(1, broadcasted.Length);
+					Assert.Single(broadcasted);
 					server.ServerRuntime.Tracker.AssertKnown(TransactionType.TumblerRedeem, broadcasted[0].GetHash());
 					////////////////////////////////////////////////////////////////////////////////
 				}
@@ -454,7 +454,7 @@ namespace NTumbleBit.Tests
 					//The tumbler should now broadcast the offer, but not the fulfill
 					server.MineTo(server.TumblerNode, cycle, CyclePhase.PaymentPhase, true);
 					broadcasted = server.ServerRuntime.Services.TrustedBroadcastService.TryBroadcast();
-					Assert.Equal(1, broadcasted.Length);
+					Assert.Single(broadcasted);
 					server.ServerRuntime.Tracker.AssertKnown(TransactionType.ClientOffer, broadcasted[0].GetHash());
 					server.TumblerNode.FindBlock(1);
 
@@ -462,10 +462,10 @@ namespace NTumbleBit.Tests
 					//Client Offer Refund broadcasted exactly when we are at ClientCashoutPhase + SafetyPeriodDuration
 					server.MineTo(server.AliceNode, cycle, CyclePhase.ClientCashoutPhase, offset: cycle.SafetyPeriodDuration - 1);
 					broadcasted = server.ClientRuntime.Services.TrustedBroadcastService.TryBroadcast();
-					Assert.Equal(0, broadcasted.Length);
+					Assert.Empty(broadcasted);
 					server.MineTo(server.AliceNode, cycle, CyclePhase.ClientCashoutPhase, offset: cycle.SafetyPeriodDuration);
 					broadcasted = server.ClientRuntime.Services.TrustedBroadcastService.TryBroadcast();
-					Assert.Equal(1, broadcasted.Length);
+					Assert.Single(broadcasted);
 					server.ClientRuntime.Tracker.AssertKnown(TransactionType.ClientOfferRedeem, broadcasted[0].GetHash());
 					////////////////////////////////////////////////////////////////////////////////
 				}

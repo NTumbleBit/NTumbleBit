@@ -19,9 +19,7 @@ namespace NTumbleBit.ClassicTumbler.CLI
 		}
 		public CommandLineParser(string[] args)
 		{
-			if(args == null)
-				throw new ArgumentNullException(nameof(args));
-			_Args = args;
+            _Args = args ?? throw new ArgumentNullException(nameof(args));
 		}
 
 		public bool GetBool(string key)

@@ -12,15 +12,14 @@ namespace NTumbleBit.ClassicTumbler.Server
 	{
 		public override void OnActionExecuted(ActionExecutedContext context)
 		{
-			var ex = context.Exception as ActionResultException;
-			if(ex != null)
-			{
-				context.Exception = null;
-				context.ExceptionDispatchInfo = null;
-				context.ExceptionHandled = true;
-				context.Result = ex.Result;
-			}
-			base.OnActionExecuted(context);
+            if (context.Exception is ActionResultException ex)
+            {
+                context.Exception = null;
+                context.ExceptionDispatchInfo = null;
+                context.ExceptionHandled = true;
+                context.Result = ex.Result;
+            }
+            base.OnActionExecuted(context);
 		}
 	}
 }

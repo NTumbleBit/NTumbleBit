@@ -15,9 +15,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 		RPCClient _RPC;
 		public RPCDestinationWallet(RPCClient client)
 		{
-			if(client == null)
-				throw new ArgumentNullException("client");
-			_RPC = client;
+            _RPC = client ?? throw new ArgumentNullException("client");
 		}
 
 		public KeyPath GetKeyPath(Script script)
