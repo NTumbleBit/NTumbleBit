@@ -62,18 +62,17 @@ namespace NTumbleBit.ClassicTumbler.Server
 					catch(Exception ex)
 					{
 						Logs.Tumbler.LogCritical(new EventId(), ex, "Unhandled exception thrown by the Tumbler Service");
-						var webEx = ex as WebException;
-						if(webEx != null)
-						{
-							try
-							{
-								var httpResp = ((HttpWebResponse)webEx.Response);
-								var reader = new StreamReader(httpResp.GetResponseStream(), Encoding.UTF8);
-								Logs.Tumbler.LogCritical($"Web Exception {(int)httpResp.StatusCode} {reader.ReadToEnd()}");
-							}
-							catch { }
-						}
-						throw;
+                        if (ex is WebException webEx)
+                        {
+                            try
+                            {
+                                var httpResp = ((HttpWebResponse)webEx.Response);
+                                var reader = new StreamReader(httpResp.GetResponseStream(), Encoding.UTF8);
+                                Logs.Tumbler.LogCritical($"Web Exception {(int)httpResp.StatusCode} {reader.ReadToEnd()}");
+                            }
+                            catch { }
+                        }
+                        throw;
 					}
 					finally
 					{
