@@ -48,10 +48,10 @@ namespace NTumbleBit.Tests
 	}
 	public class NodeBuilder : IDisposable
 	{
-		public static NodeBuilder Create([CallerMemberNameAttribute]string caller = null, string version = "0.14.1")
+		public static NodeBuilder Create([CallerMemberNameAttribute]string caller = null, string version = "0.15.0")
 		{
-			version = version ?? "0.14.1";
-			var path = EnsureDownloaded(version);
+            version = version ?? "0.15.0";
+            var path = EnsureDownloaded(version);
 			try
 			{
 				Utils.DeleteRecursivelyWithMagicDust(caller);
