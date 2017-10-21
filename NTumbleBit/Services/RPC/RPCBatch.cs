@@ -22,7 +22,7 @@ namespace NTumbleBit.Services.RPC
 			var tasks = data.Select(d => d(batch)).ToArray();
 			await batch.SendBatchAsync().ConfigureAwait(false);
 			await Task.WhenAll(tasks).ConfigureAwait(false);
-			return tasks.Select(t => t.Result).ToArray();
+			return tasks.Select(t => t.GetAwaiter().GetResult()).ToArray();
 		}
 	}
 }
