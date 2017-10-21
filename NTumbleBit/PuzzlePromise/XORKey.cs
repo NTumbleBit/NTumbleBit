@@ -30,10 +30,7 @@ namespace NTumbleBit.PuzzlePromise
 
 		private XORKey(BigInteger value)
 		{
-			if(value == null)
-				throw new ArgumentNullException(nameof(value));
-
-			_Value = value;
+            _Value = value ?? throw new ArgumentNullException(nameof(value));
 		}
 
 		private BigInteger _Value;

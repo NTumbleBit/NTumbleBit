@@ -13,9 +13,7 @@ namespace NTumbleBit
 		{
 			if(puzzle == null)
 				throw new ArgumentNullException(nameof(puzzle));
-			if(amount == null)
-				throw new ArgumentNullException(nameof(amount));
-			Amount = amount;
+            Amount = amount ?? throw new ArgumentNullException(nameof(amount));
 			EscrowDate = escrowDate;
 			RsaPubKeyHash = puzzle.RsaPubKey.GetHash();
 			PuzzleValue = puzzle.PuzzleValue;

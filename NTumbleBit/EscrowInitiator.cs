@@ -57,18 +57,14 @@ namespace NTumbleBit
 				throw new ArgumentNullException(nameof(escrowedCoin));
 			if(escrowKey == null)
 				throw new ArgumentNullException(nameof(escrowKey));
-			if(redeemDestination == null)
-				throw new ArgumentNullException(nameof(redeemDestination));
-			var escrow = EscrowScriptPubKeyParameters.GetFromCoin(escrowedCoin);
+            var escrow = EscrowScriptPubKeyParameters.GetFromCoin(escrowedCoin);
 			if(escrow == null ||
 				escrow.Initiator != escrowKey.PubKey)
 				throw new PuzzleException("Invalid escrow");
-			if(channelId == null)
-				throw new ArgumentNullException(nameof(channelId));
-			InternalState.ChannelId = channelId;
+            InternalState.ChannelId = channelId ?? throw new ArgumentNullException(nameof(channelId));
 			InternalState.EscrowedCoin = escrowedCoin;
 			InternalState.EscrowKey = escrowKey;
-			InternalState.RedeemDestination = redeemDestination;
+			InternalState.RedeemDestination = redeemDestination ?? throw new ArgumentNullException(nameof(redeemDestination));
 		}
 
 		public TrustedBroadcastRequest CreateRedeemTransaction(FeeRate feeRate)

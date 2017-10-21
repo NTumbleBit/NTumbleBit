@@ -72,9 +72,7 @@ namespace NTumbleBit.PuzzlePromise
 		{
 			public FakeHash(PromiseParameters parameters)
 			{
-				if(parameters == null)
-					throw new ArgumentNullException(nameof(parameters));
-				Parameters = parameters;
+                Parameters = parameters ?? throw new ArgumentNullException(nameof(parameters));
 			}
 			public uint256 Salt
 			{

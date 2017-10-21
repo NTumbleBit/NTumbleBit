@@ -22,9 +22,7 @@ namespace NTumbleBit.ClassicTumbler.Server
 	{
 		public ActionResultException(IActionResult result)
 		{
-			if(result == null)
-				throw new ArgumentNullException(nameof(result));
-			_Result = result;
+            _Result = result ?? throw new ArgumentNullException(nameof(result));
 		}
 
 		private readonly IActionResult _Result;

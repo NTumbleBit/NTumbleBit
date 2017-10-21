@@ -12,9 +12,7 @@ namespace NTumbleBit.ClassicTumbler.CLI
     {
 		public ClientInteractiveRuntime(TumblerClientRuntime runtime)
 		{
-			if(runtime == null)
-				throw new ArgumentNullException("runtime");
-			InnerRuntime = runtime;
+            InnerRuntime = runtime ?? throw new ArgumentNullException("runtime");
 		}
 
 

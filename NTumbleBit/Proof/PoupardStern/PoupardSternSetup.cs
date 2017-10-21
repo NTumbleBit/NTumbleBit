@@ -10,12 +10,10 @@ namespace TumbleBitSetup
         }
         public PoupardSternSetup(byte[] publicString, int keySize, int securityParameter = 128)
         {
-            if(publicString == null)
-                throw new ArgumentNullException(nameof(publicString));
-            if(KeySize < 0)
+            if (KeySize < 0)
                 throw new ArgumentOutOfRangeException(nameof(keySize));
             SecurityParameter = securityParameter;
-            PublicString = publicString;
+            PublicString = publicString ?? throw new ArgumentNullException(nameof(publicString));
             KeySize = keySize;
         }
         public byte[] PublicString

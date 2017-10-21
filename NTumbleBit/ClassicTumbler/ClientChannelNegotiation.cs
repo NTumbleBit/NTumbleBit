@@ -85,20 +85,16 @@ namespace NTumbleBit.ClassicTumbler
 		}
 		public ClientChannelNegotiation(ClassicTumblerParameters parameters, int cycleStart)
 		{
-			if(parameters == null)
-				throw new ArgumentNullException(nameof(parameters));
-			InternalState = new State();
-			Parameters = parameters;
+            InternalState = new State();
+			Parameters = parameters ?? throw new ArgumentNullException(nameof(parameters));
 			InternalState.CycleStart = cycleStart;
 		}
 
 		public ClientChannelNegotiation(ClassicTumblerParameters parameters, State state)
 		{
-			if(parameters == null)
-				throw new ArgumentNullException(nameof(parameters));
-			if(state == null)
+            if (state == null)
 				throw new ArgumentNullException(nameof(state));
-			Parameters = parameters;
+			Parameters = parameters ?? throw new ArgumentNullException(nameof(parameters));
 			InternalState = Serializer.Clone(state);
 		}
 
@@ -245,9 +241,7 @@ namespace NTumbleBit.ClassicTumbler
 
 		internal void SetChannelId(uint160 channelId)
 		{
-			if(channelId == null)
-				throw new ArgumentNullException(nameof(channelId));
-			InternalState.ChannelId = channelId;
+            InternalState.ChannelId = channelId ?? throw new ArgumentNullException(nameof(channelId));
 		}
 
 		public CycleParameters GetCycle()

@@ -22,9 +22,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 	{
 		public MainController(TumblerRuntime runtime, CustomThreadPool threadPool)
 		{
-			if(runtime == null)
-				throw new ArgumentNullException(nameof(runtime));
-			_Runtime = runtime;
+            _Runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
 			_Repository = new ClassicTumblerRepository(_Runtime);
 			_ThreadPool = threadPool;
 		}

@@ -38,12 +38,8 @@ namespace NTumbleBit.Services.RPC
 		private readonly IRepository _Repo;
 		public RPCWalletCache(RPCClient rpc, IRepository repository)
 		{
-			if(rpc == null)
-				throw new ArgumentNullException("rpc");
-			if(repository == null)
-				throw new ArgumentNullException("repository");
-			_RPCClient = rpc;
-			_Repo = repository;
+            _RPCClient = rpc ?? throw new ArgumentNullException("rpc");
+			_Repo = repository ?? throw new ArgumentNullException("repository");
 		}
 
 		volatile uint256 _RefreshedAtBlock;

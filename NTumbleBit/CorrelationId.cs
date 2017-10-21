@@ -21,9 +21,7 @@ namespace NTumbleBit
 
 		public CorrelationId(uint160 id)
 		{
-			if(id == null)
-				throw new ArgumentNullException(nameof(id));
-			_Id = id;
+            _Id = id ?? throw new ArgumentNullException(nameof(id));
 		}
 
 		readonly uint160 _Id;

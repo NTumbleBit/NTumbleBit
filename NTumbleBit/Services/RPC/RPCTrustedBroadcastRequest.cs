@@ -64,25 +64,13 @@ namespace NTumbleBit.Services.RPC
 
 		public RPCTrustedBroadcastService(RPCClient rpc, IBroadcastService innerBroadcast, IBlockExplorerService explorer, IRepository repository, RPCWalletCache cache, Tracker tracker)
 		{
-			if(rpc == null)
-				throw new ArgumentNullException(nameof(rpc));
-			if(innerBroadcast == null)
-				throw new ArgumentNullException(nameof(innerBroadcast));
-			if(repository == null)
-				throw new ArgumentNullException(nameof(repository));
-			if(explorer == null)
-				throw new ArgumentNullException(nameof(explorer));
-			if(tracker == null)
-				throw new ArgumentNullException(nameof(tracker));
-			if(cache == null)
-				throw new ArgumentNullException(nameof(cache));
-			_Repository = repository;
-			_RPCClient = rpc;
-			_Broadcaster = innerBroadcast;
+            _Repository = repository ?? throw new ArgumentNullException(nameof(repository));
+			_RPCClient = rpc ?? throw new ArgumentNullException(nameof(rpc));
+			_Broadcaster = innerBroadcast ?? throw new ArgumentNullException(nameof(innerBroadcast));
 			TrackPreviousScriptPubKey = true;
-			_BlockExplorer = explorer;
-			_Tracker = tracker;
-			_Cache = cache;
+			_BlockExplorer = explorer ?? throw new ArgumentNullException(nameof(explorer));
+			_Tracker = tracker ?? throw new ArgumentNullException(nameof(tracker));
+			_Cache = cache ?? throw new ArgumentNullException(nameof(cache));
 		}
 
 		private Tracker _Tracker;

@@ -16,12 +16,8 @@ namespace NTumbleBit
 		TextWriter _Output;
 		public TextWriterClientInteraction(TextWriter output, TextReader input)
 		{
-			if(input == null)
-				throw new ArgumentNullException("input");
-			if(output == null)
-				throw new ArgumentNullException("output");
-			_Input = input;
-			_Output = output;
+            _Input = input ?? throw new ArgumentNullException("input");
+			_Output = output ?? throw new ArgumentNullException("output");
 		}
 
 		public Task AskConnectToTorAsync(string torPath, string args)

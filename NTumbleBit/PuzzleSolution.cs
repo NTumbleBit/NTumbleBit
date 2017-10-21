@@ -24,9 +24,7 @@ namespace NTumbleBit
 
 		internal PuzzleSolution(BigInteger value)
 		{
-			if(value == null)
-				throw new ArgumentNullException(nameof(value));
-			_Value = value;
+            _Value = value ?? throw new ArgumentNullException(nameof(value));
 		}
 
 		internal BigInteger _Value;

@@ -61,9 +61,7 @@ namespace NTumbleBit.PuzzleSolver
 
 		public SolverClientSession(SolverParameters parameters)
 		{
-			if(parameters == null)
-				throw new ArgumentNullException(nameof(parameters));
-			_Parameters = parameters;
+            _Parameters = parameters ?? throw new ArgumentNullException(nameof(parameters));
 			InternalState = new State();
 		}
 
@@ -207,10 +205,8 @@ namespace NTumbleBit.PuzzleSolver
 
 		public void AcceptPuzzle(PuzzleValue puzzleValue)
 		{
-			if(puzzleValue == null)
-				throw new ArgumentNullException(nameof(puzzleValue));
-			AssertState(SolverClientStates.WaitingPuzzle);
-			InternalState.Puzzle = puzzleValue;
+            AssertState(SolverClientStates.WaitingPuzzle);
+			InternalState.Puzzle = puzzleValue ?? throw new ArgumentNullException(nameof(puzzleValue));
 			InternalState.Status = SolverClientStates.WaitingGeneratePuzzles;
 		}
 

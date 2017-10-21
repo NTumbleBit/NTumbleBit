@@ -15,9 +15,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 		public StateMachinesExecutor(
 			TumblerClientRuntime runtime)
 		{
-			if(runtime == null)
-				throw new ArgumentNullException("runtime");
-			Runtime = runtime;
+            Runtime = runtime ?? throw new ArgumentNullException("runtime");
 			_ParametersHash = Runtime.TumblerParameters.GetHash();
 		}
 

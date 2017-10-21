@@ -40,9 +40,7 @@ namespace NTumbleBit.ClassicTumbler.Client
 		public PaymentStateMachine(
 			TumblerClientRuntime runtime)
 		{
-			if(runtime == null)
-				throw new ArgumentNullException(nameof(runtime));
-			Runtime = runtime;
+            Runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
 		}
 
 
