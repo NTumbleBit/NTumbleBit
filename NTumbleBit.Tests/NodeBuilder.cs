@@ -280,7 +280,7 @@ namespace NTumbleBit.Tests
 		}
 		public void Start()
 		{
-			StartAsync().Wait();
+			StartAsync().GetAwaiter().GetResult();
 		}
 
 		private readonly NetworkCredential creds;
