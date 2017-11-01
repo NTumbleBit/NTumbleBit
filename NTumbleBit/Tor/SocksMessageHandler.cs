@@ -132,7 +132,7 @@ namespace NTumbleBit.Tor
 			catch(TaskCanceledException ex)
 			{
 				SafeDispose(ref s);
-				throw new TaskCanceledException("TOR failed to not connect to the remote server", ex);
+				throw new TaskCanceledException("TOR failed to connect to the remote server", ex);
 			}
 			catch
 			{
