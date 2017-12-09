@@ -21,12 +21,17 @@ namespace NTumbleBit.Logging
 			Broadcasters = factory.CreateLogger("Broadcasters");
 			Tracker = factory.CreateLogger("Tracker");
 			Wallet = factory.CreateLogger("Wallet");
+			TOR = factory.CreateLogger("TOR");
 		}
 		public static ILogger Tumbler
 		{
 			get; set;
 		}
 		public static ILogger Client
+		{
+			get; set;
+		}
+		public static ILogger TOR
 		{
 			get; set;
 		}

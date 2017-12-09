@@ -1,4 +1,6 @@
-﻿using System;
+﻿using NTumbleBit.Logging;
+using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -108,6 +110,7 @@ namespace NTumbleBit.Tor
 					if(connectResponse[1] != 0)
 					{
 						var code = (SocksErrorCode)connectResponse[1];
+						Logs.TOR.LogDebug($"TOR failed to connect to hidden service with error {Enum.GetName(code.GetType(), code)} (Code {(int)code})");
 						if(!IsTransient(code) || retry++ >= maxTries)
 							throw new SocksException(code);
 						SafeDispose(ref s);
@@ -126,6 +129,7 @@ namespace NTumbleBit.Tor
 
 					if(connectResponse[8] != 0 || connectResponse[9] != 0)
 						throw new SocksException("Invalid PORT address connect reply");
+					Logs.TOR.LogDebug("TOR is connected to hidden service");
 					return s;
 				}
 			}
