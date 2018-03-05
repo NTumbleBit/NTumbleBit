@@ -1,13 +1,11 @@
-﻿using System;
-using System.Linq;
-using System.Collections;
-using System.Collections.Generic;
-using NTumbleBit.BouncyCastle.Crypto.Digests;
+﻿using NTumbleBit.BouncyCastle.Crypto.Digests;
 using NTumbleBit.BouncyCastle.Crypto.Generators;
 using NTumbleBit.BouncyCastle.Crypto.Parameters;
-using NTumbleBit.BouncyCastle.Security;
-using NTumbleBit.BouncyCastle.Crypto;
 using NTumbleBit.BouncyCastle.Math;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace TumbleBitSetup
 {
@@ -55,15 +53,13 @@ namespace TumbleBitSetup
         /// <returns></returns>
         internal static int GetOctetLen(int x)
         {
-            return (int)Math.Ceiling((1.0 / 8.0) * Math.Log(x+1, 2));
-        }
-
-        internal static AsymmetricCipherKeyPair GeneratePrivate(BigInteger exp, int keySize)
-        {
-            SecureRandom random = new SecureRandom();
-            var gen = new RsaKeyPairGenerator();
-            gen.Init(new RsaKeyGenerationParameters(exp, random, keySize, 2)); // See A.15.2 IEEE P1363 v2 D1 for certainty parameter
-            return gen.GenerateKeyPair();
+            if (x < 0) throw new ArithmeticException("Can't represent a negative value in Octets");
+            else if (x == 0) return 0;
+            else if (x < 256) return 1;
+            else if (x < 256 * 256) return 2;
+            else if (x < 256 * 256 * 256) return 3;
+            // It cannot be >4 because int in c# is at most 4 bytes.
+            else return 4;
         }
 
         /// <summary>
@@ -73,7 +69,7 @@ namespace TumbleBitSetup
         /// <param name="q">Q</param>
         /// <param name="e">Public Exponent</param>
         /// <returns>RSA key pair</returns>
-        internal static AsymmetricCipherKeyPair GeneratePrivate(BigInteger p, BigInteger q, BigInteger e)
+        internal static RsaPrivateCrtKeyParameters GeneratePrivate(BigInteger p, BigInteger q, BigInteger e)
         {
             BigInteger n = p.Multiply(q);
 
@@ -88,7 +84,7 @@ namespace TumbleBitSetup
             //
             BigInteger d = e.ModInverse(lcm);
 
-            if(d.BitLength <= q.BitLength)
+            if (d.BitLength <= q.BitLength)
                 throw new ArgumentException("Invalid RSA q value");
 
             //
@@ -98,9 +94,7 @@ namespace TumbleBitSetup
             BigInteger dQ = d.Remainder(qSub1);
             BigInteger qInv = q.ModInverse(p);
 
-            return new AsymmetricCipherKeyPair(
-                new RsaKeyParameters(false, n, e),
-                new RsaPrivateCrtKeyParameters(n, e, d, p, q, dP, dQ, qInv));
+            return new RsaPrivateCrtKeyParameters(n, e, d, p, q, dP, dQ, qInv);
         }
 
         /// <summary>
@@ -125,13 +119,13 @@ namespace TumbleBitSetup
                 int prime = 2 * i + 3;
                 yield return prime;
                 //cross out all multiples of this prime, starting at the prime squared
-                for (int j = (prime * prime - 2) >> 1; j < composite.Length; j += prime)
+                for (int j = (prime * prime - 2) >> 1; j < composite.Count; j += prime)
                 {
                     composite[j] = true;
                 }
             }
             //The remaining numbers not crossed out are also prime
-            for (int i = limit; i < composite.Length; i++)
+            for (int i = limit; i < composite.Count; i++)
             {
                 if (!composite[i]) yield return 2 * i + 3;
             }
@@ -160,7 +154,7 @@ namespace TumbleBitSetup
                 outBytes[i] = (byte)(x % 256);
                 x /= 256;
             }
-            
+
             // make sure the output is BigEndian
             if (BitConverter.IsLittleEndian)
                 Array.Reverse(outBytes, 0, outBytes.Length);
@@ -230,7 +224,7 @@ namespace TumbleBitSetup
         {
             return SHA256(data, 0, data.Length);
         }
-        
+
         /// <summary>
         /// A SHA256 hashing oracle (H_2 in the setup)
         /// </summary>
@@ -240,11 +234,11 @@ namespace TumbleBitSetup
         /// <returns></returns>
         internal static byte[] SHA256(byte[] data, int offset, int count)
         {
-			Sha256Digest sha256 = new Sha256Digest();
-			sha256.BlockUpdate(data, offset, count);
-			byte[] rv = new byte[32];
-			sha256.DoFinal(rv, 0);
-			return rv;
+            Sha256Digest sha256 = new Sha256Digest();
+            sha256.BlockUpdate(data, offset, count);
+            byte[] rv = new byte[32];
+            sha256.DoFinal(rv, 0);
+            return rv;
         }
 
         /// <summary>

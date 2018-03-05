@@ -9,6 +9,8 @@ namespace TumbleBitSetup
 
         }
 
+        public static readonly int[] SPECIAL_E_VALUES = new int[] { 3, 5, 17, 257, 65537 };
+
         public PermutationTestSetup(byte[] publicString, int alpha, int keySize, int securityParameter = 128)
         {
             if (KeySize < 0)

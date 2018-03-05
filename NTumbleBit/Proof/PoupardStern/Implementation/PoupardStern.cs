@@ -31,19 +31,13 @@ namespace TumbleBitSetup
             BigInteger Two = BigInteger.Two;
             // 2^{|N| - 1}
             BigInteger lowerLimit = Two.Pow(keyLength - 1);
-            // 2^{|N|}
-            BigInteger upperLimit = Two.Pow(keyLength);
 
             // Rounding up k to the closest multiple of 8
             k = Utils.GetByteLength(k) * 8;
 
-            // Check if N < 2^{|N|-1}
-            if (Modulus.CompareTo(lowerLimit) < 0)
-                throw new ArgumentOutOfRangeException("RSA modulus smaller than expected");
-
-            // if N >= 2^{KeySize}
-            if (Modulus.CompareTo(upperLimit) >= 0)
-                throw new ArgumentOutOfRangeException("RSA modulus larger than expected");
+            // if N < 2^{KeySize-1} or N >= 2^{KeySize}
+            if (Modulus.BitLength != keyLength)
+                throw new ArgumentOutOfRangeException("RSA modulus value is out of range");
 
             // if even
             if ((Modulus.IntValue & 1) == 0)
@@ -129,11 +123,6 @@ namespace TumbleBitSetup
             var y = proof.YValue;
 
             BigInteger rPrime;
-            BigInteger Two = BigInteger.Two;
-            // 2^{|N| - 1}
-            BigInteger lowerLimit = Two.Pow(keyLength - 1);
-            // 2^{|N|}
-            BigInteger upperLimit = Two.Pow(keyLength);
 
             // Rounding up k to the closest multiple of 8
             k = Utils.GetByteLength(k) * 8;
@@ -143,20 +132,19 @@ namespace TumbleBitSetup
 
             // Checking that:
             // if y >= 2^{ |N| - 1 }
-            if (y.CompareTo(lowerLimit) >= 0)
+            if (y.BitLength >= keyLength)
+                // TODO: Verify that this bit check is equivalent to the math check
                 return false;
             // if y < 0
             if (y.CompareTo(BigInteger.Zero) < 0)
                 return false;
-            // if N < 2^{KeySize-1}
-            if (Modulus.CompareTo(lowerLimit) < 0)
+            // if N < 2^{KeySize-1} or N >= 2^{KeySize}
+            if (Modulus.BitLength != keyLength)
                 return false;
             // if even
             if ((Modulus.IntValue & 1) == 0)
                 return false;
-            // if N >= 2^{KeySize}
-            if (Modulus.CompareTo(upperLimit) >= 0)
-                return false;
+
 
             // Computing K
             GetK(k, out int BigK);

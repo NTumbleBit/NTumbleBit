@@ -3,13 +3,7 @@ using NTumbleBit.BouncyCastle.Asn1.Pkcs;
 using NTumbleBit.BouncyCastle.Asn1.X509;
 using NTumbleBit.BouncyCastle.Crypto.Engines;
 using NTumbleBit.BouncyCastle.Crypto.Parameters;
-using Org.BouncyCastle.Asn1;
-using Org.BouncyCastle.Asn1.Pkcs;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TumbleBitSetup
 {
@@ -23,7 +17,7 @@ namespace TumbleBitSetup
         /// <returns></returns>
         internal static byte[] Decrypt(this RsaPrivateCrtKeyParameters privKey, byte[] encrypted)
         {
-            if(encrypted == null)
+            if (encrypted == null)
                 throw new ArgumentNullException(nameof(encrypted));
 
             RsaEngine engine = new RsaEngine();
@@ -40,7 +34,7 @@ namespace TumbleBitSetup
         /// <returns></returns>
         internal static byte[] Encrypt(this RsaKeyParameters pubKey, byte[] data)
         {
-            if(data == null)
+            if (data == null)
                 throw new ArgumentNullException(nameof(data));
 
             RsaEngine engine = new RsaEngine();
