@@ -1,7 +1,6 @@
 ﻿using NTumbleBit.BouncyCastle.Crypto.Parameters;
 using NTumbleBit.BouncyCastle.Math;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace TumbleBitSetup
@@ -29,24 +28,6 @@ namespace TumbleBitSetup
             var keyLength = Modulus.BitLength;
             var alpha = setup.Alpha;
 
-            BigInteger Two = BigInteger.Two;
-            // 2^{|N| - 1}
-            BigInteger lowerLimit = Two.Pow(keyLength - 1);
-            // 2^{|N|}
-            BigInteger upperLimit = Two.Pow(keyLength);
-
-            // if N < 2^{KeySize-1}
-            if (Modulus.CompareTo(lowerLimit) < 0)
-                throw new ArgumentOutOfRangeException("RSA modulus smaller than expected");
-
-            // if N >= 2^{KeySize}
-            if (Modulus.CompareTo(upperLimit) >= 0)
-                throw new ArgumentOutOfRangeException("RSA modulus larger than expected");
-
-            // Verify alpha and N
-            if (!CheckAlphaN(alpha, Modulus))
-                throw new ArgumentException("RSA modulus has a small prime factor");
-
             var psBytes = setup.PublicString;
             var k = setup.SecurityParameter;
 
@@ -59,7 +40,7 @@ namespace TumbleBitSetup
             var eN = Modulus.Multiply(e);
 
             // Generate a pair (pub, sec) of keys with eN as e.
-            var keyPrimePair = Utils.GeneratePrivate(p, q, eN);
+            var PrivatekeyPrime = Utils.GeneratePrivate(p, q, eN);
 
             // Extract public key (N, e) from private key.
             var pubKey = privKey.ToPublicKey();
@@ -71,8 +52,8 @@ namespace TumbleBitSetup
             sigs = new byte[m2][];
             for (int i = 0; i < m2; i++)
             {
-                if (i <= m1)
-                    sigs[i] = ((RsaPrivateCrtKeyParameters)keyPrimePair.Private).Decrypt(rhoValues[i]);
+                if (i < m1)
+                    sigs[i] = PrivatekeyPrime.Decrypt(rhoValues[i]);
                 else
                     sigs[i] = privKey.Decrypt(rhoValues[i]);
             }
@@ -102,18 +83,13 @@ namespace TumbleBitSetup
             BigInteger Modulus = pubKey.Modulus;
             BigInteger Exponent = pubKey.Exponent;
 
-            BigInteger Two = BigInteger.Two;
-            // 2^{|N| - 1}
-            BigInteger lowerLimit = Two.Pow(keyLength - 1);
-            // 2^{|N|}
-            BigInteger upperLimit = Two.Pow(keyLength);
+            // Check if exponent e is prime
+            if (!Array.Exists(PermutationTestSetup.SPECIAL_E_VALUES, element => Exponent.IntValue == element))
+                if (!Exponent.IsProbablePrime(k))
+                    return false;
 
-            // if N < 2^{KeySize-1}
-            if (Modulus.CompareTo(lowerLimit) < 0)
-                return false;
-
-            // if N >= 2^{KeySize}
-            if (Modulus.CompareTo(upperLimit) >= 0)
+            // if N < 2^{KeySize-1} or N >= 2^{KeySize}
+            if (Modulus.BitLength != keyLength)
                 return false;
 
             // Generate m1 and m2
@@ -137,7 +113,7 @@ namespace TumbleBitSetup
             // Verifying the signatures
             for (int i = 0; i < m2; i++)
             {
-                if (i <= m1)
+                if (i < m1)
                 {
                     var dec_sig = pubKeyPrime.Encrypt(sigs[i]);
                     if (!dec_sig.SequenceEqual(rhoValues[i]))
@@ -161,13 +137,9 @@ namespace TumbleBitSetup
         /// <returns>true if the check passes, false otherwise</returns>
         internal static bool CheckAlphaN(int alpha, BigInteger N)
         {
-            IEnumerable<int> primesList = Utils.Primes(alpha - 1);
-
-            foreach (int p in primesList)
-            {
-                if (!(N.Gcd(BigInteger.ValueOf(p)).Equals(BigInteger.One)))
+            foreach (int p in Utils.Primes(alpha - 1))
+                if (N.Mod(BigInteger.ValueOf(p)).Equals(BigInteger.Zero))
                     return false;
-            }
             return true;
         }
 
@@ -179,9 +151,9 @@ namespace TumbleBitSetup
         /// <param name="k">Security parameter specified in the setup</param>
         internal static void Get_m1_m2(decimal alpha, int e, int k, out int m1, out int m2)
         {
-            double p1 = -(k + 1) / Math.Log(1.0 / ((double)alpha), 2.0);
+            double p1 = -k / Math.Log(1.0 / ((double)alpha), 2.0);
             double p22 = 1.0 / ((double)alpha) + (1.0 / ((double)e)) * (1.0 - (1.0 / ((double)alpha)));
-            double p2 = -(k + 1) / Math.Log(p22, 2.0);
+            double p2 = -k / Math.Log(p22, 2.0);
             m1 = (int)Math.Ceiling(p1);
             m2 = (int)Math.Ceiling(p2);
             return;
@@ -208,7 +180,7 @@ namespace TumbleBitSetup
             {
                 // Byte representation of i
                 var EI = Utils.I2OSP(i, m2Len);
-                int j = 2;
+                int j = 1;
                 // Combine the octet string
                 var combined = Utils.Combine(keyBytes, psBytes, EI);
                 while (true)
