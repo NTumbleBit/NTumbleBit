@@ -40,7 +40,7 @@ The current version has an implementation of:
 
 ### What is next
 
-1. TOR integration for Tumbler server and client
+1. Tor integration for Tumbler server and client
 2. Localhost website as user interface for Tumbler server and Tumbler Client.
 3. TumbleBit: Uni-directional Payment Hub Mode
 
