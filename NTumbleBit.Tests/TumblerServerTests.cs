@@ -206,8 +206,7 @@ namespace NTumbleBit.Tests
 				//Wait escrow broadcasted
 				Thread.Sleep(1000);
 				server.TumblerNode.Generate(1);
-				machine.Update();
-				Assert.Equal(PaymentStateMachineStatus.TumblerChannelCreated, machine.Status);
+                WaitStatus(machine, PaymentStateMachineStatus.TumblerChannelCreated);
 
 				Assert.NotEqual(uint160.Zero, machine.PromiseClientSession.Id);
 				Assert.NotEqual(machine.SolverClientSession.Id, machine.PromiseClientSession.Id);
@@ -408,7 +407,7 @@ namespace NTumbleBit.Tests
 				//Wait escrow broadcasted
 				Thread.Sleep(1000);
 
-				//Make sure the tumbler escrow is broadcasted an mined
+				//Make sure the tumbler escrow is broadcasted and mined
 				var broadcasted = server.ServerRuntime.Services.BroadcastService.TryBroadcast();
 				Assert.Single(broadcasted);
 				server.ServerRuntime.Tracker.AssertKnown(TransactionType.TumblerEscrow, broadcasted[0].GetHash());
