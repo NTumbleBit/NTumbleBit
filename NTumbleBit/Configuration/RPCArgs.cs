@@ -111,7 +111,7 @@ namespace NTumbleBit.Configuration
 				Logs.Configuration.LogError("The RPC server is not using the chain " + network.Name);
 				throw new ConfigException();
 			}
-            var version = GetVersion(rpcClient).GetAwaiter().GetResult();
+            var version = rpcClient.GetVersion();
 			if(version < MIN_CORE_VERSION)
 			{
 				Logs.Configuration.LogError($"The minimum Bitcoin Core version required is {MIN_CORE_VERSION} (detected: {version})");
@@ -120,22 +120,6 @@ namespace NTumbleBit.Configuration
 			Logs.Configuration.LogInformation($"Bitcoin Core version detected: {version}");
 			return rpcClient;
 		}
-
-        private static async Task<int> GetVersion(RPCClient rpcClient)
-        {
-            try
-            {
-                var getInfo = await rpcClient.SendCommandAsync(RPCOperations.getnetworkinfo);
-                return ((JObject)getInfo.Result)["version"].Value<int>();
-            }
-            catch(RPCException ex) when(ex.RPCCode == RPCErrorCode.RPC_METHOD_NOT_FOUND)
-            {
-#pragma warning disable CS0618 // Type or member is obsolete
-                var getInfo = await rpcClient.SendCommandAsync(RPCOperations.getinfo);
-#pragma warning restore CS0618 // Type or member is obsolete
-                return ((JObject)getInfo.Result)["version"].Value<int>();
-            }
-        }
 
         const int MIN_CORE_VERSION = 140100;
 		public static RPCClient ConfigureRPCClient(TextFileConfiguration confArgs, Network network, string prefix = null)

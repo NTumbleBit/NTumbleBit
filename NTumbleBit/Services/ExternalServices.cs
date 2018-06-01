@@ -12,10 +12,9 @@ namespace NTumbleBit.Services
     {
 		public static ExternalServices CreateFromRPCClient(RPCClient rpc, IRepository repository, Tracker tracker, bool useBatching)
 		{
-			var info = rpc.SendCommand(RPCOperations.getinfo);
-			var minimumRate = new NBitcoin.FeeRate(NBitcoin.Money.Coins((decimal)(double)((Newtonsoft.Json.Linq.JValue)(info.Result["relayfee"])).Value * 2), 1000);
-			
-			ExternalServices service = new ExternalServices();
+            var minimumRate = rpc.GetRelayFee();
+
+            ExternalServices service = new ExternalServices();
 			service.FeeService = new RPCFeeService(rpc) {
 				MinimumFeeRate = minimumRate
 			};

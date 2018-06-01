@@ -13,7 +13,31 @@ namespace NTumbleBit
 {
 	public static class Extensions
 	{
-		public static void ReadWriteC(this BitcoinStream bs, ref uint256[] values)
+        public static int GetVersion(this RPCClient rpcClient)
+        {
+            return GetInfoAsync(rpcClient).GetAwaiter().GetResult()["version"].Value<int>();
+        }
+        public static FeeRate GetRelayFee(this RPCClient rpcClient)
+        {
+            var info = GetInfoAsync(rpcClient).GetAwaiter().GetResult();
+            return new NBitcoin.FeeRate(NBitcoin.Money.Coins((decimal)(double)((Newtonsoft.Json.Linq.JValue)(info["relayfee"])).Value * 2), 1000);
+        }
+        private static async Task<JObject> GetInfoAsync(this RPCClient rpcClient)
+        {
+            try
+            {
+                var getInfo = await rpcClient.SendCommandAsync(RPCOperations.getnetworkinfo);
+                return ((JObject)getInfo.Result);
+            }
+            catch(RPCException ex) when(ex.RPCCode == RPCErrorCode.RPC_METHOD_NOT_FOUND)
+            {
+#pragma warning disable CS0618 // Type or member is obsolete
+                var getInfo = await rpcClient.SendCommandAsync(RPCOperations.getinfo);
+#pragma warning restore CS0618 // Type or member is obsolete
+                return ((JObject)getInfo.Result);
+            }
+        }
+        public static void ReadWriteC(this BitcoinStream bs, ref uint256[] values)
 		{
 			var mutable = values?.Select(h => h.AsBitcoinSerializable()).ToArray();
 			bs.ReadWrite(ref mutable);
