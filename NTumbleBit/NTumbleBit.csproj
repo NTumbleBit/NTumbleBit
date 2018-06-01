@@ -13,10 +13,10 @@
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.0" />
-		<PackageReference Include="CommandLineParser" Version="2.1.1-beta" />
+		<PackageReference Include="CommandLineParser" Version="2.2.1" />
 		<PackageReference Include="DBreeze" Version="1.89.0" />
 		<PackageReference Include="NBitcoin" Version="4.0.0.38" />
-		<PackageReference Include="TCPServer" Version="1.0.13" />
+		<PackageReference Include="TCPServer" Version="1.0.13.1" />
 	</ItemGroup>
 	<ItemGroup>
 		<Compile Update="Properties\Resources.Designer.cs">
