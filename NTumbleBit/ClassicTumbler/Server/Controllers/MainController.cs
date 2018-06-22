@@ -264,7 +264,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 		}
 
 		[HttpPost("api/v1/tumblers/{tumblerId}/channels/beginopen")]
-		public async Task<uint160.MutableUint160> BeginOpenChannel(
+		public async Task<IActionResult> BeginOpenChannel(
 			[ModelBinder(BinderType = typeof(TumblerParametersModelBinder))]
 			ClassicTumblerParameters tumblerId,
 			[FromBody] OpenChannelRequest request)
@@ -329,7 +329,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 							Logs.Tumbler.LogCritical(new EventId(), ex, "Error during escrow transaction callback");
 						}
 					});
-				return channelId.AsBitcoinSerializable();
+				return new BitcoinSerializableResult(channelId.AsBitcoinSerializable());
 			}
 			catch(NotEnoughFundsException ex)
 			{
@@ -339,7 +339,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 		}
 
 		[HttpPost("api/v1/tumblers/{tumblerId}/channels/{cycleId}/{channelId}/endopen")]
-		public async Task<TumblerEscrowData> EndOpenChannel(
+		public async Task<IActionResult> EndOpenChannel(
 			[ModelBinder(BinderType = typeof(TumblerParametersModelBinder))]
 			ClassicTumblerParameters tumblerId,
 			int cycleId,
@@ -352,20 +352,20 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 
 			var session = GetPromiseServerSession(cycle.Start, channelId, CyclePhase.TumblerChannelEstablishment, false);
 			if(session == null)
-				return null;
-			var tx = (await Services.BlockExplorerService
+                return new NoContentResult();
+            var tx = (await Services.BlockExplorerService
 							.GetTransactionsAsync(session.EscrowedCoin.TxOut.ScriptPubKey, true))
 							.FirstOrDefault(t => t.Transaction.GetHash() == session.EscrowedCoin.Outpoint.Hash);
 			if(session == null || tx == null)
-				return null;
+				return new NoContentResult();
 			AssertNotDuplicateQuery(cycle.Start, channelId);
-			return new TumblerEscrowData()
+			return new BitcoinSerializableResult(new TumblerEscrowData()
 			{
 				Transaction = tx.Transaction,
 				OutputIndex = (int)session.EscrowedCoin.Outpoint.N,
 				EscrowInitiatorKey = session.GetInternalState().EscrowKey.PubKey,
 				MerkleProof = tx.MerkleProof
-			};
+			});
 		}
 
 		[HttpPost("api/v1/tumblers/{tumblerId}/channels/{cycleId}/{channelId}/signhashes")]
@@ -508,7 +508,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 		}
 
 		[HttpPost("api/v1/tumblers/{tumblerId}/clientschannels/{cycleId}/{channelId}/checkblindfactors")]
-		public async Task<OfferInformation> CheckBlindFactors(
+		public async Task<IActionResult> CheckBlindFactors(
 			[ModelBinder(BinderType = typeof(TumblerParametersModelBinder))]
 			ClassicTumblerParameters tumblerId,
 			int cycleId,
@@ -522,11 +522,11 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			var feeRate = await Services.FeeService.GetFeeRateAsync();
 			var fulfillKey = session.CheckBlindedFactors(blindFactors, feeRate);
 			Repository.Save(cycleId, session);
-			return fulfillKey;
+			return new BitcoinSerializableResult(fulfillKey);
 		}
 
 		[HttpPost("api/v1/tumblers/{tumblerId}/clientchannels/{cycleId}/{channelId}/offer")]
-		public async Task<SolutionKey[]> FulfillOffer(
+		public async Task<IActionResult> FulfillOffer(
 			[ModelBinder(BinderType = typeof(TumblerParametersModelBinder))]
 			ClassicTumblerParameters tumblerId,
 			int cycleId,
@@ -568,7 +568,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 			{
 				Services.TrustedBroadcastService.Broadcast(cycle.Start, TransactionType.ClientFulfill, correlation, fulfill);
 			}
-			return Runtime.Cooperative ? session.GetSolutionKeys() : new SolutionKey[0];
+			return new BitcoinSerializableResult(new ArrayWrapper<SolutionKey>(Runtime.Cooperative ? session.GetSolutionKeys() : new SolutionKey[0]));
 		}
 
 		private static CorrelationId GetCorrelation(SolverServerSession session)

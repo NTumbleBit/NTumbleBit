@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFramework>netcoreapp2.0</TargetFramework>
+		<TargetFramework>netcoreapp2.1</TargetFramework>
 		<AssemblyName>NTumbleBit</AssemblyName>
 		<PackageId>NTumbleBit</PackageId>
 		
@@ -12,11 +12,11 @@
 		<GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
 	</PropertyGroup>
 	<ItemGroup>
-		<PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.0" />
+		<PackageReference Include="Microsoft.AspNetCore.App" Version="2.1.0" />
 		<PackageReference Include="CommandLineParser" Version="2.2.1" />
 		<PackageReference Include="DBreeze" Version="1.89.0" />
-		<PackageReference Include="NBitcoin" Version="4.0.0.38" />
-		<PackageReference Include="TCPServer" Version="1.0.13.1" />
+		<PackageReference Include="NBitcoin" Version="4.1.1.14" />
+		<PackageReference Include="TCPServer" Version="1.0.14.1" />
 	</ItemGroup>
 	<ItemGroup>
 		<Compile Update="Properties\Resources.Designer.cs">

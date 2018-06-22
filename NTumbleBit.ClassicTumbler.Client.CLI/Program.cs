@@ -29,7 +29,7 @@ namespace NTumbleBit.ClassicTumbler.Client.CLI
 			var redeemEscrows = argsConf.GetOrDefault<bool>("redeemescrows", false); ;
 
 			ConsoleLoggerProcessor loggerProcessor = new ConsoleLoggerProcessor();
-			Logs.Configure(new FuncLoggerFactory(i => new CustomerConsoleLogger(i, Logs.SupportDebug(debug), false, loggerProcessor)));
+			Logs.Configure(new FuncLoggerFactory(i => new CustomerConsoleLogger(i, Logs.SupportDebug(debug), null, loggerProcessor)));
 			using(var interactive = new Interactive())
 			{
 				try

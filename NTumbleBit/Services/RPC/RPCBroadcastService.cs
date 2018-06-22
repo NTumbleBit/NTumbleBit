@@ -79,7 +79,7 @@ namespace NTumbleBit.Services.RPC
 		{
 			var transactions = Repository.List<Record>("Broadcasts");
 			foreach(var tx in transactions)
-				tx.Transaction.CacheHashes();
+				tx.Transaction.PrecomputeHash(true, true);
 
 			var txByTxId = transactions.ToDictionary(t => t.Transaction.GetHash());
 			var dependsOn = transactions.Select(t => new

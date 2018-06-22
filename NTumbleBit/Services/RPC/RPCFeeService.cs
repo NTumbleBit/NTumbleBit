@@ -52,10 +52,7 @@ namespace NTumbleBit.Services.RPC
 
 		private async Task<FeeRate> FetchRateAsync()
 		{
-			var rate = await _RPCClient.TryEstimateFeeRateAsync(1).ConfigureAwait(false) ??
-							   await _RPCClient.TryEstimateFeeRateAsync(2).ConfigureAwait(false) ??
-							   await _RPCClient.TryEstimateFeeRateAsync(3).ConfigureAwait(false) ??
-							   FallBackFeeRate;
+			var rate = (await _RPCClient.TryEstimateSmartFeeAsync(1).ConfigureAwait(false))?.FeeRate ?? FallBackFeeRate;
 			if(rate == null)
 				throw new FeeRateUnavailableException("The fee rate is unavailable");
 			if(rate < MinimumFeeRate)

@@ -32,7 +32,7 @@ namespace NTumbleBit.ClassicTumbler.Server.CLI
 			var debug = argsConf.GetOrDefault<bool>("debug", false);
 
 			ConsoleLoggerProcessor loggerProcessor = new ConsoleLoggerProcessor();
-			Logs.Configure(new FuncLoggerFactory(i => new CustomerConsoleLogger(i, Logs.SupportDebug(debug), false, loggerProcessor)));
+			Logs.Configure(new FuncLoggerFactory(i => new CustomerConsoleLogger(i, Logs.SupportDebug(debug), null, loggerProcessor)));
 
 			using(var interactive = new Interactive())
 			{

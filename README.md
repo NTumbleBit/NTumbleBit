@@ -15,7 +15,7 @@ An "easy" to understand explanation of the protocol has been presented by Ethan 
 
 As a user, you will need:
 
-1. [NET Core SDK 2.0](https://www.microsoft.com/net/core)
+1. [NET Core SDK 2.1](https://www.microsoft.com/net/core)
 2. At least [Bitcoin Core 0.13.1](https://bitcoin.org/bin/bitcoin-core-0.13.1/) fully sync, rpc enabled.
 
 On Tumbler server side, run Bitcoin Core with a big RPC work queue. TumbleBit has peak of activity making it likely to reach the limit.
@@ -27,7 +27,7 @@ Alternatively, you can also put the `rpcworkqueue=100` in the configuration file
 
 As a developer, you need additionally one of those:
 
-1. [Visual studio 2017 with update 3 (15.3)](https://www.visualstudio.com/downloads/) (Windows only)
+1. [Visual studio 2017 with update 7 (15.7)](https://www.visualstudio.com/downloads/) (Windows only)
 2. [Visual studio code](https://code.visualstudio.com/) with [C# Extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.csharp) (Cross plateform)
 
 If you have any issue, please check the [FAQ](https://github.com/NTumbleBit/NTumbleBit/wiki/FAQ), before posting an issue.
