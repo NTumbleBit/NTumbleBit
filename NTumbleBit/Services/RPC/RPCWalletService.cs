@@ -65,18 +65,10 @@ namespace NTumbleBit.Services.RPC
 			BitcoinAddress address = null;
 			await _RPCBatch.WaitTransactionAsync(async batch =>
 			{
-				address = await batch.GetNewAddressAsync().ConfigureAwait(false);
+				address = await batch.GetNewAddressAsync(new GetNewAddressRequest() { AddressType = AddressType.Bech32 }).ConfigureAwait(false);
 				return true;
 			}).ConfigureAwait(false);
-
-			RPCResponse witAddress = null;
-			await _RPCBatch.WaitTransactionAsync(async batch =>
-			{
-				witAddress = await _RPCClient.SendCommandAsync("addwitnessaddress", address.ToString()).ConfigureAwait(false);
-				return true;
-			}).ConfigureAwait(false);
-			
-			return BitcoinAddress.Create(witAddress.ResultString, _RPCClient.Network);
+			return address;
 		}
 
 		public Coin AsCoin(UnspentCoin c)

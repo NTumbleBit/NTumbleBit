@@ -16,7 +16,7 @@ An "easy" to understand explanation of the protocol has been presented by Ethan 
 As a user, you will need:
 
 1. [NET Core SDK 2.1](https://www.microsoft.com/net/core)
-2. At least [Bitcoin Core 0.13.1](https://bitcoin.org/bin/bitcoin-core-0.13.1/) fully sync, rpc enabled.
+2. At least [Bitcoin Core 0.16.0](https://bitcoin.org/bin/bitcoin-core-0.16.0/) fully sync, rpc enabled.
 
 On Tumbler server side, run Bitcoin Core with a big RPC work queue. TumbleBit has peak of activity making it likely to reach the limit.
 ```

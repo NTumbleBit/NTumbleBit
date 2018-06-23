@@ -48,10 +48,9 @@ namespace NTumbleBit.Tests
 	}
 	public class NodeBuilder : IDisposable
 	{
-		public static NodeBuilder Create([CallerMemberNameAttribute]string caller = null, string version = "0.15.0")
+		public static NodeBuilder Create([CallerMemberNameAttribute]string caller = null)
 		{
-            version = version ?? "0.15.0";
-            var path = EnsureDownloaded(version);
+            var path = EnsureDownloaded(NodeDownloadData.Bitcoin.v0_16_0);
 			try
 			{
 				Utils.DeleteRecursivelyWithMagicDust(caller);
@@ -63,51 +62,44 @@ namespace NTumbleBit.Tests
 			return new NodeBuilder(caller, path);
 		}
 
-		private static string EnsureDownloaded(string version)
+		private static string EnsureDownloaded(NodeDownloadData downloadData)
 		{
-			//is a file
-			if(version.Length >= 2 && version[1] == ':')
-			{
-				return version;
-			}
+            if(!Directory.Exists("TestData"))
+                Directory.CreateDirectory("TestData");
 
-			string zip;
-			string bitcoind;
-			if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-			{
-				bitcoind = String.Format("TestData/bitcoin-{0}/bin/bitcoind.exe", version);
-				if(File.Exists(bitcoind))
-					return bitcoind;
-				zip = String.Format("TestData/bitcoin-{0}-win32.zip", version);
-				string url = String.Format("https://bitcoin.org/bin/bitcoin-core-{0}/" + Path.GetFileName(zip), version);
-				HttpClient client = new HttpClient();
-				client.Timeout = TimeSpan.FromMinutes(10.0);
-				var data = client.GetByteArrayAsync(url).GetAwaiter().GetResult();
-				File.WriteAllBytes(zip, data);
-				ZipFile.ExtractToDirectory(zip, new FileInfo(zip).Directory.FullName);
-			}
-			else
-			{
-				bitcoind = String.Format("TestData/bitcoin-{0}/bin/bitcoind", version);
-				if(File.Exists(bitcoind))
-					return bitcoind;
+            var osDownloadData = downloadData.GetCurrentOSDownloadData();
+            var bitcoind = Path.Combine("TestData", String.Format(osDownloadData.Executable, downloadData.Version));
+            var zip = Path.Combine("TestData", String.Format(osDownloadData.Archive, downloadData.Version));
+            if(File.Exists(bitcoind))
+                return bitcoind;
 
-				zip = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ?
-					String.Format("TestData/bitcoin-{0}-x86_64-linux-gnu.tar.gz", version)
-					: String.Format("TestData/bitcoin-{0}-osx64.tar.gz", version);
+            string url = String.Format(osDownloadData.DownloadLink, downloadData.Version);
+            HttpClient client = new HttpClient();
+            client.Timeout = TimeSpan.FromMinutes(10.0);
+            var data = client.GetByteArrayAsync(url).GetAwaiter().GetResult();
+            CheckHash(osDownloadData, data);
+            File.WriteAllBytes(zip, data);
 
-				string url = String.Format("https://bitcoin.org/bin/bitcoin-core-{0}/" + Path.GetFileName(zip), version);
-				HttpClient client = new HttpClient();
-				client.Timeout = TimeSpan.FromMinutes(10.0);
-				var data = client.GetByteArrayAsync(url).GetAwaiter().GetResult();
-				File.WriteAllBytes(zip, data);
-				Process.Start("tar", "-zxvf " + zip + " -C TestData").WaitForExit();
-			}
-			File.Delete(zip);
-			return bitcoind;
-		}
+            if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                ZipFile.ExtractToDirectory(zip, new FileInfo(zip).Directory.FullName);
+            }
+            else
+            {
+                Process.Start("tar", "-zxvf " + zip + " -C TestData").WaitForExit();
+            }
+            File.Delete(zip);
+            return bitcoind;
+        }
 
-		private int last = 0;
+        private static void CheckHash(NodeOSDownloadData osDownloadData, byte[] data)
+        {
+            var actual = Encoders.Hex.EncodeData(Hashes.SHA256(data));
+            if(!actual.Equals(osDownloadData.Hash, StringComparison.OrdinalIgnoreCase))
+                throw new Exception($"Hash of downloaded file does not match (Expected: {osDownloadData.Hash}, Actual: {actual})");
+        }
+
+        private int last = 0;
 		private string _Root;
 		private string _Bitcoind;
 		public NodeBuilder(string root, string bitcoindPath)
@@ -617,4 +609,116 @@ namespace NTumbleBit.Tests
 			return dest;
 		}
 	}
+
+
+    public partial class NodeDownloadData
+    {
+        public string Version
+        {
+            get; set;
+        }
+
+        public NodeOSDownloadData Linux
+        {
+            get; set;
+        }
+
+        public NodeOSDownloadData Mac
+        {
+            get; set;
+        }
+
+        public NodeOSDownloadData Windows
+        {
+            get; set;
+        }
+
+        public static BitcoinNodeDownloadData Bitcoin
+        {
+            get; set;
+        } = new BitcoinNodeDownloadData();
+
+        public class BitcoinNodeDownloadData
+        {
+            public NodeDownloadData v0_13_1 = new NodeDownloadData()
+            {
+                Version = "0.13.1",
+                Linux = new NodeOSDownloadData()
+                {
+                    Archive = "bitcoin-{0}-x86_64-linux-gnu.tar.gz",
+                    DownloadLink = "https://bitcoin.org/bin/bitcoin-core-{0}/bitcoin-{0}-x86_64-linux-gnu.tar.gz",
+                    Executable = "bitcoin-{0}/bin/bitcoind",
+                    Hash = "2293de5682375b8edfde612d9e152b42344d25d3852663ba36f7f472b27954a4"
+                },
+                Mac = new NodeOSDownloadData()
+                {
+                    Archive = "bitcoin-{0}-osx64.tar.gz",
+                    DownloadLink = "https://bitcoin.org/bin/bitcoin-core-{0}/bitcoin-{0}-osx64.tar.gz",
+                    Executable = "bitcoin-{0}/bin/bitcoind",
+                    Hash = "499be4f48c933d92c43468ee2853dddaba4af7e1a17f767a85023b69a21b6e77"
+                },
+                Windows = new NodeOSDownloadData()
+                {
+                    Executable = "bitcoin-{0}/bin/bitcoind.exe",
+                    DownloadLink = "https://bitcoin.org/bin/bitcoin-core-{0}/bitcoin-{0}-win32.zip",
+                    Archive = "bitcoin-{0}-win32.zip",
+                    Hash = "fcf6089fc013b175e3c5e32580afb3cb4310c62d2e133e992b8a9d2e0cbbafaa"
+                }
+            };
+
+            public NodeDownloadData v0_16_0 = new NodeDownloadData()
+            {
+                Version = "0.16.0",
+                Linux = new NodeOSDownloadData()
+                {
+                    Archive = "bitcoin-{0}-x86_64-linux-gnu.tar.gz",
+                    DownloadLink = "https://bitcoin.org/bin/bitcoin-core-{0}/bitcoin-{0}-x86_64-linux-gnu.tar.gz",
+                    Executable = "bitcoin-{0}/bin/bitcoind",
+                    Hash = "e6322c69bcc974a29e6a715e0ecb8799d2d21691d683eeb8fef65fc5f6a66477"
+                },
+                Mac = new NodeOSDownloadData()
+                {
+                    Archive = "bitcoin-{0}-osx64.tar.gz",
+                    DownloadLink = "https://bitcoin.org/bin/bitcoin-core-{0}/bitcoin-{0}-osx64.tar.gz",
+                    Executable = "bitcoin-{0}/bin/bitcoind",
+                    Hash = "ade85a8e39de8c36a134721c3da9853a80f29a8625048e0c2a5295ca8b23a88c"
+                },
+                Windows = new NodeOSDownloadData()
+                {
+                    Executable = "bitcoin-{0}/bin/bitcoind.exe",
+                    DownloadLink = "https://bitcoin.org/bin/bitcoin-core-{0}/bitcoin-{0}-win32.zip",
+                    Archive = "bitcoin-{0}-win32.zip",
+                    Hash = "60d65d6e57f42164e1c04bb5bb65156d87f0433825a1c1f1f5f6aebf5c8df424"
+                }
+            };
+        }
+
+        public NodeOSDownloadData GetCurrentOSDownloadData()
+        {
+            return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? Windows :
+                   RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? Linux :
+                   RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? Mac :
+                   throw new NotSupportedException();
+        }
+    }
+
+    public class NodeOSDownloadData
+    {
+        public string Archive
+        {
+            get; set;
+        }
+        public string DownloadLink
+        {
+            get; set;
+        }
+        public string Executable
+        {
+            get; set;
+        }
+        public string Hash
+        {
+            get; set;
+        }
+    }
 }
