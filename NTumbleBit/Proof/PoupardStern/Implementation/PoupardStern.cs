@@ -160,17 +160,23 @@ namespace TumbleBitSetup
             rPrime = y.Subtract(Modulus.Multiply(w));
 
             // Verifying x values
+            Dictionary<int, bool> numbers = new Dictionary<int, bool>();
             for (int i = 0; i < BigK; i++)
+                numbers.Add(i, true);
+
+            Parallel.ForEach(numbers, (n) =>
             {
+                int i = n.Key;
+
                 var z_i = SampleFromZnStar(pubKey, setup.PublicString, i, BigK, keyLength);
                 // Compute right side of the equality
                 var rs = z_i.ModPow(rPrime, Modulus);
                 // If the two sides are not equal
                 if (!(proof.XValues[i].Equals(rs)))
-                    return false;
-            }
+                    numbers[i] = false;
+            });
 
-            return true;
+            return !numbers.ContainsValue(false);
         }
 
         /// <summary>
