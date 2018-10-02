@@ -162,20 +162,19 @@ namespace TumbleBitSetup
             // Computing rPrime
             rPrime = y.Subtract(Modulus.Multiply(w));
 
-            // Verifying x values; all items in the array will be initialized to false
-            var numbers = new bool[BigK];
+            // Verifying x values
+            var isCorrect = new bool[BigK];
 
-            Parallel.ForEach(Enumerable.Range(0, numbers.Length), (i) =>
+            Parallel.ForEach(Enumerable.Range(0, isCorrect.Length), (i) =>
             {
                 var z_i = SampleFromZnStar(pubKey, setup.PublicString, i, BigK, keyLength);
                 // Compute right side of the equality
                 var rs = z_i.ModPow(rPrime, Modulus);
-                // If the two sides are not equal
-                if ((proof.XValues[i].Equals(rs)))
-                    numbers[i] = true;
+                // Compare values and set the result in the array
+                isCorrect[i] = proof.XValues[i].Equals(rs);
             });
 
-            return numbers.All(o => o);
+            return isCorrect.All(o => o);
         }
 
         /// <summary>
