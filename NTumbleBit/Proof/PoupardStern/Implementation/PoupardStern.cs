@@ -2,6 +2,9 @@
 using NTumbleBit.BouncyCastle.Math;
 using NTumbleBit.BouncyCastle.Security;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace TumbleBitSetup
 {
@@ -160,17 +163,18 @@ namespace TumbleBitSetup
             rPrime = y.Subtract(Modulus.Multiply(w));
 
             // Verifying x values
-            for (int i = 0; i < BigK; i++)
+            var isCorrect = new bool[BigK];
+
+            Parallel.ForEach(Enumerable.Range(0, isCorrect.Length), (i) =>
             {
                 var z_i = SampleFromZnStar(pubKey, setup.PublicString, i, BigK, keyLength);
                 // Compute right side of the equality
                 var rs = z_i.ModPow(rPrime, Modulus);
-                // If the two sides are not equal
-                if (!(proof.XValues[i].Equals(rs)))
-                    return false;
-            }
+                // Compare values and set the result in the array
+                isCorrect[i] = proof.XValues[i].Equals(rs);
+            });
 
-            return true;
+            return isCorrect.All(o => o);
         }
 
         /// <summary>
