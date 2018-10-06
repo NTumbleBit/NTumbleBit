@@ -28,7 +28,7 @@ Alternatively, you can also put the `rpcworkqueue=100` in the configuration file
 As a developer, you need additionally one of those:
 
 1. [Visual studio 2017 with update 7 (15.7)](https://www.visualstudio.com/downloads/) (Windows only)
-2. [Visual studio code](https://code.visualstudio.com/) with [C# Extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.csharp) (Cross plateform)
+2. [Visual studio code](https://code.visualstudio.com/) with [C# Extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.csharp) (Cross platform)
 
 If you have any issue, please check the [FAQ](https://github.com/NTumbleBit/NTumbleBit/wiki/FAQ), before posting an issue.
 
