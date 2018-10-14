@@ -98,7 +98,8 @@ namespace NTumbleBit
 			ops.Add(OpcodeType.OP_ELSE);
 			{
 				ops.Add(Op.GetPushOp(LockTime));
-				ops.Add(OpcodeType.OP_DROP);
+                ops.Add(OpcodeType.OP_CHECKLOCKTIMEVERIFY);
+                ops.Add(OpcodeType.OP_DROP);
 			}
 			ops.Add(OpcodeType.OP_ENDIF);
 			ops.Add(OpcodeType.OP_CHECKSIG);
