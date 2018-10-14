@@ -139,8 +139,8 @@ namespace NTumbleBit.Tests
 				k2 = wrpc.GetNewDestination();
 
 				// The setup give an address to Alice
-				Assert.Equal(new KeyPath("0'/0'/2'"), wrpc.GetKeyPath(k1));
-				Assert.Equal(new KeyPath("0'/0'/3'"), wrpc.GetKeyPath(k2));
+				Assert.Equal(new KeyPath("0'/0'/1'"), wrpc.GetKeyPath(k1));
+				Assert.Equal(new KeyPath("0'/0'/2'"), wrpc.GetKeyPath(k2));
 				Assert.Null(w.GetKeyPath(new Key().ScriptPubKey));
 			}
 		}
