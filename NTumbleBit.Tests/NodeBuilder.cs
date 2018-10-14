@@ -50,7 +50,7 @@ namespace NTumbleBit.Tests
 	{
 		public static NodeBuilder Create([CallerMemberNameAttribute]string caller = null)
 		{
-            var path = EnsureDownloaded(NodeDownloadData.Bitcoin.v0_16_0);
+            var path = EnsureDownloaded(NodeDownloadData.Bitcoin.v0_17_0);
 			try
 			{
 				Utils.DeleteRecursivelyWithMagicDust(caller);
@@ -689,6 +689,32 @@ namespace NTumbleBit.Tests
                     DownloadLink = "https://bitcoin.org/bin/bitcoin-core-{0}/bitcoin-{0}-win32.zip",
                     Archive = "bitcoin-{0}-win32.zip",
                     Hash = "60d65d6e57f42164e1c04bb5bb65156d87f0433825a1c1f1f5f6aebf5c8df424"
+                }
+            };
+
+            public NodeDownloadData v0_17_0 = new NodeDownloadData()
+            {
+                Version = "0.17.0",
+                Linux = new NodeOSDownloadData()
+                {
+                    Archive = "bitcoin-{0}-x86_64-linux-gnu.tar.gz",
+                    DownloadLink = "https://bitcoin.org/bin/bitcoin-core-{0}/bitcoin-{0}-x86_64-linux-gnu.tar.gz",
+                    Executable = "bitcoin-{0}/bin/bitcoind",
+                    Hash = "9d6b472dc2aceedb1a974b93a3003a81b7e0265963bd2aa0acdcb17598215a4f"
+                },
+                Mac = new NodeOSDownloadData()
+                {
+                    Archive = "bitcoin-{0}-osx64.tar.gz",
+                    DownloadLink = "https://bitcoin.org/bin/bitcoin-core-{0}/bitcoin-{0}-osx64.tar.gz",
+                    Executable = "bitcoin-{0}/bin/bitcoind",
+                    Hash = "e4210edfff313e4e00169e9170369537bb45024c318f5b339623d5fd08715d61"
+                },
+                Windows = new NodeOSDownloadData()
+                {
+                    Executable = "bitcoin-{0}/bin/bitcoind.exe",
+                    DownloadLink = "https://bitcoin.org/bin/bitcoin-core-{0}/bitcoin-{0}-win32.zip",
+                    Archive = "bitcoin-{0}-win32.zip",
+                    Hash = "402fd288b0ec851398047e2e986221fe72d7565dc19a2029879b6c28e6fc730d"
                 }
             };
         }
