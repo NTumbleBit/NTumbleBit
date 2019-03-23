@@ -15,7 +15,7 @@
 		<PackageReference Include="Microsoft.AspNetCore.App" Version="2.1.0" />
 		<PackageReference Include="CommandLineParser" Version="2.2.1" />
 		<PackageReference Include="DBreeze" Version="1.93.0" />
-		<PackageReference Include="NBitcoin" Version="4.1.1.88" />
+		<PackageReference Include="NBitcoin" Version="4.1.1.89" />
 		<PackageReference Include="TCPServer" Version="1.0.14.1" />
 	</ItemGroup>
 	<ItemGroup>
