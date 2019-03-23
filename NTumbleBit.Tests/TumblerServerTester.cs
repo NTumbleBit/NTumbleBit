@@ -17,6 +17,8 @@ using System.Net;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Threading;
+using NBitcoin.Altcoins;
+using NBitcoin.Tests;
 using Newtonsoft.Json.Linq;
 
 namespace NTumbleBit.Tests
@@ -51,15 +53,19 @@ namespace NTumbleBit.Tests
 					TryDelete(directory, true);
 				}
 
-				_NodeBuilder = NodeBuilder.Create(directory);
+				_NodeBuilder = NodeBuilder.Create(NodeDownloadData.Bitcoin.v0_16_3, AltNetworkSets.Bitcoin.Regtest, directory);
 				_NodeBuilder.ConfigParameters.Add("prematurewitness", "1");
 				_NodeBuilder.ConfigParameters.Add("walletprematurewitness", "1");
 
 				_TumblerNode = _NodeBuilder.CreateNode(false);
 				_AliceNode = _NodeBuilder.CreateNode(false);
 				_BobNode = _NodeBuilder.CreateNode(false);
-				
-				Directory.CreateDirectory(directory);
+
+                _TumblerNode.CookieAuth = false;
+                _AliceNode.CookieAuth = false;
+                _BobNode.CookieAuth = false;
+
+                Directory.CreateDirectory(directory);
 
 				_NodeBuilder.StartAll();
 
@@ -167,7 +173,7 @@ namespace NTumbleBit.Tests
 			if(blocksToFind <= 0)
 				return;
 
-			node.FindBlock(blocksToFind);
+			node.Generate(blocksToFind);
 			SyncNodes();
 		}
 
