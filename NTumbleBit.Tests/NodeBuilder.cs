@@ -50,7 +50,7 @@ namespace NTumbleBit.Tests
 	{
 		public static NodeBuilder Create([CallerMemberNameAttribute]string caller = null)
 		{
-            var path = EnsureDownloaded(NodeDownloadData.Bitcoin.v0_16_0);
+            var path = EnsureDownloaded(NodeDownloadData.Bitcoin.v0_16_3);
 			try
 			{
 				Utils.DeleteRecursivelyWithMagicDust(caller);
@@ -640,7 +640,7 @@ namespace NTumbleBit.Tests
 
         public class BitcoinNodeDownloadData
         {
-            public NodeDownloadData v0_13_1 = new NodeDownloadData()
+            public NodeDownloadData v0_13_2 = new NodeDownloadData()
             {
                 Version = "0.13.1",
                 Linux = new NodeOSDownloadData()
@@ -648,47 +648,47 @@ namespace NTumbleBit.Tests
                     Archive = "bitcoin-{0}-x86_64-linux-gnu.tar.gz",
                     DownloadLink = "https://bitcoin.org/bin/bitcoin-core-{0}/bitcoin-{0}-x86_64-linux-gnu.tar.gz",
                     Executable = "bitcoin-{0}/bin/bitcoind",
-                    Hash = "2293de5682375b8edfde612d9e152b42344d25d3852663ba36f7f472b27954a4"
+                    Hash = "29215a7fe7430224da52fc257686d2d387546eb8acd573a949128696e8761149"
                 },
                 Mac = new NodeOSDownloadData()
                 {
                     Archive = "bitcoin-{0}-osx64.tar.gz",
                     DownloadLink = "https://bitcoin.org/bin/bitcoin-core-{0}/bitcoin-{0}-osx64.tar.gz",
                     Executable = "bitcoin-{0}/bin/bitcoind",
-                    Hash = "499be4f48c933d92c43468ee2853dddaba4af7e1a17f767a85023b69a21b6e77"
+                    Hash = "8037b25310966127c589eb419534d7763ad62c2c29b94e0a37a5c5f5d96f541a"
                 },
                 Windows = new NodeOSDownloadData()
                 {
                     Executable = "bitcoin-{0}/bin/bitcoind.exe",
                     DownloadLink = "https://bitcoin.org/bin/bitcoin-core-{0}/bitcoin-{0}-win32.zip",
                     Archive = "bitcoin-{0}-win32.zip",
-                    Hash = "fcf6089fc013b175e3c5e32580afb3cb4310c62d2e133e992b8a9d2e0cbbafaa"
+                    Hash = "4d1c26675088219d8e2204b5a9f028916d5982db860298a70b6ed08e30af2a53"
                 }
             };
 
-            public NodeDownloadData v0_16_0 = new NodeDownloadData()
+            public NodeDownloadData v0_16_3 = new NodeDownloadData()
             {
-                Version = "0.16.0",
+                Version = "0.16.3",
                 Linux = new NodeOSDownloadData()
                 {
                     Archive = "bitcoin-{0}-x86_64-linux-gnu.tar.gz",
                     DownloadLink = "https://bitcoin.org/bin/bitcoin-core-{0}/bitcoin-{0}-x86_64-linux-gnu.tar.gz",
                     Executable = "bitcoin-{0}/bin/bitcoind",
-                    Hash = "e6322c69bcc974a29e6a715e0ecb8799d2d21691d683eeb8fef65fc5f6a66477"
+                    Hash = "5d422a9d544742bc0df12427383f9c2517433ce7b58cf672b9a9b17c2ef51e4f"
                 },
                 Mac = new NodeOSDownloadData()
                 {
                     Archive = "bitcoin-{0}-osx64.tar.gz",
                     DownloadLink = "https://bitcoin.org/bin/bitcoin-core-{0}/bitcoin-{0}-osx64.tar.gz",
                     Executable = "bitcoin-{0}/bin/bitcoind",
-                    Hash = "ade85a8e39de8c36a134721c3da9853a80f29a8625048e0c2a5295ca8b23a88c"
+                    Hash = "78c3bff3b619a19aed575961ea43cc9e142959218835cf51aede7f0b764fc25d"
                 },
                 Windows = new NodeOSDownloadData()
                 {
                     Executable = "bitcoin-{0}/bin/bitcoind.exe",
                     DownloadLink = "https://bitcoin.org/bin/bitcoin-core-{0}/bitcoin-{0}-win32.zip",
                     Archive = "bitcoin-{0}-win32.zip",
-                    Hash = "60d65d6e57f42164e1c04bb5bb65156d87f0433825a1c1f1f5f6aebf5c8df424"
+                    Hash = "e3d6a962a4c2cbbd4798f7257a0f85d54cec095e80d9b0f543f4c707b06c8839"
                 }
             };
         }
