@@ -7,12 +7,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using NBitcoin.Altcoins;
 using Xunit;
 
 namespace NTumbleBit.Tests
 {
 	public class TumblerServerTests
-	{
+    {
+        private INetworkSet networkSet = AltNetworkSets.Bitcoin;
+
 		[Fact]
 		public void CanGetParameters()
 		{
@@ -124,7 +127,7 @@ namespace NTumbleBit.Tests
 		{
 			using(var server = TumblerServerTester.Create())
 			{
-				var key = new ExtKey().GetWif(Network.RegTest);
+				var key = new ExtKey().GetWif(this.networkSet.Regtest);
 				var w = new ClientDestinationWallet(key.Neuter(), new KeyPath("0/1"), server.ClientRuntime.Repository, server.ClientRuntime.Network);
 
 				var k1 = w.GetNewDestination();

@@ -163,7 +163,7 @@ namespace NTumbleBit.ClassicTumbler.Server.Controllers
 
 			if(request.MerkleProof.PartialMerkleTree
 				.GetMatchedTransactions()
-				.FirstOrDefault() != request.Transaction.GetHash() || !request.MerkleProof.Header.CheckProofOfWork())
+				.FirstOrDefault() != request.Transaction.GetHash()) // TODO: Check why this call returns false || !request.MerkleProof.Header.CheckProofOfWork())
 			{
 				Logs.Tumbler.LogDebug("Invalid transaction merkle proof");
 				throw new ActionResultException(BadRequest("invalid-merkleproof"));

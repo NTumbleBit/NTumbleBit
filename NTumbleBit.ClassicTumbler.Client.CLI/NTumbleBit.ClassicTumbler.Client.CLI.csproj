@@ -17,8 +17,9 @@
 
   <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.2.1" />
-	  <PackageReference Include="NBitcoin" Version="4.1.1.89" />
+	  <PackageReference Include="NBitcoin" Version="4.1.1.93" />
 	  <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.1.0" />
+	  <PackageReference Include="NBitcoin.Altcoins" Version="1.0.1.39" />
   </ItemGroup>
 
 </Project>

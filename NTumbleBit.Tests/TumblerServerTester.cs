@@ -32,9 +32,10 @@ namespace NTumbleBit.Tests
 		public TumblerServerTester(string directory, bool shouldBeStandard)
 		{
 			try
-			{
+            {
+                var network = AltNetworkSets.Bitcoin.Regtest;
 
-				var rootTestData = "TestData";
+                var rootTestData = "TestData";
 				directory = rootTestData + "/" + directory;
 				_Directory = directory;
 				if(!Directory.Exists(rootTestData))
@@ -53,8 +54,8 @@ namespace NTumbleBit.Tests
 					TryDelete(directory, true);
 				}
 
-				_NodeBuilder = NodeBuilder.Create(NodeDownloadData.Bitcoin.v0_16_3, AltNetworkSets.Bitcoin.Regtest, directory);
-				_NodeBuilder.ConfigParameters.Add("prematurewitness", "1");
+                _NodeBuilder = NodeBuilder.Create(NodeDownloadData.Bitcoin.v0_16_3, network, directory);
+                _NodeBuilder.ConfigParameters.Add("prematurewitness", "1");
 				_NodeBuilder.ConfigParameters.Add("walletprematurewitness", "1");
 
 				_TumblerNode = _NodeBuilder.CreateNode(false);
@@ -87,7 +88,7 @@ namespace NTumbleBit.Tests
 				conf.RPC.User = creds.Item1;
 				conf.RPC.Password = creds.Item2;
 				conf.TorMandatory = false;
-				conf.Network = Network.RegTest;
+				conf.Network = network;
 				conf.Listen = new System.Net.IPEndPoint(IPAddress.Parse("127.0.0.1"), 5000);
 				conf.AllowInsecure = !shouldBeStandard;
 

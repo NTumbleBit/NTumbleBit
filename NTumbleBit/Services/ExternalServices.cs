@@ -20,7 +20,7 @@ namespace NTumbleBit.Services
 			};
 
 			// on regtest or testnet the estimatefee often fails
-			if (rpc.Network == NBitcoin.Network.RegTest || rpc.Network == Network.TestNet)
+			if (rpc.Network.NetworkType == NetworkType.Regtest || rpc.Network.NetworkType == NetworkType.Testnet)
 			{
 				service.FeeService = new RPCFeeService(rpc)
 				{

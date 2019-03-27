@@ -14,12 +14,14 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using NBitcoin.Altcoins;
 using Xunit;
 
 namespace NTumbleBit.Tests
 {
 	public class PuzzleProtocolsTests
-	{
+    {
+        private INetworkSet networkSet = AltNetworkSets.Bitcoin;
 
 		[Fact]
 		public void CanGenerateParseAndSaveRsaKey()
@@ -82,10 +84,10 @@ namespace NTumbleBit.Tests
 		[Fact]
 		public void CanCalculateStandardPhases()
 		{
-			StandardCycles cycles = new StandardCycles(Network.Main.Consensus, true);
+			StandardCycles cycles = new StandardCycles(this.networkSet.Mainnet.Consensus, true);
 			Assert.NotNull(cycles.GetStandardCycle("shorty"));
 
-			cycles = new StandardCycles(Network.Main.Consensus, false);
+			cycles = new StandardCycles(this.networkSet.Mainnet.Consensus, false);
 			Assert.Null(cycles.GetStandardCycle("shorty"));
 
 			var kotori = cycles.GetStandardCycle("kotori");
