@@ -13,8 +13,8 @@ using Xunit;
 namespace NTumbleBit.Tests
 {
 	public class TumblerServerTests
-    {
-        private INetworkSet networkSet = AltNetworkSets.Bitcoin;
+	{
+		private INetworkSet networkSet = AltNetworkSets.Bitcoin;
 
 		[Fact]
 		public void CanGetParameters()
@@ -209,7 +209,7 @@ namespace NTumbleBit.Tests
 				//Wait escrow broadcasted
 				Thread.Sleep(1000);
 				server.TumblerNode.Generate(1);
-                WaitStatus(machine, PaymentStateMachineStatus.TumblerChannelCreated);
+				WaitStatus(machine, PaymentStateMachineStatus.TumblerChannelCreated);
 
 				Assert.NotEqual(uint160.Zero, machine.PromiseClientSession.Id);
 				Assert.NotEqual(machine.SolverClientSession.Id, machine.PromiseClientSession.Id);
@@ -233,9 +233,9 @@ namespace NTumbleBit.Tests
 					{
 						//Escape should be mined
 						Thread.Sleep(1000);
-                        var blockHash = server.TumblerNode.Generate(1).First();
-                        block = server.TumblerNode.CreateRPCClient().GetBlock(blockHash);
-                        Assert.Equal(2, block.Transactions.Count);
+						var blockHash = server.TumblerNode.Generate(1).First();
+						block = server.TumblerNode.CreateRPCClient().GetBlock(blockHash);
+						Assert.Equal(2, block.Transactions.Count);
 
 						serverTracker.AssertKnown(TransactionType.ClientEscape, block.Transactions[1].GetHash());
 						serverTracker.AssertKnown(TransactionType.ClientEscape, block.Transactions[1].Outputs[0].ScriptPubKey);
@@ -282,10 +282,10 @@ namespace NTumbleBit.Tests
 					transactions = server.ClientRuntime.Services.BroadcastService.TryBroadcast();
 				Assert.Single(transactions);
 				Assert.True(machine.ShouldStayConnected());
-                var blockHash2 = server.AliceNode.Generate(1).First();
-                block = server.AliceNode.CreateRPCClient().GetBlock(blockHash2);
-                //Should contains TumblerCashout
-                Assert.Equal(2, block.Transactions.Count);
+				var blockHash2 = server.AliceNode.Generate(1).First();
+				block = server.AliceNode.CreateRPCClient().GetBlock(blockHash2);
+				//Should contains TumblerCashout
+				Assert.Equal(2, block.Transactions.Count);
 				//Not enough confirmation, should have as much as safe period
 				Assert.True(machine.ShouldStayConnected());
 				server.AliceNode.Generate(1);
@@ -297,7 +297,7 @@ namespace NTumbleBit.Tests
 				//Just a sanity tests, this one contains escrow redeem and offer redeem, both of which should not be available now
 				transactions = server.ClientRuntime.Services.BroadcastService.TryBroadcast();
 				Assert.Empty(transactions);
-                
+				
 				var allTransactions = server.AliceNode.CreateNodeClient().GetBlocks().SelectMany(b => b.Transactions).ToDictionary(t => t.GetHash());
 				var expectedRate = new FeeRate(100, 1);
 

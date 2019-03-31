@@ -60,8 +60,8 @@ namespace NTumbleBit.ClassicTumbler
 		}
 
 		private static bool IsDebug(Network network)
-        {
-            return network.NetworkType == NetworkType.Testnet || network.NetworkType == NetworkType.Regtest;
+		{
+			return network.NetworkType == NetworkType.Testnet || network.NetworkType == NetworkType.Regtest;
 		}
 
 		public StandardCycles(Consensus consensus, bool debug)

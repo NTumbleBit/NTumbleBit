@@ -20,8 +20,8 @@ using Xunit;
 namespace NTumbleBit.Tests
 {
 	public class PuzzleProtocolsTests
-    {
-        private INetworkSet networkSet = AltNetworkSets.Bitcoin;
+	{
+		private INetworkSet networkSet = AltNetworkSets.Bitcoin;
 
 		[Fact]
 		public void CanGenerateParseAndSaveRsaKey()
@@ -62,8 +62,8 @@ namespace NTumbleBit.Tests
 			for(int i = 0; i < 100; i++)
 			{
 				var data = RandomUtils.GetBytes(234);
-                var sig = key.Sign(data, out uint160 nonce);
-                Assert.True(key.PubKey.Verify(sig, data, nonce));
+				var sig = key.Sign(data, out uint160 nonce);
+				Assert.True(key.PubKey.Verify(sig, data, nonce));
 			}
 
 
@@ -302,8 +302,8 @@ namespace NTumbleBit.Tests
 			txBuilder.AddCoins(client.EscrowedCoin);
 			Assert.True(txBuilder.Verify(resigned));
 
-            resigned = fulfill.ReSign(offerCoin, out bool cached);
-            Assert.False(cached);
+			resigned = fulfill.ReSign(offerCoin, out bool cached);
+			Assert.False(cached);
 			txBuilder = new TransactionBuilder();
 			txBuilder.AddCoins(offerCoin);
 			Assert.True(txBuilder.Verify(resigned));

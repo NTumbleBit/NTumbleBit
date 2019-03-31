@@ -1,27 +1,26 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <PropertyGroup>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
-    <PreserveCompilationContext>true</PreserveCompilationContext>
-    <AssemblyName>NTumbleBit.TumblerServer</AssemblyName>
-	<OutputType>Exe</OutputType>
-    <PackageId>NTumbleBit.TumblerServer</PackageId>
-    <OutputTypeEx>exe</OutputTypeEx>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>netcoreapp2.1</TargetFramework>
+		<PreserveCompilationContext>true</PreserveCompilationContext>
+		<AssemblyName>NTumbleBit.TumblerServer</AssemblyName>
+	  <OutputType>Exe</OutputType>
+		<PackageId>NTumbleBit.TumblerServer</PackageId>
+		<OutputTypeEx>exe</OutputTypeEx>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="NBitcoin.Altcoins" Version="1.0.1.39" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="NBitcoin.Altcoins" Version="1.0.1.39" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <None Update="wwwroot\**\*">
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </None>
-  </ItemGroup>
+	<ItemGroup>
+		<None Update="wwwroot\**\*">
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+		</None>
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\NTumbleBit\NTumbleBit.csproj" />
-  </ItemGroup>
-
+	<ItemGroup>
+		<ProjectReference Include="..\NTumbleBit\NTumbleBit.csproj" />
+	</ItemGroup>
 
 </Project>

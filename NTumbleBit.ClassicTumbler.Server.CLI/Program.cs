@@ -28,8 +28,8 @@ namespace NTumbleBit.ClassicTumbler.Server.CLI
 			new Program().Run(args);
 		}
 		public void Run(string[] args)
-        {
-            INetworkSet networkSet = AltNetworkSets.Bitcoin;
+		{
+			INetworkSet networkSet = AltNetworkSets.Bitcoin;
 			var argsConf = new TextFileConfiguration(args);
 			var debug = argsConf.GetOrDefault<bool>("debug", false);
 

@@ -123,20 +123,20 @@ namespace NTumbleBit.ClassicTumbler.Client
 				}
 			}
 
-            Network = args.Contains("-testnet", StringComparer.OrdinalIgnoreCase) ? networkSet.Testnet :
-                args.Contains("-regtest", StringComparer.OrdinalIgnoreCase) ? networkSet.Regtest :
-                networkSet.Mainnet;
+			Network = args.Contains("-testnet", StringComparer.OrdinalIgnoreCase) ? networkSet.Testnet :
+				args.Contains("-regtest", StringComparer.OrdinalIgnoreCase) ? networkSet.Regtest :
+				networkSet.Mainnet;
 
-            if (ConfigurationFile != null)
-            {
-                AssetConfigFileExists();
-                var configTemp = TextFileConfiguration.Parse(File.ReadAllText(ConfigurationFile));
-                Network = configTemp.GetOrDefault<bool>("testnet", false) ? networkSet.Testnet :
-                    configTemp.GetOrDefault<bool>("regtest", false) ? networkSet.Regtest :
-                    networkSet.Mainnet;
-            }
+			if (ConfigurationFile != null)
+			{
+				AssetConfigFileExists();
+				var configTemp = TextFileConfiguration.Parse(File.ReadAllText(ConfigurationFile));
+				Network = configTemp.GetOrDefault<bool>("testnet", false) ? networkSet.Testnet :
+					configTemp.GetOrDefault<bool>("regtest", false) ? networkSet.Regtest :
+					networkSet.Mainnet;
+			}
 
-            if (DataDir == null)
+			if (DataDir == null)
 			{
 				DataDir = DefaultDataDirectory.GetDefaultDirectory("NTumbleBit", Network);
 			}
@@ -209,9 +209,9 @@ namespace NTumbleBit.ClassicTumbler.Client
 		}
 
 		private bool IsTest(Network network)
-        {
-            return network.NetworkType == NetworkType.Regtest || network.NetworkType == NetworkType.Testnet;
-        }
+		{
+			return network.NetworkType == NetworkType.Regtest || network.NetworkType == NetworkType.Testnet;
+		}
 
 		public static string GetDefaultConfigurationFile(string dataDirectory, Network network)
 		{

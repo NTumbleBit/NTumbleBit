@@ -32,10 +32,10 @@ namespace NTumbleBit.Tests
 		public TumblerServerTester(string directory, bool shouldBeStandard)
 		{
 			try
-            {
-                var network = AltNetworkSets.Bitcoin.Regtest;
+			{
+				var network = AltNetworkSets.Bitcoin.Regtest;
 
-                var rootTestData = "TestData";
+				var rootTestData = "TestData";
 				directory = rootTestData + "/" + directory;
 				_Directory = directory;
 				if(!Directory.Exists(rootTestData))
@@ -54,19 +54,19 @@ namespace NTumbleBit.Tests
 					TryDelete(directory, true);
 				}
 
-                _NodeBuilder = NodeBuilder.Create(NodeDownloadData.Bitcoin.v0_16_3, network, directory);
-                _NodeBuilder.ConfigParameters.Add("prematurewitness", "1");
+				_NodeBuilder = NodeBuilder.Create(NodeDownloadData.Bitcoin.v0_16_3, network, directory);
+				_NodeBuilder.ConfigParameters.Add("prematurewitness", "1");
 				_NodeBuilder.ConfigParameters.Add("walletprematurewitness", "1");
 
 				_TumblerNode = _NodeBuilder.CreateNode(false);
 				_AliceNode = _NodeBuilder.CreateNode(false);
 				_BobNode = _NodeBuilder.CreateNode(false);
 
-                _TumblerNode.CookieAuth = false;
-                _AliceNode.CookieAuth = false;
-                _BobNode.CookieAuth = false;
+				_TumblerNode.CookieAuth = false;
+				_AliceNode.CookieAuth = false;
+				_BobNode.CookieAuth = false;
 
-                Directory.CreateDirectory(directory);
+				Directory.CreateDirectory(directory);
 
 				_NodeBuilder.StartAll();
 
