@@ -1,24 +1,25 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+	<PropertyGroup>
+		<TargetFramework>netcoreapp2.1</TargetFramework>
 	<DefineConstants>$(DefineConstants);CLIENT</DefineConstants>
-    <AssemblyName>NTumbleBit.CLI</AssemblyName>
-    <OutputType>Exe</OutputType>
-    <PackageId>NTumbleBit.CLI</PackageId>
-    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
-    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
-    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
-  </PropertyGroup>
+		<AssemblyName>NTumbleBit.CLI</AssemblyName>
+		<OutputType>Exe</OutputType>
+		<PackageId>NTumbleBit.CLI</PackageId>
+		<GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
+		<GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
+		<GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\NTumbleBit\NTumbleBit.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\NTumbleBit\NTumbleBit.csproj" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="CommandLineParser" Version="2.2.1" />
-	  <PackageReference Include="NBitcoin" Version="4.1.1.88" />
-	  <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.1.0" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="CommandLineParser" Version="2.2.1" />
+		<PackageReference Include="NBitcoin" Version="4.1.1.93" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.1.0" />
+		<PackageReference Include="NBitcoin.Altcoins" Version="1.0.1.39" />
+	</ItemGroup>
 
 </Project>

@@ -17,6 +17,8 @@ using System.Net;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Threading;
+using NBitcoin.Altcoins;
+using NBitcoin.Tests;
 using Newtonsoft.Json.Linq;
 
 namespace NTumbleBit.Tests
@@ -31,6 +33,7 @@ namespace NTumbleBit.Tests
 		{
 			try
 			{
+				var network = AltNetworkSets.Bitcoin.Regtest;
 
 				var rootTestData = "TestData";
 				directory = rootTestData + "/" + directory;
@@ -51,14 +54,18 @@ namespace NTumbleBit.Tests
 					TryDelete(directory, true);
 				}
 
-				_NodeBuilder = NodeBuilder.Create(directory);
+				_NodeBuilder = NodeBuilder.Create(NodeDownloadData.Bitcoin.v0_16_3, network, directory);
 				_NodeBuilder.ConfigParameters.Add("prematurewitness", "1");
 				_NodeBuilder.ConfigParameters.Add("walletprematurewitness", "1");
 
 				_TumblerNode = _NodeBuilder.CreateNode(false);
 				_AliceNode = _NodeBuilder.CreateNode(false);
 				_BobNode = _NodeBuilder.CreateNode(false);
-				
+
+				_TumblerNode.CookieAuth = false;
+				_AliceNode.CookieAuth = false;
+				_BobNode.CookieAuth = false;
+
 				Directory.CreateDirectory(directory);
 
 				_NodeBuilder.StartAll();
@@ -81,7 +88,7 @@ namespace NTumbleBit.Tests
 				conf.RPC.User = creds.Item1;
 				conf.RPC.Password = creds.Item2;
 				conf.TorMandatory = false;
-				conf.Network = Network.RegTest;
+				conf.Network = network;
 				conf.Listen = new System.Net.IPEndPoint(IPAddress.Parse("127.0.0.1"), 5000);
 				conf.AllowInsecure = !shouldBeStandard;
 
@@ -167,7 +174,7 @@ namespace NTumbleBit.Tests
 			if(blocksToFind <= 0)
 				return;
 
-			node.FindBlock(blocksToFind);
+			node.Generate(blocksToFind);
 			SyncNodes();
 		}
 

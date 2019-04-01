@@ -12,6 +12,8 @@ using NTumbleBit.Configuration;
 using NTumbleBit.ClassicTumbler.Client;
 using NTumbleBit.ClassicTumbler.CLI;
 using System.Threading.Tasks;
+using NBitcoin;
+using NBitcoin.Altcoins;
 using NTumbleBit.Services.RPC;
 
 namespace NTumbleBit.ClassicTumbler.Client.CLI
@@ -24,6 +26,7 @@ namespace NTumbleBit.ClassicTumbler.Client.CLI
 		}
 		public void Run(string[] args)
 		{
+			INetworkSet networkSet = AltNetworkSets.Bitcoin;
 			var argsConf = new TextFileConfiguration(args);
 			var debug = argsConf.GetOrDefault<bool>("debug", false);
 			var redeemEscrows = argsConf.GetOrDefault<bool>("redeemescrows", false); ;
@@ -35,7 +38,7 @@ namespace NTumbleBit.ClassicTumbler.Client.CLI
 				try
 				{
 					var config = new TumblerClientConfiguration();
-					config.LoadArgs(args);
+					config.LoadArgs(networkSet, args);
 
 					var runtime = TumblerClientRuntime.FromConfiguration(config, new TextWriterClientInteraction(Console.Out, Console.In));
 					interactive.Runtime = new ClientInteractiveRuntime(runtime);

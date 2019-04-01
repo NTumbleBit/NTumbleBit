@@ -219,7 +219,7 @@ namespace NTumbleBit.Services.RPC
 			record.Transaction = transaction;
 			var height = _Cache.BlockCount;
 			//3 days expiration
-			record.Expiration = height + (int)(TimeSpan.FromDays(3).Ticks / Network.Main.Consensus.PowTargetSpacing.Ticks);
+			record.Expiration = height + (int)(TimeSpan.FromDays(3).Ticks / _RPCClient.Network.Consensus.PowTargetSpacing.Ticks);
 			Repository.UpdateOrInsert<Record>("Broadcasts", transaction.GetHash().ToString(), record, (o, n) => o);
 			return TryBroadcastCoreAsync(record, height);
 		}

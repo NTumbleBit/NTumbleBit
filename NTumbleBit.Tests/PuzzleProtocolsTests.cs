@@ -14,12 +14,14 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using NBitcoin.Altcoins;
 using Xunit;
 
 namespace NTumbleBit.Tests
 {
 	public class PuzzleProtocolsTests
 	{
+		private INetworkSet networkSet = AltNetworkSets.Bitcoin;
 
 		[Fact]
 		public void CanGenerateParseAndSaveRsaKey()
@@ -60,8 +62,8 @@ namespace NTumbleBit.Tests
 			for(int i = 0; i < 100; i++)
 			{
 				var data = RandomUtils.GetBytes(234);
-                var sig = key.Sign(data, out uint160 nonce);
-                Assert.True(key.PubKey.Verify(sig, data, nonce));
+				var sig = key.Sign(data, out uint160 nonce);
+				Assert.True(key.PubKey.Verify(sig, data, nonce));
 			}
 
 
@@ -82,10 +84,10 @@ namespace NTumbleBit.Tests
 		[Fact]
 		public void CanCalculateStandardPhases()
 		{
-			StandardCycles cycles = new StandardCycles(Network.Main.Consensus, true);
+			StandardCycles cycles = new StandardCycles(this.networkSet.Mainnet.Consensus, true);
 			Assert.NotNull(cycles.GetStandardCycle("shorty"));
 
-			cycles = new StandardCycles(Network.Main.Consensus, false);
+			cycles = new StandardCycles(this.networkSet.Mainnet.Consensus, false);
 			Assert.Null(cycles.GetStandardCycle("shorty"));
 
 			var kotori = cycles.GetStandardCycle("kotori");
@@ -300,8 +302,8 @@ namespace NTumbleBit.Tests
 			txBuilder.AddCoins(client.EscrowedCoin);
 			Assert.True(txBuilder.Verify(resigned));
 
-            resigned = fulfill.ReSign(offerCoin, out bool cached);
-            Assert.False(cached);
+			resigned = fulfill.ReSign(offerCoin, out bool cached);
+			Assert.False(cached);
 			txBuilder = new TransactionBuilder();
 			txBuilder.AddCoins(offerCoin);
 			Assert.True(txBuilder.Verify(resigned));

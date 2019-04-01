@@ -17,6 +17,7 @@ using NTumbleBit.Configuration;
 using NTumbleBit.ClassicTumbler.Server;
 using NTumbleBit.ClassicTumbler.CLI;
 using System.Net;
+using NBitcoin.Altcoins;
 
 namespace NTumbleBit.ClassicTumbler.Server.CLI
 {
@@ -28,6 +29,7 @@ namespace NTumbleBit.ClassicTumbler.Server.CLI
 		}
 		public void Run(string[] args)
 		{
+			INetworkSet networkSet = AltNetworkSets.Bitcoin;
 			var argsConf = new TextFileConfiguration(args);
 			var debug = argsConf.GetOrDefault<bool>("debug", false);
 
@@ -37,7 +39,7 @@ namespace NTumbleBit.ClassicTumbler.Server.CLI
 			using(var interactive = new Interactive())
 			{
 				var config = new TumblerConfiguration();
-				config.LoadArgs(args);
+				config.LoadArgs(networkSet, args);
 				try
 				{
 					var runtime = TumblerRuntime.FromConfiguration(config, new TextWriterClientInteraction(Console.Out, Console.In));

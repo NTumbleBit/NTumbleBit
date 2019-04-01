@@ -81,7 +81,7 @@ namespace NTumbleBit.ClassicTumbler.Server
 			set;
 		}
 
-		public TumblerConfiguration LoadArgs(String[] args)
+		public TumblerConfiguration LoadArgs(INetworkSet networkSet, String[] args)
 		{
 			ConfigurationFile = args.Where(a => a.StartsWith("-conf=", StringComparison.Ordinal)).Select(a => a.Substring("-conf=".Length).Replace("\"", "")).FirstOrDefault();
 			DataDir = args.Where(a => a.StartsWith("-datadir=", StringComparison.Ordinal)).Select(a => a.Substring("-datadir=".Length).Replace("\"", "")).FirstOrDefault();
@@ -94,17 +94,17 @@ namespace NTumbleBit.ClassicTumbler.Server
 				}
 			}
 
-			Network = args.Contains("-testnet", StringComparer.OrdinalIgnoreCase) ? Network.TestNet :
-				args.Contains("-regtest", StringComparer.OrdinalIgnoreCase) ? Network.RegTest :
-				Network.Main;
+			Network = args.Contains("-testnet", StringComparer.OrdinalIgnoreCase) ? networkSet.Testnet :
+				args.Contains("-regtest", StringComparer.OrdinalIgnoreCase) ? networkSet.Regtest :
+				networkSet.Mainnet;
 
 			if(ConfigurationFile != null)
 			{
 				AssetConfigFileExists();
 				var configTemp = TextFileConfiguration.Parse(File.ReadAllText(ConfigurationFile));
-				Network = configTemp.GetOrDefault<bool>("testnet", false) ? Network.TestNet :
-						  configTemp.GetOrDefault<bool>("regtest", false) ? Network.RegTest :
-						  Network.Main;
+				Network = configTemp.GetOrDefault<bool>("testnet", false) ? networkSet.Testnet :
+						  configTemp.GetOrDefault<bool>("regtest", false) ? networkSet.Regtest :
+						  networkSet.Mainnet;
 			}
 			if(DataDir == null)
 			{
