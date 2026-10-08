@@ -55,6 +55,8 @@ You can of course use Visual use command line or [Visual Studio Code](https://co
 
 ## Acknowledgements
 
+Implementation contributors include [Ádám Ficsór (nopara73)](https://adamficsor.com/work.html).
+
 Thanks to Boston University (Ethan Heilman, Leen AlShenibr, Foteini Baldimtsi, Alessandra Scafuro, and Sharon Goldberg) for inventing the TumbleBit protocol.
 
 Thanks to Omar Sagga and Sharon Goldberg for the crypto review of TumbleBit, and [PoupardStern and PermutationTest proofs](https://github.com/osagga/TumbleBitSetup).
